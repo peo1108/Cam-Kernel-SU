@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
@@ -47,8 +48,14 @@ private const val GRAVITY_DIR_THRESHOLD_SQ = 0.01f // |g_xy| > 0.1, ≈ 6° tilt
 private const val GRAVITY_ANGLE_STEP_RAD = (3.0 * PI / 180.0).toFloat()
 
 /** Tracks gravity for a `dualPeak` highlight's primary light, with an extra UV-clockwise offset on top. */
+/**
+ * One shared device-tilt angle for every liquid highlight. Each [rememberDeviceTilt] call registers
+ * its own sensor listener, so the app provides a single one at the root.
+ */
+val LocalLiquidGravityAngle = staticCompositionLocalOf<State<Float>?> { null }
+
 @Composable
-private fun rememberQuantizedGravityAngle(): State<Float> {
+fun rememberQuantizedGravityAngle(): State<Float> {
     val tiltState = rememberDeviceTilt()
     return remember(tiltState) {
         derivedStateOf {
@@ -70,7 +77,7 @@ fun rememberGravityRotatedHighlight(
     extraDegrees: Float = 0f,
 ): State<Highlight> {
     val baseStyle = base.style as BloomStroke
-    val angle = rememberQuantizedGravityAngle()
+    val angle = LocalLiquidGravityAngle.current ?: rememberQuantizedGravityAngle()
     return remember(angle, base, extraDegrees) {
         derivedStateOf {
             val basePrimary = baseStyle.primaryLight

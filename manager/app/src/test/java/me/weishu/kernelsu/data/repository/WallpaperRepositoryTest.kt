@@ -1,5 +1,8 @@
 package me.weishu.kernelsu.data.repository
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -12,6 +15,8 @@ import org.junit.rules.TemporaryFolder
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class WallpaperRepositoryTest {
 
@@ -84,6 +89,33 @@ class WallpaperRepositoryTest {
         val second = repo(root, store = store).refresh()
         assertTrue(second != null && second.exists())
         assertEquals(1, root.opened.size)
+    }
+
+    @Test
+    fun concurrentRefreshesBothReturnTheCopy() = runBlocking {
+        // Cold start fires refresh twice (first composition + first ON_RESUME) before either finishes.
+        val bothOpening = CountDownLatch(2)
+        val opens = java.util.concurrent.atomic.AtomicInteger()
+        val slow = object : RootFiles {
+            override fun isRoot() = true
+            override fun stamp(path: String) = FileStamp(100, 4)
+            override fun open(path: String): InputStream {
+                // Hold until both refreshes are copying at the same time.
+                opens.incrementAndGet()
+                bothOpening.countDown()
+                bothOpening.await(2, TimeUnit.SECONDS)
+                return ByteArrayInputStream(byteArrayOf(1, 2, 3, 4))
+            }
+        }
+        val store = MemoryStampStore()
+        val results = listOf(
+            async(Dispatchers.Default) { WallpaperRepository(tmp.root, store, slow, uid = 10234).refresh() },
+            async(Dispatchers.Default) { WallpaperRepository(tmp.root, store, slow, uid = 10234).refresh() },
+        ).awaitAll()
+        results.forEach { assertTrue("refresh returned null", it != null && it.exists()) }
+        assertArrayEquals(byteArrayOf(1, 2, 3, 4), results[0]!!.readBytes())
+        // Concurrent refreshes must not copy into the same temp file twice.
+        assertEquals(1, opens.get())
     }
 
     @Test

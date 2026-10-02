@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui
 
+import me.weishu.kernelsu.ui.component.liquid.rememberQuantizedGravityAngle
+import me.weishu.kernelsu.ui.component.liquid.LocalLiquidGravityAngle
 import android.os.Build
 import androidx.compose.ui.graphics.Color
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -272,7 +274,10 @@ class MainActivity : ComponentActivity() {
                                 dim = uiState.glassBackgroundDim,
                                 imageVersion = uiState.glassImageVersion,
                             )
-                            CompositionLocalProvider(LocalGlassBackgroundState provides glassState) {
+                            CompositionLocalProvider(
+                                LocalGlassBackgroundState provides glassState,
+                                LocalLiquidGravityAngle provides rememberQuantizedGravityAngle(),
+                            ) {
                                 Scaffold(containerColor = Color.Transparent) { navDisplay() }
                             }
                         }

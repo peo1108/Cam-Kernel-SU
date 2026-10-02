@@ -3,13 +3,17 @@ package me.weishu.kernelsu.data.repository
 import android.content.SharedPreferences
 import android.os.Process
 import androidx.core.content.edit
-import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.io.SuFile
 import com.topjohnwu.superuser.io.SuFileInputStream
 import kotlinx.coroutines.Dispatchers
+import me.weishu.kernelsu.ui.util.getRootShell
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 data class FileStamp(val lastModified: Long, val length: Long)
 
@@ -26,16 +30,20 @@ interface RootFiles {
 }
 
 object LibsuRootFiles : RootFiles {
-    override fun isRoot(): Boolean = Shell.getShell().isRoot
+    // The app's ksud-backed root shell; libsu's default shell would run plain `su`, which fails
+    // when su compatibility is turned off.
+    private fun file(path: String) = SuFile(path).apply { shell = getRootShell() }
+
+    override fun isRoot(): Boolean = getRootShell().isRoot
 
     override fun stamp(path: String): FileStamp? {
-        val file = SuFile(path)
+        val file = file(path)
         if (!file.isFile) return null
         val length = file.length()
         return if (length > 0) FileStamp(file.lastModified(), length) else null
     }
 
-    override fun open(path: String): InputStream = SuFileInputStream.open(SuFile(path))
+    override fun open(path: String): InputStream = SuFileInputStream.open(file(path))
 }
 
 /** Remembers the source stamp of the cached copy. */
@@ -80,19 +88,28 @@ class WallpaperRepository(
 
     /** Returns the cached wallpaper file, or null when it cannot be read (no root, live wallpaper). */
     suspend fun refresh(): File? = withContext(Dispatchers.IO) {
-        runCatching {
-            if (!root.isRoot()) return@runCatching null
-            val path = systemWallpaperPath(uid)
-            val source = root.stamp(path) ?: return@runCatching null
-            if (cached.isFile && !shouldRecopy(source, store.stamp)) return@runCatching cached
-            val tmp = File(filesDir, "glass_wallpaper.tmp")
-            root.open(path).use { input -> tmp.outputStream().use { input.copyTo(it) } }
-            if (!tmp.renameTo(cached)) {
-                cached.delete()
-                if (!tmp.renameTo(cached)) return@runCatching null
-            }
-            store.stamp = source
-            cached
-        }.getOrNull()
+        // Serialized: a cold start triggers two refreshes before the first finishes.
+        copyLock.withLock {
+            runCatching {
+                if (!root.isRoot()) return@runCatching null
+                val path = systemWallpaperPath(uid)
+                val source = root.stamp(path) ?: return@runCatching null
+                if (cached.isFile && !shouldRecopy(source, store.stamp)) return@runCatching cached
+                val tmp = File.createTempFile("glass_wallpaper", ".tmp", filesDir)
+                try {
+                    root.open(path).use { input -> tmp.outputStream().use { input.copyTo(it) } }
+                    // Atomic replace: a good cached copy is never deleted on failure.
+                    Files.move(tmp.toPath(), cached.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+                } finally {
+                    tmp.delete()
+                }
+                store.stamp = source
+                cached
+            }.getOrNull()
+        }
+    }
+
+    private companion object {
+        val copyLock = Mutex()
     }
 }

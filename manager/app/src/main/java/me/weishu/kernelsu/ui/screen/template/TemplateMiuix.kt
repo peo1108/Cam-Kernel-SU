@@ -3,7 +3,7 @@ package me.weishu.kernelsu.ui.screen.template
 import me.weishu.kernelsu.ui.component.glass.GlassFab
 import me.weishu.kernelsu.ui.component.glass.GlassListPopup
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
-import me.weishu.kernelsu.ui.component.glass.GlassCard
+import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.animateDpAsState
@@ -279,7 +279,7 @@ private fun TemplateItem(
     template: TemplateInfo,
     onClick: () -> Unit,
 ) {
-    GlassCard(
+    GlassListCard(
         modifier = Modifier.padding(bottom = 12.dp),
         onClick = onClick,
         showIndication = true,

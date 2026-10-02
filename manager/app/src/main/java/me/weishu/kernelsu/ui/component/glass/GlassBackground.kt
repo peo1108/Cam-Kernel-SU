@@ -64,7 +64,7 @@ fun pickGlassSourceKind(type: Int, hasBitmap: Boolean): GlassSourceKind = when (
 sealed interface GlassSource {
     data object Plain : GlassSource
     data object Gradient : GlassSource
-    data class Bitmap(val image: ImageBitmap) : GlassSource
+    data class Bitmap(val image: ImageBitmap, val meanLuma: Float) : GlassSource
 }
 
 @Immutable
@@ -100,7 +100,7 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
         )
     }
 
-    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var bitmap by remember { mutableStateOf<DecodedGlass?>(null) }
     var loadedKey by remember { mutableStateOf<String?>(null) }
     var resumeCount by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
@@ -130,7 +130,7 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
     val source = when (kind) {
         GlassSourceKind.Plain -> GlassSource.Plain
         GlassSourceKind.Gradient -> GlassSource.Gradient
-        GlassSourceKind.Bitmap -> GlassSource.Bitmap(bitmap!!)
+        GlassSourceKind.Bitmap -> bitmap!!.let { GlassSource.Bitmap(it.image, it.meanLuma) }
     }
     return GlassBackgroundState(
         source = source,
@@ -193,12 +193,14 @@ private fun GlassBackgroundLayer(state: GlassBackgroundState) {
                         if (state.blur > 0.dp) Modifier.blur(state.blur, BlurredEdgeTreatment.Rectangle) else Modifier
                     ),
             )
-            if (state.dim > 0f) {
-                val dimColor = if (isInDarkTheme()) Color.Black else Color.White
+            val dark = isInDarkTheme()
+            // Raised automatically when the image fights the theme, so text stays readable.
+            val dim = effectiveDim(state.dim, source.meanLuma, dark)
+            if (dim > 0f) {
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(dimColor.copy(alpha = state.dim))
+                        .background((if (dark) Color.Black else Color.White).copy(alpha = dim))
                 )
             }
         }

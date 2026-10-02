@@ -315,6 +315,27 @@ bool ksu_uid_should_umount(uid_t uid)
 #endif
 }
 
+int ksu_grant_default_root(const char *package, uid_t uid)
+{
+    struct app_profile *profile;
+    int ret;
+
+    profile = kzalloc(sizeof(*profile), GFP_KERNEL);
+    if (!profile)
+        return -ENOMEM;
+
+    profile->version = KSU_APP_PROFILE_VER;
+    strscpy(profile->key, package, sizeof(profile->key));
+    profile->curr_uid = uid;
+    profile->allow_su = true;
+    profile->rp_config.use_default = true;
+    memcpy(&profile->rp_config.profile, &default_root_profile, sizeof(default_root_profile));
+
+    ret = ksu_set_app_profile(profile);
+    kfree(profile);
+    return ret;
+}
+
 void ksu_put_app_profile(struct app_profile *profile)
 {
     struct perm_data *p = container_of(profile, struct perm_data, profile);

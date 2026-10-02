@@ -38,6 +38,8 @@ struct app_profile *ksu_get_app_profile(uid_t uid);
 // only used to put the app_profile returned by ksu_get_app_profile
 void ksu_put_app_profile(struct app_profile *);
 int ksu_set_app_profile(struct app_profile *);
+// Grant root with the default root profile; caller persists the allowlist.
+int ksu_grant_default_root(const char *package, uid_t uid);
 
 bool ksu_uid_should_umount(uid_t uid);
 struct root_profile *ksu_get_root_profile(uid_t uid);

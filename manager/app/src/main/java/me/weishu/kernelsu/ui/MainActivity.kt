@@ -1,5 +1,12 @@
 package me.weishu.kernelsu.ui
 
+import androidx.compose.ui.graphics.Color
+import top.yukonga.miuix.kmp.blur.Backdrop
+import me.weishu.kernelsu.ui.component.liquid.rememberCombinedBackdrop
+import me.weishu.kernelsu.ui.component.glass.rememberGlassBackgroundState
+import me.weishu.kernelsu.ui.component.glass.LocalGlassBackgroundState
+import me.weishu.kernelsu.ui.component.glass.LocalGlassBackdrop
+import me.weishu.kernelsu.ui.component.glass.GlassPage
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
@@ -179,9 +186,10 @@ class MainActivity : ComponentActivity() {
                 LocalNavigator provides navigator,
                 LocalDensity provides density,
                 LocalColorMode provides appSettings.colorMode.value,
-                LocalEnableBlur provides uiState.enableBlur,
+                // Miuix mode is always liquid glass.
+                LocalEnableBlur provides (uiMode == UiMode.Miuix || uiState.enableBlur),
                 LocalEnableFloatingBottomBar provides uiState.enableFloatingBottomBar,
-                LocalEnableFloatingBottomBarBlur provides uiState.enableFloatingBottomBarBlur,
+                LocalEnableFloatingBottomBarBlur provides (uiMode == UiMode.Miuix || uiState.enableFloatingBottomBarBlur),
                 LocalEnableNavigationBadge provides uiState.enableNavigationBadge,
                 LocalModuleDescriptionMaxLines provides uiState.moduleDescriptionMaxLines,
                 LocalUiMode provides uiMode,
@@ -222,27 +230,29 @@ class MainActivity : ComponentActivity() {
                                     else -> navigator.pop()
                                 }
                             }) {
-                            entry<Route.Main>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
-                            entry<Route.About>(swipeDismiss = swipeDismiss) { AboutScreen() }
-                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { SulogScreen() }
-                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { ColorPaletteScreen() }
-                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { AppProfileTemplateScreen() }
-                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> TemplateEditorScreen(key.template, key.readOnly) }
-                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> AppProfileScreen(key.uid) }
-                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { ModuleRepoScreen() }
-                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> ModuleRepoDetailScreen(key.module) }
-                            entry<Route.Install>(swipeDismiss = swipeDismiss) { InstallScreen() }
-                            entry<Route.Flash>(swipeDismiss = swipeDismiss) { key -> FlashScreen(key.flashIt) }
+                            entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
+                            entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { AboutScreen() } }
+                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { SulogScreen() } }
+                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { ColorPaletteScreen() } }
+                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { AppProfileTemplateScreen() } }
+                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { TemplateEditorScreen(key.template, key.readOnly) } }
+                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { AppProfileScreen(key.uid) } }
+                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { ModuleRepoScreen() } }
+                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { ModuleRepoDetailScreen(key.module) } }
+                            entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { InstallScreen() } }
+                            entry<Route.Flash>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { FlashScreen(key.flashIt) } }
                             entry<Route.ExecuteModuleAction>(swipeDismiss = swipeDismiss) { key ->
-                                ExecuteModuleActionScreen(
-                                    key.moduleId,
-                                    key.fromShortcut
-                                )
+                                GlassPageIfMiuix {
+                                    ExecuteModuleActionScreen(
+                                        key.moduleId,
+                                        key.fromShortcut
+                                    )
+                                }
                             }
-                            entry<Route.Home>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
-                            entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
-                            entry<Route.Module>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
-                            entry<Route.Settings>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
+                            entry<Route.Home>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
+                            entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
+                            entry<Route.Module>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
+                            entry<Route.Settings>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
                         }
                     }
 
@@ -251,7 +261,16 @@ class MainActivity : ComponentActivity() {
                             containerColor = MaterialTheme.colorScheme.surfaceContainer
                         ) { navDisplay() }
 
-                        UiMode.Miuix -> Scaffold { navDisplay() }
+                        UiMode.Miuix -> {
+                            val glassState = rememberGlassBackgroundState(
+                                type = uiState.glassBackgroundType,
+                                blur = uiState.glassBackgroundBlur,
+                                dim = uiState.glassBackgroundDim,
+                            )
+                            CompositionLocalProvider(LocalGlassBackgroundState provides glassState) {
+                                Scaffold(containerColor = Color.Transparent) { navDisplay() }
+                            }
+                        }
                     }
                     SideEffect { contentReady = true }
                 }
@@ -354,9 +373,11 @@ fun MainScreen(
     val blurBackdrop = rememberBlurBackdrop(enableBlur)
 
     val backdrop = rememberLayerBackdrop {
-        drawRect(surfaceColor)
+        if (uiMode == UiMode.Material) drawRect(surfaceColor)
         drawContent()
     }
+    val glassBackdrop = LocalGlassBackdrop.current
+    val barBackdrop: Backdrop = if (glassBackdrop != null) rememberCombinedBackdrop(glassBackdrop, backdrop) else backdrop
 
     val settledPage = mainPagerState.pagerState.settledPage
     LaunchedEffect(settledPage) {
@@ -433,7 +454,7 @@ fun MainScreen(
                     }
                 }
 
-                UiMode.Miuix -> Scaffold { _ ->
+                UiMode.Miuix -> Scaffold(containerColor = Color.Transparent) { _ ->
                     Row {
                         SideRail(navigationBadge)
                         Box(
@@ -453,7 +474,7 @@ fun MainScreen(
                 ) {
                     BottomBar(
                         blurBackdrop = blurBackdrop,
-                        backdrop = backdrop,
+                        backdrop = barBackdrop,
                         navigationBadge = navigationBadge,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
@@ -468,7 +489,7 @@ fun MainScreen(
                     pagerContent(innerPadding.calculateBottomPadding())
                 }
 
-                UiMode.Miuix -> Scaffold(bottomBar = bottomBar) { innerPadding ->
+                UiMode.Miuix -> Scaffold(bottomBar = bottomBar, containerColor = Color.Transparent) { innerPadding ->
                     pagerContent(innerPadding.calculateBottomPadding())
                 }
             }
@@ -497,4 +518,9 @@ private fun MainScreenBackHandler(
             mainState.animateToPage(0)
         }
     )
+}
+
+@Composable
+private fun GlassPageIfMiuix(content: @Composable () -> Unit) {
+    if (LocalUiMode.current == UiMode.Miuix) GlassPage(content = content) else content()
 }

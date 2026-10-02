@@ -106,6 +106,7 @@ fun ExecuteModuleActionScreenMiuix(
     BackHandler(enabled = !state.isComplete) { }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopBar(
                 onBack = actions.onBack,

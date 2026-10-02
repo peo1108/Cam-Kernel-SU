@@ -53,6 +53,9 @@ class MainActivityViewModel(
             enableSwipeDismiss = settingRepo.enableSwipeDismiss,
             pagerInterceptionMode = settingRepo.pagerInterceptionMode,
             moduleDescriptionMaxLines = settingRepo.moduleDescriptionMaxLines,
+            glassBackgroundType = settingRepo.glassBackgroundType,
+            glassBackgroundBlur = settingRepo.glassBackgroundBlur,
+            glassBackgroundDim = settingRepo.glassBackgroundDim,
             uiMode = UiMode.fromValue(settingRepo.uiMode),
         )
     }
@@ -68,6 +71,9 @@ class MainActivityViewModel(
             "enable_blur",
             "enable_floating_bottom_bar",
             "enable_floating_bottom_bar_blur",
+            "glass_background_type",
+            "glass_background_blur",
+            "glass_background_dim",
             "enable_navigation_badge",
             "enable_swipe_dismiss",
             "pager_interception_mode",

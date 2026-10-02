@@ -15,6 +15,9 @@ interface SettingsRepository {
     var enableBlur: Boolean
     var enableFloatingBottomBar: Boolean
     var enableFloatingBottomBarBlur: Boolean
+    var glassBackgroundType: Int
+    var glassBackgroundBlur: Float
+    var glassBackgroundDim: Float
     var enableNavigationBadge: Boolean
     var navigationRailExpanded: Boolean
     var pageScale: Float

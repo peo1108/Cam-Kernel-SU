@@ -150,6 +150,7 @@ fun SulogScreenMiuix(
     )
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             BlurredBar(backdrop) {
                 searchStatus.TopAppBarAnim(backgroundColor = barColor) {

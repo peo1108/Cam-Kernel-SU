@@ -145,6 +145,7 @@ fun AppProfileTemplateScreenMiuix(
     val barColor = if (blurActive) Color.Transparent else colorScheme.surface
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopBar(
                 onBack = actions.onBack,

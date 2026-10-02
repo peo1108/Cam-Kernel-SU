@@ -113,6 +113,7 @@ fun ColorPaletteScreenMiuix(
     val isDark = currentColorMode.isDark || currentColorMode.isSystem && isSystemInDarkTheme()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             BlurredBar(backdrop) {
                 TopAppBar(

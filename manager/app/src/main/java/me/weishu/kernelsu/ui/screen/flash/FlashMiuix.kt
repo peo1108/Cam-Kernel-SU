@@ -82,6 +82,7 @@ fun FlashScreenMiuix(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopBar(
                 state.flashingStatus,

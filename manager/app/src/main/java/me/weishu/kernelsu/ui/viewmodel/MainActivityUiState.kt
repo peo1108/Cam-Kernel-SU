@@ -15,5 +15,8 @@ data class MainActivityUiState(
     val enableSwipeDismiss: Boolean,
     val pagerInterceptionMode: Int,
     val moduleDescriptionMaxLines: Int = 4,
+    val glassBackgroundType: Int = 0,
+    val glassBackgroundBlur: Float = 0f,
+    val glassBackgroundDim: Float = 0.2f,
     val uiMode: UiMode,
 )

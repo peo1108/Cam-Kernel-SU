@@ -68,6 +68,7 @@ fun TemplateEditorScreenMiuix(
     val barColor = if (blurActive) Color.Transparent else colorScheme.surface
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopBar(
                 title = if (state.isCreation) {

@@ -93,6 +93,18 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("enable_floating_bottom_bar_blur", false)
         set(value) = prefs.edit { putBoolean("enable_floating_bottom_bar_blur", value) }
 
+    override var glassBackgroundType: Int
+        get() = prefs.getInt("glass_background_type", 0).coerceIn(0, 2)
+        set(value) = prefs.edit { putInt("glass_background_type", value.coerceIn(0, 2)) }
+
+    override var glassBackgroundBlur: Float
+        get() = prefs.getFloat("glass_background_blur", 0f).coerceIn(0f, 40f)
+        set(value) = prefs.edit { putFloat("glass_background_blur", value.coerceIn(0f, 40f)) }
+
+    override var glassBackgroundDim: Float
+        get() = prefs.getFloat("glass_background_dim", 0.2f).coerceIn(0f, 0.6f)
+        set(value) = prefs.edit { putFloat("glass_background_dim", value.coerceIn(0f, 0.6f)) }
+
     override var enableNavigationBadge: Boolean
         get() = prefs.getBoolean("enable_navigation_badge", true)
         set(value) = prefs.edit { putBoolean("enable_navigation_badge", value) }

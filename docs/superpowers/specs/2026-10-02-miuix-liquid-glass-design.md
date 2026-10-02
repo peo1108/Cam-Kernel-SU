@@ -118,15 +118,15 @@ Fallback inside every component: when `RuntimeShader` is unsupported, skip
      cheap `stat` via root shell) with the cached copy; re-copy when different.
      No broadcast receiver.
    - Fallback (no root grant, live wallpaper with no static file, OEM path
-     missing or undecodable): animated gradient tinted with
-     `WallpaperManager.getWallpaperColors(FLAG_SYSTEM)` (no permission needed),
-     so the background still matches the device's palette.
+     missing or undecodable): plain default theme background
+     (`MiuixTheme.colorScheme.surface` - white in light mode, the default dark
+     surface in dark mode). No gradient, no wallpaper colors. Glass components
+     still render over it.
 2. **Animated gradient**
    - Reuse `BgEffectBackground` / `BgEffectPainter`. Add a function that builds
-     a `BgEffectConfig.Config` from a seed color: 4 neighboring hues, lightness
-     taken from the existing light/dark presets. Seed = theme key color
-     (`keyColor` or Monet) when chosen explicitly; wallpaper primary color when
-     used as the wallpaper fallback.
+     a `BgEffectConfig.Config` from the theme key color (`keyColor` or Monet):
+     4 neighboring hues, lightness taken from the existing light/dark presets.
+     Changing theme color changes the background.
    - Animation pauses when the app is not resumed (lifecycle).
    - API 31-32: static `Brush.linearGradient` of the same colors.
 3. **User image**
@@ -155,8 +155,8 @@ a sub-page with:
 - Selector: Device wallpaper / Animated gradient / Custom image
 - "Choose image" button (Custom image only)
 - Blur and dim sliders (Device wallpaper and Custom image)
-- A short note when Device wallpaper falls back to gradient (e.g. "Live
-  wallpaper or no root access - using colors from your wallpaper")
+- A short note when Device wallpaper falls back to the default background
+  (e.g. "Live wallpaper or no root access - using the default background")
 
 Strings added to `values/strings.xml` (English) and `values-vi/strings.xml`.
 Other locales fall back to English.
@@ -186,7 +186,7 @@ Each step is one `manager: ...` commit.
    check each `WindowDialog` for conversion. Outcome fixes `GlassDialog` design.
 1. **Foundation**: `GlassDefaults`, `LocalGlassBackdrop`, `GlassBackground`
    in `MainActivity` with `WallpaperRepository` (root copy + mtime refresh)
-   and the wallpaper-colored gradient fallback; transparent Miuix scaffolds.
+   and the plain default-background fallback; transparent Miuix scaffolds.
 2. **Branding**: app name + adaptive/monochrome icon.
 3. **Home pilot**: `GlassCard`, `GlassTopBar` applied to `HomeMiuix.kt`.
    **Stop and send the user screenshots/APK** to approve the glass look before
@@ -203,7 +203,7 @@ Each step is one `manager: ...` commit.
 ## 8. Verification
 
 - **Unit tests (JVM)**, new `manager/app/src/test`: gradient `Config`
-  generation from a seed color (light, dark, grey/unsaturated input), image
+  generation from key color (light, dark, grey/unsaturated input), image
   downscale size calculation, wallpaper path from uid (user 0, user 10), and
   the refresh decision (mtime/size changed vs unchanged).
 - **Build**: build ksud, copy `libksud.so` into `jniLibs` per AGENTS.md, then
@@ -211,8 +211,8 @@ Each step is one `manager: ...` commit.
 - **Visual**: install on device/emulator; screenshot each screen in light and
   dark, with device wallpaper, gradient, and custom image backgrounds.
 - **Wallpaper**: change the home wallpaper, return to the app, background
-  updates. Set a live wallpaper or deny root, background falls back to a
-  gradient in the wallpaper's colors and the settings note is shown.
+  updates. Set a live wallpaper or deny root, background falls back to the
+  plain default theme background and the settings note is shown.
 - **Performance**: `adb shell dumpsys gfxinfo cam.su.kernel` while scrolling
   Module and Superuser lists; compare janky frame % to a pre-change baseline.
   If clearly worse, reduce values in `GlassDefaults`.

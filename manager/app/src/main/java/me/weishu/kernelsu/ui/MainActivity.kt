@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui
 
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import top.yukonga.miuix.kmp.blur.Backdrop
 import me.weishu.kernelsu.ui.component.liquid.rememberCombinedBackdrop
@@ -189,7 +190,10 @@ class MainActivity : ComponentActivity() {
                 // Miuix mode is always liquid glass.
                 LocalEnableBlur provides (uiMode == UiMode.Miuix || uiState.enableBlur),
                 LocalEnableFloatingBottomBar provides uiState.enableFloatingBottomBar,
-                LocalEnableFloatingBottomBarBlur provides (uiMode == UiMode.Miuix || uiState.enableFloatingBottomBarBlur),
+                // The floating bar's glass uses AGSL shaders (API 33+).
+                LocalEnableFloatingBottomBarBlur provides (
+                    (uiMode == UiMode.Miuix && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) || uiState.enableFloatingBottomBarBlur
+                    ),
                 LocalEnableNavigationBadge provides uiState.enableNavigationBadge,
                 LocalModuleDescriptionMaxLines provides uiState.moduleDescriptionMaxLines,
                 LocalUiMode provides uiMode,

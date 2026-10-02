@@ -1,8 +1,12 @@
 package me.weishu.kernelsu.ui.component.miuix
 
+import androidx.compose.ui.graphics.RectangleShape
+import top.yukonga.miuix.kmp.blur.blur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
+import me.weishu.kernelsu.ui.component.glass.LocalGlassBackdrop
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
-import me.weishu.kernelsu.ui.component.glass.glassSurface
+import me.weishu.kernelsu.ui.component.glass.liquidControl
 import me.weishu.kernelsu.ui.component.glass.GlassDefaults
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -140,12 +144,27 @@ fun SearchStatus.SearchPager(
         label = "SearchPagerSurfaceAlpha"
     )
     val surfaceColor = colorScheme.surface
+    val glassBackdrop = LocalGlassBackdrop.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .zIndex(5f)
-            .drawBehind { drawRect(surfaceColor.copy(alpha = surfaceAlpha)) }
+            .then(
+                if (glassBackdrop != null && !searchStatus.isCollapsed()) {
+                    // Frosted page background instead of an opaque surface; samples the
+                    // background only, so the list underneath stays hidden.
+                    Modifier.drawBackdrop(
+                        backdrop = glassBackdrop,
+                        shape = { RectangleShape },
+                        effects = { blur(30.dp.toPx(), 30.dp.toPx()) },
+                        layerBlock = { alpha = surfaceAlpha },
+                        onDrawSurface = { drawRect(surfaceColor.copy(alpha = 0.5f)) },
+                    )
+                } else {
+                    Modifier.drawBehind { drawRect(surfaceColor.copy(alpha = surfaceAlpha)) }
+                }
+            )
             .semantics { onClick { false } }
             .then(
                 if (!searchStatus.isCollapsed()) {
@@ -165,7 +184,7 @@ fun SearchStatus.SearchPager(
                 .fillMaxWidth()
                 .padding(top = topPadding)
                 .then(
-                    if (!searchStatus.isCollapsed()) Modifier.background(colorScheme.surface)
+                    if (!searchStatus.isCollapsed() && glassBackdrop == null) Modifier.background(colorScheme.surface)
                     else Modifier
                 ),
             horizontalArrangement = Arrangement.Start,
@@ -175,7 +194,7 @@ fun SearchStatus.SearchPager(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(colorScheme.surface)
+                        .then(if (glassBackdrop == null) Modifier.background(colorScheme.surface) else Modifier)
                 ) {
                     expandBar(searchStatus, onSearchStatusChange, searchBarTopPadding)
                 }
@@ -273,7 +292,7 @@ fun SearchBar(
             .padding(horizontal = 12.dp)
             .padding(top = searchBarTopPadding, bottom = 6.dp)
             .heightIn(min = 45.dp)
-            .glassSurface(SearchShape, GlassDefaults.dropletTint(), GlassDefaults.cardBlur, lens = true)
+            .liquidControl(SearchShape)
             .focusRequester(focusRequester),
         decorationBox = { innerTextField ->
             Row(
@@ -346,7 +365,7 @@ fun SearchBarFake(
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
             .padding(top = searchBarTopPadding, bottom = 6.dp)
-            .glassSurface(SearchShape, GlassDefaults.dropletTint(), GlassDefaults.cardBlur, lens = true),
+            .liquidControl(SearchShape),
         color = Color.Transparent,
         onSearch = { },
         enabled = false,

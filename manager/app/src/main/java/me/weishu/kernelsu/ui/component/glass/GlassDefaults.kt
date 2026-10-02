@@ -26,8 +26,11 @@ object GlassDefaults {
 
     val dropletSize = 44.dp
     const val dropletPressScale = 1.12f
-    const val dropletTintLight = 0.6f
-    const val dropletTintDark = 0.3f
+    const val dropletTintLight = 0.15f
+    const val dropletTintDark = 0.1f
+    val dropletLensHeight = 12.dp
+    val dropletLensAmount = 20.dp
+    const val dropletChromaticAberration = 0.5f
 
     val cardCorner = 20.dp
     val dialogCorner = 32.dp

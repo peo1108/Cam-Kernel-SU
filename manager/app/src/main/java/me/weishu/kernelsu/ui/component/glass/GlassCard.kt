@@ -98,16 +98,23 @@ fun GlassListCard(
     content = content,
 )
 
-/** Draws a glass surface sampling [LocalGlassBackdrop]; plain tinted background when there is none. */
+/**
+ * Draws a glass surface sampling [LocalGlassBackdrop]; plain tinted background when there is none.
+ * [highlight] overrides the default small specular rim; [refraction] overrides the card lens.
+ */
 @Composable
 fun Modifier.glassSurface(
     shape: RoundedCornerShape,
     tint: Color,
     blur: Dp,
     lens: Boolean,
+    highlight: (() -> Highlight)? = null,
+    refraction: GlassRefraction? = null,
 ): Modifier {
     val backdrop = LocalGlassBackdrop.current ?: return this.background(tint, shape)
     val dark = isInDarkTheme()
+    val rim = highlight ?: { if (dark) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight }
+    val r = refraction ?: GlassRefraction(GlassDefaults.cardLensHeight, GlassDefaults.cardLensAmount)
     return this.drawBackdrop(
         backdrop = backdrop,
         shape = { shape },
@@ -116,12 +123,22 @@ fun Modifier.glassSurface(
             blur(blur.toPx(), blur.toPx())
             if (lens) {
                 lens(
-                    refractionHeight = GlassDefaults.cardLensHeight.toPx(),
-                    refractionAmount = GlassDefaults.cardLensAmount.toPx(),
+                    refractionHeight = r.height.toPx(),
+                    refractionAmount = r.amount.toPx(),
+                    depthEffect = r.depth,
+                    chromaticAberration = r.chromaticAberration,
                 )
             }
         },
-        highlight = { if (dark) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight },
+        highlight = { rim() },
         onDrawSurface = { drawRect(tint) },
     )
 }
+
+/** Lens settings for [glassSurface]. */
+data class GlassRefraction(
+    val height: Dp,
+    val amount: Dp,
+    val depth: Boolean = false,
+    val chromaticAberration: Float = 0f,
+)

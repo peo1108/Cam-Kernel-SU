@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.modulerepo
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
@@ -164,43 +165,45 @@ fun ModuleRepoScreenMiuix(
                         color = barColor,
                         title = stringResource(R.string.module_repos),
                         actions = {
-                            val showSortPopup = remember { mutableStateOf(false) }
-                            OverlayListPopup(
-                                show = showSortPopup.value,
-                                popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                alignment = PopupPositionProvider.Align.TopEnd,
-                                onDismissRequest = { showSortPopup.value = false },
-                                content = {
-                                    ListPopupColumn {
-                                        val sortOptions = listOf(
-                                            RepoSort.UPDATED to R.string.module_repos_sort_updated,
-                                            RepoSort.CREATED to R.string.module_repos_sort_created,
-                                            RepoSort.NAME to R.string.module_repos_sort_name,
-                                            RepoSort.STARS to R.string.module_repos_sort_stars,
-                                        )
-                                        sortOptions.forEachIndexed { index, (order, resId) ->
-                                            DropdownImpl(
-                                                text = stringResource(resId),
-                                                optionSize = sortOptions.size,
-                                                isSelected = state.sortOrder == order,
-                                                onSelectedIndexChange = {
-                                                    actions.onSetSortOrder(order)
-                                                    showSortPopup.value = false
-                                                },
-                                                index = index,
+                            GlassButtonGroup {
+                                val showSortPopup = remember { mutableStateOf(false) }
+                                OverlayListPopup(
+                                    show = showSortPopup.value,
+                                    popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                                    alignment = PopupPositionProvider.Align.TopEnd,
+                                    onDismissRequest = { showSortPopup.value = false },
+                                    content = {
+                                        ListPopupColumn {
+                                            val sortOptions = listOf(
+                                                RepoSort.UPDATED to R.string.module_repos_sort_updated,
+                                                RepoSort.CREATED to R.string.module_repos_sort_created,
+                                                RepoSort.NAME to R.string.module_repos_sort_name,
+                                                RepoSort.STARS to R.string.module_repos_sort_stars,
                                             )
+                                            sortOptions.forEachIndexed { index, (order, resId) ->
+                                                DropdownImpl(
+                                                    text = stringResource(resId),
+                                                    optionSize = sortOptions.size,
+                                                    isSelected = state.sortOrder == order,
+                                                    onSelectedIndexChange = {
+                                                        actions.onSetSortOrder(order)
+                                                        showSortPopup.value = false
+                                                    },
+                                                    index = index,
+                                                )
+                                            }
                                         }
-                                    }
-                                })
-                            GlassIconButton(
-                                onClick = { showSortPopup.value = true },
-                                holdDownState = showSortPopup.value
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Sort,
-                                    tint = colorScheme.onSurface,
-                                    contentDescription = stringResource(R.string.menu_sort),
-                                )
+                                    })
+                                GlassIconButton(
+                                    onClick = { showSortPopup.value = true },
+                                    holdDownState = showSortPopup.value
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Sort,
+                                        tint = colorScheme.onSurface,
+                                        contentDescription = stringResource(R.string.menu_sort),
+                                    )
+                                }
                             }
                         },
                         navigationIcon = {
@@ -1076,13 +1079,15 @@ fun ModuleRepoDetailScreenMiuix(
                         )
                     }
                 }, actions = {
-                    if (state.webUrl.isNotEmpty()) {
-                        GlassIconButton(
-                            onClick = actions.onOpenWebUrl
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.HorizontalSplit, contentDescription = null, tint = colorScheme.onBackground
-                            )
+                    GlassButtonGroup {
+                        if (state.webUrl.isNotEmpty()) {
+                            GlassIconButton(
+                                onClick = actions.onOpenWebUrl
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.HorizontalSplit, contentDescription = null, tint = colorScheme.onBackground
+                                )
+                            }
                         }
                     }
                 }, bottomContent = {

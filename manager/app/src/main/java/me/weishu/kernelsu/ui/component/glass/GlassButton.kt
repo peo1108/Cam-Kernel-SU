@@ -1,5 +1,9 @@
 package me.weishu.kernelsu.ui.component.glass
 
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Row
 import android.os.Build
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -79,6 +83,7 @@ fun GlassIconButton(
     content: @Composable () -> Unit,
 ) {
     val shape = if (cornerRadius != null) RoundedCornerShape(cornerRadius) else RoundedCornerShape(percent = 50)
+    val grouped = LocalGlassButtonGrouped.current
     val tint = if (backgroundColor.isSpecified) {
         backgroundColor.copy(alpha = min(backgroundColor.alpha, GlassDefaults.coloredCardTint))
     } else {
@@ -104,7 +109,7 @@ fun GlassIconButton(
                 scaleX = scale
                 scaleY = scale
             }
-            .liquidControl(shape, tint)
+            .then(if (grouped && !backgroundColor.isSpecified) Modifier else Modifier.liquidControl(shape, tint))
             .then(if (touchLight != null) touchLight.modifier.then(touchLight.gestureModifier) else Modifier)
             .clickable(
                 interactionSource = interactionSource,
@@ -118,5 +123,26 @@ fun GlassIconButton(
         contentAlignment = Alignment.Center,
     ) {
         content()
+    }
+}
+
+private val LocalGlassButtonGrouped = staticCompositionLocalOf { false }
+
+/**
+ * iOS toolbar group: adjacent [GlassIconButton]s share one glass capsule instead of each
+ * drawing its own droplet. A group with a single button looks like a plain droplet.
+ */
+@Composable
+fun GlassButtonGroup(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = modifier.liquidControl(RoundedCornerShape(percent = 50)),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CompositionLocalProvider(LocalGlassButtonGrouped provides true) {
+            content()
+        }
     }
 }

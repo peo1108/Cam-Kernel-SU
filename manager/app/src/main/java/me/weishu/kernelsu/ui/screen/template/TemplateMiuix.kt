@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.template
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
@@ -406,47 +407,49 @@ private fun TopBar(
                 }
             },
             actions = {
-                val showTopPopup = remember { mutableStateOf(false) }
-                OverlayListPopup(
-                    show = showTopPopup.value,
-                    popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                    alignment = PopupPositionProvider.Align.TopEnd,
-                    onDismissRequest = {
-                        showTopPopup.value = false
-                    },
-                    content = {
-                        ListPopupColumn {
-                            val items = listOf(
-                                stringResource(id = R.string.app_profile_import_from_clipboard),
-                                stringResource(id = R.string.app_profile_export_to_clipboard)
-                            )
-                            items.forEachIndexed { index, text ->
-                                DropdownItem(
-                                    text = text,
-                                    optionSize = items.size,
-                                    index = index,
-                                    onSelectedIndexChange = { selectedIndex ->
-                                        if (selectedIndex == 0) {
-                                            onImport()
-                                        } else {
-                                            onExport()
-                                        }
-                                        showTopPopup.value = false
-                                    }
+                GlassButtonGroup {
+                    val showTopPopup = remember { mutableStateOf(false) }
+                    OverlayListPopup(
+                        show = showTopPopup.value,
+                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                        alignment = PopupPositionProvider.Align.TopEnd,
+                        onDismissRequest = {
+                            showTopPopup.value = false
+                        },
+                        content = {
+                            ListPopupColumn {
+                                val items = listOf(
+                                    stringResource(id = R.string.app_profile_import_from_clipboard),
+                                    stringResource(id = R.string.app_profile_export_to_clipboard)
                                 )
+                                items.forEachIndexed { index, text ->
+                                    DropdownItem(
+                                        text = text,
+                                        optionSize = items.size,
+                                        index = index,
+                                        onSelectedIndexChange = { selectedIndex ->
+                                            if (selectedIndex == 0) {
+                                                onImport()
+                                            } else {
+                                                onExport()
+                                            }
+                                            showTopPopup.value = false
+                                        }
+                                    )
+                                }
                             }
                         }
-                    }
-                )
-                GlassIconButton(
-                    onClick = { showTopPopup.value = true },
-                    holdDownState = showTopPopup.value
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Copy,
-                        contentDescription = stringResource(id = R.string.app_profile_import_export),
-                        tint = colorScheme.onBackground
                     )
+                    GlassIconButton(
+                        onClick = { showTopPopup.value = true },
+                        holdDownState = showTopPopup.value
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Copy,
+                            contentDescription = stringResource(id = R.string.app_profile_import_export),
+                            tint = colorScheme.onBackground
+                        )
+                    }
                 }
             },
             scrollBehavior = scrollBehavior

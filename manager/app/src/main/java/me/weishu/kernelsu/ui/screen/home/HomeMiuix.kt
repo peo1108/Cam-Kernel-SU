@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.home
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -234,7 +235,9 @@ private fun TopBar(
             color = barColor,
             title = stringResource(R.string.app_name),
             actions = {
-                RebootListPopupMiuix()
+                GlassButtonGroup {
+                    RebootListPopupMiuix()
+                }
             },
             scrollBehavior = scrollBehavior
         )

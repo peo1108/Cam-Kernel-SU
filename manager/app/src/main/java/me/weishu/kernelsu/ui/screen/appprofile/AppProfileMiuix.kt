@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.appprofile
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
@@ -517,49 +518,51 @@ private fun TopBar(
                 }
             },
             actions = {
-                if (showActions) {
-                    val showTopPopup = remember { mutableStateOf(false) }
-                    GlassIconButton(
-                        onClick = { showTopPopup.value = true },
-                        holdDownState = showTopPopup.value
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.MoreCircle,
-                            tint = colorScheme.onSurface,
-                            contentDescription = stringResource(id = R.string.settings)
-                        )
-                    }
-                    OverlayListPopup(
-                        show = showTopPopup.value,
-                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                        alignment = PopupPositionProvider.Align.TopEnd,
-                        onDismissRequest = { showTopPopup.value = false },
-                        content = {
-                            ListPopupColumn {
-                                val items = listOf(
-                                    stringResource(id = R.string.launch_app),
-                                    stringResource(id = R.string.force_stop_app),
-                                    stringResource(id = R.string.restart_app)
-                                )
-
-                                items.forEachIndexed { index, text ->
-                                    DropdownItem(
-                                        text = text,
-                                        optionSize = items.size,
-                                        index = index,
-                                        onSelectedIndexChange = { selectedIndex ->
-                                            when (selectedIndex) {
-                                                0 -> onLaunchApp(packageName, userId)
-                                                1 -> onForceStopApp(packageName, userId)
-                                                2 -> onRestartApp(packageName, userId)
-                                            }
-                                            showTopPopup.value = false
-                                        }
+                GlassButtonGroup {
+                    if (showActions) {
+                        val showTopPopup = remember { mutableStateOf(false) }
+                        GlassIconButton(
+                            onClick = { showTopPopup.value = true },
+                            holdDownState = showTopPopup.value
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.MoreCircle,
+                                tint = colorScheme.onSurface,
+                                contentDescription = stringResource(id = R.string.settings)
+                            )
+                        }
+                        OverlayListPopup(
+                            show = showTopPopup.value,
+                            popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                            alignment = PopupPositionProvider.Align.TopEnd,
+                            onDismissRequest = { showTopPopup.value = false },
+                            content = {
+                                ListPopupColumn {
+                                    val items = listOf(
+                                        stringResource(id = R.string.launch_app),
+                                        stringResource(id = R.string.force_stop_app),
+                                        stringResource(id = R.string.restart_app)
                                     )
+
+                                    items.forEachIndexed { index, text ->
+                                        DropdownItem(
+                                            text = text,
+                                            optionSize = items.size,
+                                            index = index,
+                                            onSelectedIndexChange = { selectedIndex ->
+                                                when (selectedIndex) {
+                                                    0 -> onLaunchApp(packageName, userId)
+                                                    1 -> onForceStopApp(packageName, userId)
+                                                    2 -> onRestartApp(packageName, userId)
+                                                }
+                                                showTopPopup.value = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             },
             scrollBehavior = scrollBehavior

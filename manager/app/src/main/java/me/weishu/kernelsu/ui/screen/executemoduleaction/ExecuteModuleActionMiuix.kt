@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.executemoduleaction
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
@@ -209,14 +210,16 @@ private fun TopBar(
                 }
             },
             actions = {
-                GlassIconButton(
-                    onClick = onSave
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Download,
-                        contentDescription = stringResource(id = R.string.save_log),
-                        tint = colorScheme.onBackground
-                    )
+                GlassButtonGroup {
+                    GlassIconButton(
+                        onClick = onSave
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Download,
+                            contentDescription = stringResource(id = R.string.save_log),
+                            tint = colorScheme.onBackground
+                        )
+                    }
                 }
             }
         )

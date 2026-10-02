@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.flash
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -191,14 +192,16 @@ private fun TopBar(
                 }
             },
             actions = {
-                GlassIconButton(
-                    onClick = onSave
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Share,
-                        contentDescription = stringResource(id = R.string.save_log),
-                        tint = colorScheme.onBackground
-                    )
+                GlassButtonGroup {
+                    GlassIconButton(
+                        onClick = onSave
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Share,
+                            contentDescription = stringResource(id = R.string.save_log),
+                            tint = colorScheme.onBackground
+                        )
+                    }
                 }
             },
         )

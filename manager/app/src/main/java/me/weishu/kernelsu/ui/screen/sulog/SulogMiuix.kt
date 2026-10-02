@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.sulog
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
@@ -174,51 +175,53 @@ fun SulogScreenMiuix(
                             }
                         },
                         actions = {
-                            GlassIconButton(
-                                modifier = Modifier.padding(end = 8.dp),
-                                onClick = actions.onCleanFile,
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Delete,
-                                    tint = colorScheme.onSurface,
-                                    contentDescription = stringResource(R.string.sulog_clean_title),
-                                )
-                            }
-
-                            Box {
-                                val showFilterPopup = remember { mutableStateOf(false) }
-                                OverlayListPopup(
-                                    show = showFilterPopup.value,
-                                    popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                    alignment = PopupPositionProvider.Align.TopEnd,
-                                    onDismissRequest = {
-                                        showFilterPopup.value = false
-                                    },
-                                    content = {
-                                        ListPopupColumn {
-                                            SulogEventFilter.entries.forEachIndexed { index, filter ->
-                                                DropdownImpl(
-                                                    text = sulogFilterLabel(filter),
-                                                    isSelected = filter in state.selectedFilters,
-                                                    optionSize = SulogEventFilter.entries.size,
-                                                    onSelectedIndexChange = {
-                                                        actions.onToggleFilter(filter)
-                                                    },
-                                                    index = index,
-                                                )
-                                            }
-                                        }
-                                    },
-                                )
+                            GlassButtonGroup {
                                 GlassIconButton(
-                                    onClick = { showFilterPopup.value = true },
-                                    holdDownState = showFilterPopup.value,
+                                    modifier = Modifier.padding(end = 8.dp),
+                                    onClick = actions.onCleanFile,
                                 ) {
                                     Icon(
-                                        imageVector = MiuixIcons.Filter,
+                                        imageVector = MiuixIcons.Delete,
                                         tint = colorScheme.onSurface,
-                                        contentDescription = stringResource(R.string.sulog_filter_title),
+                                        contentDescription = stringResource(R.string.sulog_clean_title),
                                     )
+                                }
+
+                                Box {
+                                    val showFilterPopup = remember { mutableStateOf(false) }
+                                    OverlayListPopup(
+                                        show = showFilterPopup.value,
+                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                                        alignment = PopupPositionProvider.Align.TopEnd,
+                                        onDismissRequest = {
+                                            showFilterPopup.value = false
+                                        },
+                                        content = {
+                                            ListPopupColumn {
+                                                SulogEventFilter.entries.forEachIndexed { index, filter ->
+                                                    DropdownImpl(
+                                                        text = sulogFilterLabel(filter),
+                                                        isSelected = filter in state.selectedFilters,
+                                                        optionSize = SulogEventFilter.entries.size,
+                                                        onSelectedIndexChange = {
+                                                            actions.onToggleFilter(filter)
+                                                        },
+                                                        index = index,
+                                                    )
+                                                }
+                                            }
+                                        },
+                                    )
+                                    GlassIconButton(
+                                        onClick = { showFilterPopup.value = true },
+                                        holdDownState = showFilterPopup.value,
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.Filter,
+                                            tint = colorScheme.onSurface,
+                                            contentDescription = stringResource(R.string.sulog_filter_title),
+                                        )
+                                    }
                                 }
                             }
                         },

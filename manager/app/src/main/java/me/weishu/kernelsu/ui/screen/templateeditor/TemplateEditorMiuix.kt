@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.templateeditor
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.layout.Box
@@ -187,28 +188,30 @@ private fun TopBar(
                 }
             },
             actions = {
-                when {
-                    !readOnly && !isCreation -> {
-                        GlassIconButton(
-                            onClick = onDelete
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Delete,
-                                contentDescription = stringResource(id = R.string.app_profile_template_delete),
-                                tint = colorScheme.onBackground
-                            )
+                GlassButtonGroup {
+                    when {
+                        !readOnly && !isCreation -> {
+                            GlassIconButton(
+                                onClick = onDelete
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = stringResource(id = R.string.app_profile_template_delete),
+                                    tint = colorScheme.onBackground
+                                )
+                            }
                         }
-                    }
 
-                    isCreation -> {
-                        GlassIconButton(
-                            onClick = onSave
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Ok,
-                                contentDescription = stringResource(id = R.string.app_profile_template_save),
-                                tint = colorScheme.onBackground
-                            )
+                        isCreation -> {
+                            GlassIconButton(
+                                onClick = onSave
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Ok,
+                                    contentDescription = stringResource(id = R.string.app_profile_template_save),
+                                    tint = colorScheme.onBackground
+                                )
+                            }
                         }
                     }
                 }

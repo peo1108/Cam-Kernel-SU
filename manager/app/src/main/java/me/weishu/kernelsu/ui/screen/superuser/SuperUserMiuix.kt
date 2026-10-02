@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.superuser
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
@@ -142,117 +143,119 @@ fun SuperUserPagerMiuix(
                             }
                         },
                         actions = {
-                            Box {
-                                val showSortPopup = remember { mutableStateOf(false) }
-                                OverlayListPopup(
-                                    show = showSortPopup.value,
-                                    popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                    alignment = PopupPositionProvider.Align.TopEnd,
-                                    onDismissRequest = { showSortPopup.value = false },
-                                    content = {
-                                        ListPopupColumn {
-                                            val sortEntries = listOf(
-                                                AppSortType.NAME to R.string.sort_by_name,
-                                                AppSortType.PACKAGE_NAME to R.string.sort_by_package_name,
-                                                AppSortType.INSTALL_TIME to R.string.sort_by_install_time,
-                                                AppSortType.UPDATE_TIME to R.string.sort_by_update_time,
-                                            )
-                                            val sortConfig = uiState.sortConfig
-                                            val sortGroupSize = sortEntries.size + 1
+                            GlassButtonGroup {
+                                Box {
+                                    val showSortPopup = remember { mutableStateOf(false) }
+                                    OverlayListPopup(
+                                        show = showSortPopup.value,
+                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                                        alignment = PopupPositionProvider.Align.TopEnd,
+                                        onDismissRequest = { showSortPopup.value = false },
+                                        content = {
+                                            ListPopupColumn {
+                                                val sortEntries = listOf(
+                                                    AppSortType.NAME to R.string.sort_by_name,
+                                                    AppSortType.PACKAGE_NAME to R.string.sort_by_package_name,
+                                                    AppSortType.INSTALL_TIME to R.string.sort_by_install_time,
+                                                    AppSortType.UPDATE_TIME to R.string.sort_by_update_time,
+                                                )
+                                                val sortConfig = uiState.sortConfig
+                                                val sortGroupSize = sortEntries.size + 1
 
-                                            sortEntries.forEachIndexed { index, (type, resId) ->
+                                                sortEntries.forEachIndexed { index, (type, resId) ->
+                                                    DropdownImpl(
+                                                        text = stringResource(resId),
+                                                        optionSize = sortGroupSize,
+                                                        isSelected = sortConfig.sortType == type,
+                                                        index = index,
+                                                        onSelectedIndexChange = {
+                                                            actions.onUpdateSortConfig(sortConfig.withType(type))
+                                                            showSortPopup.value = false
+                                                        }
+                                                    )
+                                                }
+
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                                                    thickness = 1.5.dp,
+                                                )
+
                                                 DropdownImpl(
-                                                    text = stringResource(resId),
+                                                    text = stringResource(R.string.sort_reverse),
                                                     optionSize = sortGroupSize,
-                                                    isSelected = sortConfig.sortType == type,
-                                                    index = index,
+                                                    isSelected = sortConfig.reversed,
+                                                    index = sortEntries.size,
                                                     onSelectedIndexChange = {
-                                                        actions.onUpdateSortConfig(sortConfig.withType(type))
+                                                        actions.onUpdateSortConfig(sortConfig.toggleReversed())
                                                         showSortPopup.value = false
                                                     }
                                                 )
                                             }
-
-                                            HorizontalDivider(
-                                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                                                thickness = 1.5.dp,
-                                            )
-
-                                            DropdownImpl(
-                                                text = stringResource(R.string.sort_reverse),
-                                                optionSize = sortGroupSize,
-                                                isSelected = sortConfig.reversed,
-                                                index = sortEntries.size,
-                                                onSelectedIndexChange = {
-                                                    actions.onUpdateSortConfig(sortConfig.toggleReversed())
-                                                    showSortPopup.value = false
-                                                }
-                                            )
                                         }
-                                    }
-                                )
-
-                                GlassIconButton(
-                                    onClick = { showSortPopup.value = true },
-                                    holdDownState = showSortPopup.value,
-                                ) {
-                                    Icon(
-                                        imageVector = MiuixIcons.Sort,
-                                        tint = colorScheme.onSurface,
-                                        contentDescription = stringResource(R.string.menu_sort)
                                     )
-                                }
-                            }
 
-                            Box {
-                                val showTopPopup = remember { mutableStateOf(false) }
-                                OverlayListPopup(
-                                    show = showTopPopup.value,
-                                    popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                    alignment = PopupPositionProvider.Align.TopEnd,
-                                    onDismissRequest = {
-                                        showTopPopup.value = false
-                                    },
-                                    content = {
-                                        val isMultiUser = uiState.userIds.size > 1
-                                        val size = if (isMultiUser) 2 else 1
-                                        ListPopupColumn {
-                                            DropdownImpl(
-                                                text = stringResource(R.string.show_system_apps),
-                                                isSelected = uiState.showSystemApps,
-                                                optionSize = size,
-                                                onSelectedIndexChange = {
-                                                    actions.onToggleShowSystemApps()
-                                                    showTopPopup.value = false
-                                                },
-                                                index = 0
-                                            )
-                                            if (isMultiUser) {
+                                    GlassIconButton(
+                                        onClick = { showSortPopup.value = true },
+                                        holdDownState = showSortPopup.value,
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.Sort,
+                                            tint = colorScheme.onSurface,
+                                            contentDescription = stringResource(R.string.menu_sort)
+                                        )
+                                    }
+                                }
+
+                                Box {
+                                    val showTopPopup = remember { mutableStateOf(false) }
+                                    OverlayListPopup(
+                                        show = showTopPopup.value,
+                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                                        alignment = PopupPositionProvider.Align.TopEnd,
+                                        onDismissRequest = {
+                                            showTopPopup.value = false
+                                        },
+                                        content = {
+                                            val isMultiUser = uiState.userIds.size > 1
+                                            val size = if (isMultiUser) 2 else 1
+                                            ListPopupColumn {
                                                 DropdownImpl(
-                                                    text = stringResource(R.string.show_only_primary_user_apps),
-                                                    isSelected = uiState.showOnlyPrimaryUserApps,
+                                                    text = stringResource(R.string.show_system_apps),
+                                                    isSelected = uiState.showSystemApps,
                                                     optionSize = size,
                                                     onSelectedIndexChange = {
-                                                        actions.onToggleShowOnlyPrimaryUserApps()
+                                                        actions.onToggleShowSystemApps()
                                                         showTopPopup.value = false
                                                     },
-                                                    index = 1
+                                                    index = 0
                                                 )
+                                                if (isMultiUser) {
+                                                    DropdownImpl(
+                                                        text = stringResource(R.string.show_only_primary_user_apps),
+                                                        isSelected = uiState.showOnlyPrimaryUserApps,
+                                                        optionSize = size,
+                                                        onSelectedIndexChange = {
+                                                            actions.onToggleShowOnlyPrimaryUserApps()
+                                                            showTopPopup.value = false
+                                                        },
+                                                        index = 1
+                                                    )
+                                                }
                                             }
                                         }
-                                    }
-                                )
-                                GlassIconButton(
-                                    onClick = {
-                                        showTopPopup.value = true
-                                    },
-                                    holdDownState = showTopPopup.value
-                                ) {
-                                    Icon(
-                                        imageVector = MiuixIcons.MoreCircle,
-                                        tint = colorScheme.onSurface,
-                                        contentDescription = null
                                     )
+                                    GlassIconButton(
+                                        onClick = {
+                                            showTopPopup.value = true
+                                        },
+                                        holdDownState = showTopPopup.value
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.MoreCircle,
+                                            tint = colorScheme.onSurface,
+                                            contentDescription = null
+                                        )
+                                    }
                                 }
                             }
                         },

@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.module
 
+import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
@@ -267,50 +268,52 @@ fun ModulePagerMiuix(
                         color = barColor,
                         title = stringResource(R.string.module),
                         actions = {
-                            Box {
-                                val showTopPopup = remember { mutableStateOf(false) }
-                                GlassIconButton(
-                                    onClick = { showTopPopup.value = true },
-                                    holdDownState = showTopPopup.value
-                                ) {
-                                    Icon(
-                                        imageVector = MiuixIcons.Sort,
-                                        tint = colorScheme.onSurface,
-                                        contentDescription = null
+                            GlassButtonGroup {
+                                Box {
+                                    val showTopPopup = remember { mutableStateOf(false) }
+                                    GlassIconButton(
+                                        onClick = { showTopPopup.value = true },
+                                        holdDownState = showTopPopup.value
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.Sort,
+                                            tint = colorScheme.onSurface,
+                                            contentDescription = null
+                                        )
+                                    }
+                                    OverlayListPopup(
+                                        show = showTopPopup.value,
+                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                                        alignment = PopupPositionProvider.Align.TopEnd,
+                                        onDismissRequest = {
+                                            showTopPopup.value = false
+                                        },
+                                        content = {
+                                            ListPopupColumn {
+                                                DropdownImpl(
+                                                    text = stringResource(R.string.module_sort_action_first),
+                                                    optionSize = 2,
+                                                    isSelected = uiState.sortActionFirst,
+                                                    onSelectedIndexChange = {
+                                                        actions.onToggleSortActionFirst()
+                                                        showTopPopup.value = false
+                                                    },
+                                                    index = 0
+                                                )
+                                                DropdownImpl(
+                                                    text = stringResource(R.string.module_sort_enabled_first),
+                                                    optionSize = 2,
+                                                    isSelected = uiState.sortEnabledFirst,
+                                                    onSelectedIndexChange = {
+                                                        actions.onToggleSortEnabledFirst()
+                                                        showTopPopup.value = false
+                                                    },
+                                                    index = 1
+                                                )
+                                            }
+                                        }
                                     )
                                 }
-                                OverlayListPopup(
-                                    show = showTopPopup.value,
-                                    popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                    alignment = PopupPositionProvider.Align.TopEnd,
-                                    onDismissRequest = {
-                                        showTopPopup.value = false
-                                    },
-                                    content = {
-                                        ListPopupColumn {
-                                            DropdownImpl(
-                                                text = stringResource(R.string.module_sort_action_first),
-                                                optionSize = 2,
-                                                isSelected = uiState.sortActionFirst,
-                                                onSelectedIndexChange = {
-                                                    actions.onToggleSortActionFirst()
-                                                    showTopPopup.value = false
-                                                },
-                                                index = 0
-                                            )
-                                            DropdownImpl(
-                                                text = stringResource(R.string.module_sort_enabled_first),
-                                                optionSize = 2,
-                                                isSelected = uiState.sortEnabledFirst,
-                                                onSelectedIndexChange = {
-                                                    actions.onToggleSortEnabledFirst()
-                                                    showTopPopup.value = false
-                                                },
-                                                index = 1
-                                            )
-                                        }
-                                    }
-                                )
                             }
                         },
                         navigationIcon = {

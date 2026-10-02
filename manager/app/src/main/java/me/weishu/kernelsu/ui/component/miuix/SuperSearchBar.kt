@@ -1,7 +1,6 @@
 package me.weishu.kernelsu.ui.component.miuix
 
 import androidx.compose.ui.graphics.RectangleShape
-import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import me.weishu.kernelsu.ui.component.glass.LocalGlassBackdrop
 import androidx.compose.ui.graphics.Color
@@ -152,14 +151,13 @@ fun SearchStatus.SearchPager(
             .zIndex(5f)
             .then(
                 if (glassBackdrop != null && !searchStatus.isCollapsed()) {
-                    // Frosted page background instead of an opaque surface; samples the
-                    // background only, so the list underneath stays hidden.
+                    // Redraws the clear page background (it holds no list content), so the list
+                    // underneath is hidden without a white veil.
                     Modifier.drawBackdrop(
                         backdrop = glassBackdrop,
                         shape = { RectangleShape },
-                        effects = { blur(30.dp.toPx(), 30.dp.toPx()) },
+                        effects = { },
                         layerBlock = { alpha = surfaceAlpha },
-                        onDrawSurface = { drawRect(surfaceColor.copy(alpha = 0.5f)) },
                     )
                 } else {
                     Modifier.drawBehind { drawRect(surfaceColor.copy(alpha = surfaceAlpha)) }

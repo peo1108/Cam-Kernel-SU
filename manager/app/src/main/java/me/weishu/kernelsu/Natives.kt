@@ -6,7 +6,6 @@ import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import me.weishu.kernelsu.Natives.Profile.RootProfileFlag
-import me.weishu.kernelsu.ui.util.rootAvailable
 
 /**
  * @author weishu
@@ -48,9 +47,6 @@ object Natives {
         external get
 
     val isLateLoadMode: Boolean
-        external get
-
-    val isManager: Boolean
         external get
 
     val isPrBuild: Boolean
@@ -125,10 +121,6 @@ object Natives {
 
     val managerUAPIVersion: Int
         external get
-
-    fun isFullFeatured(): Boolean {
-        return isManager && kernelUAPIVersion == managerUAPIVersion && rootAvailable()
-    }
 
     @Keep
     @Immutable

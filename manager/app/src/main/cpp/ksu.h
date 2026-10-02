@@ -28,7 +28,6 @@ bool is_lkm_bundled();
 
 bool is_late_load_mode();
 
-bool is_manager();
 
 bool is_pr_build();
 

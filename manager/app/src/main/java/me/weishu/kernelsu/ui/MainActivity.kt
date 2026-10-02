@@ -46,18 +46,21 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.Ksu
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.KsuServiceClient
 import me.weishu.kernelsu.ui.component.bottombar.BottomBar
 import me.weishu.kernelsu.ui.component.bottombar.MainPagerState
 import me.weishu.kernelsu.ui.component.bottombar.NavigationBadgeState
@@ -116,6 +119,7 @@ class MainActivity : ComponentActivity() {
 
     private val intentChannel = Channel<Intent>(capacity = Channel.BUFFERED)
     private var contentReady = false
+    private val ksuInitDone = MutableStateFlow(false)
     private var splashStartedAt = 0L
     private val splashAnimationDurationMs = 500L
 
@@ -129,12 +133,20 @@ class MainActivity : ComponentActivity() {
             !contentReady || SystemClock.uptimeMillis() - splashStartedAt < splashAnimationDurationMs
         }
 
-        val isManager = Natives.isManager
-        if (isManager && Ksu.kernelUAPIVersion == Natives.managerUAPIVersion) install()
+        // Root comes from the allowlist now: bind the uid 0 service first, and keep the
+        // splash up until we know whether kernel features are reachable.
+        lifecycleScope.launch {
+            if (KsuServiceClient.connect() && Ksu.isFullFeatured()) {
+                withContext(Dispatchers.IO) { install() }
+            }
+            ksuInitDone.value = true
+        }
 
         if (savedInstanceState == null) intent?.let { intentChannel.trySend(it) }
 
         setContent {
+            val ksuReady by ksuInitDone.collectAsStateWithLifecycle()
+            if (!ksuReady) return@setContent
             val viewModel = viewModel<MainActivityViewModel>()
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val selectedMainPage by viewModel.selectedMainPage.collectAsStateWithLifecycle()

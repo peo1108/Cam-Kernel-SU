@@ -47,7 +47,7 @@ class HomeViewModel(
 
     private fun buildState(): HomeUiState {
         val kernelVersion = getKernelVersion()
-        val isManager = Natives.isManager
+        val isManager = Ksu.isAvailable
         val ksuVersion = if (isManager) Ksu.version else null
         val kernelUAPIVersion = if (isManager) Ksu.kernelUAPIVersion else null
         val managerUAPIVersion = Natives.managerUAPIVersion

@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.core.net.toUri
 import kotlinx.coroutines.channels.ReceiveChannel
 import me.weishu.kernelsu.Ksu
-import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
@@ -152,7 +151,7 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
     val resources = LocalResources.current
     val navigator = LocalNavigator.current
     val isSafeMode = Ksu.isSafeMode
-    val isManager = Natives.isManager
+    val isManager = Ksu.isAvailable
     var pendingZipInstall by rememberSaveable(stateSaver = PendingAction.InstallModule.InstallModuleSaver) { mutableStateOf(null) }
 
     val installDialog = rememberConfirmDialog(

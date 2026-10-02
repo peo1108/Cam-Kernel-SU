@@ -1,5 +1,8 @@
 package me.weishu.kernelsu.ui.screen.module
 
+import me.weishu.kernelsu.ui.component.glass.GlassFab
+import me.weishu.kernelsu.ui.component.glass.GlassListPopup
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
@@ -124,7 +127,6 @@ import me.weishu.kernelsu.ui.util.reboot
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -150,8 +152,6 @@ import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.extended.Undo
 import top.yukonga.miuix.kmp.icon.extended.UploadCloud
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -281,7 +281,7 @@ fun ModulePagerMiuix(
                                             contentDescription = null
                                         )
                                     }
-                                    OverlayListPopup(
+                                    GlassListPopup(
                                         show = showTopPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
@@ -398,7 +398,7 @@ fun ModulePagerMiuix(
                         )
                     }
                 }
-                FloatingActionButton(
+                GlassFab(
                     modifier = Modifier
                         .padding(bottom = bottomInnerPadding + 20.dp, end = 20.dp)
                         .border(0.05.dp, colorScheme.outline.copy(alpha = 0.5f), CircleShape),
@@ -586,7 +586,7 @@ private fun ModuleShortcutDialog(
         Toast.makeText(context, resources.getString(R.string.module_shortcut_scheme_copied), Toast.LENGTH_SHORT).show()
     }
 
-    OverlayDialog(
+    GlassDialog(
         show = show,
         title = stringResource(R.string.module_shortcut_title),
         onDismissRequest = onDismissRequest,

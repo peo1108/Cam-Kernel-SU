@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui.component.dialog
 
+import me.weishu.kernelsu.ui.component.glass.LocalGlassOverlayBackdrop
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -37,9 +39,7 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 fun LoadingDialogMiuix(
     showDialog: MutableState<Boolean>,
 ) {
-    WindowDialog(
-        show = showDialog.value,
-        content = {
+    val content: @Composable () -> Unit = {
             // Consume the back gesture before the dialog's own handler
             val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
             NavigationBackHandler(
@@ -66,7 +66,12 @@ fun LoadingDialogMiuix(
                 }
             }
         }
-    )
+    // Inside a glass page the root popup host is available: use a liquid glass overlay dialog.
+    if (LocalGlassOverlayBackdrop.current != null) {
+        GlassDialog(show = showDialog.value, content = content)
+    } else {
+        WindowDialog(show = showDialog.value, content = content)
+    }
 }
 
 @Composable
@@ -76,15 +81,11 @@ fun ConfirmDialogMiuix(
     dismiss: () -> Unit,
     showDialog: MutableState<Boolean>
 ) {
-    WindowDialog(
-        show = showDialog.value,
-        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
-        title = visuals.title,
-        onDismissRequest = {
-            dismiss()
-            showDialog.value = false
-        },
-        content = {
+    val onDismissRequest = {
+        dismiss()
+        showDialog.value = false
+    }
+    val content: @Composable () -> Unit = {
             Layout(
                 content = {
                     val dismissState = LocalDismissState.current
@@ -135,5 +136,20 @@ fun ConfirmDialogMiuix(
                 }
             }
         }
-    )
+    if (LocalGlassOverlayBackdrop.current != null) {
+        GlassDialog(
+            show = showDialog.value,
+            title = visuals.title,
+            onDismissRequest = onDismissRequest,
+            content = content,
+        )
+    } else {
+        WindowDialog(
+            show = showDialog.value,
+            modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
+            title = visuals.title,
+            onDismissRequest = onDismissRequest,
+            content = content,
+        )
+    }
 }

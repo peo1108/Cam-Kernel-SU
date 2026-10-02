@@ -1,5 +1,10 @@
 package me.weishu.kernelsu.ui.component.bottombar
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import me.weishu.kernelsu.ui.component.glass.glassSurface
+import me.weishu.kernelsu.ui.component.glass.GlassDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -13,7 +18,6 @@ import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.NavigationRailValue
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun NavigationRailMiuix(
@@ -41,9 +45,15 @@ fun NavigationRailMiuix(
     }
 
     NavigationRail(
-        modifier = modifier,
+        // Glass sidebar: sits beside the content, so it samples the page background only.
+        modifier = modifier.glassSurface(
+            shape = RoundedCornerShape(0.dp),
+            tint = GlassDefaults.cardTint(),
+            blur = GlassDefaults.barBlur,
+            lens = false,
+        ),
         state = state,
-        color = MiuixTheme.colorScheme.surface,
+        color = Color.Transparent,
         expandContentDescription = stringResource(R.string.nav_rail_expand),
         collapseContentDescription = stringResource(R.string.nav_rail_collapse),
     ) {

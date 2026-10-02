@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.profile
 
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,7 +39,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -174,7 +174,7 @@ private fun GroupsPanel(
 
     val currentSelection = remember(selected) { mutableStateOf(selected.toSet()) }
 
-    OverlayDialog(
+    GlassDialog(
         show = showDialog.value,
         title = stringResource(R.string.profile_groups),
         summary = "${currentSelection.value.size} / 32",
@@ -281,7 +281,7 @@ private fun RootProfileFlagPanel(
 
     val currentSelection = remember(selected) { mutableStateOf(selected.toSet()) }
 
-    OverlayDialog(
+    GlassDialog(
         show = showDialog.value,
         title = stringResource(R.string.profile_flags),
         onDismissRequest = { showDialog.value = false },
@@ -367,7 +367,7 @@ private fun CapsPanel(
 
     val currentSelection = remember(selected) { mutableStateOf(selected.toSet()) }
 
-    OverlayDialog(
+    GlassDialog(
         show = showDialog.value,
         title = stringResource(R.string.profile_capabilities),
         onDismissRequest = { showDialog.value = false },
@@ -456,7 +456,7 @@ private fun SELinuxPanel(
     }
     val isRulesValid = remember(rules) { isSepolicyValid(rules) }
 
-    OverlayDialog(
+    GlassDialog(
         show = showDialog.value,
         title = stringResource(R.string.profile_selinux_context),
         onDismissRequest = { showDialog.value = false },

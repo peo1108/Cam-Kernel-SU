@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.executemoduleaction
 
+import me.weishu.kernelsu.ui.component.glass.GlassFab
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.activity.compose.BackHandler
@@ -53,7 +54,6 @@ import me.weishu.kernelsu.ui.component.KeyEventBlocker
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -119,7 +119,7 @@ fun ExecuteModuleActionScreenMiuix(
         popupHost = { },
         floatingActionButton = {
             if (state.isComplete) {
-                FloatingActionButton(
+                GlassFab(
                     containerColor = colorScheme.primary,
                     shadowElevation = 0.dp,
                     onClick = actions.onClose,

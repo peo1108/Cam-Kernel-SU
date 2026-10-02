@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.rebootlistpopup
 
+import me.weishu.kernelsu.ui.component.glass.GlassListPopup
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -15,7 +16,6 @@ import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close2
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
@@ -37,7 +37,7 @@ fun RebootListPopupMiuix(
                 tint = colorScheme.onBackground
             )
         }
-        OverlayListPopup(
+        GlassListPopup(
             show = showTopPopup.value,
             popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
             alignment = alignment,

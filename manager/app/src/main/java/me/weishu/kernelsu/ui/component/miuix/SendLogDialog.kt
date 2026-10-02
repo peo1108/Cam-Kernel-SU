@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.miuix
 
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -31,7 +32,6 @@ import me.weishu.kernelsu.ui.util.getBugreportFile
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -65,7 +65,7 @@ fun SendLogDialog(
             }
         }
     }
-    OverlayDialog(
+    GlassDialog(
         show = show,
         onDismissRequest = onDismissRequest,
         insideMargin = DpSize(0.dp, 0.dp),

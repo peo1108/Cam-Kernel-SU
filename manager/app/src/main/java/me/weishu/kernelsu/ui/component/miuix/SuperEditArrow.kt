@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.miuix
 
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,7 +22,6 @@ import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 @Composable
@@ -75,7 +75,7 @@ private fun EditDialog(
 ) {
     val filter = remember(dialogTextFieldValue) { FilterNumber(dialogTextFieldValue) }
 
-    OverlayDialog(
+    GlassDialog(
         show = show,
         title = title,
         onDismissRequest = {

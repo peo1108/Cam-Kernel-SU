@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.flash
 
+import me.weishu.kernelsu.ui.component.glass.GlassFab
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.border
@@ -44,7 +45,6 @@ import me.weishu.kernelsu.ui.component.KeyEventBlocker
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -96,7 +96,7 @@ fun FlashScreenMiuix(
         floatingActionButton = {
             if (state.showRebootAction) {
                 val reboot = stringResource(id = state.rebootLabelRes)
-                FloatingActionButton(
+                GlassFab(
                     modifier = Modifier
                         .padding(
                             bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +

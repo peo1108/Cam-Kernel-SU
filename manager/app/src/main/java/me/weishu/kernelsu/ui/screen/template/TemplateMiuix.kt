@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui.screen.template
 
+import me.weishu.kernelsu.ui.component.glass.GlassFab
+import me.weishu.kernelsu.ui.component.glass.GlassListPopup
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
@@ -70,7 +72,6 @@ import me.weishu.kernelsu.ui.component.miuix.DropdownItem
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -91,7 +92,6 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Copy
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -158,7 +158,7 @@ fun AppProfileTemplateScreenMiuix(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            GlassFab(
                 containerColor = colorScheme.primary,
                 shadowElevation = 0.dp,
                 onClick = actions.onCreateTemplate,
@@ -409,7 +409,7 @@ private fun TopBar(
             actions = {
                 GlassButtonGroup {
                     val showTopPopup = remember { mutableStateOf(false) }
-                    OverlayListPopup(
+                    GlassListPopup(
                         show = showTopPopup.value,
                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                         alignment = PopupPositionProvider.Align.TopEnd,

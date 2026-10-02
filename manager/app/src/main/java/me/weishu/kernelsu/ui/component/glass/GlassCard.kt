@@ -14,6 +14,7 @@ import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.highlight.Highlight
@@ -110,8 +111,9 @@ fun Modifier.glassSurface(
     lens: Boolean,
     highlight: (() -> Highlight)? = null,
     refraction: GlassRefraction? = null,
+    source: Backdrop? = LocalGlassBackdrop.current,
 ): Modifier {
-    val backdrop = LocalGlassBackdrop.current ?: return this.background(tint, shape)
+    val backdrop = source ?: return this.background(tint, shape)
     val dark = isInDarkTheme()
     val rim = highlight ?: { if (dark) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight }
     val r = refraction ?: GlassRefraction(GlassDefaults.cardLensHeight, GlassDefaults.cardLensAmount)

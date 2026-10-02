@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.install
 
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -43,7 +44,6 @@ import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import androidx.compose.material3.Text as MaterialText
@@ -255,7 +255,7 @@ private fun SeedPickerDialogMiuix(
 ) {
     val pm = LocalContext.current.packageManager
     val errorColor = MaterialTheme.colorScheme.error
-    OverlayDialog(
+    GlassDialog(
         show = true,
         title = stringResource(R.string.seed_title),
         summary = stringResource(R.string.seed_summary),

@@ -149,7 +149,12 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float): GlassBackg
 @Composable
 fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val pageBackdrop = rememberLayerBackdrop()
-    Box(modifier = modifier.fillMaxSize()) {
+    val overlayBackdrop = rememberLayerBackdrop()
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .layerBackdrop(overlayBackdrop)
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -157,7 +162,10 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
         ) {
             GlassBackgroundLayer(LocalGlassBackgroundState.current)
         }
-        CompositionLocalProvider(LocalGlassBackdrop provides pageBackdrop) {
+        CompositionLocalProvider(
+            LocalGlassBackdrop provides pageBackdrop,
+            LocalGlassOverlayBackdrop provides overlayBackdrop,
+        ) {
             content()
         }
     }

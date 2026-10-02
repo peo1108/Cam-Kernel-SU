@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.miuix
 
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +19,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
@@ -28,7 +28,7 @@ fun ScaleDialog(
     volumeState: () -> Float,
     onVolumeChange: (Float) -> Unit,
 ) {
-    OverlayDialog(
+    GlassDialog(
         show = show,
         title = stringResource(R.string.settings_page_scale),
         summary = "80% - 110%",

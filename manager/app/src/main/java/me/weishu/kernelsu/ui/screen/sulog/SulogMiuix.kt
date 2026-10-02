@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui.screen.sulog
 
+import me.weishu.kernelsu.ui.component.glass.GlassListPopup
+import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassCard
@@ -97,8 +99,6 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Filter
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
@@ -189,7 +189,7 @@ fun SulogScreenMiuix(
 
                                 Box {
                                     val showFilterPopup = remember { mutableStateOf(false) }
-                                    OverlayListPopup(
+                                    GlassListPopup(
                                         show = showFilterPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
@@ -570,7 +570,7 @@ private fun SulogDetailDialog(
     var lastEntry by remember { mutableStateOf(entry) }
     if (entry != null) lastEntry = entry
     val displayEntry = lastEntry ?: return
-    OverlayDialog(
+    GlassDialog(
         show = show,
         title = sulogEntryTitle(displayEntry),
         onDismissRequest = onDismiss,

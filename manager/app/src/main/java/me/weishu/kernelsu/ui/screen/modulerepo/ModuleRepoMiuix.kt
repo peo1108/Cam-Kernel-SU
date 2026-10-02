@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.modulerepo
 
+import me.weishu.kernelsu.ui.component.glass.GlassListPopup
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassCard
@@ -125,7 +126,6 @@ import top.yukonga.miuix.kmp.icon.extended.HorizontalSplit
 import top.yukonga.miuix.kmp.icon.extended.Link
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -167,7 +167,7 @@ fun ModuleRepoScreenMiuix(
                         actions = {
                             GlassButtonGroup {
                                 val showSortPopup = remember { mutableStateOf(false) }
-                                OverlayListPopup(
+                                GlassListPopup(
                                     show = showSortPopup.value,
                                     popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                     alignment = PopupPositionProvider.Align.TopEnd,

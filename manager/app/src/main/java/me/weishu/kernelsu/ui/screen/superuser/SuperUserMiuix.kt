@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.superuser
 
+import me.weishu.kernelsu.ui.component.glass.GlassListPopup
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
@@ -99,7 +100,6 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.MoreCircle
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Sort
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -146,7 +146,7 @@ fun SuperUserPagerMiuix(
                             GlassButtonGroup {
                                 Box {
                                     val showSortPopup = remember { mutableStateOf(false) }
-                                    OverlayListPopup(
+                                    GlassListPopup(
                                         show = showSortPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
@@ -208,7 +208,7 @@ fun SuperUserPagerMiuix(
 
                                 Box {
                                     val showTopPopup = remember { mutableStateOf(false) }
-                                    OverlayListPopup(
+                                    GlassListPopup(
                                         show = showTopPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,

@@ -220,3 +220,26 @@ Each step is one `manager: ...` commit.
   `RuntimeShader` crash.
 - **Branding**: launcher shows "SU Kernel" and the new icon (round, squircle,
   themed icon on Android 13+).
+
+## 9. Spike results
+
+Device: Lenovo TB323FU (tablet), Android 16 / SDK 36, KernelSU root.
+
+- **Baseline jank** (debug build 9a3a5d8c, 5 down + 5 up swipes,
+  `dumpsys gfxinfo`): Superuser 11/1041 frames (1.06%), Module 8/1190 (0.67%).
+- **Overlay dialog glass works without recursion.** `OverlayDialog` with
+  `backgroundColor = Transparent` and `Modifier.drawBackdrop(<page content
+  LayerBackdrop>)` rendered correctly (blurred page content visible behind the
+  dialog, no feedback loop, no crash). Overlay dialogs are drawn by the root
+  `Scaffold` popup host, outside the page's recorded `Box`. Decision:
+  `GlassDialog` / `GlassPopup` sample the page content backdrop combined with
+  the glass background, same as bars.
+- **WindowDialog sites** (outside `webui/`): only 3 -
+  `LoadingDialogMiuix`, `ConfirmDialogMiuix` (`component/dialog/DialogMiuix.kt`)
+  and `DownloadDialogMiuix` (`component/dialog/DownloadDialog.kt`). They are
+  shown through `rememberConfirmDialog` / `rememberLoadingDialog` from many
+  screens, including flows without a popup host. Decision: keep them as
+  `WindowDialog` with the opaque frosted fallback (`surface` at 0.92 alpha);
+  no conversion.
+- `/data/system/users/0/wallpaper` exists on this device (773684 B, owner
+  system, mode 0600); readable via the root shell.

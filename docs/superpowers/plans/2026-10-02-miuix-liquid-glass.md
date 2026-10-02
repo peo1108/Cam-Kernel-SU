@@ -156,10 +156,10 @@
   - `val LocalGlassBackgroundState = staticCompositionLocalOf { GlassBackgroundState(GlassSource.Plain, 0.dp, 0f, false) }`
   - `val LocalGlassBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }`
   - `@Composable fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float): GlassBackgroundState` - for `WALLPAPER` runs `WallpaperRepository.refresh()` in a `LifecycleResumeEffect` (every `ON_RESUME`) then decodes; for `IMAGE` decodes `filesDir/glass_bg.jpg` (Task 8 writes it), falling back to `Gradient` on failure; `maxEdge` = long edge of the window in px. Decoding on `Dispatchers.IO`; previous bitmap stays until the new one is ready.
-  - `@Composable fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit)` - fills max size; draws a background `Box` (`Modifier.layerBackdrop(pageBackdrop)`) behind `content`, and provides `LocalGlassBackdrop provides pageBackdrop` to `content`. Background drawing per `source`: `Plain` -> `colorScheme.surface`; `Gradient` -> `BgEffectBackground(dynamicBackground = true, seedColor = colorScheme.primary)` on API 33+, else `Brush.linearGradient` of the 4 tinted colors; `Bitmap` -> `Image(ContentScale.Crop, Modifier.blur(blur))` + overlay `drawRect(if (dark) Color.Black else Color.White, alpha = dim)`.
+  - `@Composable fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit)` - fills max size; draws a background `Box` (`Modifier.layerBackdrop(pageBackdrop)`) behind `content`, and provides `LocalGlassBackdrop provides pageBackdrop` to `content`. Background drawing per `source`: `Plain` -> `colorScheme.surface`; `Gradient` -> `BgEffectBackground(dynamicBackground = <lifecycle is RESUMED>, seedColor = colorScheme.primary)` on API 33+ (animation pauses when the app is not resumed; use `LocalLifecycleOwner.current.lifecycle.currentStateAsState()`), else `Brush.linearGradient` of the 4 tinted colors; `Bitmap` -> `Image(ContentScale.Crop, Modifier.blur(blur))` + overlay `drawRect(if (dark) Color.Black else Color.White, alpha = dim)`.
 - Produces (BlurExt.kt, behavior change, same signatures):
   - `rememberBlurBackdrop(enableBlur)` records content only (`rememberLayerBackdrop { drawContent() }`, no `surface` fill).
-  - `BlurredBar(backdrop, blurActive, content)` samples `rememberCombinedBackdrop(LocalGlassBackdrop.current ?: backdrop, backdrop)` with `drawBackdrop` effects `vibrancy(); blur(GlassDefaults.barBlur); lens(...)` and a scroll-independent tint `colorScheme.surface.copy(alpha = GlassDefaults.barTint)`. `GlassDefaults` is created in Task 4; in this task use literals `blur 12.dp`, tint `0.55f`, no lens, and move them into `GlassDefaults` in Task 4.
+  - `BlurredBar(backdrop, blurActive = true, scrollFraction: () -> Float = { 1f }, content)` (new optional param, existing call sites compile unchanged) samples `rememberCombinedBackdrop(glass, backdrop)` when `LocalGlassBackdrop.current` is non-null, else `backdrop` alone, with `drawBackdrop` effects `vibrancy(); blur(...)` and tint `colorScheme.surface.copy(alpha = 0.6f * scrollFraction())` (spec: 0% -> 60% with scroll). `GlassDefaults` is created in Task 4; in this task use literals `blur 12.dp`, no lens, and move them into `GlassDefaults` in Task 4.
 
 - [ ] **Step 1: Settings keys** - add the three properties; build gate.
 - [ ] **Step 2: GlassBackground.kt** - implement the interfaces above.
@@ -183,13 +183,13 @@
 **Interfaces:**
 - Consumes: `LocalGlassBackdrop` (Task 3), `lens`, `vibrancy` (`ui/component/liquid`), `Highlight` presets from `top.yukonga.miuix.kmp.blur.highlight`.
 - Produces:
-  - `object GlassDefaults` - `cardBlur = 8.dp`, `listCardBlur = 8.dp`, `barBlur = 12.dp`, `dialogBlur = 16.dp`, `cardLensHeight = 12.dp`, `cardLensAmount = 16.dp`, `barLensHeight = 8.dp`, `barLensAmount = 12.dp`, `cardTintLight = 0.35f`, `cardTintDark = 0.35f`, `barTint = 0.55f`, `cardCorner = 20.dp`, `dialogCorner = 32.dp`, `popupCorner = 20.dp`, and `@Composable fun cardTint(): Color` (surface with the light/dark alpha).
-  - `@Composable fun GlassCard(modifier: Modifier = Modifier, cornerRadius: Dp = GlassDefaults.cardCorner, insideMargin: PaddingValues = CardDefaults.InsideMargin, lens: Boolean = true, onClick: (() -> Unit)? = null, onLongPress: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit)` - mirrors miuix `Card` parameters used in this codebase. Uses `drawBackdrop(LocalGlassBackdrop.current, shape, effects = { vibrancy(); blur(cardBlur); if (lens) lens(cardLensHeight, cardLensAmount) }, highlight = { if (dark) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight }, onDrawSurface = { drawRect(cardTint) })`. When `LocalGlassBackdrop.current == null` it renders `Modifier.background(cardTint, shape)`. Click/long-press via `combinedClickable` with `PressFeedbackType.Sink`-like scale (reuse `pressable`/`InteractiveHighlight` if trivial, else plain scale 0.97f).
+  - `object GlassDefaults` - `cardBlur = 8.dp`, `listCardBlur = 8.dp`, `barBlur = 12.dp`, `dialogBlur = 16.dp`, `cardLensHeight = 12.dp`, `cardLensAmount = 16.dp`, `barLensHeight = 8.dp`, `barLensAmount = 12.dp`, `cardTintLight = 0.35f`, `cardTintDark = 0.35f`, `barTintMax = 0.6f`, `cardCorner = 20.dp`, `dialogCorner = 32.dp`, `popupCorner = 20.dp`, and `@Composable fun cardTint(): Color` (surface with the light/dark alpha).
+  - `@Composable fun GlassCard(modifier: Modifier = Modifier, cornerRadius: Dp = GlassDefaults.cardCorner, insideMargin: PaddingValues = <miuix Card default, read from CardDefaults>, lens: Boolean = true, onClick: (() -> Unit)? = null, onLongPress: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit)` - mirrors miuix `Card` parameters used in this codebase. Uses `drawBackdrop(LocalGlassBackdrop.current, shape, effects = { vibrancy(); blur(cardBlur); if (lens) lens(cardLensHeight, cardLensAmount) }, highlight = { if (dark) Highlight.GlassStrokeSmallDark else Highlight.GlassStrokeSmallLight }, onDrawSurface = { drawRect(cardTint) })`. When `LocalGlassBackdrop.current == null` it renders `Modifier.background(cardTint, shape)`. Click/long-press via `combinedClickable` with `PressFeedbackType.Sink`-like scale (reuse `pressable`/`InteractiveHighlight` if trivial, else plain scale 0.97f).
   - `@Composable fun GlassListCard(...)` - same signature, calls `GlassCard(lens = false, ...)`.
 
 - [ ] **Step 1: GlassDefaults + GlassCard + GlassListCard** - implement.
-- [ ] **Step 2: BlurExt.kt** - use `GlassDefaults.barBlur`, `barTint`, add `lens(barLensHeight, barLensAmount)`.
-- [ ] **Step 3: Home pilot** - replace `Card(` with `GlassCard(` in `HomeMiuix.kt` and `WarningCard.kt`, keeping arguments.
+- [ ] **Step 2: BlurExt.kt** - use `GlassDefaults.barBlur`, `barTintMax`, add `lens(barLensHeight, barLensAmount)`.
+- [ ] **Step 3: Home pilot** - replace `Card(` with `GlassCard(` in `HomeMiuix.kt` and `WarningCard.kt`, keeping arguments; Home `TopBar` passes `scrollFraction = { scrollBehavior.state.collapsedFraction }` to `BlurredBar` (use the miuix `ScrollBehavior` state property that exposes collapse progress).
 - [ ] **Step 4: Build gate + install + screenshots** - Home in light and dark, on a bright and on a dark wallpaper, with `adb exec-out screencap -p > home-<variant>.png` (4 files in the scratchpad, not the repo).
 - [ ] **Step 5: Commit** - `manager: Add glass cards and apply them to Home`.
 - [ ] **Step 6: STOP - user checkpoint.** Send the 4 screenshots and the APK path to the user. Adjust only `GlassDefaults` values per feedback (amend with a follow-up commit `manager: Tune glass defaults`). Do not start Task 6 before the user approves.
@@ -222,7 +222,7 @@
 **Interfaces:** Consumes `GlassCard`, `GlassListCard` (Task 4).
 
 - [ ] **Step 1: Long lists use `GlassListCard`** - per-item cards inside `LazyColumn` `items(...)` in SuperUser, Module, ModuleRepo, Sulog.
-- [ ] **Step 2: All other `Card(` -> `GlassCard(`**. AboutMiuix keeps its own `BgEffectBackground` header only if it still reads well over the page background; otherwise remove that `BgEffectBackground` call (the page background replaces it).
+- [ ] **Step 2: All other `Card(` -> `GlassCard(`**, and every `BlurredBar` call site that has a `scrollBehavior` passes `scrollFraction` as in Task 4. AboutMiuix keeps its own `BgEffectBackground` header only if it still reads well over the page background; otherwise remove that `BgEffectBackground` call (the page background replaces it).
 - [ ] **Step 3: Verify none left** - `rg -n "\bCard\(" manager/app/src/main/java --glob "*Miuix.kt"` returns nothing except `webui/`.
 - [ ] **Step 4: Build gate + install** - visit every screen in light and dark; screenshot Superuser and Module.
 - [ ] **Step 5: Commit** - `manager: Apply glass cards to all Miuix screens`.
@@ -268,7 +268,7 @@
   - `ColorPaletteScreenActions`: `onSetGlassBackgroundType`, `onSetGlassBackgroundBlur`, `onSetGlassBackgroundDim`, `onPickGlassImage: (Uri) -> Unit`.
   - `@Composable fun GlassBackgroundSection(state: SettingsUiState, actions: ColorPaletteScreenActions)` placed in `ColorPaletteScreenMiuix` where the blur switches were.
 - Strings (EN / VI):
-  - `glass_background` "Glass background" / "Nen kinh" -> write with proper Vietnamese diacritics: "Nền kính"
+  - `glass_background` "Glass background" / "Nền kính"
   - `glass_background_wallpaper` "Device wallpaper" / "Hình nền máy"
   - `glass_background_gradient` "Animated gradient" / "Gradient động"
   - `glass_background_image` "Custom image" / "Ảnh tự chọn"

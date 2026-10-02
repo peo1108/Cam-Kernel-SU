@@ -28,6 +28,8 @@ void on_post_fs_data(void)
 
     ksu_load_allow_list();
     ksu_observer_init();
+    // apply the patch-time root seed now that the allowlist is loaded
+    ksu_pkg_tracker_update();
     // Sanity check for safe mode only needs early-boot input samples.
     ksu_stop_input_hook_runtime();
     ksu_selinux_hide_handle_post_fs_data();

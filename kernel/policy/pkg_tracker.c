@@ -11,7 +11,6 @@
 
 #include "policy/allowlist.h"
 #include "policy/pkg_tracker.h"
-#include "runtime/ksud_boot.h"
 #include "klog.h" // IWYU pragma: keep
 
 #define SYSTEM_PACKAGES_LIST_PATH "/data/system/packages.list"
@@ -193,7 +192,9 @@ static bool seed_package_installed(struct list_head *pkgs, const char *pkg, u32 
     return false;
 }
 
-// Caller holds ksu_cred.
+// Caller holds ksu_cred. Runs from post-fs-data on: the first boot after flashing has no
+// /data/adb/ksud yet, so boot-completed is never reported. packages.list from the previous
+// boot is fine here because every entry must match both package and appid.
 static void ksu_seed_apply(struct list_head *pkgs)
 {
     char *copy, *cur, *nonce, *entry, *pkg;
@@ -201,7 +202,7 @@ static void ksu_seed_apply(struct list_head *pkgs)
     int entries = 0, granted = 0;
     u32 appid;
 
-    if (!ksu_seed || !*ksu_seed || ksu_seed_done || !ksu_boot_completed)
+    if (!ksu_seed || !*ksu_seed || ksu_seed_done)
         return;
     ksu_seed_done = true;
 

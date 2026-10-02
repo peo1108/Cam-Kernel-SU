@@ -2,6 +2,7 @@ package me.weishu.kernelsu.ui.util
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
@@ -40,12 +41,19 @@ fun BlurredBar(
     glass: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    if (!glass || !blurActive || backdrop == null) {
-        Box { content() }
+    val pageGlass = LocalGlassBackdrop.current
+    // Controls in the bar (droplet buttons, search field) refract the content scrolling under it.
+    val sample: Backdrop? = when {
+        !blurActive || backdrop == null -> pageGlass
+        pageGlass != null -> rememberCombinedBackdrop(pageGlass, backdrop)
+        else -> backdrop
+    }
+    if (!glass || sample == null || backdrop == null || !blurActive) {
+        CompositionLocalProvider(LocalGlassBackdrop provides sample) {
+            Box { content() }
+        }
         return
     }
-    val glass = LocalGlassBackdrop.current
-    val sample: Backdrop = if (glass != null) rememberCombinedBackdrop(glass, backdrop) else backdrop
     val surface = MiuixTheme.colorScheme.surface
     Box(
         modifier = Modifier.drawBackdrop(
@@ -61,7 +69,9 @@ fun BlurredBar(
             },
         ),
     ) {
-        content()
+        CompositionLocalProvider(LocalGlassBackdrop provides sample) {
+            content()
+        }
     }
 }
 

@@ -39,7 +39,7 @@ import me.weishu.kernelsu.ui.component.miuix.effect.BgEffectConfig
 import me.weishu.kernelsu.ui.component.miuix.effect.DeviceType
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.shouldShowSplitPane
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -79,8 +79,11 @@ val LocalGlassBackgroundState = staticCompositionLocalOf {
     GlassBackgroundState(GlassSource.Plain, 0.dp, 0f, wallpaperFallback = false)
 }
 
-/** Background-only backdrop of the current page; glass surfaces sample it. Null outside a [GlassPage]. */
-val LocalGlassBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
+/**
+ * What glass surfaces sample. Inside page content it is the page background only; inside bars it is
+ * the background plus the content scrolling under the bar. Null outside a [GlassPage].
+ */
+val LocalGlassBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 fun glassImageFile(context: Context): File = File(context.filesDir, "glass_bg.jpg")
 

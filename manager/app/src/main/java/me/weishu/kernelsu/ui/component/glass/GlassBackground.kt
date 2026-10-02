@@ -17,13 +17,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -63,7 +62,8 @@ fun pickGlassSourceKind(type: Int, hasBitmap: Boolean): GlassSourceKind = when (
 sealed interface GlassSource {
     data object Plain : GlassSource
     data object Gradient : GlassSource
-    data class Bitmap(val image: ImageBitmap, val meanLuma: Float) : GlassSource
+    /** [material] is the pre-blurred copy glass cards draw (see [glassMaterial]). */
+    data class Bitmap(val image: ImageBitmap, val material: ImageBitmap, val meanLuma: Float) : GlassSource
 }
 
 @Immutable
@@ -103,7 +103,9 @@ object GlassBackgroundCache {
     fun maxEdge(context: Context): Int =
         context.resources.displayMetrics.let { max(it.widthPixels, it.heightPixels) }
 
-    fun keyOf(file: File, maxEdge: Int): String = "${file.path}:${file.lastModified()}:${file.length()}:$maxEdge"
+    /** Identifies a baked background: the source file version, decode size and the page blur. */
+    fun keyOf(file: File, maxEdge: Int, blurDp: Float): String =
+        "${file.path}:${file.lastModified()}:${file.length()}:$maxEdge:$blurDp"
 
     /** The app-private file the background of [type] is drawn from, if one exists yet. */
     fun localFile(context: Context, type: Int): File? = when (type) {
@@ -112,17 +114,28 @@ object GlassBackgroundCache {
         else -> File(context.filesDir, "glass_wallpaper")
     }?.takeIf { it.isFile }
 
-    suspend fun preload(context: Context, type: Int) {
-        val file = localFile(context, type) ?: return
+    /** Decodes and bakes [file]; null when it cannot be decoded. */
+    suspend fun load(context: Context, file: File, blurDp: Float): DecodedGlass? {
         val maxEdge = maxEdge(context)
-        val fileKey = keyOf(file, maxEdge)
-        if (fileKey == key && decoded != null) return
-        decodeGlassBitmap(file, maxEdge)?.let { store(it, fileKey) }
+        val source = decodeGlassSource(file, maxEdge) ?: return null
+        val density = context.resources.displayMetrics.density
+        return bakeGlass(
+            source = source,
+            pageBlurPx = blurDp.coerceIn(0f, 40f) * density,
+            cardBlurPx = GlassDefaults.cardBlur.value * density,
+        )
     }
 
-    fun store(value: DecodedGlass, fileKey: String) {
+    suspend fun preload(context: Context, type: Int, blurDp: Float) {
+        val file = localFile(context, type) ?: return
+        val fullKey = keyOf(file, maxEdge(context), blurDp)
+        if (fullKey == key && decoded != null) return
+        load(context, file, blurDp)?.let { store(it, fullKey) }
+    }
+
+    fun store(value: DecodedGlass, fullKey: String) {
         decoded = value
-        key = fileKey
+        key = fullKey
     }
 }
 
@@ -138,9 +151,9 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
     }
 
     // Start from the preloaded background so the first frame is never the plain surface.
-    val preloaded = GlassBackgroundCache.localFile(context, type)?.let { GlassBackgroundCache.keyOf(it, maxEdge) }
+    val preloaded = GlassBackgroundCache.localFile(context, type)?.let { GlassBackgroundCache.keyOf(it, maxEdge, blur) }
         ?.takeIf { it == GlassBackgroundCache.key }
-    var bitmap by remember { mutableStateOf(if (preloaded != null) GlassBackgroundCache.decoded else null) }
+    var decoded by remember { mutableStateOf(if (preloaded != null) GlassBackgroundCache.decoded else null) }
     var loadedKey by remember { mutableStateOf(preloaded) }
     var resumeCount by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
@@ -148,36 +161,36 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
         onPauseOrDispose { }
     }
 
-    LaunchedEffect(type, resumeCount, maxEdge, imageVersion) {
+    LaunchedEffect(type, resumeCount, maxEdge, imageVersion, blur) {
         val file = when (type) {
             GlassBackgroundType.GRADIENT -> null
             GlassBackgroundType.IMAGE -> glassImageFile(context).takeIf { it.isFile }
             else -> repository.refresh()
         }
         if (file == null) {
-            bitmap = null
+            decoded = null
             loadedKey = null
             return@LaunchedEffect
         }
-        // Skip re-decoding when the same file version is already on screen.
-        val key = GlassBackgroundCache.keyOf(file, maxEdge)
-        if (key == loadedKey && bitmap != null) return@LaunchedEffect
-        // Keep showing the previous background until the new one is decoded.
-        val decoded = decodeGlassBitmap(file, maxEdge) ?: run {
-            bitmap = null
+        // Skip re-baking when the same file version and blur are already on screen.
+        val key = GlassBackgroundCache.keyOf(file, maxEdge, blur)
+        if (key == loadedKey && decoded != null) return@LaunchedEffect
+        // Keep showing the previous background until the new one is baked.
+        val baked = GlassBackgroundCache.load(context, file, blur) ?: run {
+            decoded = null
             loadedKey = null
             return@LaunchedEffect
         }
-        GlassBackgroundCache.store(decoded, key)
-        bitmap = decoded
+        GlassBackgroundCache.store(baked, key)
+        decoded = baked
         loadedKey = key
     }
 
-    val kind = pickGlassSourceKind(type, bitmap != null)
+    val kind = pickGlassSourceKind(type, decoded != null)
     val source = when (kind) {
         GlassSourceKind.Plain -> GlassSource.Plain
         GlassSourceKind.Gradient -> GlassSource.Gradient
-        GlassSourceKind.Bitmap -> bitmap!!.let { GlassSource.Bitmap(it.image, it.meanLuma) }
+        GlassSourceKind.Bitmap -> decoded!!.let { GlassSource.Bitmap(it.image, it.material, it.meanLuma) }
     }
     return GlassBackgroundState(
         source = source,
@@ -197,9 +210,11 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
 fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val pageBackdrop = rememberLayerBackdrop()
     val overlayBackdrop = rememberLayerBackdrop()
+    val anchor = remember { GlassPageAnchor() }
     Box(
         modifier = modifier
             .fillMaxSize()
+            .onGloballyPositioned { anchor.coordinates = it }
             .layerBackdrop(overlayBackdrop)
     ) {
         Box(
@@ -212,6 +227,7 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
         CompositionLocalProvider(
             LocalGlassBackdrop provides pageBackdrop,
             LocalGlassOverlayBackdrop provides overlayBackdrop,
+            LocalGlassPageAnchor provides anchor,
         ) {
             content()
         }
@@ -234,11 +250,8 @@ private fun GlassBackgroundLayer(state: GlassBackgroundState) {
                 bitmap = source.image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (state.blur > 0.dp) Modifier.blur(state.blur, BlurredEdgeTreatment.Rectangle) else Modifier
-                    ),
+                // Already blurred once at bake time (a live blur re-ran every frame).
+                modifier = Modifier.fillMaxSize(),
             )
             val dark = isInDarkTheme()
             // Raised automatically when the image fights the theme, so text stays readable.

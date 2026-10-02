@@ -3,7 +3,7 @@ package me.weishu.kernelsu.ui.component.bottombar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
-import me.weishu.kernelsu.ui.component.glass.glassSurface
+import me.weishu.kernelsu.ui.component.glass.glassMaterial
 import me.weishu.kernelsu.ui.component.glass.GlassDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,12 +46,7 @@ fun NavigationRailMiuix(
 
     NavigationRail(
         // Glass sidebar: sits beside the content, so it samples the page background only.
-        modifier = modifier.glassSurface(
-            shape = RoundedCornerShape(0.dp),
-            tint = GlassDefaults.cardTint(),
-            blur = GlassDefaults.barBlur,
-            lens = false,
-        ),
+        modifier = modifier.glassMaterial(RoundedCornerShape(0.dp), GlassDefaults.cardTint(), rim = false),
         state = state,
         color = Color.Transparent,
         expandContentDescription = stringResource(R.string.nav_rail_expand),

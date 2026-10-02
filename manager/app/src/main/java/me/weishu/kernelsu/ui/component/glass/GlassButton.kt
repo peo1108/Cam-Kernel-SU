@@ -40,6 +40,16 @@ import kotlin.math.min
  */
 @Composable
 fun Modifier.liquidControl(shape: RoundedCornerShape, tint: Color = GlassDefaults.dropletTint()): Modifier {
+    val shadowed = dropShadow(
+        shape = shape,
+        shadow = Shadow(
+            radius = 12.dp,
+            color = Color.Black,
+            alpha = if (isInDarkTheme()) 0.25f else 0.1f,
+        ),
+    )
+    // Off the bars nothing moves under the control: the static material is enough and far cheaper.
+    if (!LocalGlassInBar.current) return shadowed.glassMaterial(shape, tint)
     val rim = rememberGravityRotatedHighlight(LiquidSpecular, extraDegrees = -45f)
     return this
         .dropShadow(

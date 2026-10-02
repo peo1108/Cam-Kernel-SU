@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.ui.component.glass.GlassDefaults
 import me.weishu.kernelsu.ui.component.glass.LocalGlassBackdrop
+import me.weishu.kernelsu.ui.component.glass.LocalGlassInBar
 import me.weishu.kernelsu.ui.component.liquid.lens
 import me.weishu.kernelsu.ui.component.liquid.rememberCombinedBackdrop
 import me.weishu.kernelsu.ui.component.liquid.vibrancy
@@ -49,7 +50,7 @@ fun BlurredBar(
         else -> backdrop
     }
     if (!glass || sample == null || backdrop == null || !blurActive) {
-        CompositionLocalProvider(LocalGlassBackdrop provides sample) {
+        CompositionLocalProvider(LocalGlassBackdrop provides sample, LocalGlassInBar provides true) {
             Box { content() }
         }
         return
@@ -69,7 +70,7 @@ fun BlurredBar(
             },
         ),
     ) {
-        CompositionLocalProvider(LocalGlassBackdrop provides sample) {
+        CompositionLocalProvider(LocalGlassBackdrop provides sample, LocalGlassInBar provides true) {
             content()
         }
     }

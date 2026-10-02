@@ -13,6 +13,8 @@ object GlassDefaults {
     const val controlDownscale = 2
 
     val cardBlur = 8.dp
+    /** Saturation boost baked into the card material (vibrancy). */
+    const val materialSaturation = 1.5f
     val listCardBlur = 8.dp
     val barBlur = 12.dp
     val dialogBlur = 16.dp

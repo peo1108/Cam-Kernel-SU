@@ -32,7 +32,6 @@ fun GlassCard(
     cornerRadius: Dp = GlassDefaults.cardCorner,
     insideMargin: PaddingValues = CardDefaults.InsideMargin,
     colors: CardColors? = null,
-    lens: Boolean = true,
     pressFeedbackType: PressFeedbackType = PressFeedbackType.None,
     showIndication: Boolean = false,
     onClick: (() -> Unit)? = null,
@@ -45,12 +44,7 @@ fun GlassCard(
         color = Color.Transparent,
         contentColor = colors?.contentColor ?: CardDefaults.defaultColors().contentColor,
     )
-    val glassModifier = modifier.glassSurface(
-        shape = RoundedCornerShape(cornerRadius),
-        tint = tint,
-        blur = GlassDefaults.cardBlur,
-        lens = lens,
-    )
+    val glassModifier = modifier.glassMaterial(RoundedCornerShape(cornerRadius), tint)
     if (onClick == null && onLongPress == null) {
         Card(
             modifier = glassModifier,
@@ -74,7 +68,7 @@ fun GlassCard(
     }
 }
 
-/** [GlassCard] without lens refraction, for items of long scrolling lists. */
+/** [GlassCard] for items of long scrolling lists (same cheap pre-blurred material). */
 @Composable
 fun GlassListCard(
     modifier: Modifier = Modifier,
@@ -91,7 +85,6 @@ fun GlassListCard(
     cornerRadius = cornerRadius,
     insideMargin = insideMargin,
     colors = colors,
-    lens = false,
     pressFeedbackType = pressFeedbackType,
     showIndication = showIndication,
     onClick = onClick,

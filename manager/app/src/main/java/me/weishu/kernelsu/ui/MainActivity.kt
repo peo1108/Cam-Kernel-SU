@@ -152,7 +152,7 @@ class MainActivity : ComponentActivity() {
         val settings = SettingsRepositoryImpl()
         if (UiMode.fromValue(settings.uiMode) == UiMode.Miuix) {
             lifecycleScope.launch {
-                GlassBackgroundCache.preload(applicationContext, settings.glassBackgroundType)
+                GlassBackgroundCache.preload(applicationContext, settings.glassBackgroundType, settings.glassBackgroundBlur)
                 glassBackgroundReady = true
             }
         } else {

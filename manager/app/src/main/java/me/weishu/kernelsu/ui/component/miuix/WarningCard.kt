@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.miuix
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.weishu.kernelsu.ui.component.WarningLevel
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -27,7 +27,7 @@ fun WarningCard(
     onClick: (() -> Unit)? = null,
     action: (@Composable () -> Unit)? = null,
 ) {
-    Card(
+    GlassCard(
         modifier = modifier,
         onClick = { onClick?.invoke() },
         colors = CardDefaults.defaultColors(

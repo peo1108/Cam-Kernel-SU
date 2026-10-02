@@ -3,9 +3,11 @@ package me.weishu.kernelsu.ui.util
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import me.weishu.kernelsu.ui.component.glass.GlassDefaults
 import me.weishu.kernelsu.ui.component.glass.LocalGlassBackdrop
+import me.weishu.kernelsu.ui.component.liquid.lens
 import me.weishu.kernelsu.ui.component.liquid.rememberCombinedBackdrop
 import me.weishu.kernelsu.ui.component.liquid.vibrancy
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -47,16 +49,20 @@ fun BlurredBar(
     Box(
         modifier = Modifier.drawBackdrop(
             backdrop = sample,
-            shape = { RectangleShape },
+            shape = { BarShape },
             effects = {
                 vibrancy()
-                blur(12.dp.toPx(), 12.dp.toPx())
+                blur(GlassDefaults.barBlur.toPx(), GlassDefaults.barBlur.toPx())
+                lens(GlassDefaults.barLensHeight.toPx(), GlassDefaults.barLensAmount.toPx())
             },
             onDrawSurface = {
-                drawRect(surface.copy(alpha = 0.6f * scrollFraction().coerceIn(0f, 1f)))
+                drawRect(surface.copy(alpha = GlassDefaults.barTintMax * scrollFraction().coerceIn(0f, 1f)))
             },
         ),
     ) {
         content()
     }
 }
+
+// Corner-based so the lens shader can refract along the bar edges.
+private val BarShape = RoundedCornerShape(0.dp)

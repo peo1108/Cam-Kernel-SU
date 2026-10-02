@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.home
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -69,7 +70,6 @@ import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -229,7 +229,10 @@ private fun TopBar(
     backdrop: LayerBackdrop?,
     barColor: Color,
 ) {
-    BlurredBar(backdrop) {
+    BlurredBar(
+        backdrop,
+        scrollFraction = { maxOf(scrollBehavior.state.collapsedFraction, scrollBehavior.state.overlappedFraction) },
+    ) {
         TopAppBar(
             color = barColor,
             title = stringResource(R.string.app_name),
@@ -270,7 +273,7 @@ private fun StatusCard(
                         .height(IntrinsicSize.Min),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Card(
+                    GlassCard(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.defaultColors(
                             color = when {
@@ -371,7 +374,7 @@ private fun StatusCard(
 
             state.kernelVersion.isGKI() -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Card(
+                    GlassCard(
                         modifier = Modifier.weight(1f),
                         onClick = {
                             if (!state.isLateLoadMode) {
@@ -407,7 +410,7 @@ private fun StatusCard(
             }
 
             else -> {
-                Card(
+                GlassCard(
                     onClick = {
                         if (!state.isLateLoadMode) {
                             actions.onInstallClick()
@@ -441,7 +444,7 @@ private fun SupportLinks(
 ) {
     val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
 
-    Card(modifier = modifier) {
+    GlassCard(modifier = modifier) {
         ArrowPreference(
             title = stringResource(R.string.home_support_title),
             summary = stringResource(R.string.home_support_content),
@@ -532,7 +535,7 @@ private fun InfoCard(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoText(
                     icon = Icons.Filled.Tag,
@@ -557,7 +560,7 @@ private fun InfoCard(
                 )
             }
         }
-        Card(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoText(
                     icon = Icons.Filled.Security,

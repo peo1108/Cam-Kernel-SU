@@ -105,6 +105,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getFloat("glass_background_dim", 0.2f).coerceIn(0f, 0.6f)
         set(value) = prefs.edit { putFloat("glass_background_dim", value.coerceIn(0f, 0.6f)) }
 
+    override var glassImageVersion: Long
+        get() = prefs.getLong("glass_background_image_version", 0L)
+        set(value) = prefs.edit { putLong("glass_background_image_version", value) }
+
     override var enableNavigationBadge: Boolean
         get() = prefs.getBoolean("enable_navigation_badge", true)
         set(value) = prefs.edit { putBoolean("enable_navigation_badge", value) }

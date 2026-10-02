@@ -317,4 +317,13 @@
     <string name="seed_not_installed">App is not installed, install it before patching</string>
     <string name="seed_limit">At most %d apps</string>
     <string name="seed_this_app">This app</string>
+    <string name="glass_background">Glass background</string>
+    <string name="glass_background_wallpaper">Device wallpaper</string>
+    <string name="glass_background_gradient">Animated gradient</string>
+    <string name="glass_background_image">Custom image</string>
+    <string name="glass_background_pick_image">Choose image</string>
+    <string name="glass_background_blur">Background blur</string>
+    <string name="glass_background_dim">Background dim</string>
+    <string name="glass_background_fallback">Live wallpaper or no root access - using the default background</string>
+    <string name="glass_background_import_failed">Could not load this image</string>
 </resources>

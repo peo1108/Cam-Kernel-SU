@@ -60,6 +60,10 @@ fun ColorPaletteScreen() {
         onSetPagerInterceptionMode = viewModel::setPagerInterceptionMode,
         onSetPageScale = viewModel::setPageScale,
         onSetModuleDescriptionMaxLines = viewModel::setModuleDescriptionMaxLines,
+        onSetGlassBackgroundType = viewModel::setGlassBackgroundType,
+        onSetGlassBackgroundBlur = viewModel::setGlassBackgroundBlur,
+        onSetGlassBackgroundDim = viewModel::setGlassBackgroundDim,
+        onPickGlassImage = viewModel::importGlassImage,
     )
 
     when (LocalUiMode.current) {

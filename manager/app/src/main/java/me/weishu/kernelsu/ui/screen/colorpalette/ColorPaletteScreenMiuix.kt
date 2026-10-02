@@ -286,29 +286,13 @@ fun ColorPaletteScreenMiuix(
                         }
                     }
 
+                    GlassBackgroundSection(uiState = uiState, actions = actions)
+
                     GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            SwitchPreference(
-                                title = stringResource(id = R.string.settings_enable_blur),
-                                summary = stringResource(id = R.string.settings_enable_blur_summary),
-                                startAction = {
-                                    Icon(
-                                        Icons.Rounded.BlurOn,
-                                        modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_enable_blur),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                checked = uiState.enableBlur,
-                                onCheckedChange = {
-                                    actions.onSetEnableBlur(it)
-                                }
-                            )
-                        }
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_floating_bottom_bar),
                             summary = stringResource(id = R.string.settings_floating_bottom_bar_summary),
@@ -325,24 +309,6 @@ fun ColorPaletteScreenMiuix(
                                 actions.onSetEnableFloatingBottomBar(it)
                             }
                         )
-                        AnimatedVisibility(visible = uiState.enableFloatingBottomBar && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            SwitchPreference(
-                                title = stringResource(id = R.string.settings_enable_glass),
-                                summary = stringResource(id = R.string.settings_enable_glass_summary),
-                                startAction = {
-                                    Icon(
-                                        Icons.Rounded.WaterDrop,
-                                        modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_enable_glass),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                checked = uiState.enableFloatingBottomBarBlur,
-                                onCheckedChange = {
-                                    actions.onSetEnableFloatingBottomBarBlur(it)
-                                }
-                            )
-                        }
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_navigation_badge),
                             summary = stringResource(id = R.string.settings_navigation_badge_summary),

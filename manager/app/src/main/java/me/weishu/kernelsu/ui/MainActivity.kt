@@ -270,6 +270,7 @@ class MainActivity : ComponentActivity() {
                                 type = uiState.glassBackgroundType,
                                 blur = uiState.glassBackgroundBlur,
                                 dim = uiState.glassBackgroundDim,
+                                imageVersion = uiState.glassImageVersion,
                             )
                             CompositionLocalProvider(LocalGlassBackgroundState provides glassState) {
                                 Scaffold(containerColor = Color.Transparent) { navDisplay() }

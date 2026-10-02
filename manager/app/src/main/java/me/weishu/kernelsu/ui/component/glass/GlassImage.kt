@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.InputStream
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -23,16 +24,35 @@ suspend fun decodeGlassBitmap(file: File, maxEdge: Int): ImageBitmap? = withCont
     decodeScaledBitmap(file, maxEdge)?.asImageBitmap()
 }
 
-internal fun decodeScaledBitmap(file: File, maxEdge: Int): Bitmap? = runCatching {
-    if (!file.isFile) return@runCatching null
+internal fun decodeScaledBitmap(file: File, maxEdge: Int): Bitmap? =
+    if (file.isFile) decodeScaledBitmap({ file.inputStream() }, maxEdge) else null
+
+/** Decodes the stream that [open] returns (opened twice: bounds, then pixels) downscaled to [maxEdge]. */
+internal fun decodeScaledBitmap(open: () -> InputStream?, maxEdge: Int): Bitmap? = runCatching {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(file.path, bounds)
+    // A bounds-only decode always returns null; only the missing stream means failure.
+    val boundsStream = open() ?: return@runCatching null
+    boundsStream.use { BitmapFactory.decodeStream(it, null, bounds) }
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
     var sample = 1
     while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxEdge) sample *= 2
-    val decoded = BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sample })
-        ?: return@runCatching null
+    val options = BitmapFactory.Options().apply { inSampleSize = sample }
+    val decoded = open()?.use { BitmapFactory.decodeStream(it, null, options) } ?: return@runCatching null
     val (w, h) = downscaleTarget(decoded.width, decoded.height, maxEdge)
     if (w == decoded.width && h == decoded.height) decoded
     else Bitmap.createScaledBitmap(decoded, w, h, true).also { if (it !== decoded) decoded.recycle() }
 }.getOrNull()
+
+/** Saves the image from [open] to [dest] as a downscaled JPEG (temp file + rename). */
+fun writeGlassImage(open: () -> InputStream?, dest: File, maxEdge: Int): Boolean = runCatching {
+    val bitmap = decodeScaledBitmap(open, maxEdge) ?: return@runCatching false
+    val tmp = File(dest.parentFile, dest.name + ".tmp")
+    tmp.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+    bitmap.recycle()
+    if (!tmp.renameTo(dest)) {
+        dest.delete()
+        tmp.renameTo(dest)
+    } else {
+        true
+    }
+}.getOrDefault(false)

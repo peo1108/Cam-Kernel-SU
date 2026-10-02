@@ -18,6 +18,7 @@ interface SettingsRepository {
     var glassBackgroundType: Int
     var glassBackgroundBlur: Float
     var glassBackgroundDim: Float
+    var glassImageVersion: Long
     var enableNavigationBadge: Boolean
     var navigationRailExpanded: Boolean
     var pageScale: Float

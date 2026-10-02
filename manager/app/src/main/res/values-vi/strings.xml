@@ -308,4 +308,13 @@
     <string name="seed_not_installed">Ứng dụng chưa được cài, hãy cài trước khi patch</string>
     <string name="seed_limit">Tối đa %d ứng dụng</string>
     <string name="seed_this_app">Ứng dụng này</string>
+    <string name="glass_background">Nền kính</string>
+    <string name="glass_background_wallpaper">Hình nền máy</string>
+    <string name="glass_background_gradient">Gradient động</string>
+    <string name="glass_background_image">Ảnh tự chọn</string>
+    <string name="glass_background_pick_image">Chọn ảnh</string>
+    <string name="glass_background_blur">Độ mờ nền</string>
+    <string name="glass_background_dim">Độ tối nền</string>
+    <string name="glass_background_fallback">Live wallpaper hoặc không có quyền root - đang dùng nền mặc định</string>
+    <string name="glass_background_import_failed">Không đọc được ảnh này</string>
 </resources>

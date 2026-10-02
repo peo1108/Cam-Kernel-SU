@@ -18,5 +18,6 @@ data class MainActivityUiState(
     val glassBackgroundType: Int = 0,
     val glassBackgroundBlur: Float = 0f,
     val glassBackgroundDim: Float = 0.2f,
+    val glassImageVersion: Long = 0L,
     val uiMode: UiMode,
 )

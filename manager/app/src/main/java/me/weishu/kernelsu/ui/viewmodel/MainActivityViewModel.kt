@@ -56,6 +56,7 @@ class MainActivityViewModel(
             glassBackgroundType = settingRepo.glassBackgroundType,
             glassBackgroundBlur = settingRepo.glassBackgroundBlur,
             glassBackgroundDim = settingRepo.glassBackgroundDim,
+            glassImageVersion = settingRepo.glassImageVersion,
             uiMode = UiMode.fromValue(settingRepo.uiMode),
         )
     }
@@ -74,6 +75,7 @@ class MainActivityViewModel(
             "glass_background_type",
             "glass_background_blur",
             "glass_background_dim",
+            "glass_background_image_version",
             "enable_navigation_badge",
             "enable_swipe_dismiss",
             "pager_interception_mode",

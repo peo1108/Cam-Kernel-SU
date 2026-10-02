@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.colorpalette
 
+import android.net.Uri
 import androidx.compose.runtime.Immutable
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
@@ -32,4 +33,8 @@ data class ColorPaletteScreenActions(
     val onSetPagerInterceptionMode: (Int) -> Unit,
     val onSetPageScale: (Float) -> Unit,
     val onSetModuleDescriptionMaxLines: (Int) -> Unit,
+    val onSetGlassBackgroundType: (Int) -> Unit,
+    val onSetGlassBackgroundBlur: (Float) -> Unit,
+    val onSetGlassBackgroundDim: (Float) -> Unit,
+    val onPickGlassImage: (Uri) -> Unit,
 )

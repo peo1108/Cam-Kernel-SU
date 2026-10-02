@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.viewmodel
 
+import android.net.Uri
 import android.system.OsConstants
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
@@ -16,6 +17,9 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
+import me.weishu.kernelsu.ui.component.glass.GlassBackgroundType
+import me.weishu.kernelsu.ui.component.glass.glassImageFile
+import me.weishu.kernelsu.ui.component.glass.writeGlassImage
 import me.weishu.kernelsu.ui.screen.settings.SettingsUiState
 import me.weishu.kernelsu.ui.theme.ColorMode
 
@@ -44,6 +48,9 @@ class SettingsViewModel(
             val enableFloatingBottomBar = repo.enableFloatingBottomBar
             val enableFloatingBottomBarBlur = repo.enableFloatingBottomBarBlur
             val enableNavigationBadge = repo.enableNavigationBadge
+            val glassBackgroundType = repo.glassBackgroundType
+            val glassBackgroundBlur = repo.glassBackgroundBlur
+            val glassBackgroundDim = repo.glassBackgroundDim
             val pageScale = repo.pageScale
             val moduleDescriptionMaxLines = repo.moduleDescriptionMaxLines
             val enableWebDebugging = repo.enableWebDebugging
@@ -87,6 +94,9 @@ class SettingsViewModel(
                     enableFloatingBottomBar = enableFloatingBottomBar,
                     enableFloatingBottomBarBlur = enableFloatingBottomBarBlur,
                     enableNavigationBadge = enableNavigationBadge,
+                    glassBackgroundType = glassBackgroundType,
+                    glassBackgroundBlur = glassBackgroundBlur,
+                    glassBackgroundDim = glassBackgroundDim,
                     pageScale = pageScale,
                     moduleDescriptionMaxLines = moduleDescriptionMaxLines,
                     enableWebDebugging = enableWebDebugging,
@@ -225,6 +235,41 @@ class SettingsViewModel(
     fun setEnableFloatingBottomBarBlur(enabled: Boolean) {
         repo.enableFloatingBottomBarBlur = enabled
         _uiState.update { it.copy(enableFloatingBottomBarBlur = enabled) }
+    }
+
+    fun setGlassBackgroundType(type: Int) {
+        repo.glassBackgroundType = type
+        _uiState.update { it.copy(glassBackgroundType = type.coerceIn(0, 2)) }
+    }
+
+    fun setGlassBackgroundBlur(blur: Float) {
+        repo.glassBackgroundBlur = blur
+        _uiState.update { it.copy(glassBackgroundBlur = blur.coerceIn(0f, 40f)) }
+    }
+
+    fun setGlassBackgroundDim(dim: Float) {
+        repo.glassBackgroundDim = dim
+        _uiState.update { it.copy(glassBackgroundDim = dim.coerceIn(0f, 0.6f)) }
+    }
+
+    /** Copies the picked image into app storage (downscaled) and switches the background to it. */
+    fun importGlassImage(uri: Uri) {
+        viewModelScope.launch {
+            val metrics = ksuApp.resources.displayMetrics
+            val ok = withContext(Dispatchers.IO) {
+                writeGlassImage(
+                    open = { ksuApp.contentResolver.openInputStream(uri) },
+                    dest = glassImageFile(ksuApp),
+                    maxEdge = maxOf(metrics.widthPixels, metrics.heightPixels),
+                )
+            }
+            if (ok) {
+                repo.glassImageVersion = System.currentTimeMillis()
+                setGlassBackgroundType(GlassBackgroundType.IMAGE)
+            } else {
+                Toast.makeText(ksuApp, R.string.glass_background_import_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     fun setEnableNavigationBadge(enabled: Boolean) {

@@ -88,7 +88,7 @@ val LocalGlassBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 fun glassImageFile(context: Context): File = File(context.filesDir, "glass_bg.jpg")
 
 @Composable
-fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float): GlassBackgroundState {
+fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersion: Long = 0L): GlassBackgroundState {
     val context = LocalContext.current
     val containerSize = LocalWindowInfo.current.containerSize
     val maxEdge = max(containerSize.width, containerSize.height).takeIf { it > 0 }
@@ -108,7 +108,7 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float): GlassBackg
         onPauseOrDispose { }
     }
 
-    LaunchedEffect(type, resumeCount, maxEdge) {
+    LaunchedEffect(type, resumeCount, maxEdge, imageVersion) {
         val file = when (type) {
             GlassBackgroundType.GRADIENT -> null
             GlassBackgroundType.IMAGE -> glassImageFile(context).takeIf { it.isFile }

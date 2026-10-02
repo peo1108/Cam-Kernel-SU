@@ -189,6 +189,7 @@ base {
 
 dependencies {
     implementation(libs.androidx.activity.compose)
+    testImplementation(libs.junit)
     implementation(libs.androidx.core.splashscreen)
 
     implementation(platform(libs.androidx.compose.bom))

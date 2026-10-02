@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
@@ -29,6 +31,7 @@ fun BgEffectBackground(
     isFullSize: Boolean = false,
     effectBackground: Boolean = true,
     alpha: () -> Float = { 1f },
+    seedColor: Color? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     if (!isRuntimeShaderSupported()) {
@@ -43,8 +46,9 @@ fun BgEffectBackground(
         val isDarkTheme = isInDarkTheme()
         val painter = remember { BgEffectPainter() }
 
-        val preset = remember(deviceType, isDarkTheme) {
-            BgEffectConfig.get(deviceType, isDarkTheme)
+        val preset = remember(deviceType, isDarkTheme, seedColor) {
+            val base = BgEffectConfig.get(deviceType, isDarkTheme)
+            if (seedColor != null) BgEffectConfig.tint(base, seedColor.toArgb()) else base
         }
 
         val colorStage = remember { Animatable(0f) }

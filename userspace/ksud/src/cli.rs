@@ -100,6 +100,12 @@ enum Commands {
         command: Sepolicy,
     },
 
+    /// Grant or revoke root for an installed app
+    Allow {
+        #[command(subcommand)]
+        command: Allow,
+    },
+
     /// Manage App Profiles
     Profile {
         #[command(subcommand)]
@@ -357,6 +363,24 @@ enum ModuleConfigCmd {
         #[arg(short, long)]
         temp: bool,
     },
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Allow {
+    /// Grant root to <package>
+    Add {
+        /// package name
+        package: String,
+    },
+
+    /// Revoke root from <package>
+    Remove {
+        /// package name
+        package: String,
+    },
+
+    /// List installed apps that have root
+    List,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -654,6 +678,12 @@ pub fn run() -> Result<()> {
             Ok(())
         }
         Commands::Sulogd => sulog::run_sulogd(),
+        Commands::Allow { command } => match command {
+            Allow::Add { package } => crate::allow::add(&package),
+            Allow::Remove { package } => crate::allow::remove(&package),
+            Allow::List => crate::allow::list(),
+        },
+
         Commands::Profile { command } => match command {
             Profile::GetSepolicy { package } => crate::profile::get_sepolicy(package),
             Profile::SetSepolicy { package, policy } => {

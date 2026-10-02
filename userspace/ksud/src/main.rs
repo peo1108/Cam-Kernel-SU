@@ -10,6 +10,7 @@
     clippy::cast_possible_wrap
 )]
 
+mod allow;
 mod assets;
 mod boot_patch;
 #[cfg(target_os = "android")]

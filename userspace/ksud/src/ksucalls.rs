@@ -259,6 +259,19 @@ pub fn get_feature(feature_id: u32) -> Result<(u64, bool)> {
     Ok((cmd.value, cmd.supported != 0))
 }
 
+/// Set an app profile (root only; the kernel validates it)
+pub fn set_app_profile(cmd: &mut ksu_uapi::ksu_set_app_profile_cmd) -> Result<()> {
+    ksuctl(ksu_uapi::KSU_IOCTL_SET_APP_PROFILE, std::ptr::from_mut(cmd))?;
+    Ok(())
+}
+
+/// Whether the kernel currently grants root to `uid`
+pub fn uid_granted_root(uid: u32) -> Result<bool> {
+    let mut cmd = ksu_uapi::ksu_uid_granted_root_cmd { uid, granted: 0 };
+    ksuctl(ksu_uapi::KSU_IOCTL_UID_GRANTED_ROOT, &raw mut cmd)?;
+    Ok(cmd.granted != 0)
+}
+
 /// Set feature value in kernel
 pub fn set_feature(feature_id: u32, value: u64) -> Result<()> {
     let mut cmd = ksu_uapi::ksu_set_feature_cmd { feature_id, value };

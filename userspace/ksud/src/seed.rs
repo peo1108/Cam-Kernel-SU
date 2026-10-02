@@ -10,13 +10,22 @@ use anyhow::{Context, Result, bail, ensure};
 const MAX_ENTRIES: usize = 32;
 const MAX_PACKAGE_LEN: usize = 255;
 const NONCE_LEN: usize = 16;
-const MIN_APPID: u32 = 10000;
-const MAX_APPID: u32 = 19999;
+pub const MIN_APPID: u32 = 10000;
+pub const MAX_APPID: u32 = 19999;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeedEntry {
     pub package: String,
     pub appid: u32,
+}
+
+/// Package names accepted for root grants: `[A-Za-z0-9._]`, 1..=255 chars.
+pub fn is_valid_package_name(package: &str) -> bool {
+    !package.is_empty()
+        && package.len() <= MAX_PACKAGE_LEN
+        && package
+            .bytes()
+            .all(|c| c.is_ascii_alphanumeric() || c == b'.' || c == b'_')
 }
 
 /// Parses `<pkg>:<appid>`, as given to `boot-patch --seed`.
@@ -25,11 +34,7 @@ pub fn parse_seed_entry(s: &str) -> Result<SeedEntry> {
         bail!("invalid seed '{s}': expected <package>:<appid>");
     };
     ensure!(
-        !package.is_empty()
-            && package.len() <= MAX_PACKAGE_LEN
-            && package
-                .bytes()
-                .all(|c| c.is_ascii_alphanumeric() || c == b'.' || c == b'_'),
+        is_valid_package_name(package),
         "invalid seed package name '{package}'"
     );
     ensure!(

@@ -9,8 +9,7 @@ use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
 use crate::lkm_image::BootPatchV2Args;
 use crate::module::regenerate_preinit_rc;
 use crate::{
-    apk_sign, assets, debug, defs, init_event, ksu_uapi, ksucalls, module, module_config, sulog,
-    utils,
+    assets, debug, defs, init_event, ksu_uapi, ksucalls, module, module_config, sulog, utils,
 };
 
 /// KernelSU userspace cli
@@ -182,19 +181,6 @@ enum BootInfo {
 
 #[derive(clap::Subcommand, Debug)]
 enum Debug {
-    /// Set the manager app, kernel CONFIG_KSU_DEBUG should be enabled.
-    SetManager {
-        /// manager package name
-        #[arg(default_value_t = String::from(defs::DEFAULT_PACKAGE_NAME))]
-        apk: String,
-    },
-
-    /// Get apk size and hash
-    GetSign {
-        /// apk path
-        apk: String,
-    },
-
     /// Root Shell
     Su {
         /// switch to gloabl mount namespace
@@ -698,12 +684,6 @@ pub fn run() -> Result<()> {
         },
 
         Commands::Debug { command } => match command {
-            Debug::SetManager { apk } => debug::set_manager(&apk),
-            Debug::GetSign { apk } => {
-                let sign = apk_sign::get_apk_signature(&apk)?;
-                println!("size: {:#x}, hash: {}", sign.0, sign.1);
-                Ok(())
-            }
             Debug::Version => {
                 println!("Kernel Version: {}", ksucalls::get_version());
                 Ok(())

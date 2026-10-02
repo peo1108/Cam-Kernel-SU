@@ -17,6 +17,7 @@ use memmap2::{Mmap, MmapOptions};
 use regex_lite::Regex;
 
 use crate::assets;
+use crate::seed::{SeedEntry, build_seed_param, random_nonce};
 
 #[cfg(target_os = "android")]
 mod android {
@@ -512,6 +513,10 @@ pub struct BootPatchArgs {
     /// Patching ramdisk instead of boot image. This is used for AVD ramdisk
     #[arg(long, default_value = "false")]
     ramdisk: bool,
+
+    /// Grant root to this app on first boot, as <package>:<appid> (repeatable)
+    #[arg(long = "seed", value_parser = crate::seed::parse_seed_entry)]
+    seed: Vec<SeedEntry>,
 }
 
 pub fn patch(args: BootPatchArgs) -> Result<()> {
@@ -541,6 +546,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             #[cfg(not(target_os = "android"))]
             arch,
             ramdisk,
+            seed,
         } = args;
 
         println!(include_str!("banner"));
@@ -753,6 +759,12 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         apply_config("allow shell", "allow_shell=1", allow_shell);
         if let Some(bundled) = bundled_lkm {
             apply_config("bundled LKM", "bundled=1", bundled);
+        }
+
+        if !seed.is_empty() {
+            println!("- Adding seed for {} app(s)", seed.len());
+            ksu_config.retain(|v| !v.starts_with("seed="));
+            ksu_config.push(build_seed_param(&random_nonce()?, &seed)?);
         }
 
         if ksu_config.is_empty() {

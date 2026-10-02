@@ -21,7 +21,7 @@ object GlassDefaults {
 
     const val cardTintLight = 0.35f
     const val cardTintDark = 0.35f
-    const val coloredCardTint = 0.55f
+    const val coloredCardTint = 0.8f
     const val barTintMax = 0.6f
 
     val cardCorner = 20.dp

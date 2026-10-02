@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.rebootlistpopup
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -10,7 +11,6 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.KsuIsValid
 import me.weishu.kernelsu.ui.component.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -26,7 +26,7 @@ fun RebootListPopupMiuix(
     val showTopPopup = remember { mutableStateOf(false) }
     KsuIsValid {
         val onReboot = rememberRebootAction()
-        IconButton(
+        GlassIconButton(
             modifier = modifier,
             onClick = { showTopPopup.value = true },
             holdDownState = showTopPopup.value

@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.flash
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +45,6 @@ import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
@@ -176,7 +176,7 @@ private fun TopBar(
             ),
             color = barColor,
             navigationIcon = {
-                IconButton(
+                GlassIconButton(
                     onClick = onBack
                 ) {
                     val layoutDirection = LocalLayoutDirection.current
@@ -191,7 +191,7 @@ private fun TopBar(
                 }
             },
             actions = {
-                IconButton(
+                GlassIconButton(
                     onClick = onSave
                 ) {
                     Icon(

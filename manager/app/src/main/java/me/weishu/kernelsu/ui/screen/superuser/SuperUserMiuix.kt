@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.superuser
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -83,7 +84,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -131,7 +131,7 @@ fun SuperUserPagerMiuix(
                         color = barColor,
                         title = stringResource(R.string.superuser),
                         navigationIcon = {
-                            IconButton(
+                            GlassIconButton(
                                 onClick = actions.onOpenSulog,
                             ) {
                                 Icon(
@@ -192,7 +192,7 @@ fun SuperUserPagerMiuix(
                                     }
                                 )
 
-                                IconButton(
+                                GlassIconButton(
                                     onClick = { showSortPopup.value = true },
                                     holdDownState = showSortPopup.value,
                                 ) {
@@ -242,7 +242,7 @@ fun SuperUserPagerMiuix(
                                         }
                                     }
                                 )
-                                IconButton(
+                                GlassIconButton(
                                     onClick = {
                                         showTopPopup.value = true
                                     },

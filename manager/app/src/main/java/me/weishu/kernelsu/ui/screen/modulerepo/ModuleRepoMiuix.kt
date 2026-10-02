@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.modulerepo
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
@@ -98,7 +99,6 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -191,7 +191,7 @@ fun ModuleRepoScreenMiuix(
                                         }
                                     }
                                 })
-                            IconButton(
+                            GlassIconButton(
                                 onClick = { showSortPopup.value = true },
                                 holdDownState = showSortPopup.value
                             ) {
@@ -203,7 +203,7 @@ fun ModuleRepoScreenMiuix(
                             }
                         },
                         navigationIcon = {
-                            IconButton(
+                            GlassIconButton(
                                 onClick = actions.onBack
                             ) {
                                 val layoutDirection = LocalLayoutDirection.current
@@ -811,13 +811,13 @@ fun ReleasesPage(
                                                 )
                                             }
                                             if (isDownloaded) {
-                                                IconButton(
+                                                GlassIconButton(
                                                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = bottomPadding),
                                                     backgroundColor = secondaryContainer,
                                                     minHeight = 35.dp,
                                                     minWidth = 35.dp,
                                                     onClick = {
-                                                        val uri = downloadedUri ?: return@IconButton
+                                                        val uri = downloadedUri ?: return@GlassIconButton
                                                         scope.launch {
                                                             if (isDownloadAvailable(uri)) {
                                                                 onInstallModule(uri)
@@ -847,7 +847,7 @@ fun ReleasesPage(
                                                     }
                                                 }
                                             } else {
-                                                IconButton(
+                                                GlassIconButton(
                                                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = bottomPadding),
                                                     backgroundColor = secondaryContainer,
                                                     minHeight = 35.dp,
@@ -947,7 +947,7 @@ fun InfoPage(
                                     )
                                     val clickable = author.link.isNotEmpty()
                                     val tint = if (clickable) actionIconTint else actionIconTint.copy(alpha = 0.35f)
-                                    IconButton(
+                                    GlassIconButton(
                                         backgroundColor = secondaryContainer,
                                         minHeight = 35.dp,
                                         minWidth = 35.dp,
@@ -1003,7 +1003,7 @@ fun InfoPage(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            IconButton(
+                            GlassIconButton(
                                 backgroundColor = secondaryContainer,
                                 minHeight = 35.dp,
                                 minWidth = 35.dp,
@@ -1064,7 +1064,7 @@ fun ModuleRepoDetailScreenMiuix(
         topBar = {
             BlurredBar(backdrop) {
                 TopAppBar(color = detailBarColor, title = module.moduleName, scrollBehavior = scrollBehavior, navigationIcon = {
-                    IconButton(
+                    GlassIconButton(
                         onClick = actions.onBack
                     ) {
                         val layoutDirection = LocalLayoutDirection.current
@@ -1076,7 +1076,7 @@ fun ModuleRepoDetailScreenMiuix(
                     }
                 }, actions = {
                     if (state.webUrl.isNotEmpty()) {
-                        IconButton(
+                        GlassIconButton(
                             onClick = actions.onOpenWebUrl
                         ) {
                             Icon(

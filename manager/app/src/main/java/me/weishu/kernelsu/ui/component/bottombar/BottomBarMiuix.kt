@@ -61,7 +61,7 @@ fun BottomBarMiuix(
         )
     }
     if (!enableFloatingBottomBar) {
-        BlurredBar(blurBackdrop) {
+        BlurredBar(blurBackdrop, glass = true) {
             NavigationBar(
                 modifier = modifier,
                 color = if (blurBackdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,

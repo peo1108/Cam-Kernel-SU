@@ -229,10 +229,7 @@ private fun TopBar(
     backdrop: LayerBackdrop?,
     barColor: Color,
 ) {
-    BlurredBar(
-        backdrop,
-        scrollFraction = { maxOf(scrollBehavior.state.collapsedFraction, scrollBehavior.state.overlappedFraction) },
-    ) {
+    BlurredBar(backdrop) {
         TopAppBar(
             color = barColor,
             title = stringResource(R.string.app_name),

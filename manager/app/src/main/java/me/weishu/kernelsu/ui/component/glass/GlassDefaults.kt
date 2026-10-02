@@ -24,6 +24,11 @@ object GlassDefaults {
     const val coloredCardTint = 0.8f
     const val barTintMax = 0.6f
 
+    val dropletSize = 44.dp
+    const val dropletPressScale = 1.12f
+    const val dropletTintLight = 0.6f
+    const val dropletTintDark = 0.3f
+
     val cardCorner = 20.dp
     val dialogCorner = 32.dp
     val popupCorner = 20.dp
@@ -31,4 +36,8 @@ object GlassDefaults {
     @Composable
     @ReadOnlyComposable
     fun cardTint(): Color = colorScheme.surface.copy(alpha = if (isInDarkTheme()) cardTintDark else cardTintLight)
+
+    @Composable
+    @ReadOnlyComposable
+    fun dropletTint(): Color = colorScheme.surface.copy(alpha = if (isInDarkTheme()) dropletTintDark else dropletTintLight)
 }

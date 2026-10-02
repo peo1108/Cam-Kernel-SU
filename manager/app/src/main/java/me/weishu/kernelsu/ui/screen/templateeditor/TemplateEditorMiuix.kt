@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.templateeditor
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -37,7 +38,6 @@ import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -172,7 +172,7 @@ private fun TopBar(
             color = barColor,
             title = title,
             navigationIcon = {
-                IconButton(
+                GlassIconButton(
                     onClick = onBack
                 ) {
                     val layoutDirection = LocalLayoutDirection.current
@@ -189,7 +189,7 @@ private fun TopBar(
             actions = {
                 when {
                     !readOnly && !isCreation -> {
-                        IconButton(
+                        GlassIconButton(
                             onClick = onDelete
                         ) {
                             Icon(
@@ -201,7 +201,7 @@ private fun TopBar(
                     }
 
                     isCreation -> {
-                        IconButton(
+                        GlassIconButton(
                             onClick = onSave
                         ) {
                             Icon(

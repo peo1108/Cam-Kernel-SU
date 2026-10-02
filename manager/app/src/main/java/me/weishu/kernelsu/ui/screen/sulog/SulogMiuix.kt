@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.sulog
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -79,7 +80,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -158,7 +158,7 @@ fun SulogScreenMiuix(
                         color = barColor,
                         title = stringResource(R.string.settings_sulog),
                         navigationIcon = {
-                            IconButton(
+                            GlassIconButton(
                                 onClick = actions.onBack,
                             ) {
                                 val layoutDirection = LocalLayoutDirection.current
@@ -173,7 +173,7 @@ fun SulogScreenMiuix(
                             }
                         },
                         actions = {
-                            IconButton(
+                            GlassIconButton(
                                 modifier = Modifier.padding(end = 8.dp),
                                 onClick = actions.onCleanFile,
                             ) {
@@ -209,7 +209,7 @@ fun SulogScreenMiuix(
                                         }
                                     },
                                 )
-                                IconButton(
+                                GlassIconButton(
                                     onClick = { showFilterPopup.value = true },
                                     holdDownState = showFilterPopup.value,
                                 ) {

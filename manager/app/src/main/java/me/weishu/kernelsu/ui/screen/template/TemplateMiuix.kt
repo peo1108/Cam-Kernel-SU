@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.template
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -71,7 +72,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -391,7 +391,7 @@ private fun TopBar(
             color = barColor,
             title = stringResource(R.string.settings_profile_template),
             navigationIcon = {
-                IconButton(
+                GlassIconButton(
                     onClick = onBack
                 ) {
                     val layoutDirection = LocalLayoutDirection.current
@@ -438,7 +438,7 @@ private fun TopBar(
                         }
                     }
                 )
-                IconButton(
+                GlassIconButton(
                     onClick = { showTopPopup.value = true },
                     holdDownState = showTopPopup.value
                 ) {

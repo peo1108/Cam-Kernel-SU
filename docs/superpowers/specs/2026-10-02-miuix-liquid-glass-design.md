@@ -243,3 +243,15 @@ Device: Lenovo TB323FU (tablet), Android 16 / SDK 36, KernelSU root.
   no conversion.
 - `/data/system/users/0/wallpaper` exists on this device (773684 B, owner
   system, mode 0600); readable via the root shell.
+
+## 10. Pilot feedback (2026-10-02)
+
+User reviewed the Home pilot and asked for:
+
+- **Transparent top bars** (iOS Settings style): no blur, no tint; the title and
+  buttons float directly over the page. Supersedes the `GlassTopBar` row in
+  section 4 (blur + lens + scroll tint). `BlurredBar` is transparent by default;
+  only the docked bottom bar keeps the glass slab (`glass = true`).
+- **Glass droplets around icon buttons**: every Miuix `IconButton` becomes
+  `GlassIconButton` (44dp glass circle, lens, specular edge, soft shadow,
+  swells to 1.12x while pressed). Pulled forward from step 5.

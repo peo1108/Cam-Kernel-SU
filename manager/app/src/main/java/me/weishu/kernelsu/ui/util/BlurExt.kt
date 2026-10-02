@@ -29,17 +29,18 @@ fun rememberBlurBackdrop(enableBlur: Boolean): LayerBackdrop? {
 }
 
 /**
- * Glass bar: samples the page background and the content scrolling under it. The surface
- * tint grows with [scrollFraction] (0 = resting, 1 = content under the bar).
+ * Bar container. Top bars are fully transparent (iOS style: title and glass droplet buttons
+ * float over the page). With [glass] the bar is a glass slab sampling the page background and
+ * the content scrolling under it, used by the docked bottom bar.
  */
 @Composable
 fun BlurredBar(
     backdrop: LayerBackdrop?,
     blurActive: Boolean = true,
-    scrollFraction: () -> Float = { 1f },
+    glass: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    if (!blurActive || backdrop == null) {
+    if (!glass || !blurActive || backdrop == null) {
         Box { content() }
         return
     }
@@ -56,7 +57,7 @@ fun BlurredBar(
                 lens(GlassDefaults.barLensHeight.toPx(), GlassDefaults.barLensAmount.toPx())
             },
             onDrawSurface = {
-                drawRect(surface.copy(alpha = GlassDefaults.barTintMax * scrollFraction().coerceIn(0f, 1f)))
+                drawRect(surface.copy(alpha = GlassDefaults.barTintMax))
             },
         ),
     ) {

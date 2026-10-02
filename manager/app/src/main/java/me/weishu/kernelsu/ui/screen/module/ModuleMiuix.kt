@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.module
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.ClipData
@@ -126,7 +127,6 @@ import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -269,7 +269,7 @@ fun ModulePagerMiuix(
                         actions = {
                             Box {
                                 val showTopPopup = remember { mutableStateOf(false) }
-                                IconButton(
+                                GlassIconButton(
                                     onClick = { showTopPopup.value = true },
                                     holdDownState = showTopPopup.value
                                 ) {
@@ -314,7 +314,7 @@ fun ModulePagerMiuix(
                             }
                         },
                         navigationIcon = {
-                            IconButton(
+                            GlassIconButton(
                                 onClick = actions.onOpenRepo,
                             ) {
                                 Icon(
@@ -632,7 +632,7 @@ private fun ModuleShortcutDialog(
                         exit = shrinkHorizontally() + slideOutHorizontally(targetOffsetX = { it }),
                         modifier = Modifier.align(Alignment.CenterVertically),
                     ) {
-                        IconButton(
+                        GlassIconButton(
                             onClick = shortcutState::resetIconToDefault,
                             modifier = Modifier.padding(start = 12.dp)
                         ) {
@@ -975,7 +975,7 @@ fun ModuleItem(
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                IconButton(
+                GlassIconButton(
                     modifier = Modifier.padding(end = 8.dp),
                     backgroundColor = updateBg,
                     enabled = !module.remove,
@@ -1004,7 +1004,7 @@ fun ModuleItem(
                     }
                 }
             }
-            IconButton(
+            GlassIconButton(
                 minHeight = 35.dp,
                 minWidth = 35.dp,
                 onClick = if (module.remove) onUndoUninstall else onUninstall,

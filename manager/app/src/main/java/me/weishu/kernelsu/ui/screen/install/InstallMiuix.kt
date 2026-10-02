@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.install
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -49,7 +50,6 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -211,7 +211,7 @@ internal fun InstallScreenMiuix(
                             },
                             endActions = {
                                 if (uiState.lkmSelection is LkmSelection.LkmUri) {
-                                    IconButton(onClick = actions.onClearLkm) {
+                                    GlassIconButton(onClick = actions.onClearLkm) {
                                         Icon(
                                             MiuixIcons.Close,
                                             modifier = Modifier.size(16.dp),
@@ -357,7 +357,7 @@ private fun TopBar(
             color = barColor,
             title = stringResource(R.string.install),
             navigationIcon = {
-                IconButton(
+                GlassIconButton(
                     onClick = onBack
                 ) {
                     val layoutDirection = LocalLayoutDirection.current

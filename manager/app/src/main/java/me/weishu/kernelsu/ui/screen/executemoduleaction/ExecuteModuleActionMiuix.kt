@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.executemoduleaction
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -53,7 +54,6 @@ import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
@@ -194,7 +194,7 @@ private fun TopBar(
             color = barColor,
             title = stringResource(R.string.action),
             navigationIcon = {
-                IconButton(
+                GlassIconButton(
                     onClick = onBack
                 ) {
                     val layoutDirection = LocalLayoutDirection.current
@@ -209,7 +209,7 @@ private fun TopBar(
                 }
             },
             actions = {
-                IconButton(
+                GlassIconButton(
                     onClick = onSave
                 ) {
                     Icon(

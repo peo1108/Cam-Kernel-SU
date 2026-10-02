@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.appprofile
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -66,7 +67,6 @@ import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -502,7 +502,7 @@ private fun TopBar(
             color = barColor,
             title = stringResource(R.string.profile),
             navigationIcon = {
-                IconButton(
+                GlassIconButton(
                     onClick = onBack
                 ) {
                     val layoutDirection = LocalLayoutDirection.current
@@ -519,7 +519,7 @@ private fun TopBar(
             actions = {
                 if (showActions) {
                     val showTopPopup = remember { mutableStateOf(false) }
-                    IconButton(
+                    GlassIconButton(
                         onClick = { showTopPopup.value = true },
                         holdDownState = showTopPopup.value
                     ) {

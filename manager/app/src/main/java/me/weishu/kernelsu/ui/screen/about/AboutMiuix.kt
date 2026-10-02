@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.about
 
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -66,7 +67,6 @@ import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -129,7 +129,7 @@ fun AboutScreenMiuix(
                         alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
                     ),
                     navigationIcon = {
-                        IconButton(
+                        GlassIconButton(
                             onClick = actions.onBack
                         ) {
                             val layoutDirection = LocalLayoutDirection.current

@@ -11,8 +11,8 @@
 #include "policy/app_profile.h"
 #include "policy/feature.h"
 #include "klog.h" // IWYU pragma: keep
-#include "manager/manager_observer.h"
-#include "manager/throne_tracker.h"
+#include "policy/pkg_observer.h"
+#include "policy/pkg_tracker.h"
 #include "hook/syscall_hook_manager.h"
 #include "hook/lsm_hook.h"
 #include "runtime/ksud.h"
@@ -160,12 +160,11 @@ int __init kernelsu_init(void)
 
         ksu_syscall_hook_manager_init();
 
-        ksu_throne_tracker_init();
         ksu_observer_init();
         ksu_file_wrapper_init();
 
         ksu_boot_completed = true;
-        track_throne(false);
+        ksu_pkg_tracker_update();
 
         if (!getenforce()) {
             pr_info("Permissive SELinux, enforcing\n");
@@ -176,8 +175,6 @@ int __init kernelsu_init(void)
         ksu_syscall_hook_manager_init();
 
         ksu_allowlist_init();
-
-        ksu_throne_tracker_init();
 
         ksu_ksud_init();
 
@@ -207,8 +204,6 @@ void __exit kernelsu_exit(void)
 
     // Phase 2: Now safe to release data structures
     ksu_observer_exit();
-
-    ksu_throne_tracker_exit();
 
     ksu_allowlist_exit();
 

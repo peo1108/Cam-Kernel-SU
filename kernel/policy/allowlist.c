@@ -22,7 +22,6 @@
 #include "runtime/ksud_boot.h"
 #include "selinux/selinux.h"
 #include "policy/allowlist.h"
-#include "manager/manager_identity.h"
 #include "infra/su_mount_ns.h"
 
 #define FILE_MAGIC 0x7f4b5355 // ' KSU', u32
@@ -260,11 +259,6 @@ bool __ksu_is_allow_uid(uid_t uid)
         return false;
     }
 
-    if (unlikely(is_uid_manager(uid))) {
-        // manager is always allowed!
-        return true;
-    }
-
     if (unlikely(allow_shell) && uid == SHELL_UID) {
         return true;
     }
@@ -294,10 +288,6 @@ bool ksu_uid_should_umount(uid_t uid)
 {
     struct app_profile *profile;
     bool res;
-    if (likely(ksu_is_manager_appid_valid()) && unlikely(ksu_get_manager_appid() == uid % PER_USER_RANGE)) {
-        // we should not umount on manager!
-        return false;
-    }
 #ifdef CONFIG_KSU_DISABLE_POLICY
     return !__ksu_is_allow_uid(uid);
 #else
@@ -341,10 +331,6 @@ struct root_profile *ksu_get_root_profile(uid_t uid)
     struct root_profile *res;
 
     rcu_read_lock();
-    if (is_uid_manager(uid)) {
-        goto use_default;
-    }
-
     if (unlikely(allow_shell && uid == SHELL_UID)) {
         goto use_default;
     }
@@ -389,7 +375,7 @@ bool ksu_get_allow_list(int *array, u16 length, u16 *out_length, u16 *out_total,
     rcu_read_lock();
     hash_for_each_rcu (allow_list, iter, p, list) {
         // pr_info("get_allow_list uid: %d allow: %d\n", p->uid, p->allow);
-        if (p->profile.allow_su == allow && !is_uid_manager(p->profile.curr_uid)) {
+        if (p->profile.allow_su == allow) {
             if (j < length) {
                 array[j++] = p->profile.curr_uid;
             }

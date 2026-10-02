@@ -7,7 +7,8 @@
 #include <linux/rculist.h>
 #include <linux/version.h>
 #include "klog.h" // IWYU pragma: keep
-#include "manager/throne_tracker.h"
+#include "policy/pkg_observer.h"
+#include "policy/pkg_tracker.h"
 
 #define MASK_SYSTEM (FS_CREATE | FS_MOVE | FS_EVENT_ON_CHILD)
 
@@ -30,7 +31,7 @@ static int ksu_handle_inode_event(struct fsnotify_mark *mark, u32 mask, struct i
         return 0;
     if (file_name->len == 13 && !memcmp(file_name->name, "packages.list", 13)) {
         pr_info("packages.list detected: %d\n", mask);
-        track_throne(false);
+        ksu_pkg_tracker_update();
     }
     return 0;
 }

@@ -54,9 +54,6 @@ static int do_get_info(void __user *arg)
     if (ksu_late_loaded) {
         cmd.flags |= KSU_GET_INFO_FLAG_LATE_LOAD;
     }
-#ifdef EXPECTED_SIZE2
-    cmd.flags |= KSU_GET_INFO_FLAG_PR_BUILD;
-#endif
     cmd.features = KSU_FEATURE_MAX;
     cmd.uapi_version = KERNEL_SU_UAPI_VERSION;
 
@@ -85,9 +82,6 @@ static int do_get_info_legacy(void __user *arg)
     if (ksu_late_loaded) {
         cmd.flags |= KSU_GET_INFO_FLAG_LATE_LOAD;
     }
-#ifdef EXPECTED_SIZE2
-    cmd.flags |= KSU_GET_INFO_FLAG_PR_BUILD;
-#endif
     cmd.features = KSU_FEATURE_MAX;
 
     if (copy_to_user(arg, &cmd, sizeof(cmd))) {
@@ -316,7 +310,7 @@ static int do_get_manager_appid(void __user *arg)
 {
     struct ksu_get_manager_appid_cmd cmd;
 
-    cmd.appid = ksu_get_manager_appid();
+    cmd.appid = KSU_INVALID_APPID;
 
     if (copy_to_user(arg, &cmd, sizeof(cmd))) {
         pr_err("get_manager_appid: copy_to_user failed\n");

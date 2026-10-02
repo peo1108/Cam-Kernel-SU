@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.screen.install.SeedApp
 import me.weishu.kernelsu.ui.util.FlashResult
 import me.weishu.kernelsu.ui.util.LkmSelection
 import me.weishu.kernelsu.ui.util.downloadBoot
@@ -78,6 +79,7 @@ sealed class FlashIt : Parcelable {
         val allowShell: Boolean = false,
         val enableAdb: Boolean = false,
         val backup: Boolean = false,
+        val seeds: List<SeedApp> = emptyList(),
     ) : FlashIt()
 
     @Parcelize
@@ -88,6 +90,7 @@ sealed class FlashIt : Parcelable {
         val allowShell: Boolean = false,
         val enableAdb: Boolean = false,
         val backup: Boolean = false,
+        val seeds: List<SeedApp> = emptyList(),
     ) : FlashIt()
 
     @Parcelize
@@ -129,6 +132,7 @@ fun flashIt(
             flashIt.allowShell,
             flashIt.enableAdb,
             flashIt.backup,
+            flashIt.seeds,
             onStdout,
             onStderr
         )
@@ -140,6 +144,7 @@ fun flashIt(
             flashIt.allowShell,
             flashIt.enableAdb,
             flashIt.backup,
+            flashIt.seeds,
             onStdout,
             onStderr
         )

@@ -23,6 +23,8 @@ import me.weishu.kernelsu.core.tasks.ExtractImage
 import me.weishu.kernelsu.core.tasks.ProbeResult
 import me.weishu.kernelsu.core.utils.DataSourceChannel
 import me.weishu.kernelsu.ksuApp
+import me.weishu.kernelsu.ui.screen.install.SeedApp
+import me.weishu.kernelsu.ui.screen.install.isValidSeedPackageName
 import okhttp3.OkHttpClient
 import org.json.JSONArray
 import java.io.File
@@ -284,10 +286,14 @@ private fun bootPatchFlags(
     allowShell: Boolean,
     enableAdb: Boolean,
     forceBackup: Boolean,
+    seeds: List<SeedApp>,
 ): String = buildString {
     if (allowShell) append(" --allow-shell")
     if (enableAdb) append(" --enable-adbd")
     if (forceBackup) append(" --backup")
+    // only [A-Za-z0-9._] package names reach the shell, so the args need no quoting
+    seeds.filter { isValidSeedPackageName(it.packageName) }
+        .forEach { append(" --seed ").append(it.toSeedArg()) }
 }
 
 fun installBoot(
@@ -298,6 +304,7 @@ fun installBoot(
     allowShell: Boolean,
     enableAdb: Boolean,
     forceBackup: Boolean,
+    seeds: List<SeedApp>,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
@@ -322,7 +329,7 @@ fun installBoot(
     } else {
         " -b ${bootFile.absolutePath}"
     }
-    cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
+    cmd += bootPatchFlags(allowShell, enableAdb, forceBackup, seeds)
 
     if (ota) {
         cmd += " -u"
@@ -366,6 +373,7 @@ fun downloadBoot(
     allowShell: Boolean,
     enableAdb: Boolean,
     forceBackup: Boolean,
+    seeds: List<SeedApp>,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
@@ -422,7 +430,7 @@ fun downloadBoot(
     }
 
     var cmd = "${getKsuDaemonPath()} boot-patch -b ${bootFile.absolutePath}"
-    cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
+    cmd += bootPatchFlags(allowShell, enableAdb, forceBackup, seeds)
 
     val lkmFile = writeLkmFile(lkm)
     if (lkmFile != null) {

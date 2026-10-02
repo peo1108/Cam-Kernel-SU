@@ -66,6 +66,7 @@ fun InstallScreen() {
     var allowShell by rememberSaveable { mutableStateOf(false) }
     var enableAdb by rememberSaveable { mutableStateOf(false) }
     var forceBackup by rememberSaveable { mutableStateOf(false) }
+    var seedPickerShown by rememberSaveable { mutableStateOf(false) }
 
     val currentKmi by produceState(initialValue = "") { value = getCurrentKmi() }
     val partitions by produceState(initialValue = emptyList()) { value = getAvailablePartitions() }
@@ -120,7 +121,9 @@ fun InstallScreen() {
         }
     }
 
-    val onInstall = {
+    val onInstall = { seedPickerShown = true }
+
+    val startFlash = { seeds: List<SeedApp> ->
         installMethod?.let { method ->
             navigator.push(
                 Route.Flash(
@@ -131,7 +134,8 @@ fun InstallScreen() {
                             lkm = lkmSelection,
                             allowShell = allowShell,
                             enableAdb = enableAdb,
-                            backup = forceBackup
+                            backup = forceBackup,
+                            seeds = seeds,
                         )
                         else -> FlashIt.FlashBoot(
                             boot = if (method is InstallMethod.SelectFile) method.uri else null,
@@ -140,13 +144,23 @@ fun InstallScreen() {
                             partition = partitions.getOrNull(partitionSelectionIndex),
                             allowShell = allowShell,
                             enableAdb = enableAdb,
-                            backup = method is InstallMethod.SelectFile && forceBackup
+                            backup = method is InstallMethod.SelectFile && forceBackup,
+                            seeds = seeds,
                         )
                     }
                 )
             )
         }
     }
+
+    SeedPickerDialog(
+        show = seedPickerShown,
+        onDismissRequest = { seedPickerShown = false },
+        onConfirm = { seeds ->
+            seedPickerShown = false
+            startFlash(seeds)
+        }
+    )
 
     ChooseKmiDialog(
         show = showChooseKmiDialog.value,

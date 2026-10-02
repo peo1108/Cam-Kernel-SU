@@ -299,4 +299,13 @@
     <string name="nav_rail_collapse">Thu gọn thanh điều hướng</string>
     <string name="settings_navigation_badge">Biểu tượng Điều hướng</string>
     <string name="settings_navigation_badge_summary">Hiển thị số lượng ứng dụng được cấp phép và số lượng module được kích hoạt trên thanh điều hướng.</string>
+    <string name="seed_title">Ứng dụng được cấp root</string>
+    <string name="seed_summary">Được cấp root ở lần khởi động đầu tiên sau khi flash. Ứng dụng này luôn được chọn.</string>
+    <string name="seed_search">Tìm ứng dụng</string>
+    <string name="seed_add_package">Thêm bằng tên gói</string>
+    <string name="seed_add">Thêm</string>
+    <string name="seed_invalid_name">Tên gói không hợp lệ</string>
+    <string name="seed_not_installed">Ứng dụng chưa được cài, hãy cài trước khi patch</string>
+    <string name="seed_limit">Tối đa %d ứng dụng</string>
+    <string name="seed_this_app">Ứng dụng này</string>
 </resources>

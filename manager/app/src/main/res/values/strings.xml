@@ -308,4 +308,13 @@
     <string name="nav_rail_collapse">Collapse navigation rail</string>
     <string name="settings_navigation_badge">Navigation badge</string>
     <string name="settings_navigation_badge_summary">Show granted app and enabled module counts on the navigation bar</string>
+    <string name="seed_title">Apps to grant root</string>
+    <string name="seed_summary">Granted on first boot after flashing. This app is always included.</string>
+    <string name="seed_search">Search apps</string>
+    <string name="seed_add_package">Add by package name</string>
+    <string name="seed_add">Add</string>
+    <string name="seed_invalid_name">Invalid package name</string>
+    <string name="seed_not_installed">App is not installed, install it before patching</string>
+    <string name="seed_limit">At most %d apps</string>
+    <string name="seed_this_app">This app</string>
 </resources>

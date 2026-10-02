@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.template
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.animateDpAsState
@@ -68,7 +69,6 @@ import me.weishu.kernelsu.ui.component.miuix.DropdownItem
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -278,7 +278,7 @@ private fun TemplateItem(
     template: TemplateInfo,
     onClick: () -> Unit,
 ) {
-    Card(
+    GlassCard(
         modifier = Modifier.padding(bottom = 12.dp),
         onClick = onClick,
         showIndication = true,

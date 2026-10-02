@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.appprofile
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -65,7 +66,6 @@ import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import me.weishu.kernelsu.ui.util.setSepolicy
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -196,7 +196,7 @@ private fun AppProfileInner(
     Column(
         modifier = modifier
     ) {
-        Card(
+        GlassCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
@@ -305,7 +305,7 @@ private fun AppProfileInner(
         }
 
         if (!isSpecialApp) {
-            Card(
+            GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
@@ -392,7 +392,7 @@ private fun AppProfileInner(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Card(
+            GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
@@ -429,7 +429,7 @@ private fun AppProfileInner(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Card(
+            GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
@@ -455,7 +455,7 @@ private fun AppProfileInner(
                 text = stringResource(R.string.app_profile_affects_following_apps),
                 modifier = Modifier.padding(top = 4.dp)
             )
-            Card(
+            GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
@@ -597,7 +597,7 @@ private fun ProfileBox(
         }
     }
     val selectedIndex = modesAndTitles.indexOfFirst { it.first == mode }
-    Card(
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),

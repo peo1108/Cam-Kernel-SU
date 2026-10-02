@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.superuser
 
+import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -80,7 +81,6 @@ import me.weishu.kernelsu.ui.util.ownerNameForUid
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import me.weishu.kernelsu.ui.viewmodel.AppSortType
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -503,7 +503,7 @@ private fun SimpleAppItem(
                 .clip(RoundedCornerShape(16.dp))
                 .background(if (matched) colorScheme.primary else colorScheme.primaryContainer)
         )
-        Card(
+        GlassListCard(
             modifier = Modifier
                 .padding(start = 6.dp, end = 12.dp, bottom = 6.dp)
         ) {
@@ -548,7 +548,7 @@ private fun GroupItem(
             if (userId != 0) add(StatusMeta("USER $userId", bg, fg))
         }
     }
-    Card(
+    GlassListCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),

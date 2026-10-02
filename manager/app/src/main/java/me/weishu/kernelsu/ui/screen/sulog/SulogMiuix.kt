@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui.screen.sulog
 
+import me.weishu.kernelsu.ui.component.glass.GlassListCard
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
@@ -77,7 +79,6 @@ import me.weishu.kernelsu.ui.util.SulogEntry
 import me.weishu.kernelsu.ui.util.SulogEventFilter
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
@@ -319,7 +320,7 @@ fun SulogScreenMiuix(
                         }
 
                         item {
-                            Card(
+                            GlassCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 12.dp)
@@ -444,7 +445,7 @@ private fun SulogEntryCard(
     entry: SulogEntry,
     onClick: () -> Unit,
 ) {
-    Card(
+    GlassListCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)

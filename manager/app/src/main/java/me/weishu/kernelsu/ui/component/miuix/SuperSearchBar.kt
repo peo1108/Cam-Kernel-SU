@@ -1,5 +1,9 @@
 package me.weishu.kernelsu.ui.component.miuix
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
+import me.weishu.kernelsu.ui.component.glass.glassSurface
+import me.weishu.kernelsu.ui.component.glass.GlassDefaults
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -269,7 +273,7 @@ fun SearchBar(
             .padding(horizontal = 12.dp)
             .padding(top = searchBarTopPadding, bottom = 6.dp)
             .heightIn(min = 45.dp)
-            .background(colorScheme.surfaceContainerHigh, CircleShape)
+            .glassSurface(SearchShape, GlassDefaults.dropletTint(), GlassDefaults.cardBlur, lens = true)
             .focusRequester(focusRequester),
         decorationBox = { innerTextField ->
             Row(
@@ -341,10 +345,14 @@ fun SearchBarFake(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(top = searchBarTopPadding, bottom = 6.dp),
+            .padding(top = searchBarTopPadding, bottom = 6.dp)
+            .glassSurface(SearchShape, GlassDefaults.dropletTint(), GlassDefaults.cardBlur, lens = true),
+        color = Color.Transparent,
         onSearch = { },
         enabled = false,
         expanded = false,
         onExpandedChange = { }
     )
 }
+
+private val SearchShape = RoundedCornerShape(percent = 50)

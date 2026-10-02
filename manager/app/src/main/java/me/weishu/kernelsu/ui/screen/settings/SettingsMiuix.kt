@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.settings
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -49,7 +50,6 @@ import me.weishu.kernelsu.ui.component.uninstalldialog.UninstallDialog
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -107,7 +107,7 @@ fun SettingPagerMiuix(
                 overscrollEffect = null,
             ) {
                 item {
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
@@ -144,7 +144,7 @@ fun SettingPagerMiuix(
                         }
                     }
 
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
@@ -180,7 +180,7 @@ fun SettingPagerMiuix(
                     }
 
                     KsuIsValid {
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth(),
@@ -203,7 +203,7 @@ fun SettingPagerMiuix(
                     }
 
                     KsuIsValid {
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth(),
@@ -336,7 +336,7 @@ fun SettingPagerMiuix(
                             )
                         }
 
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth(),
@@ -389,7 +389,7 @@ fun SettingPagerMiuix(
                     }
 
                     if (uiState.isLkmMode) {
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth(),
@@ -415,7 +415,7 @@ fun SettingPagerMiuix(
                         }
                     }
 
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .padding(vertical = 12.dp)
                             .fillMaxWidth(),

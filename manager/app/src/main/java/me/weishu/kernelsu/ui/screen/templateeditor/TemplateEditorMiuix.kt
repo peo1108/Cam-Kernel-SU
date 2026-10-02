@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.templateeditor
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +37,6 @@ import me.weishu.kernelsu.ui.component.profile.RootProfileConfig
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -102,7 +102,7 @@ fun TemplateEditorScreenMiuix(
                 overscrollEffect = null
             ) {
                 item {
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(12.dp),

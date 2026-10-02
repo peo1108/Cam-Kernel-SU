@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.install
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -48,7 +49,6 @@ import me.weishu.kernelsu.ui.util.LkmSelection
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -121,7 +121,7 @@ internal fun InstallScreenMiuix(
                 overscrollEffect = null,
             ) {
                 item {
-                    Card(
+                    GlassCard(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         SelectInstallMethod(
@@ -147,7 +147,7 @@ internal fun InstallScreenMiuix(
                         } else {
                             uiState.partitionSelectionIndex
                         }
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
@@ -177,7 +177,7 @@ internal fun InstallScreenMiuix(
                         enter = expandVertically(),
                         exit = shrinkVertically()
                     ) {
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
@@ -190,7 +190,7 @@ internal fun InstallScreenMiuix(
                             )
                         }
                     }
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
@@ -236,7 +236,7 @@ internal fun InstallScreenMiuix(
                             }
                         )
                     }
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),

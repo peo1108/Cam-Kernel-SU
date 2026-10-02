@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.about
 
+import top.yukonga.miuix.kmp.basic.Card
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.os.Build
 import androidx.compose.foundation.Image
@@ -64,7 +65,6 @@ import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior

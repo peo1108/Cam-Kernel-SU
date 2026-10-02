@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.module
 
+import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
@@ -121,7 +122,6 @@ import me.weishu.kernelsu.ui.util.getFileName
 import me.weishu.kernelsu.ui.util.reboot
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
@@ -779,7 +779,7 @@ fun ModuleItem(
     val maxLinesLimit = LocalModuleDescriptionMaxLines.current
     var expanded by rememberSaveable(module.id) { mutableStateOf(false) }
 
-    Card(
+    GlassListCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),

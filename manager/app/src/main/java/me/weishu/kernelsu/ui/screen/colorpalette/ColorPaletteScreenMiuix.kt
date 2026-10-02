@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.colorpalette
 
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import android.os.Build
@@ -79,7 +80,6 @@ import me.weishu.kernelsu.ui.theme.keyColorOptions
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -180,7 +180,7 @@ fun ColorPaletteScreenMiuix(
                         },
                     )
 
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
@@ -286,7 +286,7 @@ fun ColorPaletteScreenMiuix(
                         }
                     }
 
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
@@ -361,7 +361,7 @@ fun ColorPaletteScreenMiuix(
                         )
                     }
 
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
@@ -464,7 +464,7 @@ fun ColorPaletteScreenMiuix(
                         )
                     }
 
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),

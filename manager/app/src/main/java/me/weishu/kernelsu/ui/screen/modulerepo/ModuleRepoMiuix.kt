@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui.screen.modulerepo
 
+import me.weishu.kernelsu.ui.component.glass.GlassListCard
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import android.content.Context
@@ -94,7 +96,6 @@ import me.weishu.kernelsu.ui.util.download
 import me.weishu.kernelsu.ui.util.isDownloadAvailable
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import me.weishu.kernelsu.ui.util.rememberContentReady
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -261,7 +262,7 @@ fun ModuleRepoScreenMiuix(
                         Spacer(Modifier.height(6.dp))
                     }
                     items(state.searchResults, key = { it.moduleId }, contentType = { "module" }) { module ->
-                        Card(
+                        GlassListCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 12.dp)
@@ -435,7 +436,7 @@ fun ModuleRepoScreenMiuix(
                             items(items = state.modules, key = { it.moduleId }, contentType = { "module" }) { module ->
                                 val moduleAuthor = stringResource(id = R.string.module_author)
 
-                                Card(
+                                GlassListCard(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 12.dp)
@@ -654,7 +655,7 @@ fun ReleasesPage(
                 }
                 items(items = detailReleases, key = { it.tagName }, contentType = { "release" }) { rel ->
                     val title = remember(rel.name, rel.tagName) { rel.name.ifBlank { rel.tagName } }
-                    Card(
+                    GlassListCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp)
@@ -932,7 +933,7 @@ fun InfoPage(
                     SmallTitle(
                         text = stringResource(R.string.module_author), modifier = Modifier.padding(top = 6.dp)
                     )
-                    Card(
+                    GlassCard(
                         modifier = Modifier.padding(horizontal = 12.dp), insideMargin = PaddingValues(16.dp)
                     ) {
                         Column {
@@ -983,7 +984,7 @@ fun InfoPage(
                     SmallTitle(
                         text = stringResource(R.string.module_repos_source_code), modifier = Modifier.padding(top = 6.dp)
                     )
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp)

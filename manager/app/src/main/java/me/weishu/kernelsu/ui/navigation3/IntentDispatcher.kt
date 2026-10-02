@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.core.net.toUri
 import kotlinx.coroutines.channels.ReceiveChannel
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
@@ -150,7 +151,7 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val navigator = LocalNavigator.current
-    val isSafeMode = Natives.isSafeMode
+    val isSafeMode = Ksu.isSafeMode
     val isManager = Natives.isManager
     var pendingZipInstall by rememberSaveable(stateSaver = PendingAction.InstallModule.InstallModuleSaver) { mutableStateOf(null) }
 

@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.weishu.kernelsu.KernelVersion
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.WarningLevel
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
@@ -177,7 +177,7 @@ fun HomePagerMiuix(
                         )
                         Spacer(
                             Modifier.height(
-                                bottomInnerPadding + if (!Natives.isFullFeatured())
+                                bottomInnerPadding + if (!Ksu.isFullFeatured())
                                     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
                             )
                         )

@@ -5,7 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.LocalMainPagerState
@@ -20,7 +20,7 @@ fun NavigationRailMiuix(
     navigationBadge: NavigationBadgeState,
     modifier: Modifier = Modifier,
 ) {
-    val fullFeatured = Natives.isFullFeatured()
+    val fullFeatured = Ksu.isFullFeatured()
     if (!fullFeatured) return
 
     val mainState = LocalMainPagerState.current

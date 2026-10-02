@@ -3,11 +3,14 @@ package me.weishu.kernelsu.ui
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Bundle
 import android.os.IBinder
 import android.os.UserManager
 import android.util.Log
 import com.topjohnwu.superuser.ipc.RootService
 import me.weishu.kernelsu.IKsuInterface
+import me.weishu.kernelsu.KsuServiceClient
+import me.weishu.kernelsu.Natives
 import rikka.parcelablelist.ParcelableListSlice
 
 /**
@@ -89,5 +92,30 @@ class KsuService : RootService() {
             Log.i(TAG, "getUserIds: ${ids.contentToString()}")
             return ids
         }
+
+        override fun getVersion(): Int = Natives.version
+        override fun getKernelUapiVersion(): Int = Natives.kernelUAPIVersion
+        override fun isSafeMode(): Boolean = Natives.isSafeMode
+        override fun isLkmMode(): Boolean = Natives.isLkmMode
+        override fun isLkmBundled(): Boolean = Natives.isLkmBundled
+        override fun isLateLoadMode(): Boolean = Natives.isLateLoadMode
+        override fun isPrBuild(): Boolean = Natives.isPrBuild
+
+        override fun uidShouldUmount(uid: Int): Boolean = Natives.uidShouldUmount(uid)
+
+        override fun getAppProfile(key: String?, uid: Int): Bundle =
+            Bundle().apply { putParcelable(KsuServiceClient.PROFILE_KEY, Natives.getAppProfile(key, uid)) }
+
+        override fun setAppProfile(profile: Bundle): Boolean =
+            Natives.setAppProfile(KsuServiceClient.readProfile(profile))
+
+        override fun isSuEnabled(): Boolean = Natives.isSuEnabled()
+        override fun setSuEnabled(enabled: Boolean): Boolean = Natives.setSuEnabled(enabled)
+        override fun isKernelUmountEnabled(): Boolean = Natives.isKernelUmountEnabled()
+        override fun setKernelUmountEnabled(enabled: Boolean): Boolean = Natives.setKernelUmountEnabled(enabled)
+        override fun isSelinuxHideEnabled(): Boolean = Natives.isSelinuxHideEnabled()
+        override fun setSelinuxHideEnabled(enabled: Boolean): Int = Natives.setSelinuxHideEnabled(enabled)
+
+        override fun getSuperuserCount(): Int = Natives.getSuperuserCount()
     }
 }

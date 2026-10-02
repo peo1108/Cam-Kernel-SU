@@ -21,7 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalMainPagerState
 import me.weishu.kernelsu.ui.component.FloatingBottomBar
@@ -47,7 +47,7 @@ fun BottomBarMiuix(
     navigationBadge: NavigationBadgeState,
     modifier: Modifier,
 ) {
-    val fullFeatured = Natives.isFullFeatured()
+    val fullFeatured = Ksu.isFullFeatured()
     if (!fullFeatured) return
 
     val mainState = LocalMainPagerState.current

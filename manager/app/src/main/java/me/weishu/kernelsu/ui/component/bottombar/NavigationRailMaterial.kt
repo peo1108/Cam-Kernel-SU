@@ -37,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.LocalMainPagerState
@@ -47,7 +47,7 @@ fun NavigationRailMaterial(
     navigationBadge: NavigationBadgeState,
     modifier: Modifier = Modifier,
 ) {
-    val fullFeatured = Natives.isFullFeatured()
+    val fullFeatured = Ksu.isFullFeatured()
     if (!fullFeatured) return
 
     val mainPagerState = LocalMainPagerState.current

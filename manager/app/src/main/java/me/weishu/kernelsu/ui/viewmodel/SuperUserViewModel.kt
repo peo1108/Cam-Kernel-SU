@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.data.repository.SuperUserRepository
@@ -278,7 +278,7 @@ class SuperUserViewModel(
 
     private fun buildGroups(
         apps: List<AppInfo>,
-        umount: (Int) -> Boolean = { Natives.uidShouldUmount(it) },
+        umount: (Int) -> Boolean = { Ksu.uidShouldUmount(it) },
     ): List<GroupedApps> {
         val collator = Collator.getInstance(Locale.getDefault())
         val comparator = compareBy<AppInfo> {
@@ -338,7 +338,7 @@ class SuperUserViewModel(
                 val (cachedGroups, grouped) = withContext(Dispatchers.IO) {
                     val cached = buildCachedGroups(newApps)
                     val umountByUid = cached.associate { it.uid to it.shouldUmount }
-                    cached to buildGroups(filterApps(newApps)) { umountByUid[it] ?: Natives.uidShouldUmount(it) }
+                    cached to buildGroups(filterApps(newApps)) { umountByUid[it] ?: Ksu.uidShouldUmount(it) }
                 }
 
                 // Update cache for static method
@@ -374,14 +374,14 @@ class SuperUserViewModel(
                     val cached = buildCachedGroups(updatedApps)
                     val umountByUid = cached.associate { it.uid to it.shouldUmount }
                     val visible = buildGroups(filterApps(updatedApps)) {
-                        umountByUid[it] ?: Natives.uidShouldUmount(it)
+                        umountByUid[it] ?: Ksu.uidShouldUmount(it)
                     }
                     val result = if (resort) {
                         visible
                     } else {
                         val byUid = visible.associateBy { it.uid }
                         _uiState.value.groupedApps.map { group ->
-                            byUid[group.uid] ?: group.copy(shouldUmount = Natives.uidShouldUmount(group.uid))
+                            byUid[group.uid] ?: group.copy(shouldUmount = Ksu.uidShouldUmount(group.uid))
                         }
                     }
                     cached to result

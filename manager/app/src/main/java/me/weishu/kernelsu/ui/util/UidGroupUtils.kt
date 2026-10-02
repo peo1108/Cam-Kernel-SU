@@ -1,6 +1,6 @@
 package me.weishu.kernelsu.ui.util
 
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import java.util.concurrent.ConcurrentHashMap
@@ -41,7 +41,7 @@ fun ownerNameForUid(uid: Int, appSource: List<SuperUserViewModel.AppInfo>? = nul
         val text = runCatching { pm.getText(labeledApp.packageName, resId, labeledApp.packageInfo.applicationInfo) }.getOrNull()
         text?.toString() ?: ""
     } else {
-        Natives.getUserName(uid) ?: ""
+        Ksu.getUserName(uid) ?: ""
     }
     val appId = uid % 100000
     val isAppRange = appId in 10000..19999

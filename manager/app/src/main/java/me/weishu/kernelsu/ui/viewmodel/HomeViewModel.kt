@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.BuildConfig
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
@@ -47,10 +48,10 @@ class HomeViewModel(
     private fun buildState(): HomeUiState {
         val kernelVersion = getKernelVersion()
         val isManager = Natives.isManager
-        val ksuVersion = if (isManager) Natives.version else null
-        val kernelUAPIVersion = if (isManager) Natives.kernelUAPIVersion else null
+        val ksuVersion = if (isManager) Ksu.version else null
+        val kernelUAPIVersion = if (isManager) Ksu.kernelUAPIVersion else null
         val managerUAPIVersion = Natives.managerUAPIVersion
-        val lkmMode = ksuVersion?.let { if (kernelVersion.isGKI()) Natives.isLkmMode else null }
+        val lkmMode = ksuVersion?.let { if (kernelVersion.isGKI()) Ksu.isLkmMode else null }
         val isRootAvailable = rootAvailable()
         val managerVersion = getManagerVersion(ksuApp)
 
@@ -58,17 +59,17 @@ class HomeViewModel(
             kernelVersion = kernelVersion,
             ksuVersion = ksuVersion,
             lkmMode = lkmMode,
-            isLkmBundled = lkmMode == true && Natives.isLkmBundled,
+            isLkmBundled = lkmMode == true && Ksu.isLkmBundled,
             isManager = isManager,
             isManagerPrBuild = BuildConfig.IS_PR_BUILD,
-            isKernelPrBuild = Natives.isPrBuild,
-            requiresNewKernel = isManager && Natives.managerUAPIVersion > Natives.kernelUAPIVersion,
-            requiresNewManager = isManager && Natives.managerUAPIVersion < Natives.kernelUAPIVersion,
+            isKernelPrBuild = Ksu.isPrBuild,
+            requiresNewKernel = isManager && Natives.managerUAPIVersion > Ksu.kernelUAPIVersion,
+            requiresNewManager = isManager && Natives.managerUAPIVersion < Ksu.kernelUAPIVersion,
             kernelUAPIVersion = kernelUAPIVersion,
             managerUAPIVersion = managerUAPIVersion,
             isRootAvailable = isRootAvailable,
-            isSafeMode = Natives.isSafeMode,
-            isLateLoadMode = Natives.isLateLoadMode,
+            isSafeMode = Ksu.isSafeMode,
+            isLateLoadMode = Ksu.isLateLoadMode,
             checkUpdateEnabled = settingsRepo.checkUpdate,
             latestVersionInfo = LatestVersionInfo(),
             currentManagerVersionCode = managerVersion.versionCode,

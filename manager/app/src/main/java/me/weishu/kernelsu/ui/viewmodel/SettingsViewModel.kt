@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
@@ -70,7 +70,7 @@ class SettingsViewModel(
             val uiMode = repo.uiMode
             val autoJailbreak = repo.autoJailbreak
             val useSoftReboot = repo.useSoftReboot
-            val isLateLoadMode = Natives.isLateLoadMode
+            val isLateLoadMode = Ksu.isLateLoadMode
 
             _uiState.update {
                 it.copy(

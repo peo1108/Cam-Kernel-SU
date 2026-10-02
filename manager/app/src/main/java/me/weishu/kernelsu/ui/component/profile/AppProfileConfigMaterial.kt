@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
@@ -45,7 +46,7 @@ fun AppProfileConfigMaterial(
                     checked = if (enabled) {
                         profile.umountModules
                     } else {
-                        Natives.isDefaultUmountModules()
+                        Ksu.isDefaultUmountModules()
                     },
                     enabled = enabled,
                     onCheckedChange = {

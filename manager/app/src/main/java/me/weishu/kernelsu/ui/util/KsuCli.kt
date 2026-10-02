@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.BuildConfig
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.core.tasks.BootKernelVersion
 import me.weishu.kernelsu.core.tasks.ExtractImage
 import me.weishu.kernelsu.core.tasks.ProbeResult
@@ -148,7 +148,7 @@ fun getModuleCount(): Int {
 }
 
 fun getSuperuserCount(): Int {
-    return Natives.getSuperuserCount()
+    return Ksu.getSuperuserCount()
 }
 
 fun toggleModule(id: String, enable: Boolean): Boolean {

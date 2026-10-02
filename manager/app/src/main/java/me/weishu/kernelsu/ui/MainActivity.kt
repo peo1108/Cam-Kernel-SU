@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.ui.component.bottombar.BottomBar
 import me.weishu.kernelsu.ui.component.bottombar.MainPagerState
@@ -129,7 +130,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val isManager = Natives.isManager
-        if (isManager && Natives.kernelUAPIVersion == Natives.managerUAPIVersion) install()
+        if (isManager && Ksu.kernelUAPIVersion == Natives.managerUAPIVersion) install()
 
         if (savedInstanceState == null) intent?.let { intentChannel.trySend(it) }
 
@@ -272,7 +273,7 @@ fun MainScreen(
         pagerState = pagerState,
         animatePageChanges = !useNavigationRail,
     )
-    val isFullFeatured = Natives.isFullFeatured()
+    val isFullFeatured = Ksu.isFullFeatured()
     val pagerMode = PagerInterceptionMode.entries.getOrElse(pagerInterceptionMode) {
         PagerInterceptionMode.Native
     }

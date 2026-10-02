@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.miuix.EditText
@@ -38,7 +39,7 @@ fun AppProfileConfigMiuix(
             checked = if (enabled) {
                 profile.umountModules
             } else {
-                Natives.isDefaultUmountModules()
+                Ksu.isDefaultUmountModules()
             },
             enabled = enabled,
             onCheckedChange = {

@@ -1,29 +1,20 @@
 package me.weishu.kernelsu.data.repository
 
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
+import android.os.RemoteException
 import android.os.SystemClock
 import android.util.Log
-import com.topjohnwu.superuser.Shell
-import com.topjohnwu.superuser.ipc.RootService
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.IKsuInterface
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
+import me.weishu.kernelsu.KsuServiceClient
 import me.weishu.kernelsu.data.model.AppInfo
 import me.weishu.kernelsu.data.model.WEBVIEW_ZYGOTE_PROFILE_KEY
 import me.weishu.kernelsu.data.model.WEBVIEW_ZYGOTE_UID
 import me.weishu.kernelsu.ksuApp
-import me.weishu.kernelsu.ui.KsuService
 import me.weishu.kernelsu.ui.util.KsuCli
-import kotlin.coroutines.resume
 
 class SuperUserRepositoryImpl : SuperUserRepository {
 
@@ -39,41 +30,12 @@ class SuperUserRepositoryImpl : SuperUserRepository {
                 )
             }
 
-            val result = connectKsuService {
-                Log.w(TAG, "KsuService disconnected")
-            }
-
-            var currentBinder = result.first
-            var currentConnection = result.second
-
-            try {
-                suspend fun reconnect(): IKsuInterface {
-                    withContext(Dispatchers.Main) {
-                        RootService.unbind(currentConnection)
-                    }
-                    val retry = connectKsuService { Log.w(TAG, "KsuService disconnected") }
-                    currentBinder = retry.first
-                    currentConnection = retry.second
-                    return IKsuInterface.Stub.asInterface(currentBinder)
-                }
-
+            run {
                 val pm = ksuApp.packageManager
                 val start = SystemClock.elapsedRealtime()
 
-                var iface = IKsuInterface.Stub.asInterface(currentBinder)
-                val idsArray = try {
-                    iface.userIds
-                } catch (_: Exception) {
-                    iface = reconnect()
-                    iface.userIds
-                }
-
-                val slice = try {
-                    iface.getPackages(0)
-                } catch (_: Exception) {
-                    iface = reconnect()
-                    iface.getPackages(0)
-                }
+                val idsArray = withService { it.userIds }
+                val slice = withService { it.getPackages(0) }
 
                 val packages = slice.list
                 val newApps = packages.filter {
@@ -82,7 +44,7 @@ class SuperUserRepositoryImpl : SuperUserRepository {
                             (ai.flags and ApplicationInfo.FLAG_HAS_CODE) != 0
                 }.map {
                     val appInfo = it.applicationInfo!!
-                    val profile = Natives.getAppProfile(it.packageName, appInfo.uid)
+                    val profile = Ksu.getAppProfile(it.packageName, appInfo.uid)
                     AppInfo(
                         label = appInfo.loadLabel(pm).toString(),
                         packageInfo = it,
@@ -101,17 +63,13 @@ class SuperUserRepositoryImpl : SuperUserRepository {
                 newApps += AppInfo(
                     label = "WebView Zygote",
                     packageInfo = placeholder,
-                    profile = Natives.getAppProfile(WEBVIEW_ZYGOTE_PROFILE_KEY, WEBVIEW_ZYGOTE_UID),
+                    profile = Ksu.getAppProfile(WEBVIEW_ZYGOTE_PROFILE_KEY, WEBVIEW_ZYGOTE_UID),
                     profileKey = WEBVIEW_ZYGOTE_PROFILE_KEY,
                     special = true,
                 )
 
                 Log.i(TAG, "load cost: ${SystemClock.elapsedRealtime() - start}")
                 Pair(newApps, idsArray.toList())
-            } finally {
-                withContext(Dispatchers.Main) {
-                    RootService.unbind(currentConnection)
-                }
             }
         }
     }
@@ -121,47 +79,23 @@ class SuperUserRepositoryImpl : SuperUserRepository {
             if (currentApps.isEmpty()) return@runCatching emptyList()
 
             currentApps.map {
-                val profile = Natives.getAppProfile(it.profileKey, it.uid)
+                val profile = Ksu.getAppProfile(it.profileKey, it.uid)
                 it.copy(profile = profile)
             }
         }
     }
 
-    private suspend inline fun connectKsuService(
-        crossinline onDisconnect: () -> Unit = {}
-    ): Pair<IBinder, ServiceConnection> = withContext(Dispatchers.Main) {
-        suspendCancellableCoroutine { cont ->
-            val connection = object : ServiceConnection {
-                override fun onServiceDisconnected(name: ComponentName?) {
-                    onDisconnect()
-                }
-
-                override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-                    if (cont.isActive) {
-                        cont.resume(binder as IBinder to this)
-                    }
-                }
+    private suspend fun <T> withService(block: (IKsuInterface) -> T): T {
+        repeat(2) { attempt ->
+            check(KsuServiceClient.connect()) { "KsuService unavailable" }
+            val service = KsuServiceClient.service ?: return@repeat
+            try {
+                return block(service)
+            } catch (e: RemoteException) {
+                Log.w(TAG, "KsuService call failed, attempt $attempt", e)
+                if (attempt == 1) throw e
             }
-
-            cont.invokeOnCancellation {
-                if (Looper.myLooper() == Looper.getMainLooper()) {
-                    RootService.unbind(connection)
-                } else {
-                    Handler(Looper.getMainLooper()).post {
-                        RootService.unbind(connection)
-                    }
-                }
-            }
-
-            val intent = Intent(ksuApp, KsuService::class.java)
-
-            val task = RootService.bindOrTask(
-                intent,
-                Shell.EXECUTOR,
-                connection,
-            )
-            val shell = KsuCli.SHELL
-            task?.let { shell.execTask(it) }
         }
+        error("KsuService unavailable")
     }
 }

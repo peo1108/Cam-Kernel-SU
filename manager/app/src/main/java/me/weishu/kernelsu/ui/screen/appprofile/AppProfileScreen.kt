@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
@@ -60,7 +60,7 @@ fun AppProfileScreen(uid: Int) {
     }
 
     val initialProfile = remember(uid, packageName, primaryAppInfo.special) {
-        Natives.getAppProfile(packageName, uid).let {
+        Ksu.getAppProfile(packageName, uid).let {
             if (primaryAppInfo.special) it.copy(allowSu = false) else it
         }.also {
             if (it.allowSu && !primaryAppInfo.special) {
@@ -128,7 +128,7 @@ fun AppProfileScreen(uid: Int) {
                         return@launch
                     }
                 }
-                if (!Natives.setAppProfile(profileToSave)) {
+                if (!Ksu.setAppProfile(profileToSave)) {
                     showMessage(failToUpdateAppProfile)
                 } else {
                     profile = profileToSave

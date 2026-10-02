@@ -14,7 +14,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.repository.isSoftRebootPreferred
 import me.weishu.kernelsu.ui.LocalUiMode
@@ -31,7 +31,7 @@ fun FlashScreen(flashIt: FlashIt) {
     val logContent = remember { StringBuilder() }
     var showRebootAction by rememberSaveable { mutableStateOf(false) }
     var flashingStatus by rememberSaveable { mutableStateOf(FlashingStatus.FLASHING) }
-    val needJailbreakWarning = flashIt is FlashIt.FlashBoot && Natives.isLateLoadMode
+    val needJailbreakWarning = flashIt is FlashIt.FlashBoot && Ksu.isLateLoadMode
     // Soft reboot keeps the jailbreak and still applies modules
     val softReboot = flashIt is FlashIt.FlashModules && isSoftRebootPreferred()
     var flashingEnabled by rememberSaveable { mutableStateOf(!needJailbreakWarning) }

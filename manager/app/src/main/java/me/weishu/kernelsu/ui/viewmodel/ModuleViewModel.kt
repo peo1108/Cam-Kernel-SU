@@ -21,7 +21,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.Module
 import me.weishu.kernelsu.data.model.ModuleUpdateInfo
@@ -122,7 +122,7 @@ class ModuleViewModel(
     fun refreshEnvironmentState() {
         viewModelScope.launch {
             val magiskInstalled = withContext(Dispatchers.IO) { hasMagisk() }
-            val isSafeMode = Natives.isSafeMode
+            val isSafeMode = Ksu.isSafeMode
             _uiState.update {
                 it.copy(
                     magiskInstalled = magiskInstalled,

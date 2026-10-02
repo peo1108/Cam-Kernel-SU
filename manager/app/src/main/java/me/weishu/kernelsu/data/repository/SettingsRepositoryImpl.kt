@@ -8,7 +8,7 @@ import androidx.core.content.edit
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.topjohnwu.superuser.ShellUtils
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.magica.BootCompletedReceiver
 import me.weishu.kernelsu.ui.UiMode
@@ -23,7 +23,7 @@ private const val KEY_USE_SOFT_REBOOT = "soft_reboot"
 
 /** Prefer soft reboot: always in jailbreak mode, or when the setting is enabled. */
 fun isSoftRebootPreferred(): Boolean =
-    Natives.isLateLoadMode || ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
+    Ksu.isLateLoadMode || ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
         .getBoolean(KEY_USE_SOFT_REBOOT, false)
 
 class SettingsRepositoryImpl : SettingsRepository {
@@ -176,9 +176,9 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     override suspend fun getSuCompatPersistValue(): Long? = getFeaturePersistValue("su_compat")
 
-    override fun isSuEnabled(): Boolean = Natives.isSuEnabled()
+    override fun isSuEnabled(): Boolean = Ksu.isSuEnabled()
 
-    override fun setSuEnabled(enabled: Boolean): Boolean = Natives.setSuEnabled(enabled)
+    override fun setSuEnabled(enabled: Boolean): Boolean = Ksu.setSuEnabled(enabled)
 
     override fun setSuCompatModePref(mode: Int) = prefs.edit { putInt("su_compat_mode", mode) }
 
@@ -186,15 +186,15 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     override suspend fun getKernelUmountStatus(): String = getFeatureStatus("kernel_umount")
 
-    override fun isKernelUmountEnabled(): Boolean = Natives.isKernelUmountEnabled()
+    override fun isKernelUmountEnabled(): Boolean = Ksu.isKernelUmountEnabled()
 
-    override fun setKernelUmountEnabled(enabled: Boolean): Boolean = Natives.setKernelUmountEnabled(enabled)
+    override fun setKernelUmountEnabled(enabled: Boolean): Boolean = Ksu.setKernelUmountEnabled(enabled)
 
     override suspend fun getSelinuxHideStatus(): String = getFeatureStatus("selinux_hide")
 
-    override fun isSelinuxHideEnabled(): Boolean = Natives.isSelinuxHideEnabled()
+    override fun isSelinuxHideEnabled(): Boolean = Ksu.isSelinuxHideEnabled()
 
-    override fun setSelinuxHideEnabled(enabled: Boolean): Int = Natives.setSelinuxHideEnabled(enabled)
+    override fun setSelinuxHideEnabled(enabled: Boolean): Int = Ksu.setSelinuxHideEnabled(enabled)
 
     override suspend fun getSulogStatus(): String = getFeatureStatus("sulog")
 
@@ -214,11 +214,11 @@ class SettingsRepositoryImpl : SettingsRepository {
             false
         }
 
-    override fun isDefaultUmountModules(): Boolean = Natives.isDefaultUmountModules()
+    override fun isDefaultUmountModules(): Boolean = Ksu.isDefaultUmountModules()
 
-    override fun setDefaultUmountModules(enabled: Boolean): Boolean = Natives.setDefaultUmountModules(enabled)
+    override fun setDefaultUmountModules(enabled: Boolean): Boolean = Ksu.setDefaultUmountModules(enabled)
 
-    override fun isLkmMode(): Boolean = Natives.isLkmMode
+    override fun isLkmMode(): Boolean = Ksu.isLkmMode
 
     override fun execKsudFeatureSave() {
         execKsud("feature save", true)

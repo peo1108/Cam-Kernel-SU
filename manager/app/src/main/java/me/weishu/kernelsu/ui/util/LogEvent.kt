@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.system.Os
 import com.topjohnwu.superuser.ShellUtils
-import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.ui.screen.home.getManagerVersion
 import java.io.File
 import java.io.FileWriter
@@ -92,11 +92,11 @@ fun getBugreportFile(context: Context): File {
         pw.println("Nodename: ${uname.nodename}")
         pw.println("Sysname: ${uname.sysname}")
 
-        val ksuKernel = Natives.version
+        val ksuKernel = Ksu.version
         pw.println("KernelSU: $ksuKernel")
-        val safeMode = Natives.isSafeMode
+        val safeMode = Ksu.isSafeMode
         pw.println("SafeMode: $safeMode")
-        val lkmMode = Natives.isLkmMode
+        val lkmMode = Ksu.isLkmMode
         pw.println("LKM: $lkmMode")
     }
 

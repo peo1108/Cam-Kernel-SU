@@ -63,11 +63,25 @@ static inline int scan_driver_fd() {
     return found;
 }
 
+// Only a uid 0 process (KsuService) may ask the kernel for a driver fd:
+// app processes are not allowed the reboot syscall and seccomp would kill them.
+static inline int install_driver_fd() {
+    if (getuid() != 0) {
+        return -1;
+    }
+    int new_fd = -1;
+    syscall(SYS_reboot, KSU_INSTALL_MAGIC1, KSU_INSTALL_MAGIC2, 0, &new_fd);
+    return new_fd;
+}
+
 template<typename... Args>
 static int ksuctl(unsigned long op, Args &&... args) {
 
     if (fd < 0) {
         fd = scan_driver_fd();
+    }
+    if (fd < 0) {
+        fd = install_driver_fd();
     }
 
     static_assert(sizeof...(Args) <= 1, "ioctl expects at most one extra argument");

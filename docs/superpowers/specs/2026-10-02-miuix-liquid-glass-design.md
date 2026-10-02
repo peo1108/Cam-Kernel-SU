@@ -15,8 +15,9 @@ Decisions already made with the user:
 
 - Upgrade the existing Miuix mode in place. No new `UiMode`, no third screen set.
 - Liquid glass **replaces** the current Miuix look. No on/off toggle.
-- Background: animated theme-tinted gradient by default, with an option to use
-  a user-picked image instead.
+- Background: the device's current home-screen wallpaper by default, read via
+  the root shell (approach 1, not `windowShowWallpaper`, so glass can refract
+  it). Alternatives in settings: animated gradient, or a user-picked image.
 - Shared `Glass*` component layer (approach A), not a theme-level hack and not
   a fork of the miuix library.
 - Launcher icon: the full `IMG_7454.PNG` logo (triangle + text), not cropped.
@@ -102,27 +103,47 @@ Fallback inside every component: when `RuntimeShader` is unsupported, skip
 
 ## 5. Background and settings
 
-`GlassBackground` composable, two sources:
+`GlassBackground` composable, three sources:
 
-1. **Animated gradient (default)**
+1. **Device wallpaper (default)**
+   - Apps cannot read the wallpaper bitmap: since Android 13
+     `WallpaperManager.getDrawable()` needs `MANAGE_EXTERNAL_STORAGE` or a
+     privileged permission. The Manager has root, so a `WallpaperRepository`
+     copies `/data/system/users/<userId>/wallpaper` (home screen) through
+     `getRootShell()` into `filesDir/glass_wallpaper`, makes it readable by the
+     app uid, then decodes/downscales it like a user image.
+   - `userId` is derived from the app uid (`Process.myUid() / 100000`), so
+     secondary users and work profiles read their own wallpaper.
+   - Refresh: on each `ON_RESUME`, compare the source file's mtime + size (one
+     cheap `stat` via root shell) with the cached copy; re-copy when different.
+     No broadcast receiver.
+   - Fallback (no root grant, live wallpaper with no static file, OEM path
+     missing or undecodable): animated gradient tinted with
+     `WallpaperManager.getWallpaperColors(FLAG_SYSTEM)` (no permission needed),
+     so the background still matches the device's palette.
+2. **Animated gradient**
    - Reuse `BgEffectBackground` / `BgEffectPainter`. Add a function that builds
-     a `BgEffectConfig.Config` from the theme key color (`keyColor` or Monet):
-     4 neighboring hues, lightness taken from the existing light/dark presets.
-     Changing theme color changes the background.
+     a `BgEffectConfig.Config` from a seed color: 4 neighboring hues, lightness
+     taken from the existing light/dark presets. Seed = theme key color
+     (`keyColor` or Monet) when chosen explicitly; wallpaper primary color when
+     used as the wallpaper fallback.
    - Animation pauses when the app is not resumed (lifecycle).
    - API 31-32: static `Brush.linearGradient` of the same colors.
-2. **User image**
+3. **User image**
    - Picked with Photo Picker (`PickVisualMedia`, no permission). Copied to
      `filesDir/glass_bg.jpg`, downscaled so the long edge is at most the screen's
      long edge. No dependency on content URIs.
-   - Blur slider 0-40dp, dim/lighten overlay slider 0-60% (direction follows
-     light/dark theme) to keep text readable.
    - If the file is missing or fails to decode, fall back to the gradient.
+
+Wallpaper and user image share the same controls: blur slider 0-40dp and
+dim/lighten overlay slider 0-60% (direction follows light/dark theme) to keep
+text readable. Bitmaps are decoded off the main thread and held once in
+memory for the whole app.
 
 New `SettingsRepository` keys (SharedPreferences, like existing keys):
 
 ```kotlin
-glassBackgroundType: Int     // 0 = animated gradient, 1 = image
+glassBackgroundType: Int     // 0 = device wallpaper, 1 = animated gradient, 2 = image
 glassBackgroundBlur: Float   // dp
 glassBackgroundDim: Float    // 0..0.6
 ```
@@ -131,8 +152,11 @@ Settings UI (Miuix): "Appearance" group gets a `Glass background` entry opening
 a sub-page with:
 
 - Live preview (a sample `GlassCard` over the real background)
-- Gradient / Image selector
-- "Choose image" button + the two sliders (only when Image is selected)
+- Selector: Device wallpaper / Animated gradient / Custom image
+- "Choose image" button (Custom image only)
+- Blur and dim sliders (Device wallpaper and Custom image)
+- A short note when Device wallpaper falls back to gradient (e.g. "Live
+  wallpaper or no root access - using colors from your wallpaper")
 
 Strings added to `values/strings.xml` (English) and `values-vi/strings.xml`.
 Other locales fall back to English.
@@ -161,7 +185,8 @@ Each step is one `manager: ...` commit.
 0. **Spike (throwaway)**: test `OverlayDialog` + `drawBackdrop` for recursion;
    check each `WindowDialog` for conversion. Outcome fixes `GlassDialog` design.
 1. **Foundation**: `GlassDefaults`, `LocalGlassBackdrop`, `GlassBackground`
-   (theme gradient) in `MainActivity`; transparent Miuix scaffolds.
+   in `MainActivity` with `WallpaperRepository` (root copy + mtime refresh)
+   and the wallpaper-colored gradient fallback; transparent Miuix scaffolds.
 2. **Branding**: app name + adaptive/monochrome icon.
 3. **Home pilot**: `GlassCard`, `GlassTopBar` applied to `HomeMiuix.kt`.
    **Stop and send the user screenshots/APK** to approve the glass look before
@@ -171,19 +196,23 @@ Each step is one `manager: ...` commit.
    ExecuteModuleAction, ColorPalette. `GlassListCard` in long lists.
 5. **Buttons, dialogs, popups**: `GlassButton`, `GlassIconButton`,
    `GlassDialog`, `GlassPopup`; docked bottom bar becomes glass.
-6. **Image background + Glass background settings page**, strings, hide old
-   blur switches in Miuix settings.
+6. **Custom image + Glass background settings page** (source selector,
+   sliders, fallback note), strings, hide old blur switches in Miuix settings.
 7. **Performance and fallback pass**.
 
 ## 8. Verification
 
 - **Unit tests (JVM)**, new `manager/app/src/test`: gradient `Config`
-  generation from key color (light, dark, grey/unsaturated input) and image
-  downscale size calculation.
+  generation from a seed color (light, dark, grey/unsaturated input), image
+  downscale size calculation, wallpaper path from uid (user 0, user 10), and
+  the refresh decision (mtime/size changed vs unchanged).
 - **Build**: build ksud, copy `libksud.so` into `jniLibs` per AGENTS.md, then
   `./gradlew assembleRelease` after every step.
 - **Visual**: install on device/emulator; screenshot each screen in light and
-  dark, with gradient and with image background.
+  dark, with device wallpaper, gradient, and custom image backgrounds.
+- **Wallpaper**: change the home wallpaper, return to the app, background
+  updates. Set a live wallpaper or deny root, background falls back to a
+  gradient in the wallpaper's colors and the settings note is shown.
 - **Performance**: `adb shell dumpsys gfxinfo cam.su.kernel` while scrolling
   Module and Superuser lists; compare janky frame % to a pre-change baseline.
   If clearly worse, reduce values in `GlassDefaults`.

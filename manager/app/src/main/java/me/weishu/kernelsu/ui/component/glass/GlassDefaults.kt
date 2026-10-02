@@ -9,6 +9,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /** Every liquid glass tunable lives here so the whole app can be adjusted in one place. */
 object GlassDefaults {
+    /** Backdrop sampling downscale for controls (droplets, search, FAB); cards stay at 1. */
+    const val controlDownscale = 2
+
     val cardBlur = 8.dp
     val listCardBlur = 8.dp
     val barBlur = 12.dp

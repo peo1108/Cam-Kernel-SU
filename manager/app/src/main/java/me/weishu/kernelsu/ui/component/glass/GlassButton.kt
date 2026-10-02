@@ -62,6 +62,7 @@ fun Modifier.liquidControl(shape: RoundedCornerShape, tint: Color = GlassDefault
                 depth = true,
                 chromaticAberration = GlassDefaults.dropletChromaticAberration,
             ),
+            downscale = GlassDefaults.controlDownscale,
         )
 }
 

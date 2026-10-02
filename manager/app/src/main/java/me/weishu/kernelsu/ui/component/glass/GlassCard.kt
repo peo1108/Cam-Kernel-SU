@@ -112,6 +112,7 @@ fun Modifier.glassSurface(
     highlight: (() -> Highlight)? = null,
     refraction: GlassRefraction? = null,
     source: Backdrop? = LocalGlassBackdrop.current,
+    downscale: Int = 1,
 ): Modifier {
     val backdrop = source ?: return this.background(tint, shape)
     val dark = isInDarkTheme()
@@ -121,6 +122,9 @@ fun Modifier.glassSurface(
         backdrop = backdrop,
         shape = { shape },
         effects = {
+            // >1 samples at reduced resolution: cheaper for a few large surfaces, but costlier
+            // than full resolution when many small cards each allocate a downscaled layer.
+            downscaleFactor = downscale
             vibrancy()
             blur(blur.toPx(), blur.toPx())
             if (lens) {

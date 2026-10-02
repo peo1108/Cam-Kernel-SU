@@ -15,8 +15,9 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 4 | Lệnh `ksud allow add\|remove\|list <pkg>` | Cấp/thu root từ adb su hoặc Termux, không cần flash lại |
 | 5 | Manager gọi kernel qua `KsuService` (root service, uid 0) | Kernel chỉ nhận lệnh quản trị từ uid 0 |
 | 6 | Màn Install có dialog chọn app được root (seed) | |
-| 7 | Tên app `Cam Kernel SU`, gói `cam.su.kernel` | |
+| 7 | Tên app `SU Kernel` (trước là `Cam Kernel SU`), gói `cam.su.kernel`, icon logo mới | |
 | 8 | `KERNEL_SU_UAPI_VERSION` 4 → 5 | Chặn Manager/ksud bản cũ dùng với kernel mới |
+| 9 | Giao diện Miuix thành kính lỏng (Liquid Glass) kiểu iOS, nền là hình nền máy đọc qua root | Theo yêu cầu của Cam; spec `docs/superpowers/specs/2026-10-02-miuix-liquid-glass-design.md` |
 
 ## 2. Danh sách commit (theo thứ tự)
 
@@ -34,6 +35,19 @@ c5d7c16f manager: gate features on root access instead of manager identity
 1f916fc6 kernel: apply root seed from post-fs-data on first boot
 03654076 ksud: add allow command to grant root without re-flashing
 ce345906 manager: rename app package to cam.su.kernel
+1694c43e manager: Tint background effect from a seed color
+ebf59abc manager: Add root wallpaper repository for glass background
+3cb40554 manager: Draw device wallpaper behind Miuix pages
+610926d6 manager: Add glass cards and apply them to Home
+945c31fe manager: Rebrand app as SU Kernel with new launcher icon
+a20456a6 manager: Tune glass defaults
+01e54b05 manager: Make top bars transparent with glass icon buttons
+2b17b68d manager: Apply glass cards to all Miuix screens
+6c1ae181 manager: Add specular light and lens to glass controls
+574de4ab manager: Let bar controls refract content scrolling beneath
+587c1233 manager: Group adjacent toolbar buttons into one glass capsule
+52e9853d manager: Add glass dialogs, popups, FAB and navigation rail
+f91c98ca manager: Add glass background settings page
 ```
 
 Xem lại bất cứ lúc nào: `git log --oneline 08a3b087..HEAD`
@@ -77,7 +91,12 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 - [sửa] `AndroidManifest.xml`: thêm `QUERY_ALL_PACKAGES`
 - [sửa] `res/values/strings.xml`, `res/values-vi/strings.xml`: chuỗi `seed_*`
 - [sửa] `app/build.gradle.kts`: gói mặc định `cam.su.kernel`
-- [sửa] `gradle.properties`: `KSU_NAME=Cam Kernel SU`
+- [sửa] `gradle.properties`: `KSU_NAME=SU Kernel`
+- [mới] Kính lỏng: `ui/component/glass/` (`GlassBackground`, `GlassCard`, `GlassButton`, `GlassOverlay`, `GlassDefaults`, `GlassImage`), `ui/component/liquid/GravityHighlight.kt`, `data/repository/WallpaperRepository.kt`, `ui/screen/colorpalette/GlassBackgroundSection.kt`; mọi thông số kính nằm ở `GlassDefaults`
+- [sửa] mọi file `*Miuix.kt`: `Card` → `GlassCard`/`GlassListCard`, `IconButton` → `GlassIconButton`, `actions` của top bar bọc `GlassButtonGroup`, `OverlayDialog` → `GlassDialog`, `OverlayListPopup` → `GlassListPopup`, `FloatingActionButton` → `GlassFab`, `Scaffold(containerColor = Color.Transparent)` (đổi máy móc)
+- [sửa] `ui/util/BlurExt.kt` (top bar trong suốt, cấp backdrop gộp cho nút trên bar), `ui/MainActivity.kt` (mỗi trang bọc `GlassPage`), `component/miuix/SuperSearchBar.kt`, `component/dialog/DialogMiuix.kt`, `component/bottombar/NavigationRailMiuix.kt`
+- [mới] Icon: `manager/icon/launcher-src.png`, `scripts/gen_launcher_icon.py` sinh `mipmap-*/ic_launcher_logo*.png`
+- [mới] Unit test JVM: `manager/app/src/test` (`./gradlew :app:testDebugUnitTest`)
 
 ## 4. Cách kéo bản cập nhật upstream
 
@@ -99,6 +118,7 @@ Dùng `merge` thay vì `rebase` cho dễ: chỉ phải giải conflict một l�
 - **`uapi/supercall.h`**: nếu upstream tăng `KERNEL_SU_UAPI_VERSION`, đặt bản Cam = **số của upstream + 1**, để bản Cam và upstream không bao giờ trùng uapi.
 - **File Manager có `Ksu.xxx`**: nhận thay đổi của upstream, rồi đổi lại mọi `Natives.<hàm>` thành `Ksu.<hàm>` (xem mục 5).
 - **`app/build.gradle.kts`, `ksud/build.rs`**: giữ gói `cam.su.kernel`.
+- **File `*Miuix.kt`**: nhận thay đổi của upstream, rồi đổi lại các component sang bản kính (`Card` → `GlassCard`, `IconButton` → `GlassIconButton`… xem mục 3, Manager). Card mới upstream thêm vào thì cũng đổi sang `GlassCard`; item trong danh sách dài dùng `GlassListCard`. Đừng để lọt `Scaffold` thiếu `containerColor = Color.Transparent`, nếu không trang đó sẽ che mất hình nền.
 - Commit `1b9b0673` (key ký của Cam trong `Kbuild`) đã lỗi thời vì kernel không còn kiểm tra chữ ký. Conflict ở đoạn `KSU_EXPECTED_*` thì cứ xoá cả đoạn.
 
 ### Kiểm tra sau khi merge

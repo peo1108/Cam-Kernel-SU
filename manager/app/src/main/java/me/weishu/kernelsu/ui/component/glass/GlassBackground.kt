@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -87,12 +86,50 @@ val LocalGlassBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 fun glassImageFile(context: Context): File = File(context.filesDir, "glass_bg.jpg")
 
+/**
+ * Process-wide copy of the last decoded background. MainActivity preloads it from the app's own
+ * cached file (no root needed) while the splash is up, so the first frame already shows the
+ * wallpaper instead of flashing the plain surface.
+ */
+object GlassBackgroundCache {
+    @Volatile
+    var decoded: DecodedGlass? = null
+        private set
+
+    @Volatile
+    var key: String? = null
+        private set
+
+    fun maxEdge(context: Context): Int =
+        context.resources.displayMetrics.let { max(it.widthPixels, it.heightPixels) }
+
+    fun keyOf(file: File, maxEdge: Int): String = "${file.path}:${file.lastModified()}:${file.length()}:$maxEdge"
+
+    /** The app-private file the background of [type] is drawn from, if one exists yet. */
+    fun localFile(context: Context, type: Int): File? = when (type) {
+        GlassBackgroundType.GRADIENT -> null
+        GlassBackgroundType.IMAGE -> glassImageFile(context)
+        else -> File(context.filesDir, "glass_wallpaper")
+    }?.takeIf { it.isFile }
+
+    suspend fun preload(context: Context, type: Int) {
+        val file = localFile(context, type) ?: return
+        val maxEdge = maxEdge(context)
+        val fileKey = keyOf(file, maxEdge)
+        if (fileKey == key && decoded != null) return
+        decodeGlassBitmap(file, maxEdge)?.let { store(it, fileKey) }
+    }
+
+    fun store(value: DecodedGlass, fileKey: String) {
+        decoded = value
+        key = fileKey
+    }
+}
+
 @Composable
 fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersion: Long = 0L): GlassBackgroundState {
     val context = LocalContext.current
-    val containerSize = LocalWindowInfo.current.containerSize
-    val maxEdge = max(containerSize.width, containerSize.height).takeIf { it > 0 }
-        ?: max(context.resources.displayMetrics.widthPixels, context.resources.displayMetrics.heightPixels)
+    val maxEdge = GlassBackgroundCache.maxEdge(context)
     val repository = remember(context) {
         WallpaperRepository(
             filesDir = context.filesDir,
@@ -100,8 +137,11 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
         )
     }
 
-    var bitmap by remember { mutableStateOf<DecodedGlass?>(null) }
-    var loadedKey by remember { mutableStateOf<String?>(null) }
+    // Start from the preloaded background so the first frame is never the plain surface.
+    val preloaded = GlassBackgroundCache.localFile(context, type)?.let { GlassBackgroundCache.keyOf(it, maxEdge) }
+        ?.takeIf { it == GlassBackgroundCache.key }
+    var bitmap by remember { mutableStateOf(if (preloaded != null) GlassBackgroundCache.decoded else null) }
+    var loadedKey by remember { mutableStateOf(preloaded) }
     var resumeCount by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
         resumeCount++
@@ -120,10 +160,17 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
             return@LaunchedEffect
         }
         // Skip re-decoding when the same file version is already on screen.
-        val key = "${file.path}:${file.lastModified()}:${file.length()}:$maxEdge"
+        val key = GlassBackgroundCache.keyOf(file, maxEdge)
         if (key == loadedKey && bitmap != null) return@LaunchedEffect
-        bitmap = decodeGlassBitmap(file, maxEdge)
-        loadedKey = if (bitmap != null) key else null
+        // Keep showing the previous background until the new one is decoded.
+        val decoded = decodeGlassBitmap(file, maxEdge) ?: run {
+            bitmap = null
+            loadedKey = null
+            return@LaunchedEffect
+        }
+        GlassBackgroundCache.store(decoded, key)
+        bitmap = decoded
+        loadedKey = key
     }
 
     val kind = pickGlassSourceKind(type, bitmap != null)

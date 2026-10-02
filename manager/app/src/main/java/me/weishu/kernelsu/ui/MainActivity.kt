@@ -1,5 +1,7 @@
 package me.weishu.kernelsu.ui
 
+import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
+import me.weishu.kernelsu.ui.component.glass.GlassBackgroundCache
 import me.weishu.kernelsu.ui.component.liquid.rememberQuantizedGravityAngle
 import me.weishu.kernelsu.ui.component.liquid.LocalLiquidGravityAngle
 import android.os.Build
@@ -130,6 +132,8 @@ class MainActivity : ComponentActivity() {
     private val intentChannel = Channel<Intent>(capacity = Channel.BUFFERED)
     private var contentReady = false
     private val ksuInitDone = MutableStateFlow(false)
+    @Volatile
+    private var glassBackgroundReady = false
     private var splashStartedAt = 0L
     private val splashAnimationDurationMs = 500L
 
@@ -140,7 +144,19 @@ class MainActivity : ComponentActivity() {
         splashStartedAt = SystemClock.uptimeMillis()
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition {
-            !contentReady || SystemClock.uptimeMillis() - splashStartedAt < splashAnimationDurationMs
+            val elapsed = SystemClock.uptimeMillis() - splashStartedAt
+            // Also wait (briefly) for the liquid glass background so the app opens straight onto it.
+            !contentReady || elapsed < splashAnimationDurationMs ||
+                (!glassBackgroundReady && elapsed < GLASS_PRELOAD_TIMEOUT_MS)
+        }
+        val settings = SettingsRepositoryImpl()
+        if (UiMode.fromValue(settings.uiMode) == UiMode.Miuix) {
+            lifecycleScope.launch {
+                GlassBackgroundCache.preload(applicationContext, settings.glassBackgroundType)
+                glassBackgroundReady = true
+            }
+        } else {
+            glassBackgroundReady = true
         }
 
         // Root comes from the allowlist now: bind the uid 0 service first, and keep the
@@ -534,3 +550,5 @@ private fun MainScreenBackHandler(
 private fun GlassPageIfMiuix(content: @Composable () -> Unit) {
     if (LocalUiMode.current == UiMode.Miuix) GlassPage(content = content) else content()
 }
+
+private const val GLASS_PRELOAD_TIMEOUT_MS = 1200L

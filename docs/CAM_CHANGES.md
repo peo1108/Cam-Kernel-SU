@@ -162,21 +162,26 @@ Lý do: app process không có quyền gọi kernel, chỉ root service gọi đ
 
 ### Lệnh build đã dùng (WSL, máy của Cam)
 
-```bash
-# kernelsu.ko cho android16-6.12 (Y700 Gen5); đổi KMI + clang cho máy khác
-git clone --branch <branch> "/mnt/c/Users/cam/Desktop/Cam Kernel SU" /root/ksu-git
-cd /root/ksu-git/kernel
-PATH=/root/scune-kmod-work/toolchains/clang-r536225/bin:$PATH \
-make -C /root/scune-kmod-work/android16-6.12/kernel M=$PWD ARCH=arm64 LLVM=1 LLVM_IAS=1 \
-     CONFIG_KSU=m KBUILD_MODPOST_WARN=1 modules
+Một lệnh build cả `kernelsu.ko` (từng KMI) lẫn ksud **từ cùng một commit**, rồi chép về repo Windows:
 
-# ksud: chép kernelsu.ko + ksuinit vào userspace/ksud/bin/aarch64/ trước
-#   tên file: <kmi>_kernelsu.ko, ví dụ android16-6.12_kernelsu.ko
-cd /root/ksu-git/userspace/ksud
-cargo build --release --target aarch64-linux-android
+```bash
+# trong WSL (root); tham số là nhánh cần build, mặc định feat/managerless-seed
+bash "/mnt/c/Users/cam/Desktop/Cam Kernel SU/scripts/build_lkm_ksud.sh" main
+# sau đó trên Windows, KHÔNG commit gì thêm ở giữa:
+cd manager && ./gradlew :app:assembleRelease
 ```
 
-Rồi chép `ksud` vào `manager/app/src/main/jniLibs/arm64-v8a/libksud.so` và chạy `./gradlew assembleDebug` trên Windows.
+Phiên bản = `30000 + số commit`, nên LKM và Manager chỉ khớp nhau khi build từ cùng một commit. Commit thêm bất cứ thứ gì giữa hai bước là Manager lệch 1. Bản đầy đủ (8 KMI, ký bằng khóa release) thì để GitHub Actions build: push lên `main` hoặc gắn tag (mục 8).
+
+Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
+
+| Bẫy | Cách xử lý |
+|---|---|
+| WSL không có NDK cho Linux | Dùng clang của AOSP (`clang-r536225`) làm linker, `--sysroot` + `libunwind` lấy từ NDK **Windows** (các file này không phụ thuộc hệ điều hành) |
+| `build.rs` báo `llvm-mc: No such file` (assemble LKM bootstrap) | `KSU_LKM_BOOTSTRAP_CC=<clang AOSP>` |
+| `bindgen`: `Unable to find libclang` | `LIBCLANG_PATH=<clang AOSP>/lib` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=... --sysroot=..."` |
+| Không thấy file `ksud` sau khi build | ksud là thành viên workspace: file nằm ở `target/` của **gốc repo**, không phải `userspace/ksud/target/` |
+| `ksuinit` không có trong git | Script lấy bản trong `userspace/ksud/bin/aarch64/` của repo Windows |
 
 ## 6. Test
 

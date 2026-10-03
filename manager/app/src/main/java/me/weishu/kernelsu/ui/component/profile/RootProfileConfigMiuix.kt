@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.profile
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +43,6 @@ import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
@@ -253,7 +253,7 @@ private fun MountNameSpacePanel(
     profile: Natives.Profile,
     onMntNamespaceChange: (namespaceType: Int) -> Unit
 ) {
-    OverlayDropdownPreference(
+    GlassDropdownPreference(
         enabled = enabled,
         title = stringResource(id = R.string.profile_namespace),
         items = listOf(

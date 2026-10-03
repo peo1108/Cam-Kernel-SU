@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.component.profile
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -15,7 +16,6 @@ import me.weishu.kernelsu.ui.util.setSepolicy
 import me.weishu.kernelsu.ui.viewmodel.getTemplateInfoById
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -51,12 +51,12 @@ fun TemplateConfigMiuix(
         val template = profile.rootTemplate ?: profileTemplates[0]
 
         Column(modifier = modifier) {
-            OverlayDropdownPreference(
+            GlassDropdownPreference(
                 title = stringResource(R.string.profile_template),
                 items = profileTemplates,
                 selectedIndex = profileTemplates.indexOf(template).takeIf { it >= 0 } ?: 0,
                 onSelectedIndexChange = { index ->
-                    if (index < 0 || index >= profileTemplates.size) return@OverlayDropdownPreference
+                    if (index < 0 || index >= profileTemplates.size) return@GlassDropdownPreference
                     val selected = profileTemplates[index]
                     val templateInfo = getTemplateInfoById(selected)
                     if (templateInfo != null && setSepolicy(selected, templateInfo.rules.joinToString("\n"))) {

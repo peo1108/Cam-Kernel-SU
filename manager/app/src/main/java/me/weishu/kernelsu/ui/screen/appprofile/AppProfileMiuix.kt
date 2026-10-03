@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.appprofile
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassListPopup
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
 import me.weishu.kernelsu.ui.component.glass.GlassCard
@@ -82,7 +83,6 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.MoreCircle
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -605,7 +605,7 @@ private fun ProfileBox(
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
     ) {
-        OverlayDropdownPreference(
+        GlassDropdownPreference(
             title = stringResource(R.string.profile),
             items = list,
             startAction = {

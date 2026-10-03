@@ -90,6 +90,7 @@ fun GlassListPopup(
     popupPositionProvider: PopupPositionProvider,
     alignment: PopupPositionProvider.Align,
     onDismissRequest: (() -> Unit)? = null,
+    maxHeight: Dp? = null,
     content: @Composable () -> Unit,
 ) {
     // The popup container is drawn by the root popup host (call-site locals do not reach it), so
@@ -105,6 +106,7 @@ fun GlassListPopup(
         popupPositionProvider = popupPositionProvider,
         alignment = alignment,
         onDismissRequest = onDismissRequest,
+        maxHeight = maxHeight,
         content = {
             // Rows paint surfaceContainer (selected: tertiaryContainer); clear them so the glass shows.
             MiuixTheme(colors = glassColors, textStyles = textStyles) {

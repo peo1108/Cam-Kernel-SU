@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.colorpalette
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,7 +30,6 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /** Miuix appearance settings for the liquid glass page background. */
@@ -53,7 +53,7 @@ fun GlassBackgroundSection(
             .padding(top = 12.dp)
             .fillMaxWidth(),
     ) {
-        OverlayDropdownPreference(
+        GlassDropdownPreference(
             title = stringResource(R.string.glass_background),
             summary = if (type == GlassBackgroundType.WALLPAPER && LocalGlassBackgroundState.current.wallpaperFallback) {
                 stringResource(R.string.glass_background_fallback)

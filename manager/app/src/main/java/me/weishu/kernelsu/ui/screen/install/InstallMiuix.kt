@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.install
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
@@ -68,7 +69,6 @@ import top.yukonga.miuix.kmp.icon.extended.ExpandLess
 import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.MoveFile
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -152,7 +152,7 @@ internal fun InstallScreenMiuix(
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
                         ) {
-                            OverlayDropdownPreference(
+                            GlassDropdownPreference(
                                 items = partitionItems,
                                 selectedIndex = partitionIndex,
                                 title = if (isDownload) {

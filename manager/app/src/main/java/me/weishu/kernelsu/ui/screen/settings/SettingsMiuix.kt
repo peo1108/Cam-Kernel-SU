@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.settings
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -56,7 +57,6 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -149,7 +149,7 @@ fun SettingPagerMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        OverlayDropdownPreference(
+                        GlassDropdownPreference(
                             title = stringResource(id = R.string.settings_ui_mode),
                             summary = stringResource(id = R.string.settings_ui_mode_summary),
                             items = UiMode.entries.map { it.name },
@@ -219,7 +219,7 @@ fun SettingPagerMiuix(
                                 "managed" -> stringResource(id = R.string.feature_status_managed_summary)
                                 else -> stringResource(id = R.string.settings_sucompat_summary)
                             }
-                            OverlayDropdownPreference(
+                            GlassDropdownPreference(
                                 title = stringResource(id = R.string.settings_sucompat),
                                 summary = suSummary,
                                 items = suCompatModeItems,

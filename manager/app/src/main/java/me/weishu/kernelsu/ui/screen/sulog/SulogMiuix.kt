@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.sulog
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassListPopup
 import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import me.weishu.kernelsu.ui.component.glass.GlassButtonGroup
@@ -99,7 +100,6 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Filter
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -329,7 +329,7 @@ fun SulogScreenMiuix(
                                     .padding(horizontal = 12.dp)
                                     .padding(bottom = 12.dp),
                             ) {
-                                OverlayDropdownPreference(
+                                GlassDropdownPreference(
                                     title = stringResource(R.string.sulog_log_files),
                                     items = fileSelector.items,
                                     enabled = fileSelector.items.isNotEmpty(),

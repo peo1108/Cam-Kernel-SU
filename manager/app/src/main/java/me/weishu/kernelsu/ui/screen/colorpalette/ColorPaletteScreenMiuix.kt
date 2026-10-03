@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.screen.colorpalette
 
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
@@ -92,7 +93,6 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -224,7 +224,7 @@ fun ColorPaletteScreenMiuix(
                                     stringResource(id = R.string.color_sakura),
                                 )
                                 val colorValues = listOf(0) + keyColorOptions
-                                OverlayDropdownPreference(
+                                GlassDropdownPreference(
                                     title = stringResource(id = R.string.settings_key_color),
                                     items = colorItems,
                                     startAction = {
@@ -246,7 +246,7 @@ fun ColorPaletteScreenMiuix(
                                 ) {
                                     Column {
                                         val styles = PaletteStyle.entries
-                                        OverlayDropdownPreference(
+                                        GlassDropdownPreference(
                                             title = stringResource(R.string.settings_color_style),
                                             startAction = {
                                                 Icon(
@@ -264,7 +264,7 @@ fun ColorPaletteScreenMiuix(
                                         )
 
                                         val specs = ColorSpec.SpecVersion.entries
-                                        OverlayDropdownPreference(
+                                        GlassDropdownPreference(
                                             title = stringResource(R.string.settings_color_spec),
                                             startAction = {
                                                 Icon(
@@ -364,7 +364,7 @@ fun ColorPaletteScreenMiuix(
                             checked = uiState.enableSwipeDismiss,
                             onCheckedChange = actions.onSetEnableSwipeDismiss,
                         )
-                        OverlayDropdownPreference(
+                        GlassDropdownPreference(
                             title = stringResource(id = R.string.settings_pager_gesture_mode),
                             items = listOf(
                                 stringResource(id = R.string.settings_pager_gesture_native),

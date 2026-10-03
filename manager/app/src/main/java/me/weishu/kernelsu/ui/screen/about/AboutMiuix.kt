@@ -1,8 +1,8 @@
 package me.weishu.kernelsu.ui.screen.about
 
-import top.yukonga.miuix.kmp.basic.Card
+import me.weishu.kernelsu.ui.component.glass.LocalGlassBackdrop
+import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
-import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,13 +59,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.onEach
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.ui.component.miuix.effect.BgEffectBackground
-import me.weishu.kernelsu.ui.component.miuix.effect.ColorBlendToken
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -75,9 +72,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.BlurColors
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -176,17 +171,11 @@ private fun AboutContent(
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
 
-    val backdrop = rememberLayerBackdrop()
+    // The logo blends with the same glass page background (device wallpaper) as every other page.
+    val backdrop = LocalGlassBackdrop.current
 
     val isInDark = isInDarkTheme()
-    val enableBlur = LocalEnableBlur.current
-    val effectBackground =
-        remember(enableBlur) { isRuntimeShaderSupported() && enableBlur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM }
-
-    val blendColors = remember(isInDark) {
-        if (isInDark) ColorBlendToken.Overlay_Thin_Light
-        else ColorBlendToken.Pured_Regular_Light
-    }
+    val enableBlur = LocalEnableBlur.current && backdrop != null
     val logoBlend = remember(isInDark) {
         if (isInDark) {
             listOf(
@@ -256,14 +245,7 @@ private fun AboutContent(
         end = innerPadding.calculateEndPadding(layoutDirection),
     )
 
-    BgEffectBackground(
-        dynamicBackground = effectBackground,
-        modifier = Modifier.fillMaxSize(),
-        bgModifier = Modifier.layerBackdrop(backdrop),
-        isFullSize = true,
-        effectBackground = effectBackground,
-        alpha = { 1f - scrollProgress },
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         // Logo area
         Column(
             modifier = Modifier
@@ -310,7 +292,7 @@ private fun AboutContent(
                                 )
                             } else Modifier
                         ),
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = R.mipmap.ic_launcher_logo_mono),
                     colorFilter = ColorFilter.tint(colorScheme.onBackground),
                     contentDescription = null,
                 )
@@ -409,25 +391,7 @@ private fun AboutContent(
                         .fillParentMaxHeight()
                         .padding(bottom = innerPadding.calculateBottomPadding() + 12.dp),
                 ) {
-                    Card(
-                        modifier = Modifier
-                            .padding(horizontal = 12.dp)
-                            .then(
-                                if (enableBlur) {
-                                    Modifier.textureBlur(
-                                        backdrop = backdrop,
-                                        shape = RoundedCornerShape(16.dp),
-                                        blurRadius = 60f,
-                                        colors = BlurColors(blendColors = blendColors),
-                                        enabled = true,
-                                    )
-                                } else Modifier
-                            ),
-                        colors = CardDefaults.defaultColors(
-                            if (enableBlur) Color.Transparent else colorScheme.surfaceContainer,
-                            Color.Transparent,
-                        ),
-                    ) {
+                    GlassCard(modifier = Modifier.padding(horizontal = 12.dp)) {
                         state.links.forEach {
                             ArrowPreference(
                                 title = it.fullText,

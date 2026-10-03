@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui
 
+import me.weishu.kernelsu.ui.component.glass.rememberGradientStandIn
 import me.weishu.kernelsu.ui.component.glass.GlassSource
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.component.glass.GlassBackgroundCache
@@ -404,10 +405,15 @@ fun MainScreen(
         drawContent()
     }
     val glassBackdrop = LocalGlassBackdrop.current
-    // Same rule as BlurredBar: an animated background is not sampled (it would re-record every frame).
+    // Same rule as BlurredBar: an animated background is replaced by a static stand-in color
+    // (sampling it would re-record every frame; sampling nothing renders black).
     val animatedBackground = LocalGlassBackgroundState.current.source is GlassSource.Gradient
-    val barBackdrop: Backdrop =
-        if (glassBackdrop != null && !animatedBackground) rememberCombinedBackdrop(glassBackdrop, backdrop) else backdrop
+    val barBackground: Backdrop? = when {
+        glassBackdrop == null -> null
+        animatedBackground -> rememberGradientStandIn()
+        else -> glassBackdrop
+    }
+    val barBackdrop: Backdrop = if (barBackground != null) rememberCombinedBackdrop(barBackground, backdrop) else backdrop
 
     val settledPage = mainPagerState.pagerState.settledPage
     LaunchedEffect(settledPage) {

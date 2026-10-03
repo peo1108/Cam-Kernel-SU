@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui.util
 
+import me.weishu.kernelsu.ui.component.glass.rememberGradientStandIn
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.BlendMode
@@ -61,12 +62,13 @@ fun BlurredBar(
 ) {
     val pageGlass = LocalGlassBackdrop.current
     // An animated background would make every bar surface re-record each frame; it has no detail
-    // worth refracting, so then the bar samples the content only and the gradient shows through.
+    // worth refracting, so the bar samples a static stand-in color under the content instead.
     val animatedBackground = LocalGlassBackgroundState.current.source is GlassSource.Gradient
+    val background: Backdrop? = if (animatedBackground) rememberGradientStandIn() else pageGlass
     // Controls in the bar (droplet buttons, search field) refract the content scrolling under it.
     val sample: Backdrop? = when {
         !blurActive || backdrop == null -> pageGlass
-        pageGlass != null && !animatedBackground -> rememberCombinedBackdrop(pageGlass, backdrop)
+        background != null -> rememberCombinedBackdrop(background, backdrop)
         else -> backdrop
     }
     if (!glass || sample == null || backdrop == null || !blurActive) {

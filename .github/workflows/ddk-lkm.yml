@@ -34,13 +34,17 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v7
+      with:
+        # Full history: the module version is 30000 + commit count.
+        fetch-depth: 0
 
     - name: Build kernelsu.ko
       env:
         EXPECTED_SIZE2: ${{ inputs.expected_size2 }}
         EXPECTED_HASH2: ${{ inputs.expected_hash2 }}
       run: |
-        git config --global --add safe.directory /__w/KernelSU/KernelSU
+        # Any repo name (forks): without this git refuses the checkout and the module reports version 16.
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
         cd kernel
 

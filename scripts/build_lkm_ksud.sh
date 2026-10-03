@@ -25,7 +25,8 @@ KMIS="${KMIS:-android16-6.12:clang-r536225 android15-6.6:clang-r510928}"
 API=31
 CL="$KW/toolchains/clang-r536225/bin"
 SYSROOT="$NDK/sysroot"
-CLANG_RT=$(ls -d "$NDK"/lib/clang/*/lib/linux/aarch64 | head -1)
+clang_rt_dirs=("$NDK"/lib/clang/*/lib/linux/aarch64)
+CLANG_RT="${clang_rt_dirs[0]}"
 
 # A real clone (with .git) is required: without history the module reports version 16.
 # Never run WSL git on the /mnt/c repo itself (it breaks the cpp/uapi junction); clone is read-only.

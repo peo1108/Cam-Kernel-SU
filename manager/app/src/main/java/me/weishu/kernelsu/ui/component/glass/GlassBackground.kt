@@ -245,7 +245,12 @@ private fun GlassBackgroundLayer(state: GlassBackgroundState) {
 
         GlassSource.Gradient -> GradientLayer()
 
-        is GlassSource.Bitmap -> Box(Modifier.fillMaxSize()) {
+        // Surface behind the image so transparent pixels of a custom PNG do not show the window.
+        is GlassSource.Bitmap -> Box(
+            Modifier
+                .fillMaxSize()
+                .background(colorScheme.surface)
+        ) {
             Image(
                 bitmap = source.image,
                 contentDescription = null,

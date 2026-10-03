@@ -126,12 +126,16 @@ internal fun meanLuma(bitmap: Bitmap): Float {
     }.toFloat() / pixels.size
 }
 
-/** Saves the image from [open] to [dest] as a downscaled JPEG (unique temp file + atomic replace). */
+/**
+ * Saves the image from [open] to [dest], downscaled (unique temp file + atomic replace). Images with
+ * transparency are kept as PNG (JPEG would turn it black); the decoder sniffs the format, not the name.
+ */
 fun writeGlassImage(open: () -> InputStream?, dest: File, maxEdge: Int): Boolean = runCatching {
     val bitmap = decodeScaledBitmap(open, maxEdge) ?: return@runCatching false
     val tmp = File.createTempFile(dest.name, ".tmp", dest.parentFile)
     try {
-        tmp.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+        val format = if (bitmap.hasAlpha()) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+        tmp.outputStream().use { bitmap.compress(format, 90, it) }
         Files.move(tmp.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
     } finally {
         bitmap.recycle()

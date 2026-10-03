@@ -115,7 +115,7 @@ fun AboutScreenMiuix(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            BlurredBar(backdrop = barBlurBackdrop, blurActive = blurActive) {
+            BlurredBar(backdrop = barBlurBackdrop, blurActive = blurActive, scrollBehavior = topAppBarScrollBehavior) {
                 SmallTopAppBar(
                     title = state.title,
                     scrollBehavior = topAppBarScrollBehavior,

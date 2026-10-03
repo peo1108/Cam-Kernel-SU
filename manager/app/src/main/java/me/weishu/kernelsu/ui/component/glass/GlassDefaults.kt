@@ -17,6 +17,9 @@ object GlassDefaults {
     const val materialSaturation = 1.5f
     val listCardBlur = 8.dp
     val barBlur = 12.dp
+    /** Scroll edge effect under transparent top bars: progressive blur strength and top tint. */
+    val edgeBlur = 16.dp
+    const val edgeTint = 0.55f
     val dialogBlur = 16.dp
 
     val cardLensHeight = 12.dp

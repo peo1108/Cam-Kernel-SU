@@ -1,5 +1,12 @@
 package me.weishu.kernelsu.ui.util
 
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -32,14 +39,16 @@ fun rememberBlurBackdrop(enableBlur: Boolean): LayerBackdrop? {
 
 /**
  * Bar container. Top bars are fully transparent (iOS style: title and glass droplet buttons
- * float over the page). With [glass] the bar is a glass slab sampling the page background and
- * the content scrolling under it, used by the docked bottom bar.
+ * float over the page); with [scrollBehavior] they get a scroll edge effect, a blur that fades out
+ * downwards, only while content is scrolled under them. With [glass] the bar is a glass slab
+ * sampling the page background and the content scrolling under it, used by the docked bottom bar.
  */
 @Composable
 fun BlurredBar(
     backdrop: LayerBackdrop?,
     blurActive: Boolean = true,
     glass: Boolean = false,
+    scrollBehavior: ScrollBehavior? = null,
     content: @Composable () -> Unit,
 ) {
     val pageGlass = LocalGlassBackdrop.current
@@ -51,7 +60,9 @@ fun BlurredBar(
     }
     if (!glass || sample == null || backdrop == null || !blurActive) {
         CompositionLocalProvider(LocalGlassBackdrop provides sample, LocalGlassInBar provides true) {
-            Box { content() }
+            Box(modifier = if (sample != null && backdrop != null && blurActive) Modifier.scrollEdge(sample, scrollBehavior) else Modifier) {
+                content()
+            }
         }
         return
     }
@@ -74,6 +85,32 @@ fun BlurredBar(
             content()
         }
     }
+}
+
+/** How far content has scrolled under the bar: 0 at rest, 1 once the bar is fully overlapped. */
+private fun ScrollBehavior.edgeFraction(): Float =
+    maxOf(state.collapsedFraction, state.overlappedFraction).coerceIn(0f, 1f)
+
+@Composable
+private fun Modifier.scrollEdge(sample: Backdrop, scrollBehavior: ScrollBehavior?): Modifier {
+    if (scrollBehavior == null) return this
+    // Only toggles composition when content starts or stops overlapping; the strength itself is
+    // read in the layer block, so scrolling does not recompose the bar.
+    val active by remember(scrollBehavior) { derivedStateOf { scrollBehavior.edgeFraction() > 0.01f } }
+    if (!active) return this
+    val surface = MiuixTheme.colorScheme.surface
+    return drawBackdrop(
+        backdrop = sample,
+        shape = { BarShape },
+        effects = {
+            blur(GlassDefaults.edgeBlur.toPx(), GlassDefaults.edgeBlur.toPx())
+        },
+        layerBlock = { alpha = scrollBehavior.edgeFraction() },
+        onDrawSurface = {
+            drawRect(Brush.verticalGradient(listOf(surface.copy(alpha = GlassDefaults.edgeTint), Color.Transparent)))
+        },
+        progressiveGradient = ProgressiveBlur.Top,
+    )
 }
 
 // Corner-based so the lens shader can refract along the bar edges.

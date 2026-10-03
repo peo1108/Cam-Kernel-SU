@@ -352,7 +352,7 @@ private fun TopBar(
     backdrop: LayerBackdrop?,
     barColor: Color,
 ) {
-    BlurredBar(backdrop) {
+    BlurredBar(backdrop, scrollBehavior = scrollBehavior) {
         TopAppBar(
             color = barColor,
             title = stringResource(R.string.install),

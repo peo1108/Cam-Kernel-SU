@@ -126,7 +126,7 @@ fun SuperUserPagerMiuix(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            BlurredBar(backdrop) {
+            BlurredBar(backdrop, scrollBehavior = scrollBehavior) {
                 searchStatus.TopAppBarAnim(backgroundColor = barColor) {
                     TopAppBar(
                         color = barColor,

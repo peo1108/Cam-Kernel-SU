@@ -159,7 +159,7 @@ fun ModuleRepoScreenMiuix(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            BlurredBar(backdrop) {
+            BlurredBar(backdrop, scrollBehavior = scrollBehavior) {
                 searchStatus.TopAppBarAnim(backgroundColor = barColor) {
                     TopAppBar(
                         color = barColor,
@@ -1066,7 +1066,7 @@ fun ModuleRepoDetailScreenMiuix(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            BlurredBar(backdrop) {
+            BlurredBar(backdrop, scrollBehavior = scrollBehavior) {
                 TopAppBar(color = detailBarColor, title = module.moduleName, scrollBehavior = scrollBehavior, navigationIcon = {
                     GlassIconButton(
                         onClick = actions.onBack

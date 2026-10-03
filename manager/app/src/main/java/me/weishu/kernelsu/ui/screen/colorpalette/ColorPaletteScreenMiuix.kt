@@ -115,7 +115,7 @@ fun ColorPaletteScreenMiuix(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            BlurredBar(backdrop) {
+            BlurredBar(backdrop, scrollBehavior = scrollBehavior) {
                 TopAppBar(
                     color = barColor,
                     title = stringResource(R.string.settings_theme),

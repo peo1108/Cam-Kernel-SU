@@ -4,6 +4,8 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 
 - Upstream gốc lúc tách nhánh: commit `08a3b087` (`refactor(ksud): update waitsys and refactor logic (#3755)`)
 - Remote: `origin` = `peo1108/Cam-Kernel-SU`, `upstream` = `tiann/KernelSU`
+- Nhánh làm việc: `feat/glass-only`. Đợt UI/UX gần nhất nằm trong commit `47a57e48` (bỏ Material, thẻ 3D, slime, quản lý app). Tài liệu cập nhật lần cuối 2026-10-04.
+- Mục 3 liệt kê file, mục 4 là quy trình kéo upstream, mục 9 là bản đồ phần slime/3D để sửa cho đúng chỗ, mục 10 là cách tạo lại file vật liệu `roam_jelly.filamat`.
 
 ## 1. Tóm tắt thay đổi
 
@@ -20,6 +22,11 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 9 | Giao diện Miuix thành kính lỏng (Liquid Glass) kiểu iOS, nền là hình nền máy đọc qua root | Spec: `docs/superpowers/specs/2026-10-02-miuix-liquid-glass-design.md` |
 | 10 | Kernel luôn cấp root cho gói Manager `cam.su.kernel` theo tên gói, dò lại UID mỗi khi `packages.list` đổi (`ksu_manager_pin_apply` trong `kernel/policy/pkg_tracker.c`) | Gỡ rồi cài lại Manager không mất root; chỉ áp dụng cho đúng gói này |
 | 11 | CI: chạy tay được "Build Manager", Release theo tag có quyền ghi và ghi chú tự sinh, khóa ký riêng `su-kernel` | Build bản đầy đủ (8 KMI) và phát hành trên GitHub |
+| 12 | **Chỉ còn một giao diện (Miuix kính)**: xoá toàn bộ giao diện Material, `UiMode`, mục "Kiểu giao diện" trong Cài đặt | Một giao diện thì chỉ phải bảo trì một bộ file; upstream vẫn có Material nên merge sẽ gặp conflict "sửa/xoá" (mục 4) |
+| 13 | Thẻ trạng thái ở Home là **hộp kính 3D (Filament)** với 4 slime (Mochi, Bơ, Soda, Chanh): 9 cảnh mở màn theo nước, 36 bộ đồ 3D, nhiều kiểu xếp hàng / ăn chữ / hóc / nôn | Thẻ "Đang hoạt động" có hồn, không chỉ là một dòng chữ |
+| 14 | **Slime đi dạo khắp app**: lớp 3D trong suốt phủ cả cửa sổ; rời Home thì phá kính chui ra, về Home thì vào cửa; đập tay, cưỡi Bơ, chơi khăm, rượt, đánh nhau; laser bằng ngón tay, lắc máy, ngủ ban đêm | Thay cho việc chỉ có slime trong thẻ; có công tắc trong Chủ đề |
+| 15 | Trang **Hồ sơ ứng dụng**: thêm 3 thẻ mở rộng (Thông tin + đường dẫn bấm để copy, Dung lượng, Quản lý: sao lưu APK, xoá cache/dữ liệu, đóng băng, gỡ cài đặt kể cả app hệ thống); menu "⋯" thêm "Thông tin hệ thống"; menu trang Superuser thêm "Cài lại app hệ thống đã gỡ" | Trang này trước đây trống |
+| 16 | Font Baloo 2; bỏ thẻ "Tìm hiểu KernelSU" và "Ủng hộ" ở Home; mặc định cài đặt lấy theo máy của Cam (cử chỉ quay lại dự đoán bật, mô tả module 5 dòng) | Thương hiệu riêng, không còn dấu vết KernelSU trong giao diện |
 
 ## 2. Lịch sử commit
 
@@ -35,6 +42,7 @@ Các nhóm chính (theo thứ tự thời gian):
 - `b7acde6f kernel: keep root for the manager package across reinstalls`.
 - `1c27052b` … `11e616ac`: tối ưu kính (vẽ card từ nền đã blur sẵn, chuyển trang, gradient), mép mờ khi cuộn, dropdown kính, About, icon tam giác.
 - `c5c94e1e`, `9c7e2031`, `1c3c5037`, `2d449c13`: CI (workflow_dispatch, release, sửa Clippy, sửa phiên bản LKM trên CI).
+- `47a57e48 manager: Go glass-only and add the slime arena and app manager`: một commit lớn (178 file) gom toàn bộ đợt UI/UX: bỏ Material, thẻ 3D + slime, quản lý app, cài đặt/mặc định, font.
 - `1b9b0673 kernel: trust the Cam Kernel SU manager signing key`: **đã lỗi thời** (kernel không còn kiểm tra chữ ký).
 
 ## 3. File bị đổi, theo khu vực
@@ -93,9 +101,44 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
   | `Scaffold(` | `Scaffold(containerColor = Color.Transparent,` |
   | `BlurredBar(backdrop) {` | `BlurredBar(backdrop, scrollBehavior = scrollBehavior) {` |
 
-- [sửa] `ui/util/BlurExt.kt` (top bar trong suốt, mép mờ khi cuộn, backdrop cho nút trên thanh), `ui/MainActivity.kt` (mỗi trang bọc `GlassPageIfMiuix`, nạp sẵn nền khi splash, blur luôn bật ở Miuix), `component/miuix/SuperSearchBar.kt`, `component/dialog/DialogMiuix.kt`, `component/bottombar/BottomBarMiuix.kt`, `component/bottombar/NavigationRailMiuix.kt`, `component/FloatingBottomBar.kt`, `component/miuix/effect/BgEffectConfig.kt`, `BgEffectBackground.kt`, `screen/about/AboutMiuix.kt`, `screen/colorpalette/ColorPaletteScreenMiuix.kt` (bỏ 2 công tắc blur cũ), `data/repository/SettingsRepository*.kt`, `ui/viewmodel/*`
+- [sửa] `ui/util/BlurExt.kt` (top bar trong suốt, mép mờ khi cuộn, backdrop cho nút trên thanh), `ui/MainActivity.kt` (mỗi trang bọc `GlassPage`, nạp sẵn nền khi splash, blur luôn bật ở Miuix), `component/miuix/SuperSearchBar.kt`, `component/dialog/DialogMiuix.kt`, `component/bottombar/BottomBarMiuix.kt`, `component/bottombar/NavigationRailMiuix.kt`, `component/FloatingBottomBar.kt`, `component/miuix/effect/BgEffectConfig.kt`, `BgEffectBackground.kt`, `screen/about/AboutMiuix.kt`, `screen/colorpalette/ColorPaletteScreenMiuix.kt` (bỏ 2 công tắc blur cũ), `data/repository/SettingsRepository*.kt`, `ui/viewmodel/*`
 - [sửa] Thương hiệu: `app/build.gradle.kts` (gói `cam.su.kernel`, tên `SU Kernel`), `gradle.properties` (`KSU_NAME=SU Kernel`), `res/mipmap-anydpi/ic_launcher.xml`, `res/values/colors.xml` (nền icon đen), `res/values*/themes.xml` (splash nền đen + `@drawable/ic_splash_logo`)
 - [mới] Icon: `manager/icon/launcher-src.png`, `scripts/gen_launcher_icon.py` sinh `mipmap-*/ic_launcher_logo*.png` và `drawable-xxxhdpi/ic_splash_logo.png`
+
+### Manager: bỏ giao diện Material (glass-only)
+- [xoá] `ui/UiMode.kt`, `ui/theme/MaterialTheme.kt`, cả thư mục `ui/component/material/`, và mọi file `*Material.kt` (màn hình, dialog, bottom bar, rail, profile config, status tag, reboot popup, uninstall dialog, WebUI…), cùng `ui/component/profile/dialogs/` (`MultiSelectDialog`, `SingleSelectDialog`). Toàn bộ nằm trong `manager/app/src/main/java/me/weishu/kernelsu/`.
+- [sửa] Mỗi `XxxScreen.kt` / component trước đây chọn bản theo `LocalUiMode` giờ gọi thẳng bản Miuix. Ví dụ `SettingsScreen.kt`: `when (LocalUiMode.current) { Miuix -> SettingPagerMiuix(…); Material -> … }` thành `SettingPagerMiuix(uiState, actions, bottomInnerPadding)`.
+- [sửa] `ui/MainActivity.kt`: không còn `LocalUiMode`; `LocalEnableBlur provides true`; mọi route bọc `GlassPage { … }` (không còn `GlassPageIfMiuix`).
+- [sửa] `SettingsMiuix.kt`: bỏ dropdown "Kiểu giao diện"; `strings.xml` bỏ `settings_ui_mode*`.
+- [sửa] Mọi `res/values*/strings.xml` (khoảng 40 ngôn ngữ): đã xoá `home_learn_kernelsu*`, `home_click_to_learn_kernelsu`, `home_support_*` (không còn thẻ tương ứng ở Home).
+- Giữ nguyên dependency `androidx.compose.material3`: vài file vẫn dùng (markdown, Monet/WebUI, `MiuixTheme.kt`, `SeedPicker.kt`…).
+
+### Manager: thẻ trạng thái 3D và slime
+Cam tự viết toàn bộ phần này, upstream không có file nào tương ứng nên **không conflict**, trừ 3 chỗ móc vào file của upstream (ghi bên dưới). Bản đồ chi tiết ở mục 9.
+- [mới] `ui/screen/home/arena/` (thẻ trạng thái, 2D + logic cảnh): `StatusArena.kt` (cửa vào, vòng lặp khung hình), `ArenaShow.kt` (các pha của show), `ArenaStage.kt`, `ArenaSlime.kt` (vẽ slime 2D, dùng khi máy không chạy được Filament), `ArenaScenes/Decor/Costumes/Props/Fx/Math.kt`, `ArenaIntros{,2,3}.kt` (9 cảnh mở màn), `ArenaVomit.kt`, `ArenaFeast.kt` (ăn chữ + hóc), `ArenaFormations.kt` (các kiểu xếp hàng).
+- [mới] `ui/screen/home/arena/three/` (Filament): `Arena3D.kt` (hộp kính 3D), `SlimeRig.kt` (**mô hình slime dùng chung** cho hộp và cho lớp đi dạo), `Roam3D.kt` (lớp 3D trong suốt phủ cả cửa sổ), `Closet.kt` + `Wardrobe.kt` + `Tailor.kt` (36 bộ đồ), `Glb.kt`, `Shapes3D.kt`, `Morphs.kt`, `Room.kt`, `Grounds.kt`.
+- [mới] `ui/slime/`: `RoamWorld.kt` (bộ não + vật lý), `RoamSocial.kt` (hai con chơi với nhau), `SlimeLayer.kt` (host Compose, xử lý chạm, cảm biến lắc), `SlimeHome.kt` (trạng thái hộp: ai ở trong, kính vỡ, cửa, vá kính), `SlimeSurfaces.kt` (`Modifier.slimeSurface()`: thẻ nào đăng ký làm chỗ đứng cho slime).
+- [mới] `assets/roam_jelly.filamat` (vật liệu thạch cho lớp đi dạo, biên dịch sẵn; cách tạo lại ở mục 10), `ui/component/motion/CardEntrance.kt` (thẻ trượt vào khi mở trang).
+- [sửa] 3 chỗ móc vào file có sẵn, **phải giữ khi merge**:
+  - `ui/MainActivity.kt`: bọc `navDisplay()` trong `SlimeLayer(…)`, báo vị trí vuốt của pager (`SlimeHome.pagerPos`) để slime phá kính ngay khi bắt đầu vuốt khỏi Home.
+  - `ui/component/glass/GlassCard.kt`: `modifier.slimeSurface().glassMaterial(…)` (mỗi thẻ kính là một chỗ đứng).
+  - `ui/screen/home/HomeMiuix.kt`: gọi `StatusArena(…)` thay cho thẻ trạng thái của upstream.
+- [sửa] Dependency: `gradle/libs.versions.toml` (`filament = "1.77.1"` + `filament-android`, `filament-gltfio`, `filament-utils`), `app/build.gradle.kts` (3 dòng `implementation`), `app/proguard-rules.pro` (`-keep class com.google.android.filament.** { *; }`).
+
+### Manager: trang Hồ sơ ứng dụng
+- [mới] `ui/screen/appprofile/AppManageCards.kt` (3 thẻ Thông tin / Dung lượng / Quản lý + các dialog gỡ cài đặt), `ui/util/AppManager.kt` (lệnh root, đo dung lượng, sao lưu, gỡ, danh sách app được bảo vệ), `ui/screen/superuser/RestoreSystemAppsDialog.kt`, `ui/screen/appprofile/AppProfileEditor.kt` (logic chỉnh hồ sơ dùng chung), `ui/screen/superuser/InlineAppProfile.kt` (hồ sơ sửa ngay trong thẻ Superuser mở rộng).
+- [sửa] `AppProfileMiuix.kt` (gắn 3 thẻ, thêm "Thông tin hệ thống" vào menu "⋯", **không vẽ thẻ rỗng khi hồ sơ để "Mặc định"**: trước đây thẻ rỗng hiện thành một đường kẻ đen), `AppProfileScreen.kt`, `AppProfileUiState.kt` (thêm `onOpenSystemInfo`, `onAppChanged`, `onAppRemoved`), `SuperUserMiuix.kt` (mục menu "Cài lại app hệ thống đã gỡ", thẻ mở rộng).
+- [sửa] `res/values/strings.xml`, `res/values-vi/strings.xml`: thêm `app_*` (78 chuỗi). Ngôn ngữ khác sẽ hiện tiếng Anh.
+- Điểm dễ vỡ, **đừng sửa nếu chưa hiểu**:
+  - `AppManager.kt` chạy mọi lệnh root bằng `getRootShell(globalMnt = true)`. Shell mặc định nằm trong mount namespace riêng của app, Android giấu thư mục dữ liệu của app khác ở đó nên `du` ra 0 B và xoá cache không xoá được gì.
+  - Gỡ systemless: tạo zip module `debloat_<gói>` trong cache (có `.replace` đè thư mục app trong ROM) rồi `ksud module install`; sau đó khởi động lại. Tắt hoặc xoá module để khôi phục.
+  - `isProtectedApp()` chặn gỡ/đóng băng/xoá dữ liệu cho các gói lõi (`android`, SystemUI, Settings, phone, launcher và bàn phím đang dùng, chính app này…). Upstream không có cơ chế này.
+  - Sao lưu APK ghi vào cache rồi chia sẻ qua FileProvider; `res/xml/filepaths.xml` đã có `cache-path`, không cần sửa Manifest.
+
+### Manager: cài đặt, mặc định, font
+- [sửa] `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt`: thêm 3 khoá `roaming_slimes` (mặc định bật), `roaming_slime_count` (0 = ngẫu nhiên 1-4; hoặc 1..4), `slime_night_nap` (bật). **Đổi mặc định**: `enable_predictive_back` = `true`, `module_description_max_lines` = `5`. Kèm `SettingsUiState.kt`, `MainActivityUiState.kt`, `MainActivityViewModel.kt` (có danh sách `observedKeys`, thêm khoá mới vào đó), `SettingsViewModel.kt`.
+- [sửa] Giao diện ba công tắc slime nằm cuối trang **Chủ đề**: `colorpalette/ColorPaletteScreenMiuix.kt`, `ColorPaletteScreen.kt`, `ColorPaletteUiState.kt` (không nằm ở trang Cài đặt).
+- [mới] Font: `res/font/baloo2_{regular,medium,semibold,bold}.ttf`, `assets/licenses/Baloo2-OFL.txt`; [sửa] `ui/theme/Type.kt` (`AppFontFamily`), `ui/theme/Theme.kt`, `ui/theme/MiuixTheme.kt`.
 
 ### CI và công cụ
 - [sửa] `.github/workflows/build-manager.yml`: thêm `workflow_dispatch`
@@ -143,10 +186,15 @@ Kernel / ksud:
 Manager:
 - **File có `Ksu.xxx`**: nhận thay đổi của upstream, rồi đổi lại mọi `Natives.<hàm>` thành `Ksu.<hàm>`. Upstream thêm hàm mới vào `Natives` thì làm theo "Nếu upstream thêm hàm mới" bên dưới.
 - **File `*Miuix.kt`**: nhận thay đổi của upstream, rồi đổi lại component sang bản kính theo bảng ở mục 3. Màn hình hoặc component mới của upstream cũng phải đổi theo bảng đó; quên `Scaffold(containerColor = Color.Transparent)` thì trang che mất hình nền.
-- **`ui/MainActivity.kt`**: route mới upstream thêm vào `NavDisplay` phải bọc `GlassPageIfMiuix { … }` như các `entry<…>` khác. Giữ khối nạp sẵn nền (`GlassBackgroundCache.preload`) và `LocalEnableBlur provides (uiMode == UiMode.Miuix || …)`.
+- **Upstream sửa hoặc thêm file Material** (`UiMode.kt`, `MaterialTheme.kt`, `ui/component/material/*`, mọi `*Material.kt`): git báo conflict "modified/deleted" → `git rm <file>`, không port. Màn hình mới của upstream thường đi kèm bộ ba `XxxMaterial.kt` + `XxxMiuix.kt` + `XxxScreen.kt` (chọn bản theo `LocalUiMode`): giữ bản Miuix, trong `XxxScreen.kt` gọi thẳng `XxxMiuix(...)`, xoá `XxxMaterial.kt`, bỏ import `LocalUiMode` / `UiMode`. Nếu upstream thêm tham số vào cả hai bản thì chỉ cần giữ tham số ở bản Miuix.
+- **`ui/MainActivity.kt`**: route mới upstream thêm vào `NavDisplay` phải bọc `GlassPage { … }` như các `entry<…>` khác. Giữ khối nạp sẵn nền (`GlassBackgroundCache.preload`), `LocalEnableBlur provides true`, **khối `SlimeLayer(…)` bọc `navDisplay()`** và đoạn `LaunchedEffect` báo `SlimeHome.pagerPos`. Không còn `LocalUiMode` / `UiMode`.
+- **`ui/component/glass/GlassCard.kt`**: phải còn `.slimeSurface()` trước `.glassMaterial(…)`, không thì slime không có chỗ đứng trên thẻ.
+- **`ui/screen/home/HomeMiuix.kt`**: giữ lời gọi `StatusArena(…)`. Upstream thêm trường dữ liệu mới vào thẻ trạng thái thì lấy phần dữ liệu, không lấy phần giao diện.
+- **`data/repository/SettingsRepositoryImpl.kt`, `SettingsUiState.kt`, `MainActivityUiState.kt`**: giữ mặc định của Cam (`enable_predictive_back` true, `module_description_max_lines` 5) và 3 khoá slime.
+- **`ui/screen/appprofile/*`, `superuser/SuperUserMiuix.kt`**: giữ 3 thẻ quản lý app, `onOpenSystemInfo` và mục menu "Cài lại app hệ thống đã gỡ".
 - **`ui/util/BlurExt.kt`, `component/FloatingBottomBar.kt`, `component/miuix/SuperSearchBar.kt`, `component/dialog/DialogMiuix.kt`**: giữ bản của Cam, rồi áp thay đổi của upstream vào bằng tay.
-- **`app/build.gradle.kts`, `gradle.properties`, `res/values*/themes.xml`, `res/mipmap-anydpi/ic_launcher.xml`**: giữ gói `cam.su.kernel`, tên `SU Kernel`, icon/splash của Cam.
-- **`res/values*/strings.xml`**: nhận chuỗi mới của upstream, giữ `seed_*` và `glass_background*`.
+- **`app/build.gradle.kts`, `gradle.properties`, `res/values*/themes.xml`, `res/mipmap-anydpi/ic_launcher.xml`**: giữ gói `cam.su.kernel`, tên `SU Kernel`, icon/splash của Cam. Giữ 3 dòng `filament` trong `build.gradle.kts`, 4 dòng trong `libs.versions.toml` và dòng `-keep class com.google.android.filament.**` trong `proguard-rules.pro`.
+- **`res/values*/strings.xml`**: nhận chuỗi mới của upstream, giữ `seed_*`, `glass_background*`, `settings_slime*`, `app_*`. Merge có thể **đưa lại** các chuỗi Cam đã xoá (`home_learn_kernelsu*`, `home_support_*`, `settings_ui_mode*`): xoá lại cho sạch, không bắt buộc.
 
 CI:
 - **`.github/workflows/build-manager.yml`**: giữ dòng `workflow_dispatch:`. **`release.yml`**: giữ `permissions: contents: write` và `generate_release_notes: true`.
@@ -177,9 +225,25 @@ rg -n "ksu_manager_pin_apply" kernel/policy/pkg_tracker.c        # phải ra 2 d
 rg -n "[^A-Za-z.](Card|IconButton|OverlayDialog|OverlayListPopup|OverlayDropdownPreference|FloatingActionButton)\(" manager/app/src/main/java --glob "*Miuix.kt" --glob "!**/webui/**"
 rg -n "Scaffold\(" manager/app/src/main/java --glob "*Miuix.kt" -A1 | rg -v "containerColor|Scaffold\(|^--"   # phải rỗng
 
-# 6. Test và build
+# 6. Không còn giao diện Material (cả hai lệnh phải rỗng; GlassMaterial.kt là file của Cam)
+git ls-files manager/app/src/main | rg "/[A-Za-z]+Material\.kt$" | rg -v GlassMaterial
+rg -n "LocalUiMode|UiMode\b" manager/app/src/main/java
+
+# 7. Filament và vật liệu còn đủ (phải ra kết quả ở cả ba file, và file .filamat phải tồn tại)
+rg -n "filament" manager/gradle/libs.versions.toml manager/app/build.gradle.kts manager/app/proguard-rules.pro
+ls manager/app/src/main/assets/roam_jelly.filamat
+
+# 8. Test và build
 cd manager && ./gradlew :app:testDebugUnitTest :app:assembleRelease
 ```
+
+**Kiểm tra bằng mắt trên máy** (build xong chạy được chưa chắc đã đúng, phần này compile không bắt được):
+1. **Home**: hộp 3D có 4 slime, show chạy; không có slime nào chạy ngoài hộp.
+2. **Vuốt Home → Superuser**: kính nứt, 4 slime văng ra, chạy trên mép các thẻ. **Vuốt về Home**: cửa mở, chúng vào lại, kính liền, show tiếp tục.
+3. **Hồ sơ ứng dụng** của một app (Superuser → mở một dòng → "Mở hồ sơ đầy đủ"): 3 thẻ mở được; Dung lượng **không** ra 0 B cho cả dữ liệu lẫn cache (nếu 0 B là lệnh root đang chạy sai mount namespace, xem mục 3).
+4. **Chủ đề**: thẻ "Slime đi dạo" ở cuối; tắt thì slime biến mất, bật lại thì quay về.
+5. Thử một lệnh Quản lý với app **không quan trọng** (xoá cache), không thử trên app của hệ thống.
+Mẹo test bằng adb: `adb -s <serial> exec-out screencap -p`, `adb shell screenrecord`, `adb shell input swipe/tap`. Màn hình máy phải sáng, nếu tắt thì app không vẽ gì. Trên Git Bash nhớ `export MSYS_NO_PATHCONV=1` khi dùng đường dẫn `/sdcard`.
 
 **Nếu upstream thêm hàm mới vào `Natives`:**
 1. Thêm hàm tương ứng vào `IKsuInterface.aidl`.
@@ -216,6 +280,8 @@ Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã d
 | Build kernel từ `git archive` (không có `.git`) | `kernelsu.ko` báo version 16 → Manager coi là kernel quá cũ | Build từ thư mục có `.git` (git clone) |
 | Chạy `git` của WSL trên repo `/mnt/c/...` | Làm hỏng junction `cpp/uapi` | Chỉ dùng git của Windows cho repo này; trong WSL chỉ dùng git trên bản clone riêng |
 | `cargo ndk` không cài được trên Windows (thiếu `dlltool`) | | Build Rust trong WSL với clang Android + sysroot NDK |
+| Nâng `filament` trong `libs.versions.toml` | `assets/roam_jelly.filamat` được biên dịch bằng đúng phiên bản 1.77.1; khác phiên bản thì Filament có thể từ chối nạp (lỗi bắt được thì lớp đi dạo rơi về vẽ 2D, nhưng cũng có thể app thoát; chưa thử) | Sau khi nâng, tạo lại file theo mục 10 rồi mở app, vào Superuser xem slime có hiện không |
+| Mở bản release xong thấy slime ngoài hộp biến mất, chỉ còn vẽ 2D phẳng | `Roam3D.createOrNull()` trả `null` (Filament không khởi tạo được, hoặc thiếu `roam_jelly.filamat`) | Xem `logcat` có dòng `Filament`; kiểm tra file `.filamat` còn trong `assets/` |
 
 ### Lệnh build đã dùng (WSL, máy của Cam)
 
@@ -244,6 +310,7 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 
 - **Kernel (logic seed):** harness chạy trên host với header giả, gồm 11 test, chạy dưới ASan. Harness đang nằm ngoài repo (thư mục scratchpad), chưa đưa vào repo.
 - **ksud:** `cargo test seed:: allow::` (chạy trên Linux/WSL). Hai test `lkm_image` / `lkm_image_btf` vốn đã fail sẵn trên upstream khi thiếu asset CI, không liên quan.
+- **Trên máy thật (Y700 Gen5, 2026-10-03/04), phần UI mới:** đã thấy chạy đúng: phá kính khi vuốt khỏi Home, cửa + vá kính khi về, slime 3D chạy trên mép thẻ, đập tay / cưỡi Bơ / chơi khăm / rượt / đánh nhau, laser bằng ngón tay giữ yên, ngủ ban đêm, bật/tắt slime trong Chủ đề, 3 thẻ Hồ sơ ứng dụng (Thông tin, đường dẫn, Dung lượng) trên Chrome. Khung hình trung bình khoảng 9 ms, GPU khoảng 6 ms. **Chưa thử trên máy:** lắc máy, tự ẩn khi Flash / cài module, các nút Quản lý (sao lưu, xoá cache/dữ liệu, đóng băng, gỡ), nút copy đường dẫn.
 - **Trên máy thật (Y700 Gen5, 2026-10-02):** boot OK; seed cấp root cho Manager; seed không áp lại khi nonce giữ nguyên; prune xoá quyền khi gỡ app; cài module + WebUI OK; dialog chọn app OK; `ksud allow` OK.
 
 ## 7. Giới hạn đã biết
@@ -252,6 +319,12 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 - **Gỡ Manager rồi cài lại** không còn mất root: kernel cấp lại root cho `cam.su.kernel` ngay khi `packages.list` đổi (cần LKM có commit "keep root for the manager package"). Cũng vì vậy **không thu root của chính Manager được**: lần thay đổi gói kế tiếp kernel sẽ cấp lại. Đánh đổi có chủ đích: app lạ đặt trùng tên gói `cam.su.kernel` cũng sẽ có root.
 - **Lần boot đầu sau flash,** app khác chỉ dùng `su` được sau khi mở Manager một lần (Manager cài `/data/adb/ksud`).
 - **ROM ZUI (Lenovo):** dialog chọn app cần thêm quyền riêng `GET_INSTALLED_APP` của ROM. Lần đầu ROM sẽ hỏi; sau khi cho phép phải mở lại dialog.
+- **Slime đi dạo bị tắt hẳn** khi máy bật "giảm chuyển động" (animator scale = 0): khi đó cả 4 ở yên trong hộp. Chủ ý.
+- **Chạm vào slime ở lớp ngoài** chỉ lấy touch khi trúng thân; chạm hụt đi thẳng xuống app. Giữ yên ngón tay nửa giây thì thành laser và lớp slime **giữ luôn** thao tác đó (không cuộn trang, không bấm nhầm) tới khi nhấc tay.
+- **Màu thạch bên ngoài không khúc xạ** như trong hộp (lớp phủ không có cảnh phía sau để khúc xạ), nên là thạch bóng hơi trong. Đã chỉnh vài lần, **Cam đã nói không cần chỉnh màu nữa**.
+- **Nhóm app dùng chung UID và mục đặc biệt (WebView zygote)** không hiện 3 thẻ quản lý app (không rõ thao tác áp lên app nào).
+- **Gỡ systemless** cần khởi động lại mới có hiệu lực; chỉ hiện khi app có đường dẫn gốc trong ROM.
+- Chuỗi mới (`settings_slime*`, `app_*`) chỉ có tiếng Anh và tiếng Việt.
 
 ## 8. Phát hành bản mới (GitHub Actions)
 
@@ -268,3 +341,84 @@ git push origin v1.0.0
   Tên phiên bản trong app lấy từ `git describe --tags` (ví dụ `v1.0.0`); mã phiên bản vẫn là `30000 + số commit`. Đừng dùng lại tên tag đã có của upstream (`v3.x`).
 - **Khóa ký**: 4 secret `KEYSTORE` (file `.jks` dạng base64), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Bản gốc của khóa nằm ở `C:\Users\cam\.android-keys\su-kernel-release.jks` (mật khẩu trong `C:\Users\cam\.gradle\gradle.properties`); khóa cũ "Cam Kernel SU" ở `Documents\Cam-Kernel-SU-keys\cam-kernel-su.p12`. **Mất khóa thì người dùng không cập nhật đè được nữa**: luôn giữ bản sao lưu.
 - Vì `~/.gradle/gradle.properties` có khóa release, build trên máy (kể cả debug) cũng ký bằng khóa release. Cần bản ký khóa debug để cài đè bản debug cũ thì thêm `-PKEYSTORE_FILE=C:/Users/cam/.android/debug.keystore -PKEYSTORE_PASSWORD=android -PKEY_ALIAS=androiddebugkey -PKEY_PASSWORD=android`.
+
+## 9. Bản đồ phần slime / 3D (để sửa đúng chỗ)
+
+Bốn nhân vật: **Mochi** (hồng, hách dịch), **Bơ** (xanh lá to, hay ngủ), **Soda** (xanh dương cao, thích khoe), **Chanh** (vàng nhỏ, hay phá). Chỉ số 0..3 theo thứ tự `MOCHI, BO, SODA, CHANH` (`Cast`).
+
+| Muốn đổi | Sửa ở đâu |
+|---|---|
+| Kịch bản show trong hộp (các pha Intro / Brawl / Scatter / Recover / Gather / Eat / Choke / Vomit / Settle / Wander) | `arena/ArenaShow.kt`; kiểu nôn `ArenaVomit.kt`; ăn chữ + hóc `ArenaFeast.kt`; xếp hàng lúc rảnh `ArenaFormations.kt` |
+| Cảnh mở màn theo nước, đồ thất lạc | `ArenaIntros{,2,3}.kt`, `ArenaProps.kt`, nền + biểu tượng hai bên `ArenaScenes.kt` / `ArenaDecor.kt` |
+| Bộ đồ 3D (36 bộ) | `three/Wardrobe.kt` (định nghĩa), `Tailor.kt` (dựng hình), `Closet.kt` (treo lên từng slime, bật/tắt theo pose) |
+| Hình dáng thạch, tay co duỗi, khuôn mặt | `three/Shapes3D.kt`, `Morphs.kt`; mặt vẽ lại mỗi khi biểu cảm đổi trong `SlimeRig.paintFace` |
+| Phòng kính 3D, ánh sáng, khử răng cưa | `three/Arena3D.kt` (đọc kỹ các comment ở `init`), `Room.kt`, `Grounds.kt` |
+| Slime đi dạo: đi, nhảy, rơi, trèo tường, phản ứng khi chạm | `slime/RoamWorld.kt` |
+| Hai con chơi với nhau (đập tay, cưỡi Bơ, chơi khăm, rượt, đánh nhau) | `slime/RoamSocial.kt` |
+| Phá kính / cửa / vá kính; slime vào lại hộp | `slime/SlimeHome.kt` (trạng thái + vẽ kính), `RoamWorld.breakOut()` / `comeHome()`, `ArenaShow.updatePoses` (đi từ cửa vào chỗ), `StatusArena.kt` (báo vị trí trong hộp, vẽ kính) |
+| Chạm / giữ / lắc, chấm laser, ngủ đêm, số lượng mỗi trang | `slime/SlimeLayer.kt` (cử chỉ, cảm biến), `RoamWorld.shoo/laserAt/shake/night`, cài đặt ở mục 3 |
+| Màu và độ trong của thạch bên ngoài | `three/SlimeRig.bind` (`tint`, `clarity`, `glow`), đèn trong `three/Roam3D.kt`; công thức vật liệu ở mục 10 |
+
+Những điều rút ra khi làm, đừng làm lại sai:
+- **Đừng bật lại SSR (phản xạ màn hình) và SSAO** trong `Arena3D`: SSR là nguyên nhân những khối vuông 8 px trên thân slime ("vỡ vỡ"). Hiện đang dùng MSAA 4x + FXAA, độ nhám thạch 0.03, bóng VSM 1024.
+- Vật liệu có `alphaMode = BLEND` **không được dùng sheen** (Filament báo lỗi "sheenColorIndex" và thoát); bộ đồ vải chỉ dùng sheen khi đặc.
+- `getEntitiesByPrefix` của gltfio không hoạt động như mong đợi: `Closet` tìm từng mảnh bằng tên chính xác (`fit_<theme>_<slot>_<i>`).
+- `Roam3D` và `Arena3D` mỗi cái là **một engine Filament riêng**, cùng dùng `SlimeRig`. Trong `Roam3D.destroy()`, `rig.destroy()` nằm **sau** khi huỷ asset vì nó huỷ các material instance của thạch mà asset còn đang dùng; giữ nguyên thứ tự đó.
+- Kéo slime khi `RoamMode.Held`: `SlimeLayer` đón touch ở `PointerEventPass.Initial` và chỉ `consume()` khi trúng slime hoặc đang là laser.
+
+## 10. Tạo lại `roam_jelly.filamat`
+
+File này là vật liệu "thạch trong" cho lớp slime đi dạo, biên dịch sẵn nên APK không phải mang theo bộ biên dịch (`libfilamat-jni.so` khoảng 9 MB mỗi ABI). Cần tạo lại khi: nâng phiên bản `filament`, hoặc muốn đổi công thức vật liệu. **Đổi màu / độ trong / độ sáng thì không cần**: ba thông số `tint`, `clarity`, `glow` đặt lúc chạy trong `SlimeRig.bind`.
+
+Cách đã dùng (chỉ làm tạm trong nhánh riêng, rồi gỡ hết):
+1. Thêm dependency tạm vào `app/build.gradle.kts`: `implementation("com.google.android.filament:filamat-android:<đúng phiên bản filament>")`. Bản `filamat-android-lite` **không có** trên Maven.
+2. Thêm file tạm dưới đây và gọi `MaterialForge.forge(context)` ở chỗ chạy lúc `SlimeLayer` dựng (ví dụ ngay trong `remember { … }` đang tạo `Roam3D`).
+3. Chạy bản release trên máy (**màn hình phải sáng**, vì code chỉ chạy khi `SlimeLayer` được dựng), rồi kéo file ra:
+   `adb pull /sdcard/Android/data/cam.su.kernel/files/roam_jelly.filamat manager/app/src/main/assets/roam_jelly.filamat`
+4. **Xoá** file tạm, lời gọi và dependency. Build lại, mở app, vào Superuser xem slime ngoài hộp.
+
+```kotlin
+// TẠM THỜI: chỉ để sinh roam_jelly.filamat. Không commit.
+object MaterialForge {
+    fun forge(context: Context) {
+        Thread {
+            MaterialBuilder.init()
+            val pkg = MaterialBuilder()
+                .name("roam_jelly")
+                .shading(MaterialBuilder.Shading.LIT)
+                .blending(MaterialBuilder.BlendingMode.TRANSPARENT)
+                .transparencyMode(MaterialBuilder.TransparencyMode.TWO_PASSES_ONE_SIDE)
+                .uniformParameter(MaterialBuilder.UniformType.FLOAT3, "tint")
+                .uniformParameter(MaterialBuilder.UniformType.FLOAT, "clarity")
+                .uniformParameter(MaterialBuilder.UniformType.FLOAT, "glow")
+                .specularAntiAliasing(true)
+                .platform(MaterialBuilder.Platform.MOBILE)
+                .targetApi(MaterialBuilder.TargetApi.OPENGL)
+                .optimization(MaterialBuilder.Optimization.PERFORMANCE)
+                .material(
+                    """
+                    void material(inout MaterialInputs material) {
+                        prepareMaterial(material);
+                        float NoV = shading_NoV;
+                        // Trong ở giữa, đậm dần ra rìa như thạch thật.
+                        float rim = pow(1.0 - NoV, 2.2);
+                        float a = mix(materialParams.clarity, 0.94, rim);
+                        vec3 tint = materialParams.tint;
+                        material.baseColor = vec4(tint * a, a);
+                        material.metallic = 0.0;
+                        material.roughness = 0.05;
+                        material.reflectance = 0.75;
+                        // Phát sáng nhẹ từ bên trong, mạnh nhất ở giữa.
+                        material.emissive = vec4(tint * materialParams.glow * (0.3 + 0.7 * NoV * NoV), 0.0);
+                    }
+                    """.trimIndent()
+                )
+                .build()
+            val buf = pkg.buffer
+            val bytes = ByteArray(buf.remaining()).also { buf.get(it) }
+            File(context.getExternalFilesDir(null), "roam_jelly.filamat").writeBytes(bytes)
+            MaterialBuilder.shutdown()
+        }.start()
+    }
+}
+```

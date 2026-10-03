@@ -1,1 +1,2 @@
-*.bat eol=crlf
+*.bat eol=crlf# Shell scripts run inside WSL/Android: keep LF even with core.autocrlf
+scripts/*.sh text eol=lf

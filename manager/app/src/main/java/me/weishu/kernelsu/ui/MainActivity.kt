@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui
 
+import me.weishu.kernelsu.ui.component.glass.GlassSource
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.component.glass.GlassBackgroundCache
 import me.weishu.kernelsu.ui.component.liquid.rememberQuantizedGravityAngle
@@ -403,7 +404,10 @@ fun MainScreen(
         drawContent()
     }
     val glassBackdrop = LocalGlassBackdrop.current
-    val barBackdrop: Backdrop = if (glassBackdrop != null) rememberCombinedBackdrop(glassBackdrop, backdrop) else backdrop
+    // Same rule as BlurredBar: an animated background is not sampled (it would re-record every frame).
+    val animatedBackground = LocalGlassBackgroundState.current.source is GlassSource.Gradient
+    val barBackdrop: Backdrop =
+        if (glassBackdrop != null && !animatedBackground) rememberCombinedBackdrop(glassBackdrop, backdrop) else backdrop
 
     val settledPage = mainPagerState.pagerState.settledPage
     LaunchedEffect(settledPage) {

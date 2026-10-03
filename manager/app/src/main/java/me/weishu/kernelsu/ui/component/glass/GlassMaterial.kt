@@ -40,6 +40,12 @@ val LocalGlassPageAnchor = staticCompositionLocalOf<GlassPageAnchor?> { null }
 val LocalGlassInBar = staticCompositionLocalOf { false }
 
 /**
+ * True while the current page is sliding in or out (navigation transition). Live backdrop surfaces
+ * re-record every frame while their page moves, so bar controls fall back to [glassMaterial] then.
+ */
+val LocalGlassPageMoving = staticCompositionLocalOf { false }
+
+/**
  * Glass for surfaces that sit on the page background (cards, in-card buttons, rail): draws the
  * matching region of the pre-blurred background ([GlassSource.Bitmap.material]) clipped to [shape],
  * then the dim, the [tint] and a specular rim. One image draw per frame and no offscreen layers, so

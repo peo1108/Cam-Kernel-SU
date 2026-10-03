@@ -1,5 +1,13 @@
 package me.weishu.kernelsu.ui.util
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.foundation.layout.BoxScope
+import me.weishu.kernelsu.ui.component.glass.LocalGlassBackgroundState
+import me.weishu.kernelsu.ui.component.glass.GlassSource
+import me.weishu.kernelsu.ui.component.glass.LocalGlassPageMoving
 import top.yukonga.miuix.kmp.blur.ProgressiveBlur
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import androidx.compose.ui.graphics.Color
@@ -52,15 +60,19 @@ fun BlurredBar(
     content: @Composable () -> Unit,
 ) {
     val pageGlass = LocalGlassBackdrop.current
+    // An animated background would make every bar surface re-record each frame; it has no detail
+    // worth refracting, so then the bar samples the content only and the gradient shows through.
+    val animatedBackground = LocalGlassBackgroundState.current.source is GlassSource.Gradient
     // Controls in the bar (droplet buttons, search field) refract the content scrolling under it.
     val sample: Backdrop? = when {
         !blurActive || backdrop == null -> pageGlass
-        pageGlass != null -> rememberCombinedBackdrop(pageGlass, backdrop)
+        pageGlass != null && !animatedBackground -> rememberCombinedBackdrop(pageGlass, backdrop)
         else -> backdrop
     }
     if (!glass || sample == null || backdrop == null || !blurActive) {
         CompositionLocalProvider(LocalGlassBackdrop provides sample, LocalGlassInBar provides true) {
-            Box(modifier = if (sample != null && backdrop != null && blurActive) Modifier.scrollEdge(sample, scrollBehavior) else Modifier) {
+            Box {
+                if (sample != null && backdrop != null && blurActive) ScrollEdge(sample, scrollBehavior)
                 content()
             }
         }
@@ -91,27 +103,44 @@ fun BlurredBar(
 private fun ScrollBehavior.edgeFraction(): Float =
     maxOf(state.collapsedFraction, state.overlappedFraction).coerceIn(0f, 1f)
 
+/**
+ * Scroll edge effect drawn behind the bar content: a blur that is strongest at the top and fades
+ * out completely at the bottom edge (alpha mask on this layer only, the title stays sharp).
+ */
 @Composable
-private fun Modifier.scrollEdge(sample: Backdrop, scrollBehavior: ScrollBehavior?): Modifier {
-    if (scrollBehavior == null) return this
+private fun BoxScope.ScrollEdge(sample: Backdrop, scrollBehavior: ScrollBehavior?) {
+    if (scrollBehavior == null || LocalGlassPageMoving.current) return
     // Only toggles composition when content starts or stops overlapping; the strength itself is
     // read in the layer block, so scrolling does not recompose the bar.
     val active by remember(scrollBehavior) { derivedStateOf { scrollBehavior.edgeFraction() > 0.01f } }
-    if (!active) return this
+    if (!active) return
     val surface = MiuixTheme.colorScheme.surface
-    return drawBackdrop(
-        backdrop = sample,
-        shape = { BarShape },
-        effects = {
-            blur(GlassDefaults.edgeBlur.toPx(), GlassDefaults.edgeBlur.toPx())
-        },
-        layerBlock = { alpha = scrollBehavior.edgeFraction() },
-        onDrawSurface = {
-            drawRect(Brush.verticalGradient(listOf(surface.copy(alpha = GlassDefaults.edgeTint), Color.Transparent)))
-        },
-        progressiveGradient = ProgressiveBlur.Top,
+    Box(
+        Modifier
+            .matchParentSize()
+            .graphicsLayer {
+                compositingStrategy = CompositingStrategy.Offscreen
+                alpha = scrollBehavior.edgeFraction()
+            }
+            .drawWithContent {
+                drawContent()
+                drawRect(EdgeFadeMask, blendMode = BlendMode.DstIn)
+            }
+            .drawBackdrop(
+                backdrop = sample,
+                shape = { BarShape },
+                effects = {
+                    blur(GlassDefaults.edgeBlur.toPx(), GlassDefaults.edgeBlur.toPx())
+                },
+                onDrawSurface = {
+                    drawRect(Brush.verticalGradient(listOf(surface.copy(alpha = GlassDefaults.edgeTint), Color.Transparent)))
+                },
+                progressiveGradient = ProgressiveBlur.Top,
+            )
     )
 }
+
+private val EdgeFadeMask = Brush.verticalGradient(0.55f to Color.Black, 1f to Color.Transparent)
 
 // Corner-based so the lens shader can refract along the bar edges.
 private val BarShape = RoundedCornerShape(0.dp)

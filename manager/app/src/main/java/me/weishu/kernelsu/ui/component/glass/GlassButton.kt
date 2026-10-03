@@ -49,7 +49,8 @@ fun Modifier.liquidControl(shape: RoundedCornerShape, tint: Color = GlassDefault
         ),
     )
     // Off the bars nothing moves under the control: the static material is enough and far cheaper.
-    if (!LocalGlassInBar.current) return shadowed.glassMaterial(shape, tint)
+    // Same while the page itself slides: a live sample would re-record every transition frame.
+    if (!LocalGlassInBar.current || LocalGlassPageMoving.current) return shadowed.glassMaterial(shape, tint)
     val rim = rememberGravityRotatedHighlight(LiquidSpecular, extraDegrees = -45f)
     return this
         .dropShadow(

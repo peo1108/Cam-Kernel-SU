@@ -1,5 +1,13 @@
 package me.weishu.kernelsu.ui.component.glass
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.runtime.derivedStateOf
+import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.Image
@@ -211,6 +219,9 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val pageBackdrop = rememberLayerBackdrop()
     val overlayBackdrop = rememberLayerBackdrop()
     val anchor = remember { GlassPageAnchor() }
+    val transition = LocalNavTransitionScope.current
+    // Only flips at the start and end of a transition, so pages recompose twice per navigation.
+    val moving by remember(transition) { derivedStateOf { transition?.isRunning == true } }
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -222,12 +233,13 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
                 .fillMaxSize()
                 .layerBackdrop(pageBackdrop)
         ) {
-            GlassBackgroundLayer(LocalGlassBackgroundState.current)
+            GlassBackgroundLayer(LocalGlassBackgroundState.current, moving)
         }
         CompositionLocalProvider(
             LocalGlassBackdrop provides pageBackdrop,
             LocalGlassOverlayBackdrop provides overlayBackdrop,
             LocalGlassPageAnchor provides anchor,
+            LocalGlassPageMoving provides moving,
         ) {
             content()
         }
@@ -235,7 +247,7 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun GlassBackgroundLayer(state: GlassBackgroundState) {
+private fun GlassBackgroundLayer(state: GlassBackgroundState, moving: Boolean) {
     when (val source = state.source) {
         GlassSource.Plain -> Box(
             Modifier
@@ -243,7 +255,7 @@ private fun GlassBackgroundLayer(state: GlassBackgroundState) {
                 .background(colorScheme.surface)
         )
 
-        GlassSource.Gradient -> GradientLayer()
+        GlassSource.Gradient -> GradientLayer(animate = !moving)
 
         // Surface behind the image so transparent pixels of a custom PNG do not show the window.
         is GlassSource.Bitmap -> Box(
@@ -273,17 +285,29 @@ private fun GlassBackgroundLayer(state: GlassBackgroundState) {
 }
 
 @Composable
-private fun GradientLayer() {
+private fun GradientLayer(animate: Boolean) {
     val seed = colorScheme.primary
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val lifecycle = LocalLifecycleOwner.current.lifecycle
         val lifecycleState by lifecycle.currentStateAsState()
-        BgEffectBackground(
-            dynamicBackground = lifecycleState.isAtLeast(Lifecycle.State.RESUMED),
-            modifier = Modifier.fillMaxSize(),
-            isFullSize = true,
-            seedColor = seed,
-        ) { }
+        // The gradient has no fine detail: rasterize the noise shader at 1/scale in an offscreen
+        // layer and stretch it, so it costs 1/scale^2 of the pixels. Paused while the page slides.
+        val scale = GlassDefaults.gradientDownscale.toFloat()
+        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
+            BgEffectBackground(
+                dynamicBackground = animate && lifecycleState.isAtLeast(Lifecycle.State.RESUMED),
+                modifier = Modifier
+                    .requiredSize(maxWidth / scale, maxHeight / scale)
+                    .graphicsLayer {
+                        compositingStrategy = CompositingStrategy.Offscreen
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        scaleX = scale
+                        scaleY = scale
+                    },
+                isFullSize = true,
+                seedColor = seed,
+            ) { }
+        }
     } else {
         // RuntimeShader needs API 33: draw a static gradient of the same tinted colors.
         val deviceType = if (shouldShowSplitPane()) DeviceType.PAD else DeviceType.PHONE

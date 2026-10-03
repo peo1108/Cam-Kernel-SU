@@ -13,6 +13,8 @@ object GlassDefaults {
     const val controlDownscale = 2
 
     val cardBlur = 8.dp
+    /** The animated gradient background is rendered at 1/this resolution and stretched. */
+    const val gradientDownscale = 4
     /** Saturation boost baked into the card material (vibrancy). */
     const val materialSaturation = 1.5f
     val listCardBlur = 8.dp

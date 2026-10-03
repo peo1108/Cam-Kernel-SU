@@ -17,6 +17,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 6 | Màn Install có dialog chọn app được root (seed) | |
 | 7 | Tên app `SU Kernel` (trước là `Cam Kernel SU`), gói `cam.su.kernel`, icon logo mới | |
 | 8 | `KERNEL_SU_UAPI_VERSION` 4 → 5 | Chặn Manager/ksud bản cũ dùng với kernel mới |
+| 10 | Kernel luôn cấp root cho gói Manager `cam.su.kernel` theo tên gói, dò lại UID mỗi khi `packages.list` đổi (`kernel/policy/pkg_tracker.c`, `ksu_manager_pin_apply`) | Gỡ rồi cài lại Manager không mất root; chỉ áp dụng cho đúng gói này |
 | 9 | Giao diện Miuix thành kính lỏng (Liquid Glass) kiểu iOS, nền là hình nền máy đọc qua root | Theo yêu cầu của Cam; spec `docs/superpowers/specs/2026-10-02-miuix-liquid-glass-design.md` |
 
 ## 2. Danh sách commit (theo thứ tự)
@@ -186,6 +187,6 @@ Rồi chép `ksud` vào `manager/app/src/main/jniLibs/arm64-v8a/libksud.so` và 
 ## 7. Giới hạn đã biết
 
 - **Chế độ late-load / magica không có seed.** Chỉ hỗ trợ LKM qua patch init_boot.
-- **Gỡ Manager hoặc tự thu root của nó** thì Manager mất root. Lấy lại bằng `ksud allow add cam.su.kernel` (từ adb su / Termux), hoặc patch lại với seed mới.
+- **Gỡ Manager rồi cài lại** không còn mất root: kernel cấp lại root cho `cam.su.kernel` ngay khi `packages.list` đổi (cần LKM có commit "keep root for the manager package"). Cũng vì vậy **không thu root của chính Manager được**: lần thay đổi gói kế tiếp kernel sẽ cấp lại. Đánh đổi có chủ đích: app lạ đặt trùng tên gói `cam.su.kernel` cũng sẽ có root.
 - **Lần boot đầu sau flash,** app khác chỉ dùng `su` được sau khi mở Manager một lần (Manager cài `/data/adb/ksud`).
 - **ROM ZUI (Lenovo):** dialog chọn app cần thêm quyền riêng `GET_INSTALLED_APP` của ROM. Lần đầu ROM sẽ hỏi; sau khi cho phép phải mở lại dialog.

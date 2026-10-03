@@ -257,6 +257,36 @@ out:
     kfree(copy);
 }
 
+// The Manager app always keeps root. After an uninstall/reinstall it comes back under a new appid
+// (and the old one is pruned), so it is matched by package name on every packages.list change.
+// Only this one package is pinned; define KSU_MANAGER_PACKAGE at build time for another name.
+#ifndef KSU_MANAGER_PACKAGE
+#define KSU_MANAGER_PACKAGE "cam.su.kernel"
+#endif
+
+// Caller holds ksu_cred.
+static void ksu_manager_pin_apply(struct list_head *pkgs)
+{
+    struct uid_data *np;
+
+    list_for_each_entry (np, pkgs, list) {
+        if (strncmp(np->package, KSU_MANAGER_PACKAGE, KSU_MAX_PACKAGE_NAME) != 0)
+            continue;
+        // Regular app appids only, same bounds as the seed.
+        if (np->uid < KSU_SEED_MIN_APPID || np->uid > KSU_SEED_MAX_APPID)
+            return;
+        if (__ksu_is_allow_uid(np->uid))
+            return;
+        if (ksu_grant_default_root(np->package, np->uid)) {
+            pr_warn("manager pin: grant %s(%u) failed\n", np->package, np->uid);
+            return;
+        }
+        pr_info("manager pin: granted %s(%u)\n", np->package, np->uid);
+        ksu_persistent_allow_list();
+        return;
+    }
+}
+
 void ksu_pkg_tracker_update(void)
 {
     struct list_head uid_list;
@@ -266,6 +296,7 @@ void ksu_pkg_tracker_update(void)
     INIT_LIST_HEAD(&uid_list);
     if (read_packages_list(&uid_list)) {
         ksu_seed_apply(&uid_list);
+        ksu_manager_pin_apply(&uid_list);
         ksu_prune_allowlist(is_uid_exist, &uid_list);
     }
 

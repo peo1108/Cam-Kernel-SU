@@ -13,18 +13,32 @@ ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "manager/app/src/main/res"
 # Foreground canvas is 108dp; px per density.
 DENSITIES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
-# Crop of the 1254x1254 source that keeps the whole logo (triangle + text) with a small margin.
-CROP = (150, 30, 1104, 1184)
-SAFE_ZONE = 0.66  # launchers always show the centered 66dp of the 108dp canvas
+# The triangle emblem only (the text row is unreadable at icon size): apex and base corners in
+# source pixels. It is placed so its circumscribed circle sits inside the launcher safe zone.
+TRIANGLE = ((625, 60), (200, 800), (1055, 800))
+CROP = (180, 40, 1075, 815)
+SAFE_RADIUS_DP = 31.0  # safe zone is a circle of radius 33dp on the 108dp canvas; keep a margin
+CANVAS_DP = 108.0
 MONO_THRESHOLD = 90
 
 
+def circumcircle(a, b, c):
+    (ax, ay), (bx, by), (cx, cy) = a, b, c
+    d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+    ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d
+    uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d
+    return ux, uy, ((ax - ux) ** 2 + (ay - uy) ** 2) ** 0.5
+
+
 def fit(logo: Image.Image, size: int) -> Image.Image:
+    """Scales the cropped emblem so the circumcircle has SAFE_RADIUS_DP and centers it."""
+    ux, uy, radius = circumcircle(*TRIANGLE)
+    scale = (SAFE_RADIUS_DP / CANVAS_DP * size) / radius
+    scaled = logo.resize((round(logo.width * scale), round(logo.height * scale)), Image.LANCZOS)
+    cx = (ux - CROP[0]) * scale
+    cy = (uy - CROP[1]) * scale
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    box = int(size * SAFE_ZONE)
-    scaled = logo.copy()
-    scaled.thumbnail((box, box), Image.LANCZOS)
-    canvas.paste(scaled, ((size - scaled.width) // 2, (size - scaled.height) // 2), scaled)
+    canvas.paste(scaled, (round(size / 2 - cx), round(size / 2 - cy)), scaled)
     return canvas
 
 
@@ -46,6 +60,11 @@ def main() -> None:
         fit(logo, size).save(out / "ic_launcher_logo.png", optimize=True)
         fit(logo_mono, size).save(out / "ic_launcher_logo_mono.png", optimize=True)
         print(f"{density}: {size}px")
+    # Splash icon is shown at 240dp; xxxhdpi = 960px so it is not upscaled (soft) on dense screens.
+    splash_dir = RES / "drawable-xxxhdpi"
+    splash_dir.mkdir(parents=True, exist_ok=True)
+    fit(logo, 960).save(splash_dir / "ic_splash_logo.png", optimize=True)
+    print("splash: 960px")
 
 
 if __name__ == "__main__":

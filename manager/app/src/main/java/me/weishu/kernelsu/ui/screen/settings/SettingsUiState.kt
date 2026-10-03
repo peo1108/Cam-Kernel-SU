@@ -3,11 +3,9 @@ package me.weishu.kernelsu.ui.screen.settings
 import androidx.compose.runtime.Immutable
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
-import me.weishu.kernelsu.ui.UiMode
 
 @Immutable
 data class SettingsUiState(
-    val uiMode: String = UiMode.DEFAULT_VALUE,
     val checkUpdate: Boolean = true,
     val checkModuleUpdate: Boolean = true,
     val themeMode: Int = 0,
@@ -15,18 +13,18 @@ data class SettingsUiState(
     val keyColor: Int = 0,
     val colorStyle: String = PaletteStyle.TonalSpot.name,
     val colorSpec: String = ColorSpec.SpecVersion.SPEC_2025.name,
-    val enablePredictiveBack: Boolean = false,
+    val enablePredictiveBack: Boolean = true,
     val enableSwipeDismiss: Boolean = true,
     val pagerInterceptionMode: Int = 1,
     val enableBlur: Boolean = true,
-    val enableFloatingBottomBar: Boolean = false,
+    val enableFloatingBottomBar: Boolean = true,
     val enableFloatingBottomBarBlur: Boolean = false,
     val enableNavigationBadge: Boolean = true,
     val glassBackgroundType: Int = 0,
     val glassBackgroundBlur: Float = 0f,
     val glassBackgroundDim: Float = 0.2f,
     val pageScale: Float = 1.0f,
-    val moduleDescriptionMaxLines: Int = 4,
+    val moduleDescriptionMaxLines: Int = 5,
     val enableWebDebugging: Boolean = false,
 
     // Su Compat
@@ -60,7 +58,12 @@ data class SettingsUiState(
     val autoJailbreak: Boolean = false,
 
     // Soft Reboot
-    val useSoftReboot: Boolean = false
+    val useSoftReboot: Boolean = false,
+
+    // Roaming slimes
+    val roamingSlimes: Boolean = true,
+    val roamingSlimeCount: Int = 0,
+    val slimeNightNap: Boolean = true,
 )
 
 @Immutable
@@ -68,7 +71,6 @@ data class SettingsScreenActions(
     val onSetCheckUpdate: (Boolean) -> Unit,
     val onSetCheckModuleUpdate: (Boolean) -> Unit,
     val onOpenTheme: () -> Unit,
-    val onSetUiModeIndex: (Int) -> Unit,
     val onOpenProfileTemplate: () -> Unit,
     val onSetSuCompatMode: (Int) -> Unit,
     val onSetKernelUmountEnabled: (Boolean) -> Unit,

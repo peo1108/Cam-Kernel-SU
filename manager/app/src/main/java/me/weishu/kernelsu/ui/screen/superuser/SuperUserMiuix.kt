@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
@@ -35,9 +36,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import me.weishu.kernelsu.ui.component.motion.cardEntrance
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +54,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -208,6 +218,12 @@ fun SuperUserPagerMiuix(
 
                                 Box {
                                     val showTopPopup = remember { mutableStateOf(false) }
+                                    val showRestore = remember { mutableStateOf(false) }
+                                    RestoreSystemAppsDialog(
+                                        show = showRestore.value,
+                                        onDismiss = { showRestore.value = false },
+                                        onRestored = actions.onRefresh,
+                                    )
                                     GlassListPopup(
                                         show = showTopPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
@@ -217,7 +233,7 @@ fun SuperUserPagerMiuix(
                                         },
                                         content = {
                                             val isMultiUser = uiState.userIds.size > 1
-                                            val size = if (isMultiUser) 2 else 1
+                                            val size = if (isMultiUser) 3 else 2
                                             ListPopupColumn {
                                                 DropdownImpl(
                                                     text = stringResource(R.string.show_system_apps),
@@ -241,6 +257,16 @@ fun SuperUserPagerMiuix(
                                                         index = 1
                                                     )
                                                 }
+                                                DropdownImpl(
+                                                    text = stringResource(R.string.app_restore_system),
+                                                    isSelected = false,
+                                                    optionSize = size,
+                                                    onSelectedIndexChange = {
+                                                        showRestore.value = true
+                                                        showTopPopup.value = false
+                                                    },
+                                                    index = size - 1
+                                                )
                                             }
                                         }
                                     )
@@ -291,6 +317,7 @@ fun SuperUserPagerMiuix(
         },
         popupHost = {
             val expandedSearchUids = remember { mutableStateOf(setOf<Int>()) }
+            val openSearchProfileUid = remember { mutableStateOf<Int?>(null) }
             LaunchedEffect(uiState.searchResults) {
                 expandedSearchUids.value = uiState.searchResults
                     .filter { it.apps.size > 1 }
@@ -357,6 +384,7 @@ fun SuperUserPagerMiuix(
                         Spacer(Modifier.height(6.dp))
                     }
                     items(uiState.searchResults, key = { it.uid }, contentType = { "group" }) { group ->
+                        val profileExpanded = openSearchProfileUid.value == group.uid
                         val expanded = expandedSearchUids.value.contains(group.uid)
                         AnimatedVisibility(
                             visible = uiState.searchResults.isNotEmpty(),
@@ -372,8 +400,16 @@ fun SuperUserPagerMiuix(
                                                 if (expanded) expandedSearchUids.value - group.uid else expandedSearchUids.value + group.uid
                                         }
                                     },
+                                    profileExpanded = profileExpanded,
+                                    profileContent = {
+                                        InlineAppProfile(
+                                            group = group,
+                                            onOpenFullProfile = { actions.onOpenProfile(group) },
+                                            onEdited = actions.onProfileEdited,
+                                        )
+                                    },
                                 ) {
-                                    actions.onOpenProfile(group)
+                                    openSearchProfileUid.value = if (profileExpanded) null else group.uid
                                 }
                                 AnimatedVisibility(
                                     visible = expanded && group.apps.size > 1,
@@ -424,6 +460,7 @@ fun SuperUserPagerMiuix(
             )
 
             val expandedUids = remember { mutableStateOf(setOf<Int>()) }
+            val openProfileUid = rememberSaveable { mutableStateOf<Int?>(null) }
             PullToRefresh(
                 isRefreshing = uiState.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
@@ -453,9 +490,9 @@ fun SuperUserPagerMiuix(
                         ),
                         overscrollEffect = null,
                     ) {
-                        items(uiState.groupedApps, key = { it.uid }, contentType = { "group" }) { group ->
+                        itemsIndexed(uiState.groupedApps, key = { _, it -> it.uid }, contentType = { _, _ -> "group" }) { index, group ->
                             val expanded = expandedUids.value.contains(group.uid)
-                            Column {
+                            Column(modifier = Modifier.cardEntrance(lazyListState, index)) {
                                 GroupItem(
                                     group = group,
                                     onToggleExpand = {
@@ -463,9 +500,17 @@ fun SuperUserPagerMiuix(
                                             expandedUids.value =
                                                 if (expanded) expandedUids.value - group.uid else expandedUids.value + group.uid
                                         }
-                                    }
+                                    },
+                                    profileExpanded = openProfileUid.value == group.uid,
+                                    profileContent = {
+                                        InlineAppProfile(
+                                            group = group,
+                                            onOpenFullProfile = { actions.onOpenProfile(group) },
+                                            onEdited = actions.onProfileEdited,
+                                        )
+                                    },
                                 ) {
-                                    actions.onOpenProfile(group)
+                                    openProfileUid.value = if (openProfileUid.value == group.uid) null else group.uid
                                 }
                                 AnimatedVisibility(
                                     visible = expanded && group.apps.size > 1,
@@ -532,6 +577,8 @@ private fun SimpleAppItem(
 private fun GroupItem(
     group: GroupedApps,
     onToggleExpand: () -> Unit,
+    profileExpanded: Boolean = false,
+    profileContent: (@Composable () -> Unit)? = null,
     onClickPrimary: () -> Unit,
 ) {
     val isInDarkTheme = isInDarkTheme()
@@ -551,16 +598,36 @@ private fun GroupItem(
             if (userId != 0) add(StatusMeta("USER $userId", bg, fg))
         }
     }
+    val haptic = LocalHapticFeedback.current
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (profileExpanded) 90f else 0f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
+        label = "GroupItemArrow",
+    )
     GlassListCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
-        onClick = onClickPrimary,
-        onLongPress = if (group.apps.size > 1) onToggleExpand else null,
-        showIndication = true,
-        insideMargin = PaddingValues(start = 10.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+        insideMargin = PaddingValues(0.dp)
     ) {
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                        onClickPrimary()
+                    },
+                    onLongClick = if (group.apps.size > 1) {
+                        {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onToggleExpand()
+                        }
+                    } else {
+                        null
+                    },
+                )
+                .padding(start = 10.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AppIconImage(
@@ -615,15 +682,25 @@ private fun GroupItem(
             val layoutDirection = LocalLayoutDirection.current
             Image(
                 modifier = Modifier
+                    .padding(start = 8.dp)
                     .graphicsLayer {
                         if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                        rotationZ = arrowRotation
                     }
-                    .padding(start = 8.dp)
                     .size(width = 10.dp, height = 16.dp),
                 imageVector = MiuixIcons.Basic.ArrowRight,
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(colorScheme.onSurfaceVariantActions),
             )
+        }
+        if (profileContent != null) {
+            AnimatedVisibility(
+                visible = profileExpanded,
+                enter = expandVertically(spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                exit = shrinkVertically(spring(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)) + fadeOut(),
+            ) {
+                profileContent()
+            }
         }
     }
 }

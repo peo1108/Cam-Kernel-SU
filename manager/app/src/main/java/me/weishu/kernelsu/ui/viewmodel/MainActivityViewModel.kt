@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
-import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.theme.ThemeController
 
 class MainActivityViewModel(
@@ -57,7 +56,9 @@ class MainActivityViewModel(
             glassBackgroundBlur = settingRepo.glassBackgroundBlur,
             glassBackgroundDim = settingRepo.glassBackgroundDim,
             glassImageVersion = settingRepo.glassImageVersion,
-            uiMode = UiMode.fromValue(settingRepo.uiMode),
+            roamingSlimes = settingRepo.roamingSlimes,
+            roamingSlimeCount = settingRepo.roamingSlimeCount,
+            slimeNightNap = settingRepo.slimeNightNap,
         )
     }
 
@@ -79,7 +80,9 @@ class MainActivityViewModel(
             "enable_navigation_badge",
             "enable_swipe_dismiss",
             "pager_interception_mode",
-            "ui_mode",
+            "roaming_slimes",
+            "roaming_slime_count",
+            "slime_night_nap",
         )
     }
 }

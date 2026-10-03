@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,9 +19,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.ui.LocalUiMode
-import me.weishu.kernelsu.ui.UiMode
-import me.weishu.kernelsu.ui.component.material.ExpressiveDialog
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -36,48 +30,7 @@ fun DownloadDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    when (LocalUiMode.current) {
-        UiMode.Miuix -> DownloadDialogMiuix(show, onConfirm, onDismiss)
-        UiMode.Material -> DownloadDialogMaterial(show, onConfirm, onDismiss)
-    }
-}
-
-@Composable
-private fun DownloadDialogMaterial(
-    show: Boolean,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    if (!show) return
-
-    var url by remember { mutableStateOf("") }
-    ExpressiveDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.download_dialog_title)) },
-        text = {
-            OutlinedTextField(
-                value = url,
-                onValueChange = { url = it },
-                placeholder = { Text(stringResource(R.string.download_dialog_msg)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            TextButton(
-                enabled = isValidUrl(url.trim()),
-                onClick = { onConfirm(url.trim()) }
-            ) {
-                Text(stringResource(android.R.string.ok))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(android.R.string.cancel))
-            }
-        }
-    )
+    DownloadDialogMiuix(show, onConfirm, onDismiss)
 }
 
 @Composable

@@ -57,7 +57,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import me.weishu.kernelsu.ui.component.motion.cardEntrance
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -707,11 +709,11 @@ private fun ModuleList(
         contentPadding = contentPadding,
         overscrollEffect = null,
     ) {
-        items(
+        itemsIndexed(
             items = modules,
-            key = { it.id },
-            contentType = { "module" }
-        ) { module ->
+            key = { _, it -> it.id },
+            contentType = { _, _ -> "module" }
+        ) { index, module ->
             val currentModuleState = rememberUpdatedState(module)
             val moduleUpdateInfo = updateInfoMap[module.id] ?: ModuleUpdateInfo.Empty
             val content: @Composable () -> Unit = {
@@ -754,7 +756,9 @@ private fun ModuleList(
                 )
             }
 
-            content()
+            Box(modifier = Modifier.cardEntrance(listState, index)) {
+                content()
+            }
         }
     }
 }

@@ -1,8 +1,5 @@
 package me.weishu.kernelsu.ui.screen.colorpalette
 
-import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
-import me.weishu.kernelsu.ui.component.glass.GlassCard
-import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -38,17 +35,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuOpen
 import androidx.compose.material.icons.rounded.AspectRatio
+import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.CallToAction
 import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.DesignServices
+import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Style
-import androidx.compose.material.icons.rounded.Wallpaper
-import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.Swipe
 import androidx.compose.material.icons.rounded.ViewCarousel
+import androidx.compose.material.icons.rounded.Wallpaper
+import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -57,7 +57,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,8 +72,12 @@ import androidx.compose.ui.unit.sp
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
+import kotlin.math.roundToInt
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
+import me.weishu.kernelsu.ui.component.glass.GlassCard
+import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
+import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import me.weishu.kernelsu.ui.component.miuix.ScaleDialog
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.keyColorOptions
@@ -470,6 +473,63 @@ fun ColorPaletteScreenMiuix(
                                 )
                             },
                         )
+                    }
+
+                    GlassCard(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        SwitchPreference(
+                            title = stringResource(id = R.string.settings_slimes),
+                            summary = stringResource(id = R.string.settings_slimes_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.Pets,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.settings_slimes),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            checked = uiState.roamingSlimes,
+                            onCheckedChange = actions.onSetRoamingSlimes
+                        )
+                        AnimatedVisibility(visible = uiState.roamingSlimes) {
+                            Column {
+                                val slimeCountItems = listOf(
+                                    stringResource(id = R.string.settings_slime_count_random),
+                                    "1", "2", "3", "4",
+                                )
+                                GlassDropdownPreference(
+                                    title = stringResource(id = R.string.settings_slime_count),
+                                    items = slimeCountItems,
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Groups,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.settings_slime_count),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    selectedIndex = uiState.roamingSlimeCount,
+                                    onSelectedIndexChange = actions.onSetRoamingSlimeCount
+                                )
+                                SwitchPreference(
+                                    title = stringResource(id = R.string.settings_slime_night),
+                                    summary = stringResource(id = R.string.settings_slime_night_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Rounded.Bedtime,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.settings_slime_night),
+                                            tint = colorScheme.onBackground
+                                        )
+                                    },
+                                    checked = uiState.slimeNightNap,
+                                    onCheckedChange = actions.onSetSlimeNightNap
+                                )
+                            }
+                        }
                     }
                 }
                 item {

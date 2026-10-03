@@ -40,8 +40,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.ui.LocalUiMode
-import me.weishu.kernelsu.ui.UiMode
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
@@ -152,10 +150,7 @@ fun SeedPickerDialog(
         value = withContext(Dispatchers.IO) { createState(context) }
     }
     val current = state ?: return
-    when (LocalUiMode.current) {
-        UiMode.Miuix -> SeedPickerDialogMiuix(current, onDismissRequest, onConfirm)
-        UiMode.Material -> SeedPickerDialogMaterial(current, onDismissRequest, onConfirm)
-    }
+    SeedPickerDialogMiuix(current, onDismissRequest, onConfirm)
 }
 
 private fun createState(context: Context): SeedPickerState {
@@ -170,82 +165,6 @@ private fun createState(context: Context): SeedPickerState {
 @Composable
 private fun seedLabel(state: SeedPickerState, app: SeedApp): String =
     if (app.packageName == state.self.packageName) "${app.label} (${stringResource(R.string.seed_this_app)})" else app.label
-
-@Composable
-private fun SeedPickerDialogMaterial(
-    state: SeedPickerState,
-    onDismissRequest: () -> Unit,
-    onConfirm: (List<SeedApp>) -> Unit,
-) {
-    val pm = LocalContext.current.packageManager
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { MaterialText(stringResource(R.string.seed_title)) },
-        text = {
-            Column(modifier = Modifier.heightIn(max = 520.dp)) {
-                MaterialText(stringResource(R.string.seed_summary), style = MaterialTheme.typography.bodySmall)
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = state.query,
-                    onValueChange = { state.query = it },
-                    placeholder = { MaterialText(stringResource(R.string.seed_search)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
-                    items(state.visible, key = { it.packageName }) { app ->
-                        val isSelf = app.packageName == state.self.packageName
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = !isSelf) { state.toggle(app) }
-                        ) {
-                            Checkbox(
-                                checked = state.isChecked(app),
-                                onCheckedChange = { state.toggle(app) },
-                                enabled = !isSelf
-                            )
-                            Column {
-                                MaterialText(seedLabel(state, app))
-                                MaterialText(app.packageName, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = state.input,
-                        onValueChange = { state.input = it },
-                        placeholder = { MaterialText(stringResource(R.string.seed_add_package)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MaterialTextButton(onClick = { state.addTyped(pm) }) {
-                        MaterialText(stringResource(R.string.seed_add))
-                    }
-                }
-                state.errorRes?.let {
-                    MaterialText(
-                        stringResource(it, SEED_MAX_APPS),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            MaterialTextButton(onClick = { onConfirm(state.result()) }) {
-                MaterialText(stringResource(R.string.confirm))
-            }
-        },
-        dismissButton = {
-            MaterialTextButton(onClick = onDismissRequest) {
-                MaterialText(stringResource(android.R.string.cancel))
-            }
-        }
-    )
-}
 
 @Composable
 private fun SeedPickerDialogMiuix(

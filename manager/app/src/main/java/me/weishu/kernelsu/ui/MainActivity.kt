@@ -105,6 +105,10 @@ import me.weishu.kernelsu.ui.theme.KernelSUTheme
 import me.weishu.kernelsu.ui.theme.LocalColorMode
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBar
+import androidx.compose.ui.unit.dp
+import me.weishu.kernelsu.ui.slime.SlimeLayer
+import androidx.compose.runtime.snapshotFlow
+import me.weishu.kernelsu.ui.slime.SlimeHome
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBarBlur
 import me.weishu.kernelsu.ui.theme.LocalEnableNavigationBadge
 import me.weishu.kernelsu.ui.theme.LocalModuleDescriptionMaxLines
@@ -152,12 +156,8 @@ class MainActivity : ComponentActivity() {
                 (!glassBackgroundReady && elapsed < GLASS_PRELOAD_TIMEOUT_MS)
         }
         val settings = SettingsRepositoryImpl()
-        if (UiMode.fromValue(settings.uiMode) == UiMode.Miuix) {
-            lifecycleScope.launch {
-                GlassBackgroundCache.preload(applicationContext, settings.glassBackgroundType, settings.glassBackgroundBlur)
-                glassBackgroundReady = true
-            }
-        } else {
+        lifecycleScope.launch {
+            GlassBackgroundCache.preload(applicationContext, settings.glassBackgroundType, settings.glassBackgroundBlur)
             glassBackgroundReady = true
         }
 
@@ -179,7 +179,6 @@ class MainActivity : ComponentActivity() {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val selectedMainPage by viewModel.selectedMainPage.collectAsStateWithLifecycle()
             val appSettings = uiState.appSettings
-            val uiMode = uiState.uiMode
             val darkMode = appSettings.colorMode.isDark || (appSettings.colorMode.isSystem && isSystemInDarkTheme())
 
             DisposableEffect(darkMode) {
@@ -207,18 +206,17 @@ class MainActivity : ComponentActivity() {
                 LocalNavigator provides navigator,
                 LocalDensity provides density,
                 LocalColorMode provides appSettings.colorMode.value,
-                // Miuix mode is always liquid glass.
-                LocalEnableBlur provides (uiMode == UiMode.Miuix || uiState.enableBlur),
+                // The UI is always liquid glass.
+                LocalEnableBlur provides true,
                 LocalEnableFloatingBottomBar provides uiState.enableFloatingBottomBar,
                 // The floating bar's glass uses AGSL shaders (API 33+).
                 LocalEnableFloatingBottomBarBlur provides (
-                    (uiMode == UiMode.Miuix && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) || uiState.enableFloatingBottomBarBlur
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU || uiState.enableFloatingBottomBarBlur
                     ),
                 LocalEnableNavigationBadge provides uiState.enableNavigationBadge,
                 LocalModuleDescriptionMaxLines provides uiState.moduleDescriptionMaxLines,
-                LocalUiMode provides uiMode,
             ) {
-                KernelSUTheme(appSettings = appSettings, uiMode = uiMode) {
+                KernelSUTheme(appSettings = appSettings) {
                     IntentDispatcher(intentChannel = intentChannel)
                     val swipeDismiss = if (uiState.enableSwipeDismiss) {
                         if (LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl) {
@@ -254,50 +252,56 @@ class MainActivity : ComponentActivity() {
                                     else -> navigator.pop()
                                 }
                             }) {
-                            entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
-                            entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { AboutScreen() } }
-                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { SulogScreen() } }
-                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { ColorPaletteScreen() } }
-                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { AppProfileTemplateScreen() } }
-                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { TemplateEditorScreen(key.template, key.readOnly) } }
-                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { AppProfileScreen(key.uid) } }
-                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { ModuleRepoScreen() } }
-                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { ModuleRepoDetailScreen(key.module) } }
-                            entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { InstallScreen() } }
-                            entry<Route.Flash>(swipeDismiss = swipeDismiss) { key -> GlassPageIfMiuix { FlashScreen(key.flashIt) } }
+                            entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
+                            entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPage { AboutScreen() } }
+                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPage { SulogScreen() } }
+                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPage { ColorPaletteScreen() } }
+                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPage { AppProfileTemplateScreen() } }
+                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> GlassPage { TemplateEditorScreen(key.template, key.readOnly) } }
+                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> GlassPage { AppProfileScreen(key.uid) } }
+                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage { ModuleRepoScreen() } }
+                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }
+                            entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage { InstallScreen() } }
+                            entry<Route.Flash>(swipeDismiss = swipeDismiss) { key -> GlassPage { FlashScreen(key.flashIt) } }
                             entry<Route.ExecuteModuleAction>(swipeDismiss = swipeDismiss) { key ->
-                                GlassPageIfMiuix {
+                                GlassPage {
                                     ExecuteModuleActionScreen(
                                         key.moduleId,
                                         key.fromShortcut
                                     )
                                 }
                             }
-                            entry<Route.Home>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
-                            entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
-                            entry<Route.Module>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
-                            entry<Route.Settings>(swipeDismiss = swipeDismiss) { GlassPageIfMiuix { mainScreenEntry() } }
+                            entry<Route.Home>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
+                            entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
+                            entry<Route.Module>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
+                            entry<Route.Settings>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
                         }
                     }
 
-                    when (uiMode) {
-                        UiMode.Material -> androidx.compose.material3.Scaffold(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer
-                        ) { navDisplay() }
-
-                        UiMode.Miuix -> {
-                            val glassState = rememberGlassBackgroundState(
-                                type = uiState.glassBackgroundType,
-                                blur = uiState.glassBackgroundBlur,
-                                dim = uiState.glassBackgroundDim,
-                                imageVersion = uiState.glassImageVersion,
-                            )
-                            CompositionLocalProvider(
-                                LocalGlassBackgroundState provides glassState,
-                                LocalLiquidGravityAngle provides rememberQuantizedGravityAngle(),
-                            ) {
-                                Scaffold(containerColor = Color.Transparent) { navDisplay() }
-                            }
+                    val glassState = rememberGlassBackgroundState(
+                        type = uiState.glassBackgroundType,
+                        blur = uiState.glassBackgroundBlur,
+                        dim = uiState.glassBackgroundDim,
+                        imageVersion = uiState.glassImageVersion,
+                    )
+                    CompositionLocalProvider(
+                        LocalGlassBackgroundState provides glassState,
+                        LocalLiquidGravityAngle provides rememberQuantizedGravityAngle(),
+                    ) {
+                        // The roaming slimes live over every page; a new page re-rolls who is around.
+                        val route = navigator.backStack.lastOrNull()
+                        val onMain = route == Route.Main || route == Route.Home || route == Route.SuperUser || route == Route.Module || route == Route.Settings
+                        SlimeLayer(
+                            page = if (onMain) "main_$selectedMainPage" else route ?: "none",
+                            home = (onMain && selectedMainPage == 0) || route == Route.Home,
+                            floorInset = if (onMain && uiState.enableFloatingBottomBar) 92.dp else 10.dp,
+                            enabled = uiState.roamingSlimes,
+                            maxCount = uiState.roamingSlimeCount,
+                            nightNap = uiState.slimeNightNap,
+                            // Out of the way while something is being flashed, installed or run.
+                            quiet = route is Route.Flash || route is Route.ExecuteModuleAction || route == Route.Install,
+                        ) {
+                            Scaffold(containerColor = Color.Transparent) { navDisplay() }
                         }
                     }
                     SideEffect { contentReady = true }
@@ -393,15 +397,9 @@ fun MainScreen(
     } else {
         NavigationBadgeState()
     }
-    val uiMode = LocalUiMode.current
-    val surfaceColor = when (uiMode) {
-        UiMode.Material -> MaterialTheme.colorScheme.surface // Blur is not used in Material, this is just a placeholder
-        UiMode.Miuix -> MiuixTheme.colorScheme.surface
-    }
     val blurBackdrop = rememberBlurBackdrop(enableBlur)
 
     val backdrop = rememberLayerBackdrop {
-        if (uiMode == UiMode.Material) drawRect(surfaceColor)
         drawContent()
     }
     val glassBackdrop = LocalGlassBackdrop.current
@@ -423,6 +421,14 @@ fun MainScreen(
     val currentPage = mainPagerState.pagerState.currentPage
     LaunchedEffect(currentPage) {
         mainPagerState.syncPage()
+    }
+    // Lets the slimes in the status card see a swipe away from home as it starts.
+    DisposableEffect(mainPagerState.pagerState) {
+        onDispose { SlimeHome.pagerPos = Float.NaN }
+    }
+    LaunchedEffect(mainPagerState.pagerState) {
+        val state = mainPagerState.pagerState
+        snapshotFlow { state.currentPage + state.currentPageOffsetFraction }.collect { SlimeHome.pagerPos = it }
     }
 
     MainScreenBackHandler(mainPagerState, navController)
@@ -474,32 +480,15 @@ fun MainScreen(
                 .only(WindowInsetsSides.Start)
             val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
-            when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ) {
-                    Row {
-                        SideRail(navigationBadge)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .consumeWindowInsets(startInsets)
-                        ) {
-                            pagerContent(navBarBottomPadding)
-                        }
-                    }
-                }
-
-                UiMode.Miuix -> Scaffold(containerColor = Color.Transparent) { _ ->
-                    Row {
-                        SideRail(navigationBadge)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .consumeWindowInsets(startInsets)
-                        ) {
-                            pagerContent(navBarBottomPadding)
-                        }
+            Scaffold(containerColor = Color.Transparent) { _ ->
+                Row {
+                    SideRail(navigationBadge)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .consumeWindowInsets(startInsets)
+                    ) {
+                        pagerContent(navBarBottomPadding)
                     }
                 }
             }
@@ -517,17 +506,8 @@ fun MainScreen(
                 }
             }
 
-            when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
-                    bottomBar = bottomBar,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ) { innerPadding ->
-                    pagerContent(innerPadding.calculateBottomPadding())
-                }
-
-                UiMode.Miuix -> Scaffold(bottomBar = bottomBar, containerColor = Color.Transparent) { innerPadding ->
-                    pagerContent(innerPadding.calculateBottomPadding())
-                }
+            Scaffold(bottomBar = bottomBar, containerColor = Color.Transparent) { innerPadding ->
+                pagerContent(innerPadding.calculateBottomPadding())
             }
         }
     }
@@ -554,11 +534,6 @@ private fun MainScreenBackHandler(
             mainState.animateToPage(0)
         }
     )
-}
-
-@Composable
-private fun GlassPageIfMiuix(content: @Composable () -> Unit) {
-    if (LocalUiMode.current == UiMode.Miuix) GlassPage(content = content) else content()
 }
 
 private const val GLASS_PRELOAD_TIMEOUT_MS = 1200L

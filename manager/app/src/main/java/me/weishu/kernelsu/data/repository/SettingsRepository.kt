@@ -1,7 +1,6 @@
 package me.weishu.kernelsu.data.repository
 
 interface SettingsRepository {
-    var uiMode: String
     var checkUpdate: Boolean
     var checkModuleUpdate: Boolean
     var themeMode: Int
@@ -33,6 +32,9 @@ interface SettingsRepository {
     var suLogFilters: Set<String>?
     var autoJailbreak: Boolean
     var useSoftReboot: Boolean
+    var roamingSlimes: Boolean
+    var roamingSlimeCount: Int
+    var slimeNightNap: Boolean
     val intentToken: String
 
     suspend fun getSuCompatStatus(): String

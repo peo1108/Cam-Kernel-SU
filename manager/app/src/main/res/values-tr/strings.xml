@@ -41,11 +41,6 @@
     <string name="safe_mode">Güvenli mod</string>
     <string name="reboot_to_apply">Değişikliklerin uygulanması için cihazı yeniden başlat</string>
     <string name="module_magisk_conflict">Magisk ile çakışma nedeniyle modüller kullanılamıyor!</string>
-    <string name="home_learn_kernelsu">KernelSU\'yu öğrenin</string>
-    <string name="home_learn_kernelsu_url">https://kernelsu.org/guide/what-is-kernelsu.html</string>
-    <string name="home_click_to_learn_kernelsu">KernelSU\'nun nasıl kurulacağını ve modüllerin nasıl kullanılacağını öğrenin.</string>
-    <string name="home_support_title">Bizi Destekleyin</string>
-    <string name="home_support_content">KernelSU ücretsiz ve açık kaynaklı bir yazılımdır ve her zaman öyle kalacaktır. Ancak bağış yaparak bize destek olduğunuzu gösterebilirsiniz.</string>
     <string name="about_source_code"><![CDATA[%1$s adresinde kaynak kodunu görüntüleyin.<br/>%2$s kanalımıza katılın.]]></string>
     <string name="profile" translatable="false">Uygulama profili</string>
     <string name="profile_default">Varsayılan</string>
@@ -186,8 +181,6 @@
     <string name="settings_monet">Monet\'i etkinleştir</string>
     <string name="settings_key_color">Ana renk</string>
     <string name="settings_key_color_default">Varsayılan</string>
-    <string name="settings_ui_mode">UI Stili</string>
-    <string name="settings_ui_mode_summary">Arayüz stilini seçin.</string>
     <string name="settings_page_scale">Sayfa Ölçeği</string>
     <string name="settings_page_scale_summary">Genel görüntü ölçeğini ayarlayın.</string>
     <string name="settings_color_spec">Renk Özellikleri</string>

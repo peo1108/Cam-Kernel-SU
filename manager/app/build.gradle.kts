@@ -189,6 +189,9 @@ base {
 
 dependencies {
     implementation(libs.androidx.activity.compose)
+    implementation(libs.filament.android)
+    implementation(libs.filament.gltfio)
+    implementation(libs.filament.utils)
     testImplementation(libs.junit)
     implementation(libs.androidx.core.splashscreen)
 

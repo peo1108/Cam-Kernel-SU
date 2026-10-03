@@ -35,8 +35,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import me.weishu.kernelsu.ui.component.motion.cardEntrance
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Fingerprint
@@ -241,6 +242,7 @@ fun AppProfileTemplateScreenMiuix(
         ) {
             Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxHeight()
                         .scrollEndHaptic()
@@ -254,8 +256,9 @@ fun AppProfileTemplateScreenMiuix(
                     item {
                         Spacer(Modifier.height(12.dp))
                     }
-                    items(state.templateList, key = { it.id }) { app ->
+                    itemsIndexed(state.templateList, key = { _, it -> it.id }) { index, app ->
                         TemplateItem(
+                            modifier = Modifier.cardEntrance(listState, index),
                             template = app,
                             onClick = { actions.onOpenTemplate(app) },
                         )
@@ -276,11 +279,12 @@ fun AppProfileTemplateScreenMiuix(
 
 @Composable
 private fun TemplateItem(
+    modifier: Modifier = Modifier,
     template: TemplateInfo,
     onClick: () -> Unit,
 ) {
     GlassListCard(
-        modifier = Modifier.padding(bottom = 12.dp),
+        modifier = modifier.padding(bottom = 12.dp),
         onClick = onClick,
         showIndication = true,
         pressFeedbackType = PressFeedbackType.Sink

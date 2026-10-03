@@ -36,16 +36,11 @@
     <string name="reboot_download">Redémarrer en mode Download</string>
     <string name="module_author">Auteur</string>
     <string name="module_uninstall_confirm">Voulez-vous vraiment désinstaller le module %s ?</string>
-    <string name="home_learn_kernelsu">Apprenez à utiliser KernelSU</string>
     <string name="show_system_apps">Afficher les applications système</string>
     <string name="safe_mode">Mode sans échec</string>
     <string name="send_log">Envoyer les journaux</string>
     <string name="reboot_to_apply">Redémarrez pour appliquer les modifications</string>
     <string name="module_magisk_conflict">Les modules sont indisponibles en raison d\'un conflit avec Magisk !</string>
-    <string name="home_learn_kernelsu_url">https://kernelsu.org/guide/what-is-kernelsu.html</string>
-    <string name="home_support_title">Soutenez-nous</string>
-    <string name="home_click_to_learn_kernelsu">Découvrez comment installer KernelSU et utiliser les modules.</string>
-    <string name="home_support_content">KernelSU est, et restera toujours, gratuit et open-source. Néanmoins, vous pouvez nous témoigner de votre soutien en nous faisant un don.</string>
     <string name="about_source_code"><![CDATA[Voir le code source à %1$s<br/>Rejoignez notre canal %2$s]]></string>
     <string name="profile_template">Modèle</string>
     <string name="profile_default">Par défaut</string>
@@ -218,8 +213,6 @@
     <string name="jailbreak_flash_warning">Vous êtes en **mode Jailbreak**. En flashant une partition sur un appareil dont le **bootloader est verrouillé** entraînera l\'échec d\'Android Verified Boot (AVB) et pourrait **empêcher le démarrage de l\'appareil**.\n\nAssurez-vous que votre bootloader est bien déverrouillé avant de continuer !</string>
     <string name="jailbreak_flash_warning_countdown">Continuer (%1$d)</string>
     <string name="settings_monet">Activer Monet</string>
-    <string name="settings_ui_mode">Style de l\'interface</string>
-    <string name="settings_ui_mode_summary">Choisissez un style d\'interface.</string>
     <string name="settings_page_scale">Échelle de page</string>
     <string name="settings_page_scale_summary">Ajustez l\'échelle d\'affichage globale.</string>
     <string name="settings_color_spec">Spécification couleurs</string>

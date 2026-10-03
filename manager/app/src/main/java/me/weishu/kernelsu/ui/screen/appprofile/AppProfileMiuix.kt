@@ -14,6 +14,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,6 +50,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,6 +115,7 @@ fun AppProfileScreenMiuix(
                 onLaunchApp = actions.onLaunchApp,
                 onForceStopApp = actions.onForceStopApp,
                 onRestartApp = actions.onRestartApp,
+                onOpenSystemInfo = actions.onOpenSystemInfo,
                 scrollBehavior = scrollBehavior,
                 backdrop = backdrop,
                 barColor = barColor,
@@ -159,6 +162,15 @@ fun AppProfileScreenMiuix(
                         onManageTemplate = actions.onManageTemplate,
                         onProfileChange = actions.onProfileChange,
                     )
+                    // What the app is, how much room it takes, and what can be done to it.
+                    if (!state.isUidGroup && !state.appGroup.primary.special) {
+                        AppManageCards(
+                            packageInfo = state.appGroup.primary.packageInfo,
+                            userId = state.uid / 100000,
+                            onChanged = actions.onAppChanged,
+                            onRemoved = actions.onAppRemoved,
+                        )
+                    }
                     Spacer(
                         Modifier.height(
                             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
@@ -189,10 +201,8 @@ private fun AppProfileInner(
     onManageTemplate: () -> Unit = {},
     onProfileChange: (Natives.Profile) -> Unit,
 ) {
-    val isRootGranted = !isSpecialApp && profile.allowSu
     val userId = appUid / 100000
     val appId = appUid % 100000
-    val templates = remember { listAppProfileTemplates() }
 
     Column(
         modifier = modifier
@@ -305,151 +315,14 @@ private fun AppProfileInner(
             }
         }
 
-        if (!isSpecialApp) {
-            GlassCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = 12.dp),
-            ) {
-                SwitchPreference(
-                    startAction = {
-                        Icon(
-                            imageVector = Icons.Rounded.Security,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 6.dp),
-                            tint = colorScheme.onBackground
-                        )
-                    },
-                    title = stringResource(id = R.string.superuser),
-                    checked = isRootGranted,
-                    onCheckedChange = { onProfileChange(profile.copy(allowSu = it)) },
-                )
-            }
-        }
-
-        val initialRootMode = if (profile.rootUseDefault) {
-            Mode.Default
-        } else if (profile.rootTemplate != null) {
-            Mode.Template
-        } else {
-            Mode.Custom
-        }
-        var rootMode by rememberSaveable {
-            mutableStateOf(initialRootMode)
-        }
-        val nonRootMode = if (profile.nonRootUseDefault) Mode.Default else Mode.Custom
-        val dropdownMode = if (isRootGranted) rootMode else nonRootMode
-        ProfileBox(dropdownMode, isRootGranted) { mode ->
-            if (isRootGranted) {
-                when (mode) {
-                    Mode.Default, Mode.Custom -> {
-                        onProfileChange(
-                            profile.copy(
-                                rootUseDefault = mode == Mode.Default,
-                                rootTemplate = null
-                            )
-                        )
-                        rootMode = mode
-                    }
-
-                    Mode.Template -> {
-                        if (templates.isNotEmpty()) {
-                            val selected = profile.rootTemplate ?: templates[0]
-                            val info = me.weishu.kernelsu.ui.viewmodel.getTemplateInfoById(selected)
-                            if (info != null && setSepolicy(selected, info.rules.joinToString("\n"))) {
-                                onProfileChange(
-                                    profile.copy(
-                                        rootUseDefault = false,
-                                        rootTemplate = selected,
-                                        uid = info.uid,
-                                        gid = info.gid,
-                                        groups = info.groups,
-                                        capabilities = info.capabilities,
-                                        context = info.context,
-                                        namespace = info.namespace,
-                                    )
-                                )
-                            } else if (profile.rootTemplate != selected || profile.rootUseDefault) {
-                                onProfileChange(
-                                    profile.copy(
-                                        rootUseDefault = false,
-                                        rootTemplate = selected
-                                    )
-                                )
-                            }
-                            rootMode = Mode.Template
-                        }
-                    }
-                }
-            } else {
-                onProfileChange(profile.copy(nonRootUseDefault = (mode == Mode.Default)))
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-
-        AnimatedVisibility(
-            visible = isRootGranted,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            GlassCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = if (rootMode != Mode.Default) 12.dp else 0.dp),
-            ) {
-                AnimatedVisibility(
-                    visible = rootMode == Mode.Template,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    TemplateConfig(
-                        profile = profile,
-                        onViewTemplate = onViewTemplate,
-                        onManageTemplate = onManageTemplate,
-                        onProfileChange = onProfileChange
-                    )
-                }
-                AnimatedVisibility(
-                    visible = rootMode == Mode.Custom,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    RootProfileConfig(
-                        fixedName = true,
-                        enabled = rootMode == Mode.Custom,
-                        profile = profile,
-                        onProfileChange = onProfileChange
-                    )
-                }
-            }
-        }
-        AnimatedVisibility(
-            visible = !isRootGranted,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            GlassCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = if (nonRootMode != Mode.Default) 12.dp else 0.dp),
-            ) {
-                AnimatedVisibility(
-                    visible = nonRootMode == Mode.Custom,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    AppProfileConfig(
-                        fixedName = true,
-                        profile = profile,
-                        enabled = true,
-                        onProfileChange = onProfileChange
-                    )
-                }
-            }
-        }
+        AppProfileEditorBody(
+            profile = profile,
+            isSpecialApp = isSpecialApp,
+            carded = true,
+            onViewTemplate = onViewTemplate,
+            onManageTemplate = onManageTemplate,
+            onProfileChange = onProfileChange,
+        )
 
         if (isUidGroup) {
             SmallTitle(
@@ -494,6 +367,7 @@ private fun TopBar(
     onLaunchApp: (String, Int) -> Unit = { _, _ -> },
     onForceStopApp: (String, Int) -> Unit = { _, _ -> },
     onRestartApp: (String, Int) -> Unit = { _, _ -> },
+    onOpenSystemInfo: (String, Int) -> Unit = { _, _ -> },
     scrollBehavior: ScrollBehavior,
     backdrop: LayerBackdrop?,
     barColor: Color,
@@ -541,7 +415,8 @@ private fun TopBar(
                                     val items = listOf(
                                         stringResource(id = R.string.launch_app),
                                         stringResource(id = R.string.force_stop_app),
-                                        stringResource(id = R.string.restart_app)
+                                        stringResource(id = R.string.restart_app),
+                                        stringResource(id = R.string.app_system_info),
                                     )
 
                                     items.forEachIndexed { index, text ->
@@ -554,6 +429,7 @@ private fun TopBar(
                                                     0 -> onLaunchApp(packageName, userId)
                                                     1 -> onForceStopApp(packageName, userId)
                                                     2 -> onRestartApp(packageName, userId)
+                                                    3 -> onOpenSystemInfo(packageName, userId)
                                                 }
                                                 showTopPopup.value = false
                                             }
@@ -570,10 +446,175 @@ private fun TopBar(
     }
 }
 
+/**
+ * Root switch, profile mode and the matching config: the editable part of an app profile.
+ * [carded] puts each part on its own glass card (profile page); otherwise the parts stack flat,
+ * for use inside an already-glass container such as an expanded list card.
+ */
+@Composable
+fun AppProfileEditorBody(
+    profile: Natives.Profile,
+    isSpecialApp: Boolean,
+    carded: Boolean,
+    onViewTemplate: (id: String) -> Unit,
+    onManageTemplate: () -> Unit,
+    onProfileChange: (Natives.Profile) -> Unit,
+) {
+    val isRootGranted = !isSpecialApp && profile.allowSu
+    val templates = remember { listAppProfileTemplates() }
+
+    if (!isSpecialApp) {
+        EditorSection(carded, bottom = 12.dp) {
+            SwitchPreference(
+                startAction = {
+                    Icon(
+                        imageVector = Icons.Rounded.Security,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 6.dp),
+                        tint = colorScheme.onBackground
+                    )
+                },
+                title = stringResource(id = R.string.superuser),
+                checked = isRootGranted,
+                onCheckedChange = { onProfileChange(profile.copy(allowSu = it)) },
+            )
+        }
+    }
+
+    val initialRootMode = if (profile.rootUseDefault) {
+        Mode.Default
+    } else if (profile.rootTemplate != null) {
+        Mode.Template
+    } else {
+        Mode.Custom
+    }
+    var rootMode by rememberSaveable {
+        mutableStateOf(initialRootMode)
+    }
+    val nonRootMode = if (profile.nonRootUseDefault) Mode.Default else Mode.Custom
+    val dropdownMode = if (isRootGranted) rootMode else nonRootMode
+    ProfileBox(dropdownMode, isRootGranted, carded) { mode ->
+        if (isRootGranted) {
+            when (mode) {
+                Mode.Default, Mode.Custom -> {
+                    onProfileChange(
+                        profile.copy(
+                            rootUseDefault = mode == Mode.Default,
+                            rootTemplate = null
+                        )
+                    )
+                    rootMode = mode
+                }
+
+                Mode.Template -> {
+                    if (templates.isNotEmpty()) {
+                        val selected = profile.rootTemplate ?: templates[0]
+                        val info = me.weishu.kernelsu.ui.viewmodel.getTemplateInfoById(selected)
+                        if (info != null && setSepolicy(selected, info.rules.joinToString("\n"))) {
+                            onProfileChange(
+                                profile.copy(
+                                    rootUseDefault = false,
+                                    rootTemplate = selected,
+                                    uid = info.uid,
+                                    gid = info.gid,
+                                    groups = info.groups,
+                                    capabilities = info.capabilities,
+                                    context = info.context,
+                                    namespace = info.namespace,
+                                )
+                            )
+                        } else if (profile.rootTemplate != selected || profile.rootUseDefault) {
+                            onProfileChange(
+                                profile.copy(
+                                    rootUseDefault = false,
+                                    rootTemplate = selected
+                                )
+                            )
+                        }
+                        rootMode = Mode.Template
+                    }
+                }
+            }
+        } else {
+            onProfileChange(profile.copy(nonRootUseDefault = (mode == Mode.Default)))
+        }
+    }
+    if (carded) Spacer(Modifier.height(12.dp))
+
+    AnimatedVisibility(
+        visible = isRootGranted && rootMode != Mode.Default,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        EditorSection(carded, bottom = 12.dp) {
+            AnimatedVisibility(
+                visible = rootMode == Mode.Template,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                TemplateConfig(
+                    profile = profile,
+                    onViewTemplate = onViewTemplate,
+                    onManageTemplate = onManageTemplate,
+                    onProfileChange = onProfileChange
+                )
+            }
+            AnimatedVisibility(
+                visible = rootMode == Mode.Custom,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                RootProfileConfig(
+                    fixedName = true,
+                    enabled = rootMode == Mode.Custom,
+                    profile = profile,
+                    onProfileChange = onProfileChange
+                )
+            }
+        }
+    }
+    AnimatedVisibility(
+        visible = !isRootGranted && nonRootMode == Mode.Custom,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        EditorSection(carded, bottom = 12.dp) {
+            AnimatedVisibility(
+                visible = nonRootMode == Mode.Custom,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                AppProfileConfig(
+                    fixedName = true,
+                    profile = profile,
+                    enabled = true,
+                    onProfileChange = onProfileChange
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditorSection(carded: Boolean, bottom: Dp, content: @Composable ColumnScope.() -> Unit) {
+    if (carded) {
+        GlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .padding(bottom = bottom),
+            content = content,
+        )
+    } else {
+        Column(modifier = Modifier.fillMaxWidth(), content = content)
+    }
+}
+
 @Composable
 private fun ProfileBox(
     mode: Mode,
     hasTemplate: Boolean,
+    carded: Boolean,
     onModeChange: (Mode) -> Unit,
 ) {
     val defaultText = stringResource(R.string.profile_default)
@@ -600,11 +641,7 @@ private fun ProfileBox(
         }
     }
     val selectedIndex = modesAndTitles.indexOfFirst { it.first == mode }
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-    ) {
+    EditorSection(carded, bottom = 0.dp) {
         GlassDropdownPreference(
             title = stringResource(R.string.profile),
             items = list,

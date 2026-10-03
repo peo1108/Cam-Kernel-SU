@@ -45,6 +45,7 @@ data class SuperUserActions(
     val onToggleShowOnlyPrimaryUserApps: () -> Unit,
     val onUpdateSortConfig: (AppSortConfig) -> Unit,
     val onOpenProfile: (GroupedApps) -> Unit,
+    val onProfileEdited: () -> Unit,
 )
 
 @Immutable

@@ -11,7 +11,6 @@ import com.topjohnwu.superuser.ShellUtils
 import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.magica.BootCompletedReceiver
-import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.screen.modulerepo.RepoSort
 import me.weishu.kernelsu.ui.util.execKsud
 import me.weishu.kernelsu.ui.util.getFeaturePersistValue
@@ -36,10 +35,6 @@ class SettingsRepositoryImpl : SettingsRepository {
     private val prefs by lazy {
         ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
     }
-
-    override var uiMode: String
-        get() = prefs.getString("ui_mode", UiMode.DEFAULT_VALUE) ?: UiMode.DEFAULT_VALUE
-        set(value) = prefs.edit { putString("ui_mode", value) }
 
     override var checkUpdate: Boolean
         get() = prefs.getBoolean("check_update", true)
@@ -70,7 +65,7 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) = prefs.edit { putString("color_spec", value) }
 
     override var enablePredictiveBack: Boolean
-        get() = prefs.getBoolean("enable_predictive_back", false)
+        get() = prefs.getBoolean("enable_predictive_back", true)
         set(value) = prefs.edit { putBoolean("enable_predictive_back", value) }
 
     override var enableSwipeDismiss: Boolean
@@ -86,7 +81,7 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) = prefs.edit { putBoolean("enable_blur", value) }
 
     override var enableFloatingBottomBar: Boolean
-        get() = prefs.getBoolean("enable_floating_bottom_bar", false)
+        get() = prefs.getBoolean("enable_floating_bottom_bar", true)
         set(value) = prefs.edit { putBoolean("enable_floating_bottom_bar", value) }
 
     override var enableFloatingBottomBarBlur: Boolean
@@ -122,7 +117,7 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) = prefs.edit { putFloat("page_scale", value) }
 
     override var moduleDescriptionMaxLines: Int
-        get() = prefs.getInt("module_description_max_lines", 4)
+        get() = prefs.getInt("module_description_max_lines", 5)
         set(value) = prefs.edit { putInt("module_description_max_lines", value) }
 
     override var enableWebDebugging: Boolean
@@ -177,6 +172,19 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var useSoftReboot: Boolean
         get() = prefs.getBoolean(KEY_USE_SOFT_REBOOT, false)
         set(value) = prefs.edit { putBoolean(KEY_USE_SOFT_REBOOT, value) }
+
+    override var roamingSlimes: Boolean
+        get() = prefs.getBoolean("roaming_slimes", true)
+        set(value) = prefs.edit { putBoolean("roaming_slimes", value) }
+
+    /** 0: a random 1 to 4 on each page, otherwise exactly that many. */
+    override var roamingSlimeCount: Int
+        get() = prefs.getInt("roaming_slime_count", 0).coerceIn(0, 4)
+        set(value) = prefs.edit { putInt("roaming_slime_count", value.coerceIn(0, 4)) }
+
+    override var slimeNightNap: Boolean
+        get() = prefs.getBoolean("slime_night_nap", true)
+        set(value) = prefs.edit { putBoolean("slime_night_nap", value) }
 
     override val intentToken: String
         get() {

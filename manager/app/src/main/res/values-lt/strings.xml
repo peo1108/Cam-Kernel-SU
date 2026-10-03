@@ -25,9 +25,6 @@
     <string name="safe_mode">Saugus rėžimas</string>
     <string name="reboot_to_apply">Paleiskite iš naujo, kad įsigaliotų</string>
     <string name="module_magisk_conflict">Moduliai yra išjungti, nes jie konfliktuoja su Magisk\'s!</string>
-    <string name="home_learn_kernelsu_url">https://kernelsu.org/guide/what-is-kernelsu.html</string>
-    <string name="home_learn_kernelsu">Sužinokite apie KernelSU</string>
-    <string name="home_click_to_learn_kernelsu">Sužinokite, kaip įdiegti KernelSU ir naudoti modulius</string>
     <string name="about_source_code">Peržiūrėkite šaltinio kodą %1$s<br/>Prisijunkite prie mūsų %2$s kanalo</string>
     <string name="profile_default">Numatytas</string>
     <string name="profile_template">Šablonas</string>
@@ -69,8 +66,6 @@
     <string name="settings">Parametrai</string>
     <string name="reboot_edl">Perkrauti į EDL</string>
     <string name="module_uninstall_confirm">Ar tikrai norite išdiegti modulį %s\?</string>
-    <string name="home_support_title">Paremkite mus</string>
-    <string name="home_support_content">KernelSU yra ir visada bus nemokamas ir atvirojo kodo. Tačiau galite parodyti, kad jums rūpi, paaukodami mums.</string>
     <string name="failed_to_update_app_profile">Nepavyko atnaujinti programos profilio %s</string>
     <string name="settings_umount_modules_default_summary">Visuotinė numatytoji „Modulių atjungimo“ reikšmė programų profiliuose. Jei įjungta, ji pašalins visus sistemos modulio pakeitimus programoms, kurios neturi profilio.</string>
     <string name="module_changelog">Keitimų žurnalas</string>

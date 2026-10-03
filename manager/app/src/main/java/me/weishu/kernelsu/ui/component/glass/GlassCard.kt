@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import me.weishu.kernelsu.ui.component.liquid.lens
 import me.weishu.kernelsu.ui.component.liquid.vibrancy
+import me.weishu.kernelsu.ui.slime.slimeSurface
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
@@ -44,7 +47,8 @@ fun GlassCard(
         color = Color.Transparent,
         contentColor = colors?.contentColor ?: CardDefaults.defaultColors().contentColor,
     )
-    val glassModifier = modifier.glassMaterial(RoundedCornerShape(cornerRadius), tint)
+    val glassModifier = modifier.slimeSurface().glassMaterial(RoundedCornerShape(cornerRadius), tint)
+    val haptic = LocalHapticFeedback.current
     if (onClick == null && onLongPress == null) {
         Card(
             modifier = glassModifier,
@@ -61,8 +65,18 @@ fun GlassCard(
             colors = cardColors,
             pressFeedbackType = pressFeedbackType,
             showIndication = showIndication,
-            onClick = onClick,
-            onLongPress = onLongPress,
+            onClick = onClick?.let { click ->
+                {
+                    haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                    click()
+                }
+            },
+            onLongPress = onLongPress?.let { longPress ->
+                {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    longPress()
+                }
+            },
             content = content,
         )
     }

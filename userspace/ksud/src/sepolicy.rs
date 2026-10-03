@@ -1,3 +1,6 @@
+// derive_new's generated constructors use `field: field`, which newer clippy rejects.
+#![allow(clippy::redundant_field_names)]
+
 use anyhow::{Context, Result, bail};
 use derive_new::new;
 use nom::{

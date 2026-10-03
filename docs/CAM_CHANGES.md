@@ -195,3 +195,19 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 - **Gỡ Manager rồi cài lại** không còn mất root: kernel cấp lại root cho `cam.su.kernel` ngay khi `packages.list` đổi (cần LKM có commit "keep root for the manager package"). Cũng vì vậy **không thu root của chính Manager được**: lần thay đổi gói kế tiếp kernel sẽ cấp lại. Đánh đổi có chủ đích: app lạ đặt trùng tên gói `cam.su.kernel` cũng sẽ có root.
 - **Lần boot đầu sau flash,** app khác chỉ dùng `su` được sau khi mở Manager một lần (Manager cài `/data/adb/ksud`).
 - **ROM ZUI (Lenovo):** dialog chọn app cần thêm quyền riêng `GET_INSTALLED_APP` của ROM. Lần đầu ROM sẽ hỏi; sau khi cho phép phải mở lại dialog.
+
+## 8. Phát hành bản mới (GitHub Actions)
+
+CI build trên GitHub là bản đầy đủ: module kernel cho cả 8 KMI (`android12-5.10` → `android17-6.18`), ksud nhiều kiến trúc, Manager ký bằng khóa release.
+
+- **Push lên `main`**: workflow "Build Manager" tự build và ký; tải file ở mục Artifacts của lượt chạy. Chạy tay: Actions → Build Manager → Run workflow.
+- **Ra bản cho người dùng**: gắn tag rồi push tag, workflow "Release" tạo GitHub Release kèm APK, `lkm-*_kernelsu.ko`, ksud, ksuinit và ghi chú tự sinh:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+  Tên phiên bản trong app lấy từ `git describe --tags` (ví dụ `v1.0.0`); mã phiên bản vẫn là `30000 + số commit`. Đừng dùng lại tên tag đã có của upstream (`v3.x`).
+- **Khóa ký**: 4 secret `KEYSTORE` (file `.jks` dạng base64), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Bản gốc của khóa nằm ở `C:\Users\cam\.android-keys\su-kernel-release.jks` (mật khẩu trong `C:\Users\cam\.gradle\gradle.properties`); khóa cũ "Cam Kernel SU" ở `Documents\Cam-Kernel-SU-keys\cam-kernel-su.p12`. **Mất khóa thì người dùng không cập nhật đè được nữa**: luôn giữ bản sao lưu.
+- Vì `~/.gradle/gradle.properties` có khóa release, build trên máy (kể cả debug) cũng ký bằng khóa release. Cần bản ký khóa debug để cài đè bản debug cũ thì thêm `-PKEYSTORE_FILE=C:/Users/cam/.android/debug.keystore -PKEYSTORE_PASSWORD=android -PKEY_ALIAS=androiddebugkey -PKEY_PASSWORD=android`.

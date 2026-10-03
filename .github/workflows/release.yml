@@ -13,6 +13,9 @@ jobs:
     needs:
       - build-manager
     runs-on: ubuntu-latest
+    # Creating the release needs write access; the default token can be read-only on forks.
+    permissions:
+      contents: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -64,6 +67,7 @@ jobs:
       - name: release
         uses: softprops/action-gh-release@v3
         with:
+          generate_release_notes: true
           files: |
             manager/*.apk
             lkm/lkm-*_kernelsu.ko

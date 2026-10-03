@@ -15,43 +15,27 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 4 | Lệnh `ksud allow add\|remove\|list <pkg>` | Cấp/thu root từ adb su hoặc Termux, không cần flash lại |
 | 5 | Manager gọi kernel qua `KsuService` (root service, uid 0) | Kernel chỉ nhận lệnh quản trị từ uid 0 |
 | 6 | Màn Install có dialog chọn app được root (seed) | |
-| 7 | Tên app `SU Kernel` (trước là `Cam Kernel SU`), gói `cam.su.kernel`, icon logo mới | |
+| 7 | Tên app `SU Kernel` (trước là `Cam Kernel SU`), gói `cam.su.kernel`, icon và splash là hình tam giác | |
 | 8 | `KERNEL_SU_UAPI_VERSION` 4 → 5 | Chặn Manager/ksud bản cũ dùng với kernel mới |
-| 10 | Kernel luôn cấp root cho gói Manager `cam.su.kernel` theo tên gói, dò lại UID mỗi khi `packages.list` đổi (`kernel/policy/pkg_tracker.c`, `ksu_manager_pin_apply`) | Gỡ rồi cài lại Manager không mất root; chỉ áp dụng cho đúng gói này |
-| 9 | Giao diện Miuix thành kính lỏng (Liquid Glass) kiểu iOS, nền là hình nền máy đọc qua root | Theo yêu cầu của Cam; spec `docs/superpowers/specs/2026-10-02-miuix-liquid-glass-design.md` |
+| 9 | Giao diện Miuix thành kính lỏng (Liquid Glass) kiểu iOS, nền là hình nền máy đọc qua root | Spec: `docs/superpowers/specs/2026-10-02-miuix-liquid-glass-design.md` |
+| 10 | Kernel luôn cấp root cho gói Manager `cam.su.kernel` theo tên gói, dò lại UID mỗi khi `packages.list` đổi (`ksu_manager_pin_apply` trong `kernel/policy/pkg_tracker.c`) | Gỡ rồi cài lại Manager không mất root; chỉ áp dụng cho đúng gói này |
+| 11 | CI: chạy tay được "Build Manager", Release theo tag có quyền ghi và ghi chú tự sinh, khóa ký riêng `su-kernel` | Build bản đầy đủ (8 KMI) và phát hành trên GitHub |
 
-## 2. Danh sách commit (theo thứ tự)
+## 2. Lịch sử commit
 
-```
-73b4951c docs: add Cam Kernel SU README
-a06407f8 manager: set app name to Cam Kernel SU
-1b9b0673 kernel: trust the Cam Kernel SU manager signing key   (đã lỗi thời, xem mục 4)
-8c2ab771 docs: add managerless seed allowlist plan
-2051c0bf kernel: drop manager apk detection, uid 0 is the manager
-1675afc0 kernel: grant root to patch-time seed packages on boot
-0d48dcb1 ksud: add boot-patch --seed and drop manager debug commands
-cb45e947 manager: run privileged ksu calls in root service
-c5d7c16f manager: gate features on root access instead of manager identity
-3b4d27b3 manager: choose root apps when patching init_boot
-1f916fc6 kernel: apply root seed from post-fs-data on first boot
-03654076 ksud: add allow command to grant root without re-flashing
-ce345906 manager: rename app package to cam.su.kernel
-1694c43e manager: Tint background effect from a seed color
-ebf59abc manager: Add root wallpaper repository for glass background
-3cb40554 manager: Draw device wallpaper behind Miuix pages
-610926d6 manager: Add glass cards and apply them to Home
-945c31fe manager: Rebrand app as SU Kernel with new launcher icon
-a20456a6 manager: Tune glass defaults
-01e54b05 manager: Make top bars transparent with glass icon buttons
-2b17b68d manager: Apply glass cards to all Miuix screens
-6c1ae181 manager: Add specular light and lens to glass controls
-574de4ab manager: Let bar controls refract content scrolling beneath
-587c1233 manager: Group adjacent toolbar buttons into one glass capsule
-52e9853d manager: Add glass dialogs, popups, FAB and navigation rail
-f91c98ca manager: Add glass background settings page
+Danh sách luôn mới nhất:
+
+```bash
+git log --oneline 08a3b087..main
 ```
 
-Xem lại bất cứ lúc nào: `git log --oneline 08a3b087..HEAD`
+Các nhóm chính (theo thứ tự thời gian):
+- `2051c0bf` … `ce345906`: bỏ nhận diện Manager trong kernel, seed, `ksud allow`, root service, đổi gói.
+- `1694c43e` … `f91c98ca`: giao diện kính (nền, card, nút, dialog, popup, cài đặt nền).
+- `b7acde6f kernel: keep root for the manager package across reinstalls`.
+- `1c27052b` … `11e616ac`: tối ưu kính (vẽ card từ nền đã blur sẵn, chuyển trang, gradient), mép mờ khi cuộn, dropdown kính, About, icon tam giác.
+- `c5c94e1e`, `9c7e2031`, `1c3c5037`, `2d449c13`: CI (workflow_dispatch, release, sửa Clippy, sửa phiên bản LKM trên CI).
+- `1b9b0673 kernel: trust the Cam Kernel SU manager signing key`: **đã lỗi thời** (kernel không còn kiểm tra chữ ký).
 
 ## 3. File bị đổi, theo khu vực
 
@@ -60,7 +44,7 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 ### Kernel (`kernel/`)
 - [xoá] `manager/apk_sign.c`, `manager/apk_sign.h`, `manager/throne_tracker.c`, `manager/throne_tracker.h`, `manager/manager_observer.h`
 - [chuyển] `manager/pkg_observer.c` → `policy/pkg_observer.c`
-- [mới] `policy/pkg_tracker.c`, `policy/pkg_tracker.h` (đọc `packages.list`, áp seed, prune allowlist), `policy/pkg_observer.h`
+- [mới] `policy/pkg_tracker.c`, `policy/pkg_tracker.h` (đọc `packages.list`, áp seed, **ghim root cho gói Manager**, prune allowlist), `policy/pkg_observer.h`
 - [sửa] `manager/manager_identity.h`: chỉ còn `is_manager()` = `current_uid() == 0`
 - [sửa] `hook/setuid_hook.c`: bỏ nhánh cài fd cho manager
 - [sửa] `policy/allowlist.c/.h`: bỏ các trường hợp đặc biệt cho manager; thêm `ksu_grant_default_root()`
@@ -79,55 +63,104 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 - [sửa] `src/debug.rs`: bỏ `set_manager`
 - [sửa] `src/ksucalls.rs`: thêm `set_app_profile()`, `uid_granted_root()`
 - [sửa] `src/main.rs`: khai báo module
+- [sửa] `src/sepolicy.rs`: dòng `#![allow(clippy::redundant_field_names)]` ở đầu file (code do `derive_new` sinh ra bị Clippy mới bắt lỗi)
 - [sửa] `build.rs`: `KSU_PACKAGE_NAME` mặc định `cam.su.kernel`
 
-### Manager (`manager/`)
+### Manager (`manager/`): phần root service
 - [mới] `Ksu.kt` (facade cho UI), `KsuServiceClient.kt` (bind root service), `ui/screen/install/SeedPicker.kt`
 - [sửa] `aidl/.../IKsuInterface.aidl`, `ui/KsuService.kt`: thêm các hàm gọi kernel
 - [sửa] `cpp/ksu.cc`: process uid 0 tự xin fd qua reboot magic; bỏ `is_manager()` (cùng `ksu.h`, `jni.cc`)
 - [sửa] `Natives.kt`: bỏ `isManager`, `isFullFeatured`
 - [sửa] khoảng 25 file UI/viewmodel/repository: `Natives.xxx` → `Ksu.xxx` (đổi máy móc)
-- [sửa] `ui/MainActivity.kt`: giữ splash tới khi kết nối xong root service
 - [sửa] `ui/screen/install/InstallScreen.kt`, `ui/screen/flash/FlashUtils.kt`, `ui/util/KsuCli.kt`: truyền seed vào `boot-patch`
 - [sửa] `AndroidManifest.xml`: thêm `QUERY_ALL_PACKAGES`
-- [sửa] `res/values/strings.xml`, `res/values-vi/strings.xml`: chuỗi `seed_*`
-- [sửa] `app/build.gradle.kts`: gói mặc định `cam.su.kernel`
-- [sửa] `gradle.properties`: `KSU_NAME=SU Kernel`
-- [mới] Kính lỏng: `ui/component/glass/` (`GlassBackground`, `GlassCard`, `GlassButton`, `GlassOverlay`, `GlassDefaults`, `GlassImage`), `ui/component/liquid/GravityHighlight.kt`, `data/repository/WallpaperRepository.kt`, `ui/screen/colorpalette/GlassBackgroundSection.kt`; mọi thông số kính nằm ở `GlassDefaults`
-- [sửa] mọi file `*Miuix.kt`: `Card` → `GlassCard`/`GlassListCard`, `IconButton` → `GlassIconButton`, `actions` của top bar bọc `GlassButtonGroup`, `OverlayDialog` → `GlassDialog`, `OverlayListPopup` → `GlassListPopup`, `FloatingActionButton` → `GlassFab`, `Scaffold(containerColor = Color.Transparent)` (đổi máy móc)
-- [sửa] `ui/util/BlurExt.kt` (top bar trong suốt, cấp backdrop gộp cho nút trên bar), `ui/MainActivity.kt` (mỗi trang bọc `GlassPage`), `component/miuix/SuperSearchBar.kt`, `component/dialog/DialogMiuix.kt`, `component/bottombar/NavigationRailMiuix.kt`
-- [mới] Icon: `manager/icon/launcher-src.png`, `scripts/gen_launcher_icon.py` sinh `mipmap-*/ic_launcher_logo*.png`
-- [mới] Unit test JVM: `manager/app/src/test` (`./gradlew :app:testDebugUnitTest`)
+- [sửa] `res/values/strings.xml`, `res/values-vi/strings.xml`: chuỗi `seed_*`, `glass_background*`
 
-## 4. Cách kéo bản cập nhật upstream
+### Manager (`manager/`): giao diện kính
+- [mới] `ui/component/glass/`: `GlassBackground` (nền, `GlassPage`, cache nạp sẵn), `GlassMaterial` (card vẽ từ nền đã blur sẵn), `GlassCard`, `GlassButton` (giọt nước, `GlassButtonGroup`, `liquidControl`), `GlassOverlay` (`GlassDialog`, `GlassListPopup`, `GlassFab`), `GlassDropdown`, `GlassStandIn`, `GlassContrast`, `GlassImage`, `GlassDefaults` (**mọi thông số kính ở đây**)
+- [mới] `ui/component/liquid/GravityHighlight.kt`, `data/repository/WallpaperRepository.kt`, `ui/screen/colorpalette/GlassBackgroundSection.kt`, unit test JVM ở `manager/app/src/test`
+- [sửa] mọi file `*Miuix.kt`, đổi máy móc:
+
+  | Component gốc (miuix) | Bản kính |
+  |---|---|
+  | `Card` | `GlassCard` (item trong `LazyColumn` dài: `GlassListCard`) |
+  | `IconButton` (`return@IconButton` → `return@GlassIconButton`) | `GlassIconButton` |
+  | nội dung `actions = { … }` của `TopAppBar` | bọc trong `GlassButtonGroup { … }` |
+  | `OverlayDialog` | `GlassDialog` |
+  | `OverlayListPopup` | `GlassListPopup` |
+  | `OverlayDropdownPreference` | `GlassDropdownPreference` |
+  | `FloatingActionButton` | `GlassFab` |
+  | `Scaffold(` | `Scaffold(containerColor = Color.Transparent,` |
+  | `BlurredBar(backdrop) {` | `BlurredBar(backdrop, scrollBehavior = scrollBehavior) {` |
+
+- [sửa] `ui/util/BlurExt.kt` (top bar trong suốt, mép mờ khi cuộn, backdrop cho nút trên thanh), `ui/MainActivity.kt` (mỗi trang bọc `GlassPageIfMiuix`, nạp sẵn nền khi splash, blur luôn bật ở Miuix), `component/miuix/SuperSearchBar.kt`, `component/dialog/DialogMiuix.kt`, `component/bottombar/BottomBarMiuix.kt`, `component/bottombar/NavigationRailMiuix.kt`, `component/FloatingBottomBar.kt`, `component/miuix/effect/BgEffectConfig.kt`, `BgEffectBackground.kt`, `screen/about/AboutMiuix.kt`, `screen/colorpalette/ColorPaletteScreenMiuix.kt` (bỏ 2 công tắc blur cũ), `data/repository/SettingsRepository*.kt`, `ui/viewmodel/*`
+- [sửa] Thương hiệu: `app/build.gradle.kts` (gói `cam.su.kernel`, tên `SU Kernel`), `gradle.properties` (`KSU_NAME=SU Kernel`), `res/mipmap-anydpi/ic_launcher.xml`, `res/values/colors.xml` (nền icon đen), `res/values*/themes.xml` (splash nền đen + `@drawable/ic_splash_logo`)
+- [mới] Icon: `manager/icon/launcher-src.png`, `scripts/gen_launcher_icon.py` sinh `mipmap-*/ic_launcher_logo*.png` và `drawable-xxxhdpi/ic_splash_logo.png`
+
+### CI và công cụ
+- [sửa] `.github/workflows/build-manager.yml`: thêm `workflow_dispatch`
+- [sửa] `.github/workflows/release.yml`: `permissions: contents: write`, `generate_release_notes: true`
+- [sửa] `.github/workflows/ddk-lkm.yml`: `safe.directory "$GITHUB_WORKSPACE"` (thay cho tên repo gốc ghi cứng) và checkout `fetch-depth: 0`. Thiếu hai dòng này module CI báo phiên bản **16**
+- [sửa] `.gitattributes`: `scripts/*.sh` luôn LF
+- [mới] `scripts/build_lkm_ksud.sh` (build LKM + ksud từ một commit trong WSL)
+
+## 4. Kéo bản cập nhật upstream (làm theo thứ tự)
+
+### Bước 1: chuẩn bị
+
+Dùng **git của Windows** (Git Bash/PowerShell) cho repo này. Trong WSL chỉ dùng git trên bản clone riêng (xem mục 5).
 
 ```bash
 git checkout main
+git pull origin main          # nếu sửa trên GitHub
+git status                    # chỉ được còn " D manager/app/src/main/cpp/uapi" (junction, bình thường)
 git fetch upstream
+git log --oneline main..upstream/main | wc -l   # upstream có bao nhiêu commit mới
+```
+
+### Bước 2: merge trên một nhánh riêng
+
+```bash
 git checkout -b merge-upstream-YYYYMMDD
 git merge upstream/main
 ```
 
-Dùng `merge` thay vì `rebase` cho dễ: chỉ phải giải conflict một lần.
+Dùng `merge` thay vì `rebase`: chỉ phải giải conflict một lần.
 
-### Quy tắc khi giải conflict
+**Đừng** chạy `git checkout -- <thư mục>`, `git clean`, hay `git add manager/app/src/main` (có junction `cpp/uapi`, xem mục 5). Luôn add từng file cụ thể.
 
-- **Upstream sửa các file Cam đã xoá** (`apk_sign.c`, `throne_tracker.c`, `manager_observer.h`, `apk_sign.rs`…): giữ trạng thái **xoá** (`git rm <file>`). Nếu upstream thêm tính năng mới vào đó, xem nó có cần chuyển sang `policy/pkg_tracker.c` không.
+### Bước 3: giải conflict
+
+Kernel / ksud:
+- **Upstream sửa các file Cam đã xoá** (`apk_sign.c`, `throne_tracker.c`, `manager_observer.h`, `apk_sign.rs`…): giữ trạng thái **xoá** (`git rm <file>`). Nếu upstream thêm tính năng mới vào đó, xem có cần chuyển sang `policy/pkg_tracker.c` không.
 - **Upstream sửa `pkg_observer.c` ở chỗ cũ (`kernel/manager/`)**: áp thay đổi đó vào `kernel/policy/pkg_observer.c`.
+- **`policy/pkg_tracker.c`**: là file của Cam; giữ `ksu_seed_apply()` và `ksu_manager_pin_apply()`, thứ tự gọi trong `ksu_pkg_tracker_update()`: seed → pin → prune.
 - **`manager_identity.h`**: luôn giữ bản của Cam (chỉ có `is_manager()` = uid 0).
-- **`Kbuild` / `Kconfig`**: giữ bản đã bỏ `EXPECTED_*`, `DISABLE_MANAGER`, `MANAGER_PACKAGE`; nhận các dòng `kernelsu-objs` mới của upstream.
+- **`Kbuild` / `Kconfig`**: giữ bản đã bỏ `EXPECTED_*`, `DISABLE_MANAGER`, `MANAGER_PACKAGE`; nhận các dòng `kernelsu-objs` mới của upstream. Conflict ở đoạn `KSU_EXPECTED_*` (từ commit lỗi thời `1b9b0673`) thì xoá cả đoạn.
 - **`uapi/supercall.h`**: nếu upstream tăng `KERNEL_SU_UAPI_VERSION`, đặt bản Cam = **số của upstream + 1**, để bản Cam và upstream không bao giờ trùng uapi.
-- **File Manager có `Ksu.xxx`**: nhận thay đổi của upstream, rồi đổi lại mọi `Natives.<hàm>` thành `Ksu.<hàm>` (xem mục 5).
-- **`app/build.gradle.kts`, `ksud/build.rs`**: giữ gói `cam.su.kernel`.
-- **File `*Miuix.kt`**: nhận thay đổi của upstream, rồi đổi lại các component sang bản kính (`Card` → `GlassCard`, `IconButton` → `GlassIconButton`… xem mục 3, Manager). Card mới upstream thêm vào thì cũng đổi sang `GlassCard`; item trong danh sách dài dùng `GlassListCard`. Đừng để lọt `Scaffold` thiếu `containerColor = Color.Transparent`, nếu không trang đó sẽ che mất hình nền.
-- Commit `1b9b0673` (key ký của Cam trong `Kbuild`) đã lỗi thời vì kernel không còn kiểm tra chữ ký. Conflict ở đoạn `KSU_EXPECTED_*` thì cứ xoá cả đoạn.
+- **`ksud/build.rs`**: giữ gói `cam.su.kernel`. **`sepolicy.rs`**: giữ dòng `#![allow(clippy::redundant_field_names)]` ở đầu file.
 
-### Kiểm tra sau khi merge
+Manager:
+- **File có `Ksu.xxx`**: nhận thay đổi của upstream, rồi đổi lại mọi `Natives.<hàm>` thành `Ksu.<hàm>`. Upstream thêm hàm mới vào `Natives` thì làm theo "Nếu upstream thêm hàm mới" bên dưới.
+- **File `*Miuix.kt`**: nhận thay đổi của upstream, rồi đổi lại component sang bản kính theo bảng ở mục 3. Màn hình hoặc component mới của upstream cũng phải đổi theo bảng đó; quên `Scaffold(containerColor = Color.Transparent)` thì trang che mất hình nền.
+- **`ui/MainActivity.kt`**: route mới upstream thêm vào `NavDisplay` phải bọc `GlassPageIfMiuix { … }` như các `entry<…>` khác. Giữ khối nạp sẵn nền (`GlassBackgroundCache.preload`) và `LocalEnableBlur provides (uiMode == UiMode.Miuix || …)`.
+- **`ui/util/BlurExt.kt`, `component/FloatingBottomBar.kt`, `component/miuix/SuperSearchBar.kt`, `component/dialog/DialogMiuix.kt`**: giữ bản của Cam, rồi áp thay đổi của upstream vào bằng tay.
+- **`app/build.gradle.kts`, `gradle.properties`, `res/values*/themes.xml`, `res/mipmap-anydpi/ic_launcher.xml`**: giữ gói `cam.su.kernel`, tên `SU Kernel`, icon/splash của Cam.
+- **`res/values*/strings.xml`**: nhận chuỗi mới của upstream, giữ `seed_*` và `glass_background*`.
+
+CI:
+- **`.github/workflows/build-manager.yml`**: giữ dòng `workflow_dispatch:`. **`release.yml`**: giữ `permissions: contents: write` và `generate_release_notes: true`.
+- **`.github/workflows/ddk-lkm.yml`**: giữ `safe.directory "$GITHUB_WORKSPACE"` và `fetch-depth: 0` (nếu upstream đổi lại `/__w/KernelSU/KernelSU` thì module CI sẽ báo phiên bản 16).
+
+Xong thì `git add <từng file>` rồi `git commit` (giữ message merge mặc định).
+
+### Bước 4: kiểm tra sau khi merge
 
 Chạy từng lệnh, kết quả phải đúng như ghi chú:
 
 ```bash
-# 1. Không còn code tìm manager theo APK (chỉ được còn do_get_manager_appid trong dispatch.c)
+# 1. Không còn code tìm manager theo APK. Chỉ được còn: do_get_manager_appid trong dispatch.c,
+#    và KSU_MANAGER_PACKAGE trong policy/pkg_tracker.c (ghim root cho gói Manager, của Cam)
 rg -n "throne|apk_sign|is_uid_manager|manager_appid|EXPECTED_(SIZE|HASH)|KSU_DISABLE_MANAGER|KSU_MANAGER_PACKAGE" kernel
 
 # 2. Code mới của upstream có dùng khái niệm manager không? Xem kỹ từng chỗ
@@ -136,8 +169,16 @@ rg -n "is_manager\(|only_manager|manager_or_root" kernel
 # 3. UI không gọi thẳng Natives (chỉ được ra Natives.kt, KsuService.kt, Ksu.kt, managerUAPIVersion)
 rg -n "Natives\.(version|kernelUAPIVersion|is[A-Z]|get[A-Z]|set[A-Z]|uid)" manager/app/src/main/java
 
-# 4. Gói vẫn là cam.su.kernel
-rg -n "cam.su.kernel" manager/app/build.gradle.kts userspace/ksud/build.rs
+# 4. Gói vẫn là cam.su.kernel; pin Manager vẫn được gọi
+rg -n "cam.su.kernel" manager/app/build.gradle.kts userspace/ksud/build.rs kernel/policy/pkg_tracker.c
+rg -n "ksu_manager_pin_apply" kernel/policy/pkg_tracker.c        # phải ra 2 dòng: định nghĩa + lời gọi
+
+# 5. Giao diện Miuix không còn component gốc lọt vào (phải rỗng; webui/ không tính)
+rg -n "[^A-Za-z.](Card|IconButton|OverlayDialog|OverlayListPopup|OverlayDropdownPreference|FloatingActionButton)\(" manager/app/src/main/java --glob "*Miuix.kt" --glob "!**/webui/**"
+rg -n "Scaffold\(" manager/app/src/main/java --glob "*Miuix.kt" -A1 | rg -v "containerColor|Scaffold\(|^--"   # phải rỗng
+
+# 6. Test và build
+cd manager && ./gradlew :app:testDebugUnitTest :app:assembleRelease
 ```
 
 **Nếu upstream thêm hàm mới vào `Natives`:**
@@ -150,12 +191,28 @@ Lý do: app process không có quyền gọi kernel, chỉ root service gọi đ
 
 **Nếu upstream thêm ioctl mới chỉ cho manager (`only_manager`):** với Cam, ioctl đó nghĩa là "chỉ uid 0", nên phải gọi từ `KsuService` theo đúng 4 bước trên.
 
+### Bước 5: đưa lên GitHub, build và cài
+
+```bash
+git checkout main
+git merge --ff-only merge-upstream-YYYYMMDD
+git push origin main          # CI "Build Manager" tự chạy: APK ký khóa release + LKM 8 KMI
+```
+
+1. Chờ CI xanh (Actions trên GitHub, hoặc `gh run list -R peo1108/Cam-Kernel-SU --branch main`). Mở log bước build LKM, phải thấy `KernelSU version: 3xxxx` (không phải 16).
+2. Tải APK ở mục Artifacts (`manager`), **cài đè** lên máy (cùng khóa release nên không mất dữ liệu).
+3. Mở app → bấm thẻ "Hiện có phiên bản LKM tích hợp mới hơn" → **Cài đặt trực tiếp** → khởi động lại. Sau đó app và LKM cùng một số phiên bản.
+4. Ra bản cho người dùng: gắn tag (mục 8).
+
+Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã dùng".
+
 ## 5. Build trên máy Windows: những bẫy đã gặp
 
 | Bẫy | Hậu quả | Cách tránh |
 |---|---|---|
 | `core.autocrlf=true` | `installer.sh` bị nhúng vào ksud với CRLF → **cài module lỗi** `syntax error ... expecting "do"` | Build ksud trong WSL từ một bản `git clone` (LF); hoặc thêm `*.sh eol=lf` vào `.gitattributes` |
-| `core.symlinks=false` | `manager/app/src/main/cpp/uapi` là file text, CMake báo `uapi/ksu.h not found` | Tạo junction cục bộ: `New-Item -ItemType Junction -Path ...\cpp\uapi -Target ...\uapi`. **Không commit**. Khôi phục: `git checkout -- manager/app/src/main/cpp/uapi` |
+| `core.symlinks=false` | `manager/app/src/main/cpp/uapi` là file text, CMake báo `uapi/ksu.h not found` | Tạo junction cục bộ (PowerShell): `New-Item -ItemType Junction -Path "...\manager\app\src\main\cpp\uapi" -Target "...\uapi"`. `git status` sẽ luôn hiện ` D manager/app/src/main/cpp/uapi`: bình thường, **không commit, không add**. **Không bao giờ** chạy `git checkout -- manager/...`, `git stash`, `git clean` trên đường dẫn này: git ghi đè junction và **xoá luôn `uapi/*.h` ở gốc repo** (đã xảy ra 2026-10-02). Lỡ bị thì `git checkout -- uapi` rồi tạo lại junction |
+| CI: LKM báo phiên bản **16** (Home ghi `16-5`) | `ddk-lkm.yml` của upstream ghi cứng `safe.directory /__w/KernelSU/KernelSU`; repo fork khác tên nên git trong container DDK từ chối đọc repo | Đã sửa: `safe.directory "$GITHUB_WORKSPACE"` + checkout `fetch-depth: 0`. Merge upstream mà `ddk-lkm.yml` conflict thì giữ hai dòng này; sau mỗi lần CI chạy, log bước LKM phải ghi `KernelSU version: 3xxxx` |
 | Build kernel từ `git archive` (không có `.git`) | `kernelsu.ko` báo version 16 → Manager coi là kernel quá cũ | Build từ thư mục có `.git` (git clone) |
 | Chạy `git` của WSL trên repo `/mnt/c/...` | Làm hỏng junction `cpp/uapi` | Chỉ dùng git của Windows cho repo này; trong WSL chỉ dùng git trên bản clone riêng |
 | `cargo ndk` không cài được trên Windows (thiếu `dlltool`) | | Build Rust trong WSL với clang Android + sysroot NDK |

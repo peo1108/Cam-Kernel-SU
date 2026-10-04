@@ -49,6 +49,7 @@ import me.weishu.kernelsu.ui.component.glass.GlassIconButton
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
+import me.weishu.kernelsu.ui.util.sublevelOf
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -251,8 +252,8 @@ private fun SourceCards(state: GkiInstallUiState, actions: GkiInstallActions) {
             BuildsState.Loading -> stringResource(R.string.gki_builds_loading)
             is BuildsState.Failed -> stringResource(R.string.gki_builds_error, builds.message)
             is BuildsState.Loaded -> when {
-                build != null -> "${buildTitle(build)}\n${
-                    buildSummary(build, latest = builds.builds.firstOrNull() == build)
+                build != null -> "${buildTitle(build, recommended = build == state.recommended)}\n${
+                    buildSummary(build, sublevelOf(state.status.kernelRelease))
                 }"
 
                 builds.builds.isEmpty() -> stringResource(R.string.gki_builds_empty, state.status.kmi)

@@ -43,6 +43,8 @@ data class GkiInstallUiState(
     val method: GkiMethod? = null,
     val source: GkiSource = GkiSource.Project,
     val build: SfsBuild? = null,
+    /** the build matching this device's kernel best; preselected, labelled (Recommended) */
+    val recommended: SfsBuild? = null,
     val localZip: Uri? = null,
     val localZipName: String? = null,
     val backupBoot: Boolean = true,

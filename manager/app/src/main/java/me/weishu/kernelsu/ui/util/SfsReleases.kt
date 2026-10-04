@@ -14,9 +14,13 @@ import java.io.IOException
 /** GitHub repo whose releases carry the GKI + SUSFS AnyKernel3 zips (built by build-sfs-kernel.yml). */
 const val SFS_RELEASE_REPO = "peo1108/Cam-Kernel-SU"
 
-// KernelSU-SFS-<android release>-<KMI generation>-<kernel>-<ksu version>-susfs-<susfs version>.zip,
-// e.g. KernelSU-SFS-android16-5-6.12-32760-susfs-v2.3.0.zip; see build-sfs-kernel.yml
-private val SFS_ASSET = Regex("""^KernelSU-SFS-(android\d+)-(\d+)-(\d+\.\d+)-(\d+)-susfs-(.+)\.zip$""")
+// KernelSU-SFS-<android release>-<KMI generation>-<kernel version>-<ksu version>-susfs-<susfs version>.zip,
+// e.g. KernelSU-SFS-android16-5-6.12.30-32760-susfs-v2.3.0.zip; see build-sfs-kernel.yml
+private val SFS_ASSET = Regex("""^KernelSU-SFS-(android\d+)-(\d+)-(\d+\.\d+)\.(\d+)-(\d+)-susfs-(.+)\.zip$""")
+
+/** 30 from a kernel release such as 6.12.30-android16-5-...; -1 when it cannot be read. */
+fun sublevelOf(release: String): Int =
+    Regex("""^\d+\.\d+\.(\d+)""").find(release)?.groupValues?.get(1)?.toIntOrNull() ?: -1
 
 /** android16-5 from a GKI release such as 6.12.30-android16-5-g1750f757fabe-ab13938768-4k */
 fun kmiTagOf(release: String): String =
@@ -30,17 +34,40 @@ data class SfsBuild(
     val kmi: String,
     /** e.g. android16-5: the KMI generation, which must match the device's */
     val kmiTag: String,
+    /** the 30 of 6.12.30: the GKI release the kernel was built from */
+    val sublevel: Int,
     val ksuVersion: Int,
     val susfsVersion: String,
     val url: String,
     val size: Long,
     /** ISO-8601 date the release was published */
     val publishedAt: String,
-) : Parcelable
+) : Parcelable {
+    /** e.g. 6.12.30 */
+    val kernelVersion: String
+        get() = "${kmi.substringAfter('-')}.$sublevel"
+}
+
+/**
+ * The build to preselect for a device running [deviceSublevel]: the same GKI
+ * release if there is one, else the closest one (the lower on a tie, since
+ * vendor modules are built against the release the device shipped). Among
+ * builds of that release the newest wins; [builds] is newest first.
+ */
+fun recommendSfsBuild(builds: List<SfsBuild>, deviceSublevel: Int): SfsBuild? {
+    if (builds.isEmpty()) return null
+    if (deviceSublevel < 0) return builds.first()
+    return builds.minWithOrNull(
+        compareBy<SfsBuild> { kotlin.math.abs(it.sublevel - deviceSublevel) }
+            .thenBy { it.sublevel }
+            .thenBy { builds.indexOf(it) }
+    )
+}
 
 /**
  * AnyKernel3 builds for [kmi] and the KMI generation [kmiTag] from the project's
- * releases, newest release first. A build of another generation would bootloop.
+ * releases, newest release first. A build of another generation would bootloop,
+ * so those are left out; any sublevel of the right generation is offered.
  */
 suspend fun fetchSfsBuilds(kmi: String, kmiTag: String): List<SfsBuild> = withContext(Dispatchers.IO) {
     val request = Request.Builder()
@@ -61,7 +88,7 @@ suspend fun fetchSfsBuilds(kmi: String, kmiTag: String): List<SfsBuild> = withCo
                 val asset = assets.getJSONObject(j)
                 val name = asset.optString("name")
                 val match = SFS_ASSET.matchEntire(name) ?: continue
-                val (android, generation, kernel) = match.destructured
+                val (android, generation, kernel, sublevel) = match.destructured
                 val assetKmi = "$android-$kernel"
                 val assetTag = "$android-$generation"
                 if (assetKmi != kmi || assetTag != kmiTag) continue
@@ -71,8 +98,9 @@ suspend fun fetchSfsBuilds(kmi: String, kmiTag: String): List<SfsBuild> = withCo
                         fileName = name,
                         kmi = kmi,
                         kmiTag = assetTag,
-                        ksuVersion = match.groupValues[4].toInt(),
-                        susfsVersion = match.groupValues[5],
+                        sublevel = sublevel.toInt(),
+                        ksuVersion = match.groupValues[5].toInt(),
+                        susfsVersion = match.groupValues[6],
                         url = asset.optString("browser_download_url"),
                         size = asset.optLong("size"),
                         publishedAt = release.optString("published_at"),

@@ -29,6 +29,7 @@ import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.screen.flash.FlashIt
 import me.weishu.kernelsu.ui.util.Ak3Backup
+import me.weishu.kernelsu.ui.util.sublevelOf
 import me.weishu.kernelsu.ui.viewmodel.GkiInstallViewModel
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import java.util.Date
@@ -69,6 +70,8 @@ fun GkiInstallScreen() {
         kmi = uiState.status.kmi,
         state = uiState.builds,
         selected = uiState.build,
+        recommended = uiState.recommended,
+        deviceSublevel = sublevelOf(uiState.status.kernelRelease),
         onDismissRequest = { showBuilds = false },
         onRetry = viewModel::loadBuilds,
         onSelected = viewModel::selectBuild,

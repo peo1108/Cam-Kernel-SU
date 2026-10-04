@@ -18,6 +18,8 @@ import me.weishu.kernelsu.ui.util.SfsBuild
 import me.weishu.kernelsu.ui.util.fetchSfsBuilds
 import me.weishu.kernelsu.ui.util.getAk3Backups
 import me.weishu.kernelsu.ui.util.loadGkiStatus
+import me.weishu.kernelsu.ui.util.recommendSfsBuild
+import me.weishu.kernelsu.ui.util.sublevelOf
 
 class GkiInstallViewModel : ViewModel() {
 
@@ -55,9 +57,11 @@ class GkiInstallViewModel : ViewModel() {
                 BuildsState.Failed(e.message ?: e.javaClass.simpleName)
             }
             _uiState.update { state ->
-                // the newest build is the default until the user picks another
-                val build = state.build ?: (result as? BuildsState.Loaded)?.builds?.firstOrNull()
-                state.copy(builds = result, build = build)
+                val builds = (result as? BuildsState.Loaded)?.builds.orEmpty()
+                val recommended = recommendSfsBuild(builds, sublevelOf(state.status.kernelRelease))
+                // the recommended build is the default until the user picks another
+                val build = state.build?.takeIf { it in builds } ?: recommended
+                state.copy(builds = result, build = build, recommended = recommended)
             }
         }
     }

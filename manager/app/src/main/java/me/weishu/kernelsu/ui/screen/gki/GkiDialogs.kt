@@ -44,6 +44,8 @@ fun SfsBuildDialog(
     kmi: String,
     state: BuildsState,
     selected: SfsBuild?,
+    recommended: SfsBuild?,
+    deviceSublevel: Int,
     onDismissRequest: () -> Unit,
     onRetry: () -> Unit,
     onSelected: (SfsBuild) -> Unit,
@@ -76,10 +78,12 @@ fun SfsBuildDialog(
                     Message(stringResource(R.string.gki_builds_empty, kmi))
                 } else {
                     LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
-                        itemsIndexed(state.builds) { index, build ->
+                        // highest kernel first, so the versions read in order
+                        val sorted = state.builds.sortedByDescending { it.sublevel }
+                        itemsIndexed(sorted) { _, build ->
                             CheckboxPreference(
-                                title = buildTitle(build),
-                                summary = buildSummary(build, latest = index == 0),
+                                title = buildTitle(build, recommended = build == recommended),
+                                summary = buildSummary(build, deviceSublevel),
                                 insideMargin = PaddingValues(horizontal = 30.dp, vertical = 16.dp),
                                 checkboxLocation = CheckboxLocation.End,
                                 checked = choice == build,
@@ -126,18 +130,26 @@ fun SfsBuildDialog(
 }
 
 @Composable
-internal fun buildTitle(build: SfsBuild): String =
-    stringResource(R.string.gki_build_title, build.ksuVersion, build.susfsVersion)
+internal fun buildTitle(build: SfsBuild, recommended: Boolean): String {
+    val title = stringResource(R.string.gki_build_title, build.kernelVersion, build.ksuVersion, build.susfsVersion)
+    return if (recommended) "$title ${stringResource(R.string.gki_build_recommended)}" else title
+}
 
+/** Release details, plus how the build's kernel compares with the device's. */
 @Composable
-internal fun buildSummary(build: SfsBuild, latest: Boolean): String {
+internal fun buildSummary(build: SfsBuild, deviceSublevel: Int): String {
     val details = stringResource(
         R.string.gki_build_summary,
         build.tag,
         Formatter.formatShortFileSize(LocalContext.current, build.size),
         build.publishedAt.substringBefore('T'),
     )
-    return if (latest) "${stringResource(R.string.gki_build_latest)} · $details" else details
+    val match = when {
+        deviceSublevel < 0 -> null
+        build.sublevel == deviceSublevel -> stringResource(R.string.gki_build_match)
+        else -> null
+    }
+    return if (match != null) "$match · $details" else details
 }
 
 @Composable

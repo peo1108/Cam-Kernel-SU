@@ -5,6 +5,15 @@ and [SUSFS](https://gitlab.com/simonpunk/susfs4ksu) patched in, shipped as an
 AnyKernel3 zip.
 
 Supported: GKI 6.1, 6.6 and 6.12 (6.18 once susfs4ksu has a branch for it).
+
+**KMI generation matters.** A GKI kernel only boots with the vendor modules of
+its own KMI generation (the `android16-5` in `6.12.30-android16-5-...`). Flashing
+an `android16-6` kernel on an `android16-5` device bootloops: the vendor modules
+fail to load before anything is logged. So each KMI is pinned to a GKI release
+branch of the right generation (`android16-6.12` → `common-android16-6.12-2025-09`,
+generation 5), zip names carry the generation
+(`KernelSU-SFS-android16-5-6.12-<ksu>-susfs-<ver>.zip`), the zip refuses a
+running kernel of another generation, and the Manager only offers matching builds.
 Older kernels are refused at build time (`kernel/core/init.c`) and by the zip.
 
 ## User flow

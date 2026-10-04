@@ -56,7 +56,8 @@ jobs:
           # Only verified KMIs are built by default. susfs4ksu has no 6.18 branch yet.
           branch_for() {
             case "$1" in
-              android16-6.12) echo common-android16-6.12-2026-06 ;;
+              # KMI generation 5 (6.12.30-android16-5 devices); 2025-12 and later are generation 6
+              android16-6.12) echo common-android16-6.12-2025-09 ;;
               # not verified yet: tip of the KMI branch
               *) echo "common-$1" ;;
             esac
@@ -124,7 +125,7 @@ jobs:
           cp -r ../susfs4ksu/kernel_patches/include/linux/* common/include/linux/
           PATCH="../susfs4ksu/kernel_patches/50_add_susfs_in_gki-$KMI.patch"
           # adjust context to the pinned GKI branch, then apply strictly: fuzz once misplaced a hunk
-          python3 ../KernelSU/sfs/patches/fixup_susfs.py "$KMI" "$PATCH"
+          python3 ../KernelSU/sfs/patches/fixup_susfs.py "$GKI_BRANCH" "$PATCH"
           cd common
           patch -p1 --forward --fuzz=0 < "../$PATCH"
           SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' include/linux/susfs.h | cut -d'"' -f2)
@@ -165,6 +166,10 @@ jobs:
           # make sure KernelSU and SUSFS really ended up in the kernel
           grep -aq "susfs is initialized" dist/Image || { echo "SUSFS is missing from the Image"; exit 1; }
           grep -aqi "kernelsu" dist/Image || { echo "KernelSU is missing from the Image"; exit 1; }
+          # e.g. android16-5 from "Linux version 6.12.38-android16-5-..."
+          KMI_TAG=$(grep -aoE 'Linux version [0-9.]+-android[0-9]+-[0-9]+' dist/Image | head -1 | grep -oE 'android[0-9]+-[0-9]+$')
+          [ -n "$KMI_TAG" ] || { echo "cannot read the KMI generation from the Image"; exit 1; }
+          echo "KMI_TAG=$KMI_TAG" >> "$GITHUB_ENV"
 
       - name: Pack AnyKernel3
         run: |
@@ -177,9 +182,10 @@ jobs:
             -e "s/@KERNEL_VERSION@/$KERNEL_VERSION/g" \
             -e "s/@KSU_VERSION@/$KSU_VERSION/g" \
             -e "s/@SUSFS_VERSION@/$SUSFS_VERSION/g" \
+            -e "s/@KMI_TAG@/$KMI_TAG/g" \
             ak3/anykernel.sh
           cp gki/dist/Image ak3/Image
-          ZIP="KernelSU-SFS-${KMI}-${KSU_VERSION}-susfs-${SUSFS_VERSION}.zip"
+          ZIP="KernelSU-SFS-${KMI_TAG}-${KERNEL_VERSION}-${KSU_VERSION}-susfs-${SUSFS_VERSION}.zip"
           (cd ak3 && zip -r9 "../$ZIP" ./*)
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 

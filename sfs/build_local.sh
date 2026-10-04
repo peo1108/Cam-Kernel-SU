@@ -17,7 +17,8 @@ set -euo pipefail
 
 KMI="${1:-android16-6.12}"
 case "$KMI" in
-  android16-6.12) DEFAULT_BRANCH=common-android16-6.12-2026-06 ;;
+  # KMI generation 5, which 6.12.30-android16-5 devices run; 2025-12 and later are generation 6
+  android16-6.12) DEFAULT_BRANCH=common-android16-6.12-2025-09 ;;
   *) DEFAULT_BRANCH="common-$KMI" ;;
 esac
 GKI_BRANCH="${2:-$DEFAULT_BRANCH}"
@@ -25,7 +26,8 @@ SRC="${SRC:-/mnt/c/Users/cam/Desktop/Cam Kernel SU}"
 WORK="${WORK:-$HOME/sfs-build}"
 JOBS="${JOBS:-$(nproc)}"
 LTO="${LTO:-none}"
-TREE="$WORK/$KMI"
+# one tree per GKI branch: switching branches must not resync over another one
+TREE="$WORK/${GKI_BRANCH#common-}"
 OUT="$SRC/sfs/out"
 
 log() { printf '\n== %s\n' "$*"; }
@@ -61,7 +63,7 @@ cp -r "$SUSFS"/kernel_patches/fs/* common/fs/
 cp -r "$SUSFS"/kernel_patches/include/linux/* common/include/linux/
 PATCH="$WORK/50_add_susfs_in_gki-$KMI.patch"
 cp "$SUSFS/kernel_patches/50_add_susfs_in_gki-$KMI.patch" "$PATCH"
-python3 "$SRC/sfs/patches/fixup_susfs.py" "$KMI" "$PATCH"
+python3 "$SRC/sfs/patches/fixup_susfs.py" "$GKI_BRANCH" "$PATCH"
 (cd common && patch -p1 --forward --fuzz=0 < "$PATCH")
 SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' common/include/linux/susfs.h | cut -d'"' -f2)
 
@@ -95,6 +97,10 @@ rm -rf dist
 tools/bazel run --config=fast --lto="$LTO" --jobs="$JOBS" //common:kernel_aarch64_dist -- --destdir=dist
 grep -aq "susfs is initialized" dist/Image || { echo "SUSFS is missing from the Image"; exit 1; }
 grep -aqi "kernelsu" dist/Image || { echo "KernelSU is missing from the Image"; exit 1; }
+# e.g. android16-5 from "Linux version 6.12.38-android16-5-..."
+KMI_TAG=$(grep -aoE 'Linux version [0-9.]+-android[0-9]+-[0-9]+' dist/Image | head -1 | grep -oE 'android[0-9]+-[0-9]+$')
+[ -n "$KMI_TAG" ] || { echo "cannot read the KMI generation from the Image"; exit 1; }
+echo "KMI $KMI_TAG"
 
 log "AnyKernel3"
 AK3="$WORK/ak3"
@@ -108,10 +114,11 @@ sed -i \
   -e "s/@KERNEL_VERSION@/${KMI#*-}/g" \
   -e "s/@KSU_VERSION@/$KSU_VERSION/g" \
   -e "s/@SUSFS_VERSION@/$SUSFS_VERSION/g" \
+  -e "s/@KMI_TAG@/$KMI_TAG/g" \
   "$AK3/anykernel.sh"
 cp dist/Image "$AK3/Image"
 mkdir -p "$OUT"
-ZIP="$OUT/KernelSU-SFS-$KMI-$KSU_VERSION-susfs-$SUSFS_VERSION.zip"
+ZIP="$OUT/KernelSU-SFS-$KMI_TAG-${KMI#*-}-$KSU_VERSION-susfs-$SUSFS_VERSION.zip"
 rm -f "$ZIP"
 (cd "$AK3" && zip -qr9 "$ZIP" ./*)
 ls -la "$ZIP"

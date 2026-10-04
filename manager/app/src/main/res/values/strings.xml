@@ -465,4 +465,10 @@
     <string name="features_attestation_chain_ok">Certificate chain (%d): none revoked by Google</string>
     <string name="features_attestation_revoked">Certificate #%1$d is revoked by Google (%2$s): strong integrity checks fail</string>
     <string name="features_attestation_revocation_unknown">Could not fetch the Google revocation list (offline?)</string>
+    <string name="module_badge_restore">Previous: %s</string>
+    <string name="module_restore_title">Go back to the previous version?</string>
+    <string name="module_restore_summary">%1$s is replaced by the kept %2$s on the next reboot.</string>
+    <string name="module_restore_confirm">Restore</string>
+    <string name="module_restore_success">%s: previous version restores on reboot</string>
+    <string name="module_restore_failed">%s: could not restore the previous version</string>
 </resources>

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,18 +30,22 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.ConflictKind
 import me.weishu.kernelsu.data.model.Module
 import me.weishu.kernelsu.ui.component.glass.GlassDialog
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /** "Disabled by boot guard" and "Conflict" chips under a module's author line. */
 @Composable
-fun ModuleStatusBadges(module: Module) {
+fun ModuleStatusBadges(module: Module, onRestoreBackup: () -> Unit = {}) {
     val showAutoDisabled = module.autoDisabled && !module.enabled
     val conflicts = module.conflicts
-    if (!showAutoDisabled && conflicts.isEmpty()) return
+    // a pending update (or restore) is applied on the next boot; offer nothing until then
+    val backupVersion = module.backupVersion.takeUnless { module.update || module.remove }
+    if (!showAutoDisabled && conflicts.isEmpty() && backupVersion == null) return
 
     var showConflicts by rememberSaveable(module.id) { mutableStateOf(false) }
+    var confirmRestore by rememberSaveable(module.id) { mutableStateOf(false) }
 
     Row(
         modifier = Modifier.padding(top = 4.dp),
@@ -59,6 +64,39 @@ fun ModuleStatusBadges(module: Module) {
                 background = colorScheme.tertiaryContainer.copy(alpha = 0.6f),
                 color = colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
                 onClick = { showConflicts = true },
+            )
+        }
+        if (backupVersion != null) {
+            Badge(
+                text = "↺ ${stringResource(R.string.module_badge_restore, backupVersion.ifBlank { "?" })}",
+                background = colorScheme.primary.copy(alpha = 0.15f),
+                color = colorScheme.primary,
+                onClick = { confirmRestore = true },
+            )
+        }
+    }
+
+    GlassDialog(
+        show = confirmRestore,
+        title = stringResource(R.string.module_restore_title),
+        summary = stringResource(R.string.module_restore_summary, module.version, backupVersion.orEmpty()),
+        onDismissRequest = { confirmRestore = false },
+    ) {
+        Row {
+            TextButton(
+                text = stringResource(android.R.string.cancel),
+                onClick = { confirmRestore = false },
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(20.dp))
+            TextButton(
+                text = stringResource(R.string.module_restore_confirm),
+                onClick = {
+                    confirmRestore = false
+                    onRestoreBackup()
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.textButtonColorsPrimary(),
             )
         }
     }

@@ -314,6 +314,10 @@ pub fn prune_modules() -> Result<()> {
 
         info!("remove module: {}", module.display());
 
+        if let Some(id) = module.file_name() {
+            remove_dir_all(Path::new(defs::MODULE_BACKUP_DIR).join(id)).ok();
+        }
+
         // Execute metamodule's metauninstall.sh first
         let module_id = module.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
@@ -628,6 +632,10 @@ fn install_module_to_system(zip: &str) -> Result<()> {
     ensure_dir_exists(defs::MODULE_UPDATE_DIR)?;
     setsyscon(defs::MODULE_UPDATE_DIR)?;
 
+    if let Err(e) = backup_installed_module(module_id) {
+        warn!("backup of {module_id} failed: {e}");
+    }
+
     // Prepare target directory
     println!("- Installing to {}", updated_dir.display());
     ensure_clean_dir(&updated_dir)?;
@@ -668,6 +676,84 @@ fn install_module_to_system(zip: &str) -> Result<()> {
     println!("- Module installed successfully!");
     info!("Module {module_id} installed successfully!");
 
+    Ok(())
+}
+
+const STATE_FLAGS: [&str; 3] = [
+    defs::DISABLE_FILE_NAME,
+    defs::REMOVE_FILE_NAME,
+    defs::UPDATE_FILE_NAME,
+];
+
+/// `cp -a` keeps modes, symlinks and whiteout device nodes, which a plain file copy would not.
+fn copy_module_tree(src: &Path, dst: &Path) -> Result<()> {
+    let status = Command::new(assets::BUSYBOX_PATH)
+        .args(["cp", "-a"])
+        .arg(src)
+        .arg(dst)
+        .status()?;
+    ensure!(
+        status.success(),
+        "cp -a {} {} failed",
+        src.display(),
+        dst.display()
+    );
+    for flag in STATE_FLAGS {
+        std::fs::remove_file(dst.join(flag)).ok();
+    }
+    Ok(())
+}
+
+/// Keep the version an update is about to replace, so it can be restored.
+/// Nothing to keep when the module is new or an update is already pending
+/// (the installed module.prop was replaced by the pending one then).
+fn backup_installed_module(id: &str) -> Result<()> {
+    let installed = Path::new(MODULE_DIR).join(id);
+    if !installed.join("module.prop").exists() || installed.join(UPDATE_FILE_NAME).exists() {
+        return Ok(());
+    }
+    ensure_dir_exists(defs::MODULE_BACKUP_DIR)?;
+    let backup = Path::new(defs::MODULE_BACKUP_DIR).join(id);
+    if backup.exists() {
+        remove_dir_all(&backup)?;
+    }
+    copy_module_tree(&installed, &backup)?;
+    println!("- Kept the installed version for restore");
+    Ok(())
+}
+
+/// Stage the kept version as a pending update; it replaces the current one on the next boot.
+pub fn restore_module(id: &str) -> Result<()> {
+    validate_module_id(id)?;
+    let backup = Path::new(defs::MODULE_BACKUP_DIR).join(id);
+    ensure!(
+        backup.join("module.prop").exists(),
+        "No previous version of {id} kept"
+    );
+
+    ensure_dir_exists(defs::MODULE_UPDATE_DIR)?;
+    setsyscon(defs::MODULE_UPDATE_DIR)?;
+    let staged = Path::new(defs::MODULE_UPDATE_DIR).join(id);
+    if staged.exists() {
+        remove_dir_all(&staged)?;
+    }
+    copy_module_tree(&backup, &staged)?;
+    let staged_system = staged.join("system");
+    if staged_system.exists() {
+        restore_syscon(&staged_system)?;
+    }
+
+    let module_dir = Path::new(MODULE_DIR).join(id);
+    ensure_dir_exists(&module_dir)?;
+    copy(staged.join("module.prop"), module_dir.join("module.prop"))?;
+    ensure_file_exists(module_dir.join(UPDATE_FILE_NAME))?;
+    // restoring means wanting it on, also after the boot guard turned it off
+    std::fs::remove_file(module_dir.join(defs::DISABLE_FILE_NAME)).ok();
+
+    if let Err(e) = regenerate_preinit_rc() {
+        warn!("regenerate preinit rc failed: {e}");
+    }
+    info!("Module {id} restored from backup, reboot to apply");
     Ok(())
 }
 
@@ -1027,6 +1113,13 @@ fn list_module(path: &str) -> Vec<HashMap<String, String>> {
         module_prop_map.insert("web".to_owned(), web.to_string());
         module_prop_map.insert("action".to_owned(), action.to_string());
         module_prop_map.insert("mount".to_owned(), need_mount.to_string());
+
+        if let Some(id) = path.file_name().and_then(|name| name.to_str())
+            && let Ok(backup) = read_module_prop(&Path::new(defs::MODULE_BACKUP_DIR).join(id))
+        {
+            let version = backup.get("version").cloned().unwrap_or_default();
+            module_prop_map.insert("backupVersion".to_owned(), version);
+        }
 
         resolve_module_icon_path(&mut module_prop_map, "actionIcon", &path);
         resolve_module_icon_path(&mut module_prop_map, "webuiIcon", &path);

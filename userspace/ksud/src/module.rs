@@ -744,10 +744,9 @@ pub fn enable_module(id: &str) -> Result<()> {
         })?;
         info!("Module {id} enabled");
 
-        // a module enabled again is the first one to blame if the next boot fails
         let guard_path = Path::new(defs::BOOT_GUARD_PATH);
         let mut guard = boot_guard::load(guard_path);
-        boot_guard::add_suspect(&mut guard, id);
+        boot_guard::on_module_enabled(&mut guard, id);
         if let Err(e) = boot_guard::save(guard_path, &guard) {
             warn!("boot guard: save state failed: {e}");
         }

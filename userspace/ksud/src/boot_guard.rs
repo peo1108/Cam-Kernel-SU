@@ -134,8 +134,11 @@ pub fn on_boot_completed(state: &mut BootGuardState) {
     state.suspects.clear();
 }
 
-pub fn add_suspect(state: &mut BootGuardState, id: &str) {
+/// A module enabled again is the first one to blame if the next boot fails,
+/// and is no longer the boot guard's to report.
+pub fn on_module_enabled(state: &mut BootGuardState, id: &str) {
     insert_sorted(&mut state.suspects, id);
+    state.auto_disabled.retain(|known| known != id);
 }
 
 /// `still_disabled` filters out the modules the user has enabled again since.
@@ -243,6 +246,18 @@ mod tests {
         assert_eq!(s.fail_count, 0);
         assert!(s.suspects.is_empty());
         assert_eq!(s.auto_disabled, ids(&["x"]));
+    }
+
+    #[test]
+    fn enabling_forgets_auto_disabled() {
+        let mut s = BootGuardState {
+            auto_disabled: ids(&["a", "b"]),
+            ..Default::default()
+        };
+        on_module_enabled(&mut s, "a");
+        assert_eq!(s.suspects, ids(&["a"]));
+        // a later manual disable must not read as the boot guard's doing
+        assert_eq!(s.auto_disabled, ids(&["b"]));
     }
 
     #[test]

@@ -22,6 +22,9 @@ import me.weishu.kernelsu.core.tasks.BootKernelVersion
 import me.weishu.kernelsu.core.tasks.ExtractImage
 import me.weishu.kernelsu.core.tasks.ProbeResult
 import me.weishu.kernelsu.core.utils.DataSourceChannel
+import me.weishu.kernelsu.data.model.BootGuardStatus
+import me.weishu.kernelsu.data.model.ModuleConflict
+import me.weishu.kernelsu.data.model.parseModuleConflicts
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.screen.install.SeedApp
 import me.weishu.kernelsu.ui.screen.install.isValidSeedPackageName
@@ -140,6 +143,22 @@ fun listModules(): String {
         .add("${getKsuDaemonPath()} module list").to(ArrayList(), null).exec().out
     return out.joinToString("\n").ifBlank { "[]" }
 }
+
+private fun ksudStdout(args: String): String {
+    val out = getRootShell().newJob()
+        .add("${getKsuDaemonPath()} $args").to(ArrayList(), null).exec().out
+    return out.joinToString("\n")
+}
+
+fun getBootGuardStatus(): BootGuardStatus = BootGuardStatus.parse(ksudStdout("boot-guard status"))
+
+fun clearBootGuard(): Boolean {
+    val result = execKsud("boot-guard clear", true)
+    Log.i(TAG, "boot-guard clear result: $result")
+    return result
+}
+
+fun listModuleConflicts(): List<ModuleConflict> = parseModuleConflicts(ksudStdout("module conflicts"))
 
 fun getModuleCount(): Int {
     val result = listModules()

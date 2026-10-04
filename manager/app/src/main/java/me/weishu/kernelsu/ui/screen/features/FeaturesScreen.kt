@@ -3,7 +3,11 @@ package me.weishu.kernelsu.ui.screen.features
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.weishu.kernelsu.ui.viewmodel.FeaturesViewModel
@@ -18,6 +22,15 @@ fun FeaturesPager(
 
     LaunchedEffect(isCurrentPage) {
         if (isCurrentPage) viewModel.refresh()
+    }
+
+    // back from the background: the boot guard or another app may have changed things
+    val latestIsCurrentPage by rememberUpdatedState(isCurrentPage)
+    val initialResumeHandled = rememberSaveable { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        if (initialResumeHandled.value && latestIsCurrentPage) viewModel.refresh()
+        initialResumeHandled.value = true
+        onPauseOrDispose { }
     }
 
     val actions = FeaturesActions(

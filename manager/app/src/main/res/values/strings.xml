@@ -444,4 +444,22 @@
     <string name="features_conflict_replace">Folder %1$s (replaced as a whole): %2$s</string>
     <string name="features_conflict_prop">Prop %1$s: %2$s</string>
     <string name="features_bootloader">Auto hide bootloader</string>
+    <string name="features_bootloader_on">On · nothing reveals the bootloader</string>
+    <string name="features_bootloader_clean">Nothing reveals the bootloader</string>
+    <string name="features_bootloader_leaks">%d item(s) reveal the bootloader</string>
+    <string name="features_bootloader_enable_summary">Rewrites system properties so the device reports a locked, verified bootloader. Turning it off takes effect after a reboot.</string>
+    <string name="features_bootloader_props">System properties</string>
+    <string name="features_bootloader_bootconfig">Boot arguments (reported only)</string>
+    <string name="features_bootloader_fine">%d entries look like a locked device</string>
+    <string name="features_attestation">Key attestation (what banking apps see)</string>
+    <string name="features_attestation_check">Check attestation</string>
+    <string name="features_attestation_checking">Checking…</string>
+    <string name="features_attestation_unreadable">Could not read the attestation certificate</string>
+    <string name="features_attestation_level">Security level: %s</string>
+    <string name="features_attestation_software">Software</string>
+    <string name="features_attestation_locked">Bootloader locked: %s</string>
+    <string name="features_attestation_yes">yes</string>
+    <string name="features_attestation_no">no</string>
+    <string name="features_attestation_state">Verified boot: %s</string>
+    <string name="features_attestation_layer2">Apps that check the certificate still see an unlocked device. Properties cannot change this; it needs the keystore layer, which is not built yet.</string>
 </resources>

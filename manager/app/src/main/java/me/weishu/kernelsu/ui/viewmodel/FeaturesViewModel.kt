@@ -12,10 +12,13 @@ import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.screen.features.FeaturesUiState
+import me.weishu.kernelsu.ui.util.checkAttestation as readAttestation
 import me.weishu.kernelsu.ui.util.clearBootGuard
 import me.weishu.kernelsu.ui.util.getBootGuardStatus
+import me.weishu.kernelsu.ui.util.getHideBootloaderStatus
 import me.weishu.kernelsu.ui.util.listModuleConflicts
 import me.weishu.kernelsu.ui.util.setBootGuardConfig
+import me.weishu.kernelsu.ui.util.setHideBootloader as writeHideBootloader
 import me.weishu.kernelsu.ui.util.toggleModule
 
 class FeaturesViewModel(
@@ -38,9 +41,11 @@ class FeaturesViewModel(
             val (bootGuard, conflicts) = withContext(Dispatchers.IO) {
                 getBootGuardStatus() to if (detection) listModuleConflicts() else emptyList()
             }
+            val hideBootloader = withContext(Dispatchers.IO) { getHideBootloaderStatus() }
             _uiState.update {
                 it.copy(
                     bootGuard = bootGuard,
+                    hideBootloader = hideBootloader,
                     allConflicts = conflicts,
                     conflictDetection = detection,
                     conflictWarnOnFlash = settingsRepo.conflictWarnOnFlash,
@@ -91,6 +96,25 @@ class FeaturesViewModel(
     }
 
     fun rescanConflicts() = refresh()
+
+    fun setHideBootloader(enabled: Boolean) {
+        _uiState.update { it.copy(hideBootloader = it.hideBootloader.copy(enabled = enabled)) }
+        viewModelScope.launch {
+            val status = withContext(Dispatchers.IO) {
+                writeHideBootloader(enabled)
+                getHideBootloaderStatus()
+            }
+            _uiState.update { it.copy(hideBootloader = status) }
+        }
+    }
+
+    fun checkAttestation() {
+        _uiState.update { it.copy(checkingAttestation = true) }
+        viewModelScope.launch {
+            val info = withContext(Dispatchers.IO) { readAttestation() }
+            _uiState.update { it.copy(attestation = info, attestationChecked = true, checkingAttestation = false) }
+        }
+    }
 
     /** Run a ksud command, then read the boot guard back so the page shows what ksud stored. */
     private fun applyBootGuard(command: () -> Boolean) {

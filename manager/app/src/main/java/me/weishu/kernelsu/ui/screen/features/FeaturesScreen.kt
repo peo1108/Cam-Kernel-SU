@@ -30,6 +30,8 @@ fun FeaturesPager(
         onSetConflictWarnOnFlash = viewModel::setConflictWarnOnFlash,
         onSetConflictIncludeProps = viewModel::setConflictIncludeProps,
         onRescanConflicts = viewModel::rescanConflicts,
+        onSetHideBootloader = viewModel::setHideBootloader,
+        onCheckAttestation = viewModel::checkAttestation,
     )
 
     FeaturesPagerMiuix(uiState, actions, bottomInnerPadding)

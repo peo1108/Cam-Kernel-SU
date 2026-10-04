@@ -38,6 +38,17 @@ jobs:
         # Full history: the module version is 30000 + commit count.
         fetch-depth: 0
 
+    - name: Use main's kernel for the LKM on the sfs branch
+      run: |
+        # The sfs branch's kernel/ only builds into a GKI Image with SUSFS. The LKM
+        # its Manager bundles comes from main; history stays sfs's, so the module
+        # version (30000 + commit count) still matches the Manager.
+        if [ -f sfs/README.md ]; then
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --no-tags origin main
+          git checkout FETCH_HEAD -- kernel
+        fi
+
     - name: Build kernelsu.ko
       env:
         EXPECTED_SIZE2: ${{ inputs.expected_size2 }}

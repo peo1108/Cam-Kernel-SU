@@ -3,6 +3,18 @@ name: Build SFS kernel (GKI + KernelSU + SUSFS)
 # it as an AnyKernel3 zip. Users root with LKM first and flash this zip from
 # the Manager. Only GKI 6.1 and newer are supported.
 on:
+  workflow_call:
+    inputs:
+      kmi:
+        description: 'KMI to build (empty = all verified)'
+        required: false
+        default: ''
+        type: string
+      branch:
+        description: 'GKI manifest branch override'
+        required: false
+        default: ''
+        type: string
   workflow_dispatch:
     inputs:
       kmi:

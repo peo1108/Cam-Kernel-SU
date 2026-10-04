@@ -9,9 +9,13 @@ jobs:
   build-manager:
     uses: ./.github/workflows/build-manager.yml
     secrets: inherit
+  # GKI + KernelSU + SUSFS AnyKernel3 zips; the Manager's KernelSU GKI card downloads these
+  build-sfs-kernel:
+    uses: ./.github/workflows/build-sfs-kernel.yml
   release:
     needs:
       - build-manager
+      - build-sfs-kernel
     runs-on: ubuntu-latest
     # Creating the release needs write access; the default token can be read-only on forks.
     permissions:
@@ -73,3 +77,4 @@ jobs:
             lkm/lkm-*_kernelsu.ko
             ksud/ksud-*
             ksuinit/*
+            KernelSU-SFS-*/KernelSU-SFS-*.zip

@@ -29,6 +29,8 @@ pub struct BootGuardState {
     pub threshold: u32,
     /// disable every enabled module instead of the suspects first
     pub disable_all: bool,
+    /// a trigger the user has not been notified about yet
+    pub notify_pending: bool,
 }
 
 impl Default for BootGuardState {
@@ -41,6 +43,7 @@ impl Default for BootGuardState {
             enabled: true,
             threshold: BOOT_GUARD_THRESHOLD,
             disable_all: false,
+            notify_pending: false,
         }
     }
 }
@@ -106,6 +109,7 @@ pub fn load(path: &Path) -> BootGuardState {
             .and_then(|n| u32::try_from(n).ok())
             .map_or(BOOT_GUARD_THRESHOLD, clamp_threshold),
         disable_all: value["mode"].as_str() == Some("all"),
+        notify_pending: value["notifyPending"].as_bool().unwrap_or(false),
     }
 }
 
@@ -120,6 +124,7 @@ pub fn save(path: &Path, state: &BootGuardState) -> Result<()> {
         "enabled": state.enabled,
         "threshold": state.threshold,
         "mode": mode_name(state.disable_all),
+        "notifyPending": state.notify_pending,
     });
     let tmp = path.with_extension("json.tmp");
     let mut file = std::fs::File::create(&tmp)
@@ -177,6 +182,7 @@ pub fn on_boot_start(
     state.fail_count = 0;
     state.suspects.clear();
     state.last_trigger = Some(now);
+    state.notify_pending = true;
     Decision::Disable(targets)
 }
 
@@ -198,6 +204,37 @@ pub const fn set_config(
     }
     if let Some(disable_all) = disable_all {
         state.disable_all = disable_all;
+    }
+}
+
+/// The modules to tell the user about, once per trigger.
+pub fn take_notice(state: &mut BootGuardState) -> Option<Vec<String>> {
+    if !state.notify_pending {
+        return None;
+    }
+    state.notify_pending = false;
+    Some(state.auto_disabled.clone())
+}
+
+/// Notification title and body; ksud has no resources, so the two languages live here.
+pub fn notice_text(ids: &[String], vietnamese: bool) -> (String, String) {
+    let list = ids.join(", ");
+    if vietnamese {
+        (
+            "SU Kernel: chống bootloop".to_owned(),
+            format!(
+                "Đã tắt {} module vì máy khởi động lỗi liên tục: {list}",
+                ids.len()
+            ),
+        )
+    } else {
+        (
+            "SU Kernel: anti bootloop".to_owned(),
+            format!(
+                "Disabled {} module(s) after repeated failed boots: {list}",
+                ids.len()
+            ),
+        )
     }
 }
 
@@ -346,6 +383,7 @@ mod tests {
             enabled: false,
             threshold: 4,
             disable_all: true,
+            notify_pending: true,
         };
         save(&p, &s).unwrap();
         assert_eq!(load(&p), s);
@@ -460,6 +498,42 @@ mod tests {
         assert_eq!(v["enabled"], serde_json::json!(false));
         assert_eq!(v["threshold"], serde_json::json!(4));
         assert_eq!(v["mode"], serde_json::json!("all"));
+    }
+
+    #[test]
+    fn trigger_queues_one_notice() {
+        let mut s = BootGuardState {
+            fail_count: 2,
+            ..Default::default()
+        };
+        assert_eq!(take_notice(&mut s), None);
+        on_boot_start(&mut s, &[], &ids(&["a", "b"]), 1);
+        assert_eq!(take_notice(&mut s), Some(ids(&["a", "b"])));
+        // shown once
+        assert_eq!(take_notice(&mut s), None);
+    }
+
+    #[test]
+    fn notice_survives_save_load() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("bootguard.json");
+        let mut s = BootGuardState {
+            fail_count: 2,
+            ..Default::default()
+        };
+        on_boot_start(&mut s, &[], &ids(&["a"]), 1);
+        save(&p, &s).unwrap();
+        assert_eq!(take_notice(&mut load(&p)), Some(ids(&["a"])));
+    }
+
+    #[test]
+    fn notice_text_follows_language() {
+        let (title, body) = notice_text(&ids(&["a", "b"]), true);
+        assert_eq!(title, "SU Kernel: chống bootloop");
+        assert_eq!(body, "Đã tắt 2 module vì máy khởi động lỗi liên tục: a, b");
+        let (title, body) = notice_text(&ids(&["a"]), false);
+        assert_eq!(title, "SU Kernel: anti bootloop");
+        assert_eq!(body, "Disabled 1 module(s) after repeated failed boots: a");
     }
 
     #[test]

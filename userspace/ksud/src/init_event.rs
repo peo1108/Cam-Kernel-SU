@@ -160,6 +160,36 @@ fn run_boot_guard(updated: &[String]) {
     }
 }
 
+/// Posts a system notification as the shell user: notifications from uid 0 are dropped.
+fn notify_boot_guard(ids: &[String]) {
+    use std::os::unix::process::CommandExt;
+
+    let vietnamese = ["persist.sys.locale", "ro.product.locale"]
+        .iter()
+        .find_map(|prop| utils::getprop(prop).filter(|v| !v.is_empty()))
+        .is_some_and(|locale| locale.starts_with("vi"));
+    let (title, body) = boot_guard::notice_text(ids, vietnamese);
+    // the notification service can still be starting right after boot-completed
+    for attempt in 0..3 {
+        let posted = std::process::Command::new("cmd")
+            .args(["notification", "post", "-S", "bigtext", "-t", &title])
+            .args(["su_kernel_boot_guard", &body])
+            .uid(2000)
+            .gid(2000)
+            .stdout(std::process::Stdio::null())
+            .status()
+            .is_ok_and(|status| status.success());
+        if posted {
+            info!("boot guard: notified about {ids:?}");
+            return;
+        }
+        if attempt < 2 {
+            std::thread::sleep(std::time::Duration::from_secs(5));
+        }
+    }
+    warn!("boot guard: could not post the notification");
+}
+
 pub fn run_stage(stage: &str, block: bool) {
     utils::umask(0);
 
@@ -213,8 +243,12 @@ pub fn on_boot_completed() {
     let path = Path::new(defs::BOOT_GUARD_PATH);
     let mut state = boot_guard::load(path);
     boot_guard::on_boot_completed(&mut state);
+    let notice = boot_guard::take_notice(&mut state);
     if let Err(e) = boot_guard::save(path, &state) {
         warn!("boot guard: save state failed: {e}");
+    }
+    if let Some(ids) = notice {
+        notify_boot_guard(&ids);
     }
 
     run_stage("boot-completed", false);

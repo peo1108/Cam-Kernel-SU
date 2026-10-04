@@ -1,6 +1,9 @@
 //! Flash an AnyKernel3 zip from a running system, the way kernel flasher
-//! apps do: back up the live boot partition, then run the zip's
+//! apps do: back up the target boot partition, then run the zip's
 //! `update-binary` in boot mode with `OUTFD` pointing at stdout.
+//!
+//! With `inactive`, AnyKernel3 flashes the other slot (`SLOT_SELECT=inactive`)
+//! and the device is switched to it, for installing right after an OTA.
 
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Write};
@@ -37,10 +40,10 @@ fn extract_update_binary(zip_path: &Path, dest: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Copies the live boot partition so a bad kernel can be undone with
-/// `fastboot flash boot <backup>`.
-fn backup_boot() -> Result<PathBuf> {
-    let slot_suffix = boot_patch::get_slot_suffix(false);
+/// Copies the boot partition about to be flashed so a bad kernel can be
+/// undone with `fastboot flash boot<slot> <backup>`.
+fn backup_boot(inactive: bool) -> Result<PathBuf> {
+    let slot_suffix = boot_patch::get_slot_suffix(inactive);
     let partition = PathBuf::from(format!("/dev/block/by-name/boot{slot_suffix}"));
     ensure!(
         partition.exists(),
@@ -60,16 +63,27 @@ fn backup_boot() -> Result<PathBuf> {
     Ok(backup)
 }
 
-pub fn flash(zip: &str, no_backup: bool) -> Result<()> {
+pub fn flash(zip: &str, no_backup: bool, inactive: bool) -> Result<()> {
     let zip_path = fs::canonicalize(zip).with_context(|| format!("realpath: {zip} failed"))?;
     check_zip(&zip_path)?;
 
     let mut stdout = io::stdout();
+    if inactive {
+        ensure!(
+            !boot_patch::get_slot_suffix(false).is_empty(),
+            "this device has no A/B slots"
+        );
+        writeln!(
+            stdout,
+            "- Target: inactive slot {}",
+            boot_patch::get_slot_suffix(true)
+        )?;
+    }
     if no_backup {
         writeln!(stdout, "- Skipping boot backup")?;
     } else {
-        writeln!(stdout, "- Backing up current boot partition")?;
-        let backup = backup_boot()?;
+        writeln!(stdout, "- Backing up boot partition")?;
+        let backup = backup_boot(inactive)?;
         writeln!(stdout, "- Boot backup: {}", backup.display())?;
     }
 
@@ -96,6 +110,7 @@ pub fn flash(zip: &str, no_backup: bool) -> Result<()> {
         .env("OUTFD", "1")
         .env("BOOTMODE", "true")
         .env("KSU", "true")
+        .env("SLOT_SELECT", if inactive { "inactive" } else { "active" })
         .stdout(Stdio::piped())
         .spawn()
         .context("failed to start update-binary")?;
@@ -118,6 +133,11 @@ pub fn flash(zip: &str, no_backup: bool) -> Result<()> {
     let _ = fs::remove_dir_all(&work_dir);
     if !status.success() {
         bail!("AnyKernel3 failed with {status}");
+    }
+
+    if inactive {
+        writeln!(stdout, "- Switching to the inactive slot")?;
+        boot_patch::post_ota()?;
     }
 
     writeln!(stdout, "- Done, reboot to use the new kernel")?;

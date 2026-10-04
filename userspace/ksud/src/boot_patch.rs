@@ -278,7 +278,7 @@ mod android {
         PathBuf::from(format!("/dev/block/by-name/{name}{slot_suffix}"))
     }
 
-    pub(super) fn post_ota() -> Result<()> {
+    pub fn post_ota() -> Result<()> {
         use crate::assets::BOOTCTL_PATH;
         use crate::defs::ADB_DIR;
         let status = Command::new(BOOTCTL_PATH).arg("hal-info").status()?;

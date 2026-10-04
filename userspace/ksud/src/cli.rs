@@ -182,9 +182,13 @@ enum Commands {
         /// AnyKernel3 zip path
         zip: String,
 
-        /// Do not back up the current boot partition first
+        /// Do not back up the boot partition first
         #[arg(long, default_value = "false")]
         no_backup: bool,
+
+        /// Flash the inactive slot and switch to it (after an OTA)
+        #[arg(long, default_value = "false")]
+        inactive: bool,
     },
 }
 
@@ -922,7 +926,11 @@ pub fn run() -> Result<()> {
         Commands::Susfs { command } => match command {
             Susfs::Info { json } => crate::susfs::print_info(json),
         },
-        Commands::FlashAk3 { zip, no_backup } => crate::anykernel::flash(&zip, no_backup),
+        Commands::FlashAk3 {
+            zip,
+            no_backup,
+            inactive,
+        } => crate::anykernel::flash(&zip, no_backup, inactive),
         Commands::Initrc { command } => match command {
             Initrc::Refresh => regenerate_preinit_rc(),
         },

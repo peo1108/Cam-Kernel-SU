@@ -1,3 +1,4 @@
+use crate::boot_guard::{self, Decision};
 use crate::module::{handle_updated_modules, prune_modules};
 use crate::utils::is_safe_mode;
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
 use anyhow::{Context, Result};
 use log::{error, info, warn};
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn on_post_data_fs() -> Result<()> {
     if let Err(e) = ksucalls::ensure_uapi_version_matched() {
@@ -59,9 +61,13 @@ pub fn on_post_data_fs() -> Result<()> {
         return Ok(());
     }
 
-    if let Err(e) = handle_updated_modules() {
+    let updated = handle_updated_modules().unwrap_or_else(|e| {
         warn!("handle updated modules failed: {e}");
-    }
+        Vec::new()
+    });
+
+    // before prune and the preinit rc refresh, so a disabled module stays out of both
+    run_boot_guard(&updated);
 
     if let Err(e) = prune_modules() {
         warn!("prune modules failed: {e}");
@@ -122,6 +128,35 @@ pub fn on_post_data_fs() -> Result<()> {
     Ok(())
 }
 
+fn run_boot_guard(updated: &[String]) {
+    let path = Path::new(defs::BOOT_GUARD_PATH);
+    let mut state = boot_guard::load(path);
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    let decision = boot_guard::on_boot_start(
+        &mut state,
+        updated,
+        &crate::module::enabled_module_ids(),
+        now,
+    );
+    // persist the count before touching modules, so a crash below still counts
+    if let Err(e) = boot_guard::save(path, &state) {
+        warn!("boot guard: save state failed: {e}");
+    }
+    if let Decision::Disable(ids) = decision {
+        warn!(
+            "boot guard: boot did not complete {} times, disabling {ids:?}",
+            state.threshold
+        );
+        for id in &ids {
+            if let Err(e) = crate::module::disable_module(id) {
+                warn!("boot guard: disable {id} failed: {e}");
+            }
+        }
+    }
+}
+
 pub fn run_stage(stage: &str, block: bool) {
     utils::umask(0);
 
@@ -168,6 +203,13 @@ pub fn on_boot_completed() {
 
     ksucalls::report_boot_complete();
     info!("on_boot_completed triggered!");
+
+    let path = Path::new(defs::BOOT_GUARD_PATH);
+    let mut state = boot_guard::load(path);
+    boot_guard::on_boot_completed(&mut state);
+    if let Err(e) = boot_guard::save(path, &state) {
+        warn!("boot guard: save state failed: {e}");
+    }
 
     run_stage("boot-completed", false);
 }

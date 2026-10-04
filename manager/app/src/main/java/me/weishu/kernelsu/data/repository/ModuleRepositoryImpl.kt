@@ -4,8 +4,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.model.Module
 import me.weishu.kernelsu.data.model.ModuleUpdateInfo
+import me.weishu.kernelsu.data.model.forModule
+import me.weishu.kernelsu.data.model.visible
 import me.weishu.kernelsu.ksuApp
+import me.weishu.kernelsu.ui.util.getBootGuardStatus
 import me.weishu.kernelsu.ui.util.isNetworkAvailable
+import me.weishu.kernelsu.ui.util.listModuleConflicts
 import me.weishu.kernelsu.ui.util.listModules
 import me.weishu.kernelsu.ui.util.module.sanitizeVersionString
 import okhttp3.Request
@@ -22,12 +26,21 @@ class ModuleRepositoryImpl : ModuleRepository {
         runCatching {
             val result = listModules()
             val array = JSONArray(result)
+            // one ksud call each for the whole list, not one per module
+            val autoDisabled = getBootGuardStatus().autoDisabled.toSet()
+            val settings = SettingsRepositoryImpl()
+            val conflicts = if (settings.conflictDetection) {
+                listModuleConflicts().visible(detection = true, includeProps = settings.conflictIncludeProps)
+            } else {
+                emptyList()
+            }
             (0 until array.length())
                 .asSequence()
                 .map { array.getJSONObject(it) }
                 .map { obj ->
+                    val id = obj.getString("id")
                     Module(
-                        id = obj.getString("id"),
+                        id = id,
                         name = obj.optString("name"),
                         author = obj.optString("author", "Unknown"),
                         version = obj.optString("version", "Unknown"),
@@ -41,7 +54,9 @@ class ModuleRepositoryImpl : ModuleRepository {
                         hasActionScript = obj.optBoolean("action"),
                         metamodule = (obj.optInt("metamodule") != 0) || obj.optBoolean("metamodule"),
                         actionIconPath = obj.optString("actionIcon").takeIf { it.isNotBlank() },
-                        webUiIconPath = obj.optString("webuiIcon").takeIf { it.isNotBlank() }
+                        webUiIconPath = obj.optString("webuiIcon").takeIf { it.isNotBlank() },
+                        autoDisabled = id in autoDisabled,
+                        conflicts = conflicts.forModule(id),
                     )
                 }.toList()
         }

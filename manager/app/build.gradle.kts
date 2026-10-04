@@ -193,6 +193,8 @@ dependencies {
     implementation(libs.filament.gltfio)
     implementation(libs.filament.utils)
     testImplementation(libs.junit)
+    // the android.jar org.json is a stub in local unit tests
+    testImplementation(libs.json.org)
     implementation(libs.androidx.core.splashscreen)
 
     implementation(platform(libs.androidx.compose.bom))

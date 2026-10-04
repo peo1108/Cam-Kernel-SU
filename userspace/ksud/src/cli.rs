@@ -129,6 +129,12 @@ enum Commands {
     /// Always operates on a boot image; never selects init_boot or vendor_boot.
     BootPatchV2(BootPatchV2Args),
 
+    /// Inspect the boot guard that disables modules after failed boots
+    BootGuard {
+        #[command(subcommand)]
+        command: BootGuard,
+    },
+
     /// Show boot information
     BootInfo {
         #[command(subcommand)]
@@ -273,6 +279,30 @@ enum Sepolicy {
 }
 
 #[derive(clap::Subcommand, Debug)]
+enum BootGuard {
+    /// Print the boot guard state and the modules it disabled as JSON
+    Status,
+
+    /// Forget the modules the boot guard disabled
+    Clear,
+
+    /// Change the boot guard settings
+    Set {
+        /// turn the boot guard on or off
+        #[arg(long)]
+        enabled: Option<bool>,
+
+        /// boot attempt that triggers the guard (2-5)
+        #[arg(long)]
+        threshold: Option<u32>,
+
+        /// what to disable when it triggers
+        #[arg(long, value_parser = ["suspects", "all"])]
+        mode: Option<String>,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
 enum Module {
     /// Install module <ZIP>
     Install {
@@ -312,6 +342,9 @@ enum Module {
 
     /// list all modules
     List,
+
+    /// list files and props that several modules override
+    Conflicts,
 
     /// manage module configuration
     Config {
@@ -532,6 +565,16 @@ pub fn run() -> Result<()> {
 
         Commands::SoftReboot => crate::soft_reboot::soft_reboot(),
 
+        Commands::BootGuard { command } => match command {
+            BootGuard::Status => module::boot_guard_status(),
+            BootGuard::Clear => module::boot_guard_clear(),
+            BootGuard::Set {
+                enabled,
+                threshold,
+                mode,
+            } => module::boot_guard_set(enabled, threshold, mode.map(|m| m == "all")),
+        },
+
         Commands::Insmod { module, params } => debug::insmod(&module, &params),
 
         Commands::Module { command } => {
@@ -544,6 +587,7 @@ pub fn run() -> Result<()> {
                 Module::Disable { id } => module::disable_module(&id),
                 Module::Action { id } => module::run_action(&id),
                 Module::List => module::list_modules(),
+                Module::Conflicts => module::list_module_conflicts(),
                 Module::Config { internal, command } => {
                     let module_id = match internal {
                         Some(internal_name) => format!("internal.{internal_name}"),

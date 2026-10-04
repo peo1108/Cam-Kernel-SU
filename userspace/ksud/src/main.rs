@@ -12,6 +12,7 @@
 
 mod allow;
 mod assets;
+mod boot_guard;
 mod boot_patch;
 #[cfg(target_os = "android")]
 mod cli;
@@ -38,6 +39,7 @@ mod metamodule;
 mod module;
 #[cfg(target_os = "android")]
 mod module_config;
+mod module_conflicts;
 #[cfg(target_os = "android")]
 mod profile;
 #[cfg(target_os = "android")]

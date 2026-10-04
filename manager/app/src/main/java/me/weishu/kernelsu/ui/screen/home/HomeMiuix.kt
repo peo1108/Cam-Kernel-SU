@@ -167,6 +167,9 @@ fun HomePagerMiuix(
                         if (state.showRootWarning) {
                             WarningCard(stringResource(id = R.string.grant_root_failed))
                         }
+                        if (state.showBootGuardNotice) {
+                            BootGuardNotice(state = state, actions = actions)
+                        }
                         StatusCard(
                             state = state,
                             actions = actions,

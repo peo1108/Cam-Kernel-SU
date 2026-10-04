@@ -868,6 +868,7 @@ fun ModuleItem(
                     color = colorScheme.onSurfaceVariantSummary,
                     textDecoration = textDecoration
                 )
+                ModuleStatusBadges(module = module)
             }
             Switch(
                 enabled = !module.update,

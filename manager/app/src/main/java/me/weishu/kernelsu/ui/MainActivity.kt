@@ -93,6 +93,7 @@ import me.weishu.kernelsu.ui.screen.executemoduleaction.ExecuteModuleActionScree
 import me.weishu.kernelsu.ui.screen.flash.FlashScreen
 import me.weishu.kernelsu.ui.screen.home.HomePager
 import me.weishu.kernelsu.ui.screen.gki.GkiInstallScreen
+import me.weishu.kernelsu.ui.screen.susfs.SusfsSettingsScreen
 import me.weishu.kernelsu.ui.screen.install.InstallScreen
 import me.weishu.kernelsu.ui.screen.module.ModulePager
 import me.weishu.kernelsu.ui.screen.modulerepo.ModuleRepoDetailScreen
@@ -265,6 +266,7 @@ class MainActivity : ComponentActivity() {
                             entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }
                             entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage { InstallScreen() } }
                             entry<Route.GkiInstall>(swipeDismiss = swipeDismiss) { GlassPage { GkiInstallScreen() } }
+                            entry<Route.SusfsSettings>(swipeDismiss = swipeDismiss) { GlassPage { SusfsSettingsScreen() } }
                             entry<Route.Flash>(swipeDismiss = swipeDismiss) { key -> GlassPage { FlashScreen(key.flashIt) } }
                             entry<Route.ExecuteModuleAction>(swipeDismiss = swipeDismiss) { key ->
                                 GlassPage {

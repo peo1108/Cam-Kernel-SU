@@ -151,7 +151,7 @@ fun listModules(): String {
     return out.joinToString("\n").ifBlank { "[]" }
 }
 
-private fun ksudStdout(args: String): String {
+internal fun ksudStdout(args: String): String {
     val out = getRootShell().newJob()
         .add("${getKsuDaemonPath()} $args").to(ArrayList(), null).exec().out
     return out.joinToString("\n")

@@ -326,6 +326,17 @@ private fun AdvancedCard(state: GkiInstallUiState, actions: GkiInstallActions) {
                     checked = state.backupBoot,
                     onCheckedChange = actions.onSetBackupBoot,
                 )
+                val susfs = state.status.susfs
+                BasicComponent(
+                    title = stringResource(R.string.susfs_settings),
+                    summary = if (susfs != null) {
+                        stringResource(R.string.susfs_settings_summary, susfs.version)
+                    } else {
+                        stringResource(R.string.gki_susfs_none)
+                    },
+                    onClick = actions.onOpenSusfsSettings,
+                    endActions = { Chevron() },
+                )
             }
         }
     }

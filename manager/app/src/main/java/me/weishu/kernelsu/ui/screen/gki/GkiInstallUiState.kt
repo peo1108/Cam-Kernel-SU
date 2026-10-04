@@ -75,6 +75,7 @@ data class GkiInstallActions(
     val onToggleAdvanced: () -> Unit,
     val onSetBackupBoot: (Boolean) -> Unit,
     val onToggleRestore: () -> Unit,
+    val onOpenSusfsSettings: () -> Unit,
     val onRestore: (Ak3Backup) -> Unit,
     val onNext: () -> Unit,
 )

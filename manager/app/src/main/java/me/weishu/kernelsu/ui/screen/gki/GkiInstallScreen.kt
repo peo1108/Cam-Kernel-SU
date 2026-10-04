@@ -104,6 +104,7 @@ fun GkiInstallScreen() {
         onToggleAdvanced = viewModel::toggleAdvanced,
         onSetBackupBoot = viewModel::setBackupBoot,
         onToggleRestore = viewModel::toggleRestore,
+        onOpenSusfsSettings = dropUnlessResumed { navigator.push(Route.SusfsSettings) },
         onRestore = { backup ->
             scope.launch {
                 val result = confirmDialog.awaitConfirm(

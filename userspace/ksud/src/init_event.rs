@@ -1,4 +1,4 @@
-use crate::boot_guard::{self, BOOT_GUARD_THRESHOLD, Decision};
+use crate::boot_guard::{self, Decision};
 use crate::module::{handle_updated_modules, prune_modules};
 use crate::utils::is_safe_mode;
 use crate::{
@@ -145,7 +145,10 @@ fn run_boot_guard(updated: &[String]) {
         warn!("boot guard: save state failed: {e}");
     }
     if let Decision::Disable(ids) = decision {
-        warn!("boot guard: boot did not complete {BOOT_GUARD_THRESHOLD} times, disabling {ids:?}");
+        warn!(
+            "boot guard: boot did not complete {} times, disabling {ids:?}",
+            state.threshold
+        );
         for id in &ids {
             if let Err(e) = crate::module::disable_module(id) {
                 warn!("boot guard: disable {id} failed: {e}");

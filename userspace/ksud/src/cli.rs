@@ -285,6 +285,21 @@ enum BootGuard {
 
     /// Forget the modules the boot guard disabled
     Clear,
+
+    /// Change the boot guard settings
+    Set {
+        /// turn the boot guard on or off
+        #[arg(long)]
+        enabled: Option<bool>,
+
+        /// boot attempt that triggers the guard (2-5)
+        #[arg(long)]
+        threshold: Option<u32>,
+
+        /// what to disable when it triggers
+        #[arg(long, value_parser = ["suspects", "all"])]
+        mode: Option<String>,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -553,6 +568,11 @@ pub fn run() -> Result<()> {
         Commands::BootGuard { command } => match command {
             BootGuard::Status => module::boot_guard_status(),
             BootGuard::Clear => module::boot_guard_clear(),
+            BootGuard::Set {
+                enabled,
+                threshold,
+                mode,
+            } => module::boot_guard_set(enabled, threshold, mode.map(|m| m == "all")),
         },
 
         Commands::Insmod { module, params } => debug::insmod(&module, &params),

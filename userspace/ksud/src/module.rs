@@ -848,6 +848,17 @@ pub fn boot_guard_status() -> Result<()> {
     Ok(())
 }
 
+pub fn boot_guard_set(
+    enabled: Option<bool>,
+    threshold: Option<u32>,
+    disable_all: Option<bool>,
+) -> Result<()> {
+    let path = Path::new(defs::BOOT_GUARD_PATH);
+    let mut state = boot_guard::load(path);
+    boot_guard::set_config(&mut state, enabled, threshold, disable_all);
+    boot_guard::save(path, &state)
+}
+
 pub fn boot_guard_clear() -> Result<()> {
     let path = Path::new(defs::BOOT_GUARD_PATH);
     let mut state = boot_guard::load(path);

@@ -10,16 +10,17 @@
 //! before the very first flash, which is never overwritten.
 
 use std::fs::{self, File};
-use std::io::{self, BufRead, BufReader, Seek, Write};
+use std::io::{self, BufRead, BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail, ensure};
 
-use crate::{assets, boot_patch, defs};
+use crate::{assets, boot_patch, defs, utils};
 
 const UPDATE_BINARY: &str = "META-INF/com/google/android/update-binary";
 const AK3_SCRIPT: &str = "anykernel.sh";
+const AK3_BUSYBOX: &str = "tools/busybox";
 const ORIGINAL_SUFFIX: &str = "-original";
 
 fn backup_dir() -> PathBuf {
@@ -56,6 +57,31 @@ fn check_zip(zip_path: &Path) -> Result<()> {
     ensure!(
         names.contains(&AK3_SCRIPT),
         "{AK3_SCRIPT} is missing, this is not an AnyKernel3 zip"
+    );
+    drop(names);
+    check_tools_arch(archive)
+}
+
+/// Upstream AnyKernel3 ships 32-bit ARM tools, which 64-bit-only devices
+/// cannot run: AK3 would only fail later with "Busybox setup failed".
+fn check_tools_arch(mut archive: zip::ZipArchive<File>) -> Result<()> {
+    let has_32bit_abi =
+        utils::getprop("ro.product.cpu.abilist32").is_some_and(|abis| !abis.trim().is_empty());
+    if has_32bit_abi {
+        return Ok(());
+    }
+    let Ok(mut busybox) = archive.by_name(AK3_BUSYBOX) else {
+        return Ok(());
+    };
+    let mut header = [0u8; 5];
+    if busybox.read_exact(&mut header).is_err() || &header[..4] != b"\x7fELF" {
+        return Ok(());
+    }
+    // EI_CLASS: 1 = 32-bit, 2 = 64-bit
+    ensure!(
+        header[4] != 1,
+        "this AnyKernel3 zip only has 32-bit tools, but this device runs 64-bit apps only; \
+         use a zip built with arm64 tools (e.g. the project's own builds)"
     );
     Ok(())
 }
@@ -222,11 +248,20 @@ pub fn flash(zip: &str, no_backup: bool, inactive: bool) -> Result<()> {
     if let Some(out) = child.stdout.take() {
         for line in BufReader::new(out).lines() {
             let line = line?;
-            let line = line
-                .strip_prefix("ui_print")
-                .map_or(line.as_str(), str::trim_start);
-            // recovery protocol commands that only make sense to a recovery UI
-            if line.starts_with("progress") || line.starts_with("set_progress") {
+            let trimmed = line.trim_start();
+            // AK3 ends every ui_print with a bare "ui_print" line (a recovery newline)
+            if trimmed == "ui_print" {
+                continue;
+            }
+            let line = trimmed.strip_prefix("ui_print ").unwrap_or(line.as_str());
+            // recovery protocol commands and unzip's file listing are noise here
+            if line.starts_with("progress")
+                || line.starts_with("set_progress")
+                || line.starts_with("Archive:")
+                || trimmed.starts_with("inflating:")
+                || trimmed.starts_with("creating:")
+                || trimmed.starts_with("extracting:")
+            {
                 continue;
             }
             writeln!(stdout, "{line}")?;

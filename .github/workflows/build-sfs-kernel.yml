@@ -54,6 +54,14 @@ jobs:
           # susfs4ksu patches target a GKI release branch, not the moving tip:
           # pin each KMI to a release branch its 50_add_susfs patch applies to cleanly.
           # Only verified KMIs are built by default. susfs4ksu has no 6.18 branch yet.
+          # kernel/common commit to build instead of the branch head (empty = head)
+          rev_for() {
+            case "$1" in
+              # 6.12.30-android16-5-g1750f757fabe, the GKI these devices ship: same commit, so every
+              # stock module, system_dlkm's GKI modules included, matches
+              android16-6.12) echo 1750f757fabea014ecc59d327c0c9d3c15ab1e6d ;;
+            esac
+          }
           branch_for() {
             case "$1" in
               # KMI generation 5 (6.12.30-android16-5 devices); 2025-12 and later are generation 6
@@ -69,7 +77,9 @@ jobs:
           fi
           include=$(for k in $kmis; do
             b="${BRANCH_INPUT:-$(branch_for "$k")}"
-            printf '{"kmi":"%s","branch":"%s"}\n' "$k" "$b"
+            r="$(rev_for "$k")"
+            [ -n "$BRANCH_INPUT" ] && r=""
+            printf '{"kmi":"%s","branch":"%s","rev":"%s"}\n' "$k" "$b" "$r"
           done | jq -sc .)
           echo "include=$include" >> "$GITHUB_OUTPUT"
 
@@ -84,6 +94,7 @@ jobs:
     env:
       KMI: ${{ matrix.kmi }}
       GKI_BRANCH: ${{ matrix.branch }}
+      COMMON_REV: ${{ matrix.rev }}
     steps:
       - name: Free disk space
         run: |
@@ -115,6 +126,11 @@ jobs:
           mkdir gki && cd gki
           repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "$GKI_BRANCH" --repo-rev=v2.16
           repo --trace sync -c -j"$(nproc --all)" --no-tags --fail-fast
+          if [ -n "$COMMON_REV" ]; then
+            git -C common fetch -q --depth=1 aosp "$COMMON_REV"
+            git -C common checkout -q "$COMMON_REV"
+          fi
+          git -C common log -1 --format='common: %h %s'
           df -h /
 
       - name: Apply SUSFS
@@ -152,6 +168,10 @@ jobs:
           sed -i 's/check_defconfig//' common/build.config.gki
           rm -f common/android/abi_gki_protected_exports_*
           perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' common/BUILD.bazel || true
+          # 6.12 builds the list from protected_module_names_list instead. The device keeps its stock
+          # system_dlkm modules, signed with another key: with the list, rfkill.ko etc. are refused
+          # ("exports protected symbol") and Bluetooth, Wi-Fi and the audio HAL never come up.
+          sed -i '/protected_module_names_list/d' common/BUILD.bazel
           # Drop the -dirty suffix from the kernel release string
           sed -i 's/-dirty//' common/scripts/setlocalversion
           sed -i '/stable_scmversion_cmd/s/-maybe-dirty//' build/kernel/kleaf/impl/stamp.bzl || true

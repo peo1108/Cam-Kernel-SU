@@ -12,15 +12,22 @@
 #
 # Environment:
 #   SRC   repo seen from Linux     WORK  where GKI trees and outputs live
+#   COMMON_REV  kernel/common commit to build instead of the branch head ("" = head)
 #   JOBS  bazel --jobs             LTO   none, like the official android16-6.12 GKI
 set -euo pipefail
 
 KMI="${1:-android16-6.12}"
 case "$KMI" in
   # KMI generation 5, which 6.12.30-android16-5 devices run; 2025-12 and later are generation 6
-  android16-6.12) DEFAULT_BRANCH=common-android16-6.12-2025-09 ;;
+  android16-6.12)
+    DEFAULT_BRANCH=common-android16-6.12-2025-09
+    # 6.12.30-android16-5-g1750f757fabe (ab13938768), the GKI these devices ship: building the
+    # very same commit keeps every stock module, system_dlkm's GKI modules included, matching
+    DEFAULT_REV=1750f757fabea014ecc59d327c0c9d3c15ab1e6d
+    ;;
   *) DEFAULT_BRANCH="common-$KMI" ;;
 esac
+COMMON_REV="${COMMON_REV-${DEFAULT_REV:-}}"
 GKI_BRANCH="${2:-$DEFAULT_BRANCH}"
 SRC="${SRC:-/mnt/c/Users/cam/Desktop/Cam Kernel SU}"
 WORK="${WORK:-$HOME/sfs-build}"
@@ -45,12 +52,23 @@ cd "$TREE"
 if [ ! -d .repo ]; then
   repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "$GKI_BRANCH" --repo-rev=v2.16
   repo sync -c -j"$(nproc)" --no-tags --fail-fast
+  git -C common rev-parse HEAD > .sfs-branch-head
 else
   # back to the pristine tree: drop the previous run's SUSFS patch and KernelSU copy
   git -C common reset -q --hard
   git -C common clean -qfdx
   [ -d build/kernel/.git ] && git -C build/kernel reset -q --hard
 fi
+[ -f .sfs-branch-head ] || git -C common rev-parse HEAD > .sfs-branch-head
+if [ -n "$COMMON_REV" ]; then
+  log "common at $COMMON_REV"
+  git -C common cat-file -e "$COMMON_REV^{commit}" 2>/dev/null \
+    || git -C common fetch -q --depth=1 aosp "$COMMON_REV"
+  git -C common checkout -q "$COMMON_REV"
+else
+  git -C common checkout -q "$(cat .sfs-branch-head)"
+fi
+git -C common log -1 --format='common: %h %s'
 
 log "SUSFS"
 SUSFS="$WORK/susfs4ksu-$KMI"
@@ -87,6 +105,10 @@ log "Configure"
 sed -i 's/check_defconfig//' common/build.config.gki
 rm -f common/android/abi_gki_protected_exports_*
 perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' common/BUILD.bazel || true
+# 6.12 builds the list from protected_module_names_list instead. The device keeps its stock
+# system_dlkm modules, signed with another key: with the list, rfkill.ko etc. are refused
+# ("exports protected symbol") and Bluetooth, Wi-Fi and the audio HAL never come up.
+sed -i '/protected_module_names_list/d' common/BUILD.bazel
 sed -i 's/-dirty//' common/scripts/setlocalversion
 sed -i '/stable_scmversion_cmd/s/-maybe-dirty//' build/kernel/kleaf/impl/stamp.bzl || true
 

@@ -11,7 +11,8 @@ its own KMI generation (the `android16-5` in `6.12.30-android16-5-...`). Flashin
 an `android16-6` kernel on an `android16-5` device bootloops: the vendor modules
 fail to load before anything is logged. So each KMI is pinned to a GKI release
 branch of the right generation (`android16-6.12` → `common-android16-6.12-2025-09`,
-generation 5), zip names carry the generation
+generation 5, pinned further to `1750f757fabe`, the exact 6.12.30 commit those
+devices ship so every stock module including system_dlkm's matches), zip names carry the generation
 (`KernelSU-SFS-android16-5-6.12-<ksu>-susfs-<ver>.zip`), the zip refuses a
 running kernel of another generation, and the Manager only offers matching builds.
 Older kernels are refused at build time (`kernel/core/init.c`) and by the zip.
@@ -66,3 +67,11 @@ does not boot: `fastboot flash boot boot<slot>.img`.
 Diff the new `kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch` against
 the previous one and port the changes; it targets upstream KernelSU, not this
 fork, so it does not apply cleanly as is.
+
+## Before flashing a new build
+
+`sfs/build_local.sh` builds the same zip as CI on a local Linux/WSL box. Try a
+new kernel with `fastboot boot` first (nothing is written): repack the device's
+own boot image with the new `Image` and boot it once. GKI module protection is
+turned off (`protected_module_names_list`), since the device keeps its stock
+system_dlkm modules, signed with Google's key rather than ours.

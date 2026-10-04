@@ -11,6 +11,8 @@
 )]
 
 mod allow;
+#[cfg(target_os = "android")]
+mod anykernel;
 mod assets;
 mod boot_patch;
 #[cfg(target_os = "android")]
@@ -53,6 +55,8 @@ mod soft_reboot;
 mod su;
 #[cfg(target_os = "android")]
 mod sulog;
+#[cfg(target_os = "android")]
+mod susfs;
 #[cfg(target_os = "android")]
 mod unload;
 #[cfg(target_os = "android")]

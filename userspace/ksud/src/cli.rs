@@ -158,6 +158,32 @@ enum Commands {
         #[command(subcommand)]
         command: Initrc,
     },
+
+    /// Show SUSFS information from the kernel
+    Susfs {
+        #[command(subcommand)]
+        command: Susfs,
+    },
+
+    /// Flash an AnyKernel3 zip to the current slot
+    FlashAk3 {
+        /// AnyKernel3 zip path
+        zip: String,
+
+        /// Do not back up the current boot partition first
+        #[arg(long, default_value = "false")]
+        no_backup: bool,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Susfs {
+    /// Show SUSFS version, variant and enabled features
+    Info {
+        /// Print as JSON
+        #[arg(long, default_value = "false")]
+        json: bool,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -818,6 +844,10 @@ pub fn run() -> Result<()> {
                 Ok(())
             }
         },
+        Commands::Susfs { command } => match command {
+            Susfs::Info { json } => crate::susfs::print_info(json),
+        },
+        Commands::FlashAk3 { zip, no_backup } => crate::anykernel::flash(&zip, no_backup),
         Commands::Initrc { command } => match command {
             Initrc::Refresh => regenerate_preinit_rc(),
         },

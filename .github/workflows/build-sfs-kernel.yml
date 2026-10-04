@@ -168,7 +168,8 @@ jobs:
 
       - name: Pack AnyKernel3
         run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git ak3
+          # upstream AnyKernel3 only has 32-bit tools; 64-bit-only devices need arm64 ones
+          git clone --depth=1 -b gki-2.0 https://github.com/WildKernels/AnyKernel3.git ak3
           rm -rf ak3/.git ak3/.github ak3/modules ak3/patch ak3/ramdisk ak3/README.md
           cp KernelSU/sfs/anykernel3/anykernel.sh ak3/anykernel.sh
           sed -i \

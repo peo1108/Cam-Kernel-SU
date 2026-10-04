@@ -99,7 +99,8 @@ grep -aqi "kernelsu" dist/Image || { echo "KernelSU is missing from the Image"; 
 log "AnyKernel3"
 AK3="$WORK/ak3"
 rm -rf "$AK3"
-git clone -q --depth=1 https://github.com/osm0sis/AnyKernel3.git "$AK3"
+# upstream AnyKernel3 only has 32-bit tools; 64-bit-only devices need arm64 ones
+git clone -q --depth=1 -b gki-2.0 https://github.com/WildKernels/AnyKernel3.git "$AK3"
 rm -rf "$AK3"/.git "$AK3"/.github "$AK3"/modules "$AK3"/patch "$AK3"/ramdisk "$AK3"/README.md
 cp "$SRC/sfs/anykernel3/anykernel.sh" "$AK3/anykernel.sh"
 sed -i \

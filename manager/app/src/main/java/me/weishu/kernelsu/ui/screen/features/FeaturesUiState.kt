@@ -13,6 +13,10 @@ import me.weishu.kernelsu.ui.util.SusfsInfo
 data class GkiStatus(
     /** uname -r of the running kernel */
     val kernelRelease: String = "",
+    /** e.g. android16-6.12: picks the project build that fits this device */
+    val kmi: String = "",
+    /** A/B device: installing to the inactive slot is possible */
+    val abDevice: Boolean = false,
     /** GKI 6.1 or newer: the only kernels the SFS AnyKernel3 builds exist for */
     val supported: Boolean = false,
     /** KernelSU is built into the kernel rather than loaded as an LKM */
@@ -58,5 +62,7 @@ data class FeaturesActions(
     val onRescanConflicts: () -> Unit,
     val onSetHideBootloader: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
-    val onFlashAnyKernel: () -> Unit,
+    val onGkiInstallDirect: () -> Unit,
+    val onGkiInstallLocal: () -> Unit,
+    val onGkiInstallInactive: () -> Unit,
 )

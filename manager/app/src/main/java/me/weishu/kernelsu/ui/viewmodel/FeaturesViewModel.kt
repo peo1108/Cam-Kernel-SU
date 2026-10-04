@@ -20,7 +20,9 @@ import me.weishu.kernelsu.ui.util.checkAttestationReport
 import me.weishu.kernelsu.ui.util.clearBootGuard
 import me.weishu.kernelsu.ui.util.getBootGuardStatus
 import me.weishu.kernelsu.ui.util.getHideBootloaderStatus
+import me.weishu.kernelsu.ui.util.getCurrentKmi
 import me.weishu.kernelsu.ui.util.getSusfsInfo
+import me.weishu.kernelsu.ui.util.isAbDevice
 import me.weishu.kernelsu.ui.util.listModuleConflicts
 import me.weishu.kernelsu.ui.util.setBootGuardConfig
 import me.weishu.kernelsu.ui.util.setHideBootloader as writeHideBootloader
@@ -63,11 +65,13 @@ class FeaturesViewModel(
         }
     }
 
-    private fun loadGkiStatus(): GkiStatus {
+    private suspend fun loadGkiStatus(): GkiStatus {
         val version = getKernelVersion()
         val builtIn = Ksu.isAvailable && !Ksu.isLkmMode
         return GkiStatus(
             kernelRelease = Os.uname().release,
+            kmi = runCatching { getCurrentKmi().trim() }.getOrDefault(""),
+            abDevice = runCatching { isAbDevice() }.getOrDefault(false),
             supported = version.major > 6 || (version.major == 6 && version.patchLevel >= 1),
             builtIn = builtIn,
             // only a built-in kernel can carry SUSFS, so skip the root call otherwise

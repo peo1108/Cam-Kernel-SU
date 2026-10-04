@@ -98,7 +98,14 @@ sealed class FlashIt : Parcelable {
     data class FlashModules(val uris: List<Uri>) : FlashIt()
 
     @Parcelize
-    data class FlashAnyKernel(val uri: Uri) : FlashIt()
+    data class FlashAnyKernel(
+        /** a local zip, or null when [url] is set */
+        val uri: Uri? = null,
+        /** a project build to download first */
+        val url: String? = null,
+        /** flash the inactive slot and switch to it (after an OTA) */
+        val inactive: Boolean = false,
+    ) : FlashIt()
 
     @Parcelize
     data object FlashRestore : FlashIt()
@@ -157,7 +164,7 @@ fun flashIt(
             flashModulesSequentially(flashIt.uris, onStdout, onStderr)
         }
 
-        is FlashIt.FlashAnyKernel -> flashAnyKernel(flashIt.uri, onStdout, onStderr)
+        is FlashIt.FlashAnyKernel -> flashAnyKernel(flashIt.uri, flashIt.url, flashIt.inactive, onStdout, onStderr)
 
         FlashIt.FlashRestore -> restoreBoot(onStdout, onStderr)
         FlashIt.FlashUninstall -> uninstallPermanently(onStdout, onStderr)

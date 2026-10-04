@@ -43,6 +43,7 @@ import me.weishu.kernelsu.ui.component.glass.GlassExpandableCard
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -361,15 +362,26 @@ private fun GkiCard(state: FeaturesUiState, actions: FeaturesActions) {
             color = colorScheme.onSurfaceVariantSummary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
-        TextButton(
-            text = stringResource(R.string.gki_flash_ak3),
-            enabled = gki.supported,
-            onClick = actions.onFlashAnyKernel,
-            colors = ButtonDefaults.textButtonColorsPrimary(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+        BasicComponent(
+            title = stringResource(R.string.direct_install),
+            summary = stringResource(R.string.gki_install_direct_summary, gki.kmi.ifBlank { "?" }),
+            enabled = gki.supported && gki.kmi.isNotBlank(),
+            onClick = actions.onGkiInstallDirect,
         )
+        BasicComponent(
+            title = stringResource(R.string.gki_install_local),
+            summary = stringResource(R.string.gki_install_local_summary),
+            enabled = gki.supported,
+            onClick = actions.onGkiInstallLocal,
+        )
+        if (gki.abDevice) {
+            BasicComponent(
+                title = stringResource(R.string.install_inactive_slot),
+                summary = stringResource(R.string.gki_install_inactive_summary),
+                enabled = gki.supported,
+                onClick = actions.onGkiInstallInactive,
+            )
+        }
     }
 }
 

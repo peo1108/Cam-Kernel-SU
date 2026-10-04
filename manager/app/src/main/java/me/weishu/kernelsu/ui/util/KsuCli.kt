@@ -291,18 +291,43 @@ fun flashModule(
     }
 }
 
+/**
+ * Flashes an AnyKernel3 zip, either a local [uri] or a project build downloaded from [url].
+ * With [inactive] the other slot is flashed and made active (after an OTA).
+ */
 fun flashAnyKernel(
-    uri: Uri,
+    uri: Uri?,
+    url: String?,
+    inactive: Boolean,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit
 ): FlashResult {
     val file = File(ksuApp.cacheDir, "anykernel3.zip")
-    ksuApp.contentResolver.openInputStream(uri)?.use { input ->
-        file.outputStream().use { output -> input.copyTo(output) }
-    } ?: return FlashResult(1, "Cannot read $uri", false)
+    try {
+        if (url != null) {
+            onStdout("- Downloading ${url.substringAfterLast('/')}")
+            var shown = -1
+            downloadTo(url, file) { percent ->
+                // one line per 10% keeps the log readable
+                if (percent / 10 != shown) {
+                    shown = percent / 10
+                    onStdout("  $percent%")
+                }
+            }
+        } else {
+            val source = uri ?: return FlashResult(1, "No AnyKernel3 zip selected", false)
+            ksuApp.contentResolver.openInputStream(source)?.use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            } ?: return FlashResult(1, "Cannot read $source", false)
+        }
+    } catch (e: Exception) {
+        file.delete()
+        return FlashResult(1, "Download failed: ${e.message}", false)
+    }
 
-    val result = flashWithIO("${getKsuDaemonPath()} flash-ak3 ${file.absolutePath}", onStdout, onStderr)
-    Log.i("KernelSU", "flash anykernel3 $uri result: $result")
+    val flags = if (inactive) " --inactive" else ""
+    val result = flashWithIO("${getKsuDaemonPath()} flash-ak3 ${file.absolutePath}$flags", onStdout, onStderr)
+    Log.i("KernelSU", "flash anykernel3 ${url ?: uri} inactive=$inactive result: $result")
     file.delete()
     return FlashResult(result)
 }

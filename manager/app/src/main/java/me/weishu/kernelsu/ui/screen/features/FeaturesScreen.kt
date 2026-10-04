@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
@@ -35,17 +36,40 @@ fun FeaturesPager(
     val navigator = LocalNavigator.current
     val context = LocalContext.current
 
+    // where the next AnyKernel3 flash goes: the active slot, or the inactive one after an OTA
+    var inactive by rememberSaveable { mutableStateOf(false) }
+    var showBuilds by rememberSaveable { mutableStateOf(false) }
+    var showSource by rememberSaveable { mutableStateOf(false) }
+
     val selectAnyKernel = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val uri = result.data?.data
         if (result.resultCode != Activity.RESULT_OK || uri == null) return@rememberLauncherForActivityResult
         if (isZipFile(context, uri)) {
-            navigator.push(Route.Flash(FlashIt.FlashAnyKernel(uri)))
+            navigator.push(Route.Flash(FlashIt.FlashAnyKernel(uri = uri, inactive = inactive)))
         } else {
             Toast.makeText(context, R.string.gki_only_zip, Toast.LENGTH_SHORT).show()
         }
     }
+    val pickLocal = {
+        selectAnyKernel.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/zip" })
+    }
+
+    SfsBuildDialog(
+        show = showBuilds,
+        kmi = uiState.gki.kmi,
+        onDismissRequest = { showBuilds = false },
+        onSelected = { build ->
+            navigator.push(Route.Flash(FlashIt.FlashAnyKernel(url = build.url, inactive = inactive)))
+        },
+    )
+    GkiSourceDialog(
+        show = showSource,
+        onDismissRequest = { showSource = false },
+        onLocal = pickLocal,
+        onProject = { showBuilds = true },
+    )
 
     LaunchedEffect(isCurrentPage) {
         if (isCurrentPage) viewModel.refresh()
@@ -72,8 +96,17 @@ fun FeaturesPager(
         onRescanConflicts = viewModel::rescanConflicts,
         onSetHideBootloader = viewModel::setHideBootloader,
         onCheckAttestation = viewModel::checkAttestation,
-        onFlashAnyKernel = {
-            selectAnyKernel.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/zip" })
+        onGkiInstallDirect = {
+            inactive = false
+            showBuilds = true
+        },
+        onGkiInstallLocal = {
+            inactive = false
+            pickLocal()
+        },
+        onGkiInstallInactive = {
+            inactive = true
+            showSource = true
         },
     )
 

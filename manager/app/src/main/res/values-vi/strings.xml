@@ -435,4 +435,25 @@
     <string name="features_conflict_replace">Thư mục %1$s (thay toàn bộ): %2$s</string>
     <string name="features_conflict_prop">Prop %1$s: %2$s</string>
     <string name="features_bootloader">Tự ẩn bootloader</string>
+    <string name="features_bootloader_on">Đang bật · không còn gì lộ</string>
+    <string name="features_bootloader_clean">Không có gì lộ bootloader</string>
+    <string name="features_bootloader_leaks">%d mục đang lộ bootloader</string>
+    <string name="features_bootloader_enable_summary">Sửa các prop hệ thống để máy báo bootloader đã khóa và hợp lệ. Tắt thì cần khởi động lại mới về giá trị gốc.</string>
+    <string name="features_bootloader_props">Prop hệ thống</string>
+    <string name="features_bootloader_bootconfig">Tham số khởi động (chỉ báo, không sửa)</string>
+    <string name="features_bootloader_fine">%d mục giống máy đã khóa</string>
+    <string name="features_attestation">Key attestation (thứ app ngân hàng thấy)</string>
+    <string name="features_attestation_check">Kiểm tra attestation</string>
+    <string name="features_attestation_checking">Đang kiểm tra…</string>
+    <string name="features_attestation_unreadable">Không đọc được chứng chỉ attestation</string>
+    <string name="features_attestation_level">Mức bảo mật: %s</string>
+    <string name="features_attestation_software">Phần mềm</string>
+    <string name="features_attestation_locked">Bootloader đã khóa: %s</string>
+    <string name="features_attestation_yes">có</string>
+    <string name="features_attestation_no">không</string>
+    <string name="features_attestation_state">Verified boot: %s</string>
+    <string name="features_attestation_layer2">App kiểm tra chứng chỉ vẫn thấy máy mở khóa. Sửa prop không đổi được chỗ này, cần tầng keystore (chưa làm).</string>
+    <string name="features_attestation_chain_ok">Chuỗi chứng chỉ (%d): không cái nào bị Google thu hồi</string>
+    <string name="features_attestation_revoked">Chứng chỉ #%1$d đã bị Google thu hồi (%2$s): kiểm tra mức STRONG sẽ trượt</string>
+    <string name="features_attestation_revocation_unknown">Không tải được danh sách thu hồi của Google (không có mạng?)</string>
 </resources>

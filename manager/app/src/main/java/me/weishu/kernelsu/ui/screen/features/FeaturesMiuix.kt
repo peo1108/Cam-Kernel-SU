@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.ConflictKind
+import me.weishu.kernelsu.data.model.PropCheck
 import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassExpandableCard
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
@@ -91,16 +92,7 @@ fun FeaturesPagerMiuix(
                 item { Spacer(Modifier.height(12.dp)) }
                 item { BootGuardCard(state, actions) }
                 item { ConflictCard(state, actions) }
-                item {
-                    GlassExpandableCard(
-                        icon = Icons.Rounded.VisibilityOff,
-                        title = stringResource(R.string.features_bootloader),
-                        summary = stringResource(R.string.features_coming_soon),
-                        expanded = false,
-                        onToggle = {},
-                        enabled = false,
-                    ) {}
-                }
+                item { HideBootloaderCard(state, actions) }
                 item { Spacer(Modifier.height(bottomInnerPadding)) }
             }
         }
@@ -240,6 +232,110 @@ private fun ConflictCard(state: FeaturesUiState, actions: FeaturesActions) {
             }
         }
     }
+}
+
+@Composable
+private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val status = state.hideBootloader
+
+    GlassExpandableCard(
+        icon = Icons.Rounded.VisibilityOff,
+        title = stringResource(R.string.features_bootloader),
+        summary = when {
+            status.leaks > 0 -> stringResource(R.string.features_bootloader_leaks, status.leaks)
+            status.enabled -> stringResource(R.string.features_bootloader_on)
+            else -> stringResource(R.string.features_bootloader_clean)
+        },
+        expanded = expanded,
+        onToggle = { expanded = !expanded },
+    ) {
+        SwitchPreference(
+            title = stringResource(R.string.features_bootloader),
+            summary = stringResource(R.string.features_bootloader_enable_summary),
+            checked = status.enabled,
+            onCheckedChange = actions.onSetHideBootloader,
+        )
+        CheckSection(stringResource(R.string.features_bootloader_props), status.props)
+        CheckSection(stringResource(R.string.features_bootloader_bootconfig), status.bootconfig)
+
+        SectionTitle(stringResource(R.string.features_attestation))
+        if (state.attestationChecked) {
+            val info = state.attestation
+            if (info == null) {
+                CheckLine(stringResource(R.string.features_attestation_unreadable), ok = false)
+            } else {
+                val level = when (info.securityLevel) {
+                    1 -> "TEE"
+                    2 -> "StrongBox"
+                    else -> stringResource(R.string.features_attestation_software)
+                }
+                val bootState = when (info.verifiedBootState) {
+                    0 -> "Verified"
+                    1 -> "SelfSigned"
+                    2 -> "Unverified"
+                    else -> "Failed"
+                }
+                CheckLine(stringResource(R.string.features_attestation_level, level), ok = info.securityLevel != 0)
+                CheckLine(
+                    stringResource(
+                        R.string.features_attestation_locked,
+                        stringResource(if (info.deviceLocked) R.string.features_attestation_yes else R.string.features_attestation_no),
+                    ),
+                    ok = info.deviceLocked,
+                )
+                CheckLine(stringResource(R.string.features_attestation_state, bootState), ok = info.verifiedBootState == 0)
+                val revoked = state.revoked
+                when {
+                    revoked == null -> CheckLine(stringResource(R.string.features_attestation_revocation_unknown), ok = false)
+                    revoked.isEmpty() -> CheckLine(stringResource(R.string.features_attestation_chain_ok, state.chainSize), ok = true)
+                    else -> revoked.forEach { cert ->
+                        CheckLine(stringResource(R.string.features_attestation_revoked, cert.index + 1, cert.reason), ok = false)
+                    }
+                }
+                if (!info.deviceLocked || info.verifiedBootState != 0) {
+                    Text(
+                        text = stringResource(R.string.features_attestation_layer2),
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
+            }
+        }
+        TextButton(
+            text = stringResource(
+                if (state.checkingAttestation) R.string.features_attestation_checking else R.string.features_attestation_check
+            ),
+            enabled = !state.checkingAttestation,
+            onClick = actions.onCheckAttestation,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
+}
+
+/** Revealing entries one per line; the ones already fine are only counted. */
+@Composable
+private fun CheckSection(title: String, checks: List<PropCheck>) {
+    if (checks.isEmpty()) return
+    SectionTitle(title)
+    checks.filterNot { it.ok }.forEach { check ->
+        CheckLine("${check.name}: ${check.value} → ${check.safe}", ok = false)
+    }
+    val fine = checks.count { it.ok }
+    if (fine > 0) CheckLine(stringResource(R.string.features_bootloader_fine, fine), ok = true)
+}
+
+@Composable
+private fun CheckLine(text: String, ok: Boolean) {
+    Text(
+        text = "${if (ok) "✓" else "⚠"}  $text",
+        fontSize = 13.sp,
+        color = if (ok) colorScheme.onSurfaceVariantSummary else colorScheme.error,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
+    )
 }
 
 @Composable

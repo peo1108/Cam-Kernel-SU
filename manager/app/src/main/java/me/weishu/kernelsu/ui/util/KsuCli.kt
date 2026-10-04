@@ -24,6 +24,7 @@ import me.weishu.kernelsu.core.tasks.ExtractImage
 import me.weishu.kernelsu.core.tasks.ProbeResult
 import me.weishu.kernelsu.core.utils.DataSourceChannel
 import me.weishu.kernelsu.data.model.BootGuardStatus
+import me.weishu.kernelsu.data.model.HideBootloaderStatus
 import me.weishu.kernelsu.data.model.ModuleConflict
 import me.weishu.kernelsu.data.model.forModule
 import me.weishu.kernelsu.data.model.parseModuleConflicts
@@ -173,6 +174,15 @@ fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disable
     if (args.isEmpty()) return true
     val result = execKsud("boot-guard set ${args.joinToString(" ")}", true)
     Log.i(TAG, "boot-guard set $args result: $result")
+    return result
+}
+
+fun getHideBootloaderStatus(): HideBootloaderStatus =
+    HideBootloaderStatus.parse(ksudStdout("hide-bootloader status"))
+
+fun setHideBootloader(enabled: Boolean): Boolean {
+    val result = execKsud("hide-bootloader ${if (enabled) "enable" else "disable"}", true)
+    Log.i(TAG, "hide-bootloader $enabled result: $result")
     return result
 }
 

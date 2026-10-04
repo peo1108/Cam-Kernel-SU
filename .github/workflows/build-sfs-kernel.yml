@@ -11,6 +11,11 @@ on:
         required: false
         default: ''
         type: string
+      manager:
+        description: 'Also build the Manager APK (release.yml builds its own)'
+        required: false
+        default: false
+        type: boolean
   workflow_dispatch:
     inputs:
       filter:
@@ -25,8 +30,18 @@ on:
       - 'kernel/**'
       - 'uapi/**'
       - 'sfs/**'
+      - 'manager/**'
+      - 'userspace/**'
 
 jobs:
+  # The Manager APK, its ksud and every kernel are built from this same commit, so they all
+  # carry the same version (30000 + commit count) and the Manager matches the kernels.
+  manager:
+    # called from Release, which builds its own Manager: skip unless asked
+    if: github.workflow != 'Release' || inputs.manager
+    uses: ./.github/workflows/build-manager.yml
+    secrets: inherit
+
   matrix:
     runs-on: ubuntu-latest
     outputs:

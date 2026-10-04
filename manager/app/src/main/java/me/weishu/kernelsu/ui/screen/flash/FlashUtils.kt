@@ -36,6 +36,7 @@ import me.weishu.kernelsu.ui.util.downloadBoot
 import me.weishu.kernelsu.ui.util.flashAnyKernel
 import me.weishu.kernelsu.ui.util.flashModule
 import me.weishu.kernelsu.ui.util.installBoot
+import me.weishu.kernelsu.ui.util.restoreAk3Backup
 import me.weishu.kernelsu.ui.util.restoreBoot
 import me.weishu.kernelsu.ui.util.uninstallPermanently
 import java.io.File
@@ -105,7 +106,12 @@ sealed class FlashIt : Parcelable {
         val url: String? = null,
         /** flash the inactive slot and switch to it (after an OTA) */
         val inactive: Boolean = false,
+        /** back up the boot partition first so the kernel can be restored */
+        val backup: Boolean = true,
     ) : FlashIt()
+
+    @Parcelize
+    data class RestoreAk3Backup(val path: String) : FlashIt()
 
     @Parcelize
     data object FlashRestore : FlashIt()
@@ -164,7 +170,16 @@ fun flashIt(
             flashModulesSequentially(flashIt.uris, onStdout, onStderr)
         }
 
-        is FlashIt.FlashAnyKernel -> flashAnyKernel(flashIt.uri, flashIt.url, flashIt.inactive, onStdout, onStderr)
+        is FlashIt.FlashAnyKernel -> flashAnyKernel(
+            flashIt.uri,
+            flashIt.url,
+            flashIt.inactive,
+            flashIt.backup,
+            onStdout,
+            onStderr
+        )
+
+        is FlashIt.RestoreAk3Backup -> restoreAk3Backup(flashIt.path, onStdout, onStderr)
 
         FlashIt.FlashRestore -> restoreBoot(onStdout, onStderr)
         FlashIt.FlashUninstall -> uninstallPermanently(onStdout, onStderr)

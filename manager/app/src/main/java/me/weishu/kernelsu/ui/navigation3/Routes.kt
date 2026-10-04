@@ -70,6 +70,10 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
+    data object GkiInstall : Route
+
+    @Parcelize
+    @Serializable
     data class ModuleRepoDetail(@Serializable(with = RepoModuleArgSerializer::class) val module: RepoModuleArg) : Route
 
     @Parcelize

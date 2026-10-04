@@ -43,7 +43,6 @@ import me.weishu.kernelsu.ui.component.glass.GlassExpandableCard
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -51,6 +50,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -353,35 +353,10 @@ private fun GkiCard(state: FeaturesUiState, actions: FeaturesActions) {
             CheckLine(stringResource(R.string.gki_susfs_missing), ok = false)
         }
 
-        SectionTitle(stringResource(R.string.gki_flash_ak3))
-        Text(
-            text = stringResource(
-                if (gki.supported) R.string.gki_flash_ak3_summary else R.string.gki_summary_unsupported
-            ),
-            fontSize = 12.sp,
-            color = colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        ArrowPreference(
+            title = stringResource(R.string.gki_install_title),
+            onClick = actions.onOpenGkiInstall,
         )
-        BasicComponent(
-            title = stringResource(R.string.direct_install),
-            summary = stringResource(R.string.gki_install_direct_summary, gki.kmi.ifBlank { "?" }),
-            enabled = gki.supported && gki.kmi.isNotBlank(),
-            onClick = actions.onGkiInstallDirect,
-        )
-        BasicComponent(
-            title = stringResource(R.string.gki_install_local),
-            summary = stringResource(R.string.gki_install_local_summary),
-            enabled = gki.supported,
-            onClick = actions.onGkiInstallLocal,
-        )
-        if (gki.abDevice) {
-            BasicComponent(
-                title = stringResource(R.string.install_inactive_slot),
-                summary = stringResource(R.string.gki_install_inactive_summary),
-                enabled = gki.supported,
-                onClick = actions.onGkiInstallInactive,
-            )
-        }
     }
 }
 

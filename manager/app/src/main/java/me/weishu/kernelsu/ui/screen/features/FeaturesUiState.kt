@@ -7,23 +7,7 @@ import me.weishu.kernelsu.data.model.HideBootloaderStatus
 import me.weishu.kernelsu.data.model.ModuleConflict
 import me.weishu.kernelsu.data.model.RevokedCert
 import me.weishu.kernelsu.data.model.visible
-import me.weishu.kernelsu.ui.util.SusfsInfo
-
-@Immutable
-data class GkiStatus(
-    /** uname -r of the running kernel */
-    val kernelRelease: String = "",
-    /** e.g. android16-6.12: picks the project build that fits this device */
-    val kmi: String = "",
-    /** A/B device: installing to the inactive slot is possible */
-    val abDevice: Boolean = false,
-    /** GKI 6.1 or newer: the only kernels the SFS AnyKernel3 builds exist for */
-    val supported: Boolean = false,
-    /** KernelSU is built into the kernel rather than loaded as an LKM */
-    val builtIn: Boolean = false,
-    /** null when the kernel has no SUSFS or it could not be read */
-    val susfs: SusfsInfo? = null,
-)
+import me.weishu.kernelsu.ui.util.GkiStatus
 
 @Immutable
 data class FeaturesUiState(
@@ -62,7 +46,5 @@ data class FeaturesActions(
     val onRescanConflicts: () -> Unit,
     val onSetHideBootloader: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
-    val onGkiInstallDirect: () -> Unit,
-    val onGkiInstallLocal: () -> Unit,
-    val onGkiInstallInactive: () -> Unit,
+    val onOpenGkiInstall: () -> Unit,
 )

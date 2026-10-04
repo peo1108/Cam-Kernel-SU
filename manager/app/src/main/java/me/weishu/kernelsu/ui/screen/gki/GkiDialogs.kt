@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.ui.screen.features
+package me.weishu.kernelsu.ui.screen.gki
 
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
@@ -15,9 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,11 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.CancellationException
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import me.weishu.kernelsu.ui.util.SfsBuild
-import me.weishu.kernelsu.ui.util.fetchSfsBuilds
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
@@ -41,37 +37,18 @@ import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
-private sealed interface BuildsState {
-    data object Loading : BuildsState
-    data class Loaded(val builds: List<SfsBuild>) : BuildsState
-    data class Failed(val message: String) : BuildsState
-}
-
-/** Lists the project's AnyKernel3 builds for [kmi]; the newest is preselected. */
+/** Lists the project's AnyKernel3 builds for [kmi]; the newest one is marked. */
 @Composable
 fun SfsBuildDialog(
     show: Boolean,
     kmi: String,
+    state: BuildsState,
+    selected: SfsBuild?,
     onDismissRequest: () -> Unit,
+    onRetry: () -> Unit,
     onSelected: (SfsBuild) -> Unit,
 ) {
-    val context = LocalContext.current
-    var state by remember { mutableStateOf<BuildsState>(BuildsState.Loading) }
-    var attempt by remember { mutableIntStateOf(0) }
-    var selected by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(show, kmi, attempt) {
-        if (!show) return@LaunchedEffect
-        state = BuildsState.Loading
-        selected = 0
-        state = try {
-            BuildsState.Loaded(fetchSfsBuilds(kmi))
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            BuildsState.Failed(e.message ?: e.javaClass.simpleName)
-        }
-    }
+    var choice by remember(show, selected) { mutableStateOf(selected) }
 
     GlassDialog(
         show = show,
@@ -81,7 +58,7 @@ fun SfsBuildDialog(
         insideMargin = DpSize(0.dp, 24.dp),
     ) {
         Column(modifier = Modifier.heightIn(max = 500.dp)) {
-            when (val current = state) {
+            when (state) {
                 BuildsState.Loading -> Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,31 +70,21 @@ fun SfsBuildDialog(
                     Text(stringResource(R.string.gki_builds_loading))
                 }
 
-                is BuildsState.Failed -> Message(stringResource(R.string.gki_builds_error, current.message))
+                is BuildsState.Failed -> Message(stringResource(R.string.gki_builds_error, state.message))
 
-                is BuildsState.Loaded -> if (current.builds.isEmpty()) {
+                is BuildsState.Loaded -> if (state.builds.isEmpty()) {
                     Message(stringResource(R.string.gki_builds_empty, kmi))
                 } else {
                     LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
-                        itemsIndexed(current.builds) { index, build ->
-                            val details = stringResource(
-                                R.string.gki_build_summary,
-                                build.tag,
-                                Formatter.formatShortFileSize(context, build.size),
-                                build.publishedAt.substringBefore('T'),
-                            )
+                        itemsIndexed(state.builds) { index, build ->
                             CheckboxPreference(
-                                title = stringResource(R.string.gki_build_title, build.ksuVersion, build.susfsVersion),
-                                summary = if (index == 0) {
-                                    "${stringResource(R.string.gki_build_latest)} · $details"
-                                } else {
-                                    details
-                                },
+                                title = buildTitle(build),
+                                summary = buildSummary(build, latest = index == 0),
                                 insideMargin = PaddingValues(horizontal = 30.dp, vertical = 16.dp),
                                 checkboxLocation = CheckboxLocation.End,
-                                checked = selected == index,
-                                holdDownState = selected == index,
-                                onCheckedChange = { selected = index },
+                                checked = choice == build,
+                                holdDownState = choice == build,
+                                onCheckedChange = { choice = build },
                             )
                         }
                     }
@@ -134,19 +101,18 @@ fun SfsBuildDialog(
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(20.dp))
-                val loaded = state as? BuildsState.Loaded
                 if (state is BuildsState.Failed) {
                     TextButton(
-                        onClick = { attempt++ },
+                        onClick = onRetry,
                         text = stringResource(R.string.gki_builds_retry),
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
                     )
                 } else {
                     TextButton(
-                        enabled = loaded != null && loaded.builds.isNotEmpty(),
+                        enabled = choice != null,
                         onClick = {
-                            loaded?.builds?.getOrNull(selected)?.let(onSelected)
+                            choice?.let(onSelected)
                             onDismissRequest()
                         },
                         text = stringResource(R.string.confirm),
@@ -159,47 +125,19 @@ fun SfsBuildDialog(
     }
 }
 
-/** Asks where the AnyKernel3 zip for the inactive slot comes from. */
 @Composable
-fun GkiSourceDialog(
-    show: Boolean,
-    onDismissRequest: () -> Unit,
-    onLocal: () -> Unit,
-    onProject: () -> Unit,
-) {
-    GlassDialog(
-        show = show,
-        title = stringResource(R.string.install_inactive_slot),
-        summary = stringResource(R.string.gki_inactive_warning),
-        onDismissRequest = onDismissRequest,
-    ) {
-        Column {
-            TextButton(
-                text = stringResource(R.string.gki_source_project),
-                onClick = {
-                    onDismissRequest()
-                    onProject()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-            )
-            Spacer(Modifier.height(12.dp))
-            TextButton(
-                text = stringResource(R.string.gki_source_local),
-                onClick = {
-                    onDismissRequest()
-                    onLocal()
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(12.dp))
-            TextButton(
-                text = stringResource(android.R.string.cancel),
-                onClick = onDismissRequest,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
+internal fun buildTitle(build: SfsBuild): String =
+    stringResource(R.string.gki_build_title, build.ksuVersion, build.susfsVersion)
+
+@Composable
+internal fun buildSummary(build: SfsBuild, latest: Boolean): String {
+    val details = stringResource(
+        R.string.gki_build_summary,
+        build.tag,
+        Formatter.formatShortFileSize(LocalContext.current, build.size),
+        build.publishedAt.substringBefore('T'),
+    )
+    return if (latest) "${stringResource(R.string.gki_build_latest)} · $details" else details
 }
 
 @Composable

@@ -299,6 +299,7 @@ fun flashAnyKernel(
     uri: Uri?,
     url: String?,
     inactive: Boolean,
+    backup: Boolean,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit
 ): FlashResult {
@@ -325,10 +326,40 @@ fun flashAnyKernel(
         return FlashResult(1, "Download failed: ${e.message}", false)
     }
 
-    val flags = if (inactive) " --inactive" else ""
+    val flags = buildString {
+        if (inactive) append(" --inactive")
+        if (!backup) append(" --no-backup")
+    }
     val result = flashWithIO("${getKsuDaemonPath()} flash-ak3 ${file.absolutePath}$flags", onStdout, onStderr)
     Log.i("KernelSU", "flash anykernel3 ${url ?: uri} inactive=$inactive result: $result")
     file.delete()
+    return FlashResult(result)
+}
+
+/** Boot backups made by `ksud flash-ak3`, newest first. */
+suspend fun getAk3Backups(): List<Ak3Backup> = withContext(Dispatchers.IO) {
+    val out = ShellUtils.fastCmd(KsuCli.SHELL, "${getKsuDaemonPath()} ak3-backup list")
+    runCatching {
+        val array = JSONArray(out)
+        List(array.length()) { i ->
+            val json = array.getJSONObject(i)
+            Ak3Backup(
+                path = json.getString("path"),
+                slot = json.optString("slot"),
+                original = json.optBoolean("original"),
+                size = json.optLong("size"),
+                modified = json.optLong("modified"),
+            )
+        }.sortedByDescending { it.modified }
+    }.getOrDefault(emptyList())
+}
+
+fun restoreAk3Backup(
+    path: String,
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit
+): FlashResult {
+    val result = flashWithIO("${getKsuDaemonPath()} ak3-backup restore $path", onStdout, onStderr)
     return FlashResult(result)
 }
 

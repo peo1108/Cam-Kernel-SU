@@ -1,6 +1,5 @@
 package me.weishu.kernelsu.ui.viewmodel
 
-import android.system.Os
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -12,17 +11,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
-import me.weishu.kernelsu.Ksu
-import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ui.screen.features.FeaturesUiState
-import me.weishu.kernelsu.ui.screen.features.GkiStatus
 import me.weishu.kernelsu.ui.util.checkAttestationReport
 import me.weishu.kernelsu.ui.util.clearBootGuard
 import me.weishu.kernelsu.ui.util.getBootGuardStatus
 import me.weishu.kernelsu.ui.util.getHideBootloaderStatus
-import me.weishu.kernelsu.ui.util.getCurrentKmi
-import me.weishu.kernelsu.ui.util.getSusfsInfo
-import me.weishu.kernelsu.ui.util.isAbDevice
+import me.weishu.kernelsu.ui.util.loadGkiStatus
 import me.weishu.kernelsu.ui.util.listModuleConflicts
 import me.weishu.kernelsu.ui.util.setBootGuardConfig
 import me.weishu.kernelsu.ui.util.setHideBootloader as writeHideBootloader
@@ -49,7 +43,7 @@ class FeaturesViewModel(
                 getBootGuardStatus() to if (detection) listModuleConflicts() else emptyList()
             }
             val hideBootloader = withContext(Dispatchers.IO) { getHideBootloaderStatus() }
-            val gki = withContext(Dispatchers.IO) { loadGkiStatus() }
+            val gki = loadGkiStatus()
             _uiState.update {
                 it.copy(
                     bootGuard = bootGuard,
@@ -63,20 +57,6 @@ class FeaturesViewModel(
                 )
             }
         }
-    }
-
-    private suspend fun loadGkiStatus(): GkiStatus {
-        val version = getKernelVersion()
-        val builtIn = Ksu.isAvailable && !Ksu.isLkmMode
-        return GkiStatus(
-            kernelRelease = Os.uname().release,
-            kmi = runCatching { getCurrentKmi().trim() }.getOrDefault(""),
-            abDevice = runCatching { isAbDevice() }.getOrDefault(false),
-            supported = version.major > 6 || (version.major == 6 && version.patchLevel >= 1),
-            builtIn = builtIn,
-            // only a built-in kernel can carry SUSFS, so skip the root call otherwise
-            susfs = if (builtIn) getSusfsInfo() else null,
-        )
     }
 
     fun setBootGuardEnabled(enabled: Boolean) {

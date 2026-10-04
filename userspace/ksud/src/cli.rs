@@ -129,6 +129,12 @@ enum Commands {
     /// Always operates on a boot image; never selects init_boot or vendor_boot.
     BootPatchV2(BootPatchV2Args),
 
+    /// Inspect the boot guard that disables modules after failed boots
+    BootGuard {
+        #[command(subcommand)]
+        command: BootGuard,
+    },
+
     /// Show boot information
     BootInfo {
         #[command(subcommand)]
@@ -270,6 +276,15 @@ enum Sepolicy {
         /// sepolicy statements
         sepolicy: String,
     },
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum BootGuard {
+    /// Print the boot guard state and the modules it disabled as JSON
+    Status,
+
+    /// Forget the modules the boot guard disabled
+    Clear,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -531,6 +546,11 @@ pub fn run() -> Result<()> {
         }
 
         Commands::SoftReboot => crate::soft_reboot::soft_reboot(),
+
+        Commands::BootGuard { command } => match command {
+            BootGuard::Status => module::boot_guard_status(),
+            BootGuard::Clear => module::boot_guard_clear(),
+        },
 
         Commands::Insmod { module, params } => debug::insmod(&module, &params),
 

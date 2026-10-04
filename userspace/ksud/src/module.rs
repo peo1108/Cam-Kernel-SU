@@ -1,7 +1,7 @@
 #[allow(clippy::wildcard_imports)]
 use crate::utils::*;
 use crate::{
-    assets, defs, ksucalls, metamodule,
+    assets, boot_guard, defs, ksucalls, metamodule,
     restorecon::{restore_syscon, setsyscon},
     sepolicy,
 };
@@ -485,8 +485,10 @@ pub fn regenerate_preinit_rc() -> Result<()> {
     Ok(())
 }
 
-pub fn handle_updated_modules() -> Result<()> {
+/// Returns the ids of the modules moved into place.
+pub fn handle_updated_modules() -> Result<Vec<String>> {
     let modules_root = Path::new(MODULE_DIR);
+    let mut updated = Vec::new();
     foreach_module(ModuleType::Updated, |updated_module| {
         if !updated_module.is_dir() {
             return Ok(());
@@ -503,6 +505,9 @@ pub fn handle_updated_modules() -> Result<()> {
                 remove_dir_all(&module_dir)?;
             }
             rename(updated_module, &module_dir)?;
+            if let Some(id) = name.to_str() {
+                updated.push(id.to_owned());
+            }
             if removed {
                 let path = module_dir.join(defs::REMOVE_FILE_NAME);
                 if let Err(e) = ensure_file_exists(&path) {
@@ -517,7 +522,7 @@ pub fn handle_updated_modules() -> Result<()> {
         }
         Ok(())
     })?;
-    Ok(())
+    Ok(updated)
 }
 
 fn install_module_to_system(zip: &str) -> Result<()> {
@@ -738,6 +743,14 @@ pub fn enable_module(id: &str) -> Result<()> {
             format!("Failed to remove disable file: {}", disable_path.display())
         })?;
         info!("Module {id} enabled");
+
+        // a module enabled again is the first one to blame if the next boot fails
+        let guard_path = Path::new(defs::BOOT_GUARD_PATH);
+        let mut guard = boot_guard::load(guard_path);
+        boot_guard::add_suspect(&mut guard, id);
+        if let Err(e) = boot_guard::save(guard_path, &guard) {
+            warn!("boot guard: save state failed: {e}");
+        }
     }
 
     if let Err(e) = regenerate_preinit_rc() {
@@ -761,6 +774,40 @@ pub fn disable_module(id: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Ids of the modules that are neither disabled nor marked for removal.
+pub fn enabled_module_ids() -> Vec<String> {
+    let mut ids = Vec::new();
+    if let Err(e) = foreach_active_module(|path| {
+        if path.join("module.prop").exists()
+            && let Some(id) = path.file_name().and_then(|name| name.to_str())
+        {
+            ids.push(id.to_owned());
+        }
+        Ok(())
+    }) {
+        warn!("list enabled modules failed: {e}");
+    }
+    ids.sort();
+    ids
+}
+
+pub fn boot_guard_status() -> Result<()> {
+    let state = boot_guard::load(Path::new(defs::BOOT_GUARD_PATH));
+    let modules_root = Path::new(defs::MODULE_DIR);
+    let status = boot_guard::status_json(&state, &|id| {
+        modules_root.join(id).join(defs::DISABLE_FILE_NAME).exists()
+    });
+    println!("{}", serde_json::to_string_pretty(&status)?);
+    Ok(())
+}
+
+pub fn boot_guard_clear() -> Result<()> {
+    let path = Path::new(defs::BOOT_GUARD_PATH);
+    let mut state = boot_guard::load(path);
+    boot_guard::clear_notice(&mut state);
+    boot_guard::save(path, &state)
 }
 
 pub fn disable_all_modules() -> Result<()> {

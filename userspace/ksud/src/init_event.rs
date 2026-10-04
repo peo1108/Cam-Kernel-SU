@@ -225,6 +225,18 @@ pub fn on_services() {
         return;
     }
 
+    match ksucalls::report_services() {
+        Ok(true) => {}
+        Ok(false) => {
+            info!("services already started, skipping");
+            return;
+        }
+        Err(e) => {
+            error!("Failed to report services: {e:#}");
+            return;
+        }
+    }
+
     info!("on_services triggered!");
     crate::susfs::apply_stage(crate::susfs_config::Stage::Service);
     run_stage("service", ScriptWait::NoWait);

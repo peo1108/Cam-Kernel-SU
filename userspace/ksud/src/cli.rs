@@ -171,7 +171,7 @@ enum Commands {
         command: Initrc,
     },
 
-    /// Show SUSFS information from the kernel
+    /// Show SUSFS information and manage the SUSFS settings ksud applies at boot
     Susfs {
         #[command(subcommand)]
         command: Susfs,
@@ -217,6 +217,17 @@ enum Susfs {
         #[arg(long, default_value = "false")]
         json: bool,
     },
+    /// Print the saved SUSFS settings as JSON
+    Config,
+    /// Save SUSFS settings (JSON file, or - for stdin) and apply what can be applied now
+    SetConfig {
+        /// settings JSON path, or - for stdin
+        file: String,
+    },
+    /// Print the fake bootconfig the auto mode would set
+    Bootconfig,
+    /// Print what the last boot and the last changes did
+    Log,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -942,6 +953,16 @@ pub fn run() -> Result<()> {
         },
         Commands::Susfs { command } => match command {
             Susfs::Info { json } => crate::susfs::print_info(json),
+            Susfs::Config => {
+                crate::susfs::print_config();
+                Ok(())
+            }
+            Susfs::SetConfig { file } => crate::susfs::set_config(&file),
+            Susfs::Bootconfig => crate::susfs::print_auto_bootconfig(),
+            Susfs::Log => {
+                crate::susfs::print_log();
+                Ok(())
+            }
         },
         Commands::FlashAk3 {
             zip,

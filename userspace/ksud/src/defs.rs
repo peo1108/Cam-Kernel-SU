@@ -10,6 +10,7 @@ mod android {
     pub const SULOGD_LOCK_PATH: &str = concatcp!(WORKING_DIR, "sulogd.lock");
     pub const BOOT_GUARD_PATH: &str = concatcp!(WORKING_DIR, "bootguard.json");
     pub const HIDE_BOOTLOADER_FLAG: &str = concatcp!(WORKING_DIR, ".hide_bootloader");
+    pub const SUSFS_CONFIG_PATH: &str = concatcp!(WORKING_DIR, "susfs.json");
     /// the installed copy of a module, kept when an update replaces it
     pub const MODULE_BACKUP_DIR: &str = concatcp!(WORKING_DIR, "module_backup/");
 

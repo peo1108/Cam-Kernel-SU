@@ -100,6 +100,9 @@ pub fn on_post_data_fs() -> Result<()> {
         warn!("init features failed: {e}");
     }
 
+    // SUSFS settings from the Manager, before module scripts so a module can still override them
+    crate::susfs::apply_stage(crate::susfs_config::Stage::PostFsData);
+
     // execute metamodule post-fs-data script first (priority)
     if let Err(e) = metamodule::exec_stage_script("post-fs-data", true) {
         warn!("exec metamodule post-fs-data script failed: {e}");
@@ -225,6 +228,7 @@ pub fn on_services() {
     }
 
     info!("on_services triggered!");
+    crate::susfs::apply_stage(crate::susfs_config::Stage::Service);
     run_stage("service", false);
 }
 
@@ -252,6 +256,9 @@ pub fn on_boot_completed() {
     }
 
     run_stage("boot-completed", false);
+
+    // forks: it waits for storage before the sus paths
+    crate::susfs::apply_stage(crate::susfs_config::Stage::BootCompleted);
 }
 
 #[cfg(unix)]

@@ -60,6 +60,7 @@ mod su;
 mod sulog;
 #[cfg(target_os = "android")]
 mod susfs;
+mod susfs_config;
 #[cfg(target_os = "android")]
 mod unload;
 #[cfg(target_os = "android")]

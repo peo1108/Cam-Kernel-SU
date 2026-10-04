@@ -27,6 +27,7 @@ import me.weishu.kernelsu.ui.screen.install.SeedApp
 import me.weishu.kernelsu.ui.screen.install.isValidSeedPackageName
 import okhttp3.OkHttpClient
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -220,6 +221,42 @@ fun flashModule(
 
         return FlashResult(result)
     }
+}
+
+fun flashAnyKernel(
+    uri: Uri,
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit
+): FlashResult {
+    val file = File(ksuApp.cacheDir, "anykernel3.zip")
+    ksuApp.contentResolver.openInputStream(uri)?.use { input ->
+        file.outputStream().use { output -> input.copyTo(output) }
+    } ?: return FlashResult(1, "Cannot read $uri", false)
+
+    val result = flashWithIO("${getKsuDaemonPath()} flash-ak3 ${file.absolutePath}", onStdout, onStderr)
+    Log.i("KernelSU", "flash anykernel3 $uri result: $result")
+    file.delete()
+    return FlashResult(result)
+}
+
+data class SusfsInfo(
+    val version: String,
+    val variant: String,
+    val features: List<String>,
+)
+
+fun getSusfsInfo(): SusfsInfo? {
+    val out = ShellUtils.fastCmd(KsuCli.SHELL, "${getKsuDaemonPath()} susfs info --json")
+    return runCatching {
+        val json = JSONObject(out)
+        if (!json.optBoolean("enabled")) return null
+        val features = json.optJSONArray("features")
+        SusfsInfo(
+            version = json.optString("version"),
+            variant = json.optString("variant"),
+            features = List(features?.length() ?: 0) { features!!.getString(it) },
+        )
+    }.getOrNull()
 }
 
 fun runModuleAction(

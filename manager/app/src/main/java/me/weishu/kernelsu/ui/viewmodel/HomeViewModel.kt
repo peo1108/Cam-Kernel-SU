@@ -23,6 +23,7 @@ import me.weishu.kernelsu.ui.screen.home.SystemInfo
 import me.weishu.kernelsu.ui.screen.home.getManagerVersion
 import me.weishu.kernelsu.ui.util.checkNewVersion
 import me.weishu.kernelsu.ui.util.getSELinuxStatusRaw
+import me.weishu.kernelsu.ui.util.getSusfsInfo
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
 import me.weishu.kernelsu.ui.util.resolveDeviceName
 import me.weishu.kernelsu.ui.util.rootAvailable
@@ -37,7 +38,13 @@ class HomeViewModel(
     fun refresh() {
         viewModelScope.launch {
             val baseState = withContext(Dispatchers.IO) { buildState() }
-            _uiState.update { baseState }
+            // keep the last SUSFS info so the card does not flicker while it reloads
+            _uiState.update { baseState.copy(susfsInfo = it.susfsInfo) }
+            // SUSFS is only reachable through ksud as root, so keep it off the main thread
+            if (baseState.isRootAvailable) {
+                val susfsInfo = withContext(Dispatchers.IO) { getSusfsInfo() }
+                _uiState.update { it.copy(susfsInfo = susfsInfo) }
+            }
             if (baseState.checkUpdateEnabled) {
                 val latestVersionInfo = withContext(Dispatchers.IO) { checkNewVersion() }
                 _uiState.update { it.copy(latestVersionInfo = latestVersionInfo) }

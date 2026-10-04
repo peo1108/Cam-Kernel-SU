@@ -33,6 +33,7 @@ import me.weishu.kernelsu.ui.screen.install.SeedApp
 import me.weishu.kernelsu.ui.util.FlashResult
 import me.weishu.kernelsu.ui.util.LkmSelection
 import me.weishu.kernelsu.ui.util.downloadBoot
+import me.weishu.kernelsu.ui.util.flashAnyKernel
 import me.weishu.kernelsu.ui.util.flashModule
 import me.weishu.kernelsu.ui.util.installBoot
 import me.weishu.kernelsu.ui.util.restoreBoot
@@ -97,6 +98,9 @@ sealed class FlashIt : Parcelable {
     data class FlashModules(val uris: List<Uri>) : FlashIt()
 
     @Parcelize
+    data class FlashAnyKernel(val uri: Uri) : FlashIt()
+
+    @Parcelize
     data object FlashRestore : FlashIt()
 
     @Parcelize
@@ -152,6 +156,8 @@ fun flashIt(
         is FlashIt.FlashModules -> {
             flashModulesSequentially(flashIt.uris, onStdout, onStderr)
         }
+
+        is FlashIt.FlashAnyKernel -> flashAnyKernel(flashIt.uri, onStdout, onStderr)
 
         FlashIt.FlashRestore -> restoreBoot(onStdout, onStderr)
         FlashIt.FlashUninstall -> uninstallPermanently(onStdout, onStderr)

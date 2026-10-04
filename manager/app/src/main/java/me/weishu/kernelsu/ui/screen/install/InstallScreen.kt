@@ -69,17 +69,29 @@ fun InstallScreen() {
     val rootAvailable by produceState(initialValue = false) { value = rootAvailable() }
     val isAbDevice by produceState(initialValue = false) { value = isAbDevice() }
     val isGkiDevice by produceState(initialValue = false) { value = getKernelVersion().isGKI() }
+    // SUSFS builds only exist for GKI 6.1 and newer
+    val supportsAnyKernel by produceState(initialValue = false) {
+        val version = getKernelVersion()
+        value = version.major > 6 || (version.major == 6 && version.patchLevel >= 1)
+    }
 
     val selectFileTip = stringResource(id = R.string.select_file_tip, defaultPartition)
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
     val downloadFileMsg = stringResource(id = R.string.download_dialog_msg)
-    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, downloadFileMsg) {
+    val anyKernelMsg = stringResource(id = R.string.install_anykernel3_summary)
+    val installMethodOptions = remember(
+        rootAvailable, isAbDevice, isGkiDevice, supportsAnyKernel,
+        selectFileTip, selectFileTipNoGki, downloadFileMsg, anyKernelMsg
+    ) {
         buildList {
             add(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki))
             add(InstallMethod.DownloadFile(summary = downloadFileMsg))
             if (rootAvailable && isGkiDevice) {
                 add(InstallMethod.DirectInstall)
                 if (isAbDevice) add(InstallMethod.DirectInstallToInactiveSlot)
+            }
+            if (rootAvailable && supportsAnyKernel) {
+                add(InstallMethod.AnyKernel3(summary = anyKernelMsg))
             }
         }
     }
@@ -213,6 +225,25 @@ fun InstallScreen() {
             }
         }
     }
+    val selectAnyKernelLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            it.data?.data?.let { uri ->
+                if (isZipFile(context, uri)) {
+                    installMethod = InstallMethod.AnyKernel3(
+                        uri,
+                        summary = resources.getString(
+                            R.string.install_anykernel3_selected,
+                            uri.lastPathSegment ?: "(file)"
+                        )
+                    )
+                } else {
+                    showMessage(resources.getString(R.string.install_anykernel3_only_zip))
+                }
+            }
+        }
+    }
     val selectImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
@@ -241,11 +272,15 @@ fun InstallScreen() {
         enableAdb = enableAdb,
         forceBackup = forceBackup,
         canForceBackup = installMethod is InstallMethod.SelectFile,
+        isAnyKernel = installMethod is InstallMethod.AnyKernel3,
     )
     val actions = InstallScreenActions(
         onBack = dropUnlessResumed { navigator.pop() },
         onSelectMethod = { method -> installMethod = method },
         onDownloadFile = { downloadDialogShown = true },
+        onSelectAnyKernel = {
+            selectAnyKernelLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/zip" })
+        },
         onSelectBootImage = {
             selectImageLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/octet-stream" })
         },
@@ -263,7 +298,13 @@ fun InstallScreen() {
                 partitionSelectionIndex = index
             }
         },
-        onNext = {
+        onNext = next@{
+            val method = installMethod
+            if (method is InstallMethod.AnyKernel3) {
+                // AnyKernel3 replaces the whole kernel: no LKM, KMI or seed choices apply
+                method.uri?.let { navigator.push(Route.Flash(FlashIt.FlashAnyKernel(it))) }
+                return@next
+            }
             val isLkmSelected = lkmSelection != LkmSelection.KmiNone
             val isKmiUnknown = currentKmi.isBlank()
             val isKmiUnresolved = when (installMethod) {

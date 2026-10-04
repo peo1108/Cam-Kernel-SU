@@ -399,4 +399,12 @@
     <string name="app_restore_system">Cài lại app hệ thống đã gỡ</string>
     <string name="app_restore_none">Không có app nào để cài lại</string>
     <string name="app_restored">Đã cài lại %1$s</string>
+    <string name="install_anykernel3">Flash file zip AnyKernel3</string>
+    <string name="install_anykernel3_summary">Thay kernel bằng bản có SUSFS (chỉ GKI 6.1 trở lên)</string>
+    <string name="install_anykernel3_selected">Đã chọn: %1$s</string>
+    <string name="install_anykernel3_only_zip">Chỉ hỗ trợ file .zip</string>
+    <string name="susfs">SUSFS</string>
+    <string name="susfs_version">Phiên bản SUSFS</string>
+    <string name="susfs_features">Tính năng SUSFS</string>
+    <string name="susfs_not_available">Không có</string>
 </resources>

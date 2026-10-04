@@ -24,6 +24,12 @@ internal sealed class InstallMethod : Parcelable {
         override val summary: String?
     ) : InstallMethod()
 
+    data class AnyKernel3(
+        val uri: Uri? = null,
+        @get:StringRes override val label: Int = R.string.install_anykernel3,
+        override val summary: String?
+    ) : InstallMethod()
+
     data object DirectInstall : InstallMethod() {
         override val label: Int
             get() = R.string.direct_install
@@ -40,9 +46,13 @@ internal sealed class InstallMethod : Parcelable {
     open val summary: String? = null
 }
 
-fun isKoFile(context: Context, uri: Uri): Boolean {
+fun isKoFile(context: Context, uri: Uri): Boolean = hasExtension(context, uri, ".ko")
+
+fun isZipFile(context: Context, uri: Uri): Boolean = hasExtension(context, uri, ".zip")
+
+private fun hasExtension(context: Context, uri: Uri, ext: String): Boolean {
     val seg = uri.lastPathSegment ?: ""
-    if (seg.endsWith(".ko", ignoreCase = true)) return true
+    if (seg.endsWith(ext, ignoreCase = true)) return true
 
     return try {
         context.contentResolver.query(
@@ -55,7 +65,7 @@ fun isKoFile(context: Context, uri: Uri): Boolean {
             val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             if (idx != -1 && cursor.moveToFirst()) {
                 val name = cursor.getString(idx)
-                name?.endsWith(".ko", ignoreCase = true) == true
+                name?.endsWith(ext, ignoreCase = true) == true
             } else {
                 false
             }

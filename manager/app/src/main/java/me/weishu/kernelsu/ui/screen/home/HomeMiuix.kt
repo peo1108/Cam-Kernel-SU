@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Smartphone
@@ -68,6 +69,7 @@ import me.weishu.kernelsu.ui.component.statustag.StatusTag
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
+import me.weishu.kernelsu.ui.util.SusfsInfo
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -174,6 +176,7 @@ fun HomePagerMiuix(
                         )
                         InfoCard(
                             systemInfo = state.systemInfo,
+                            susfsInfo = state.susfsInfo,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         SupportLinks(
@@ -384,6 +387,7 @@ private fun SupportLinks(
 private fun InfoCard(
     systemInfo: SystemInfo,
     modifier: Modifier = Modifier,
+    susfsInfo: SusfsInfo? = null,
 ) {
     @Composable
     fun InfoText(
@@ -479,6 +483,24 @@ private fun InfoCard(
                     content = seccompDisplay,
                     bottomPadding = 0.dp,
                 )
+            }
+        }
+        if (susfsInfo != null) {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    InfoText(
+                        icon = Icons.Filled.FolderOff,
+                        title = stringResource(R.string.susfs_version),
+                        content = "${susfsInfo.version} (${susfsInfo.variant})",
+                    )
+                    InfoText(
+                        icon = Icons.Filled.Security,
+                        title = stringResource(R.string.susfs_features),
+                        content = susfsInfo.features.joinToString("\n")
+                            .ifEmpty { stringResource(R.string.susfs_not_available) },
+                        bottomPadding = 0.dp,
+                    )
+                }
             }
         }
     }

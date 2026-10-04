@@ -11,33 +11,75 @@
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/uidgid.h>
+#include <linux/workqueue.h>
+#include <linux/susfs_def.h>
+#include "selinux/selinux.h"
 
 #include "policy/allowlist.h"
 #include "hook/setuid_hook.h"
 #include "klog.h" // IWYU pragma: keep
 #include "infra/seccomp_cache.h"
-#include "hook/tp_marker.h"
 #include "feature/kernel_umount.h"
 
-int ksu_handle_setresuid(uid_t old_uid, uid_t new_uid)
+extern u32 susfs_zygote_sid;
+extern u32 susfs_zygote_next_sid;
+extern void disable_seccomp(void);
+extern struct work_struct susfs_extra_works;
+
+static inline void ksu_handle_extra_susfs_work(void)
 {
-    // we rely on the fact that zygote always call setresuid(3) with same uids
+    if (work_pending(&susfs_extra_works))
+        return;
 
-    pr_info("handle_setresuid from %d to %d\n", old_uid, new_uid);
+    schedule_work(&susfs_extra_works);
+}
 
-    if (ksu_is_allow_uid_for_current(new_uid)) {
-        if (current->seccomp.mode == SECCOMP_MODE_FILTER && current->seccomp.filter) {
-            spin_lock_irq(&current->sighand->siglock);
-            ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
-            spin_unlock_irq(&current->sighand->siglock);
-        }
-        ksu_set_task_tracepoint_flag(current);
-    } else {
-        ksu_clear_task_tracepoint_flag_if_needed(current);
+// The manager has no kernel identity in this fork (uid 0 is the manager),
+// so a root-granted app is treated like any other allowed uid here.
+static int handle_zygote_setresuid(uid_t ruid, bool zygote_next)
+{
+    // Isolated services are always umounted
+    if (is_isolated_process(ruid))
+        goto do_umount;
+
+    // Normal user apps that the allowlist says must be umounted
+    if (likely(is_appuid(ruid) && ksu_uid_should_umount(ruid)))
+        goto do_umount;
+
+    // Running "su" disables seccomp anyway, so do it up front for root apps
+    if (ksu_is_allow_uid_for_current(ruid)) {
+        disable_seccomp();
+        return 0;
     }
 
-    // Handle kernel umount
-    ksu_handle_umount(old_uid, new_uid);
+    // Not umounted, but root is not allowed either
+    susfs_set_current_proc_no_su();
+    return 0;
+
+do_umount:
+    susfs_set_current_proc_no_su();
+    susfs_set_current_proc_umounted();
+    if (zygote_next) {
+        // zygote_next still runs in the init namespace, so do not umount here
+        susfs_set_current_proc_umounted_for_zygote_next();
+    } else {
+        ksu_handle_umount(current_uid().val, ruid);
+    }
+    ksu_handle_extra_susfs_work();
+    return 0;
+}
+
+int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
+{
+    if (current_uid().val != 0)
+        return 0;
+
+    // Only processes spawned by zygote or zygote_next are interesting
+    if (susfs_is_sid_equal(current_cred(), susfs_zygote_sid))
+        return handle_zygote_setresuid(ruid, false);
+
+    if (susfs_is_sid_equal(current_cred(), susfs_zygote_next_sid))
+        return handle_zygote_setresuid(ruid, true);
 
     return 0;
 }

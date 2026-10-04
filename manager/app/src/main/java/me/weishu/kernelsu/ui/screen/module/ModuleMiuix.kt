@@ -167,8 +167,9 @@ fun ModulePagerMiuix(
     actions: ModuleActions,
     bottomInnerPadding: Dp,
 ) {
-    val modules = uiState.moduleList
     val searchStatus = uiState.searchStatus
+    // the bottom bar's search filters this very list: matches stay in place, top to bottom
+    val modules = if (searchStatus.searchText.isNotBlank()) uiState.searchResults else uiState.moduleList
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -330,31 +331,6 @@ fun ModulePagerMiuix(
                             }
                         },
                         scrollBehavior = scrollBehavior,
-                        bottomContent = {
-                            Box(
-                                modifier = Modifier
-                                    .alpha(if (searchStatus.isCollapsed()) 1f else 0f)
-                                    .onGloballyPositioned { coordinates ->
-                                        with(density) {
-                                            val newOffsetY = coordinates.positionInWindow().y.toDp()
-                                            if (searchStatus.offsetY != newOffsetY) {
-                                                actions.onSearchStatusChange(searchStatus.copy(offsetY = newOffsetY))
-                                            }
-                                        }
-                                    }
-                                    .then(
-                                        if (searchStatus.isCollapsed()) {
-                                            Modifier.pointerInput(Unit) {
-                                                detectTapGestures {
-                                                    actions.onSearchStatusChange(searchStatus.copy(current = SearchStatus.Status.EXPANDING))
-                                                }
-                                            }
-                                        } else Modifier,
-                                    ),
-                            ) {
-                                SearchBarFake(searchStatus.label, dynamicTopPadding)
-                            }
-                        }
                     )
                 }
             }
@@ -424,30 +400,7 @@ fun ModulePagerMiuix(
                 )
             }
         },
-        popupHost = {
-            searchStatus.SearchPager(
-                onSearchStatusChange = actions.onSearchStatusChange,
-                defaultResult = {},
-                searchBarTopPadding = dynamicTopPadding,
-            ) {
-                val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-                ModuleList(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .overScrollVertical(),
-                    modules = uiState.searchResults,
-                    updateInfoMap = uiState.updateInfo,
-                    actions = actions,
-                    onModuleAddShortcut = ::onModuleAddShortcut,
-                    contentPadding = PaddingValues(
-                        top = 6.dp,
-                        start = 0.dp,
-                        end = 0.dp,
-                        bottom = maxOf(bottomInnerPadding, imeBottomPadding),
-                    ),
-                )
-            }
-        },
+        popupHost = { },
         snackbarHost = {
             SnackbarHost(
                 state = snackbarHostState,
@@ -476,7 +429,7 @@ fun ModulePagerMiuix(
             return@Scaffold
         }
         val layoutDirection = LocalLayoutDirection.current
-        searchStatus.SearchBox {
+        run {
             val pullToRefreshState = rememberPullToRefreshState()
             val refreshTexts = listOf(
                 stringResource(R.string.refresh_pulling),

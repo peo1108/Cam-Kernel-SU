@@ -1,7 +1,21 @@
 package me.weishu.kernelsu.ui.component.bottombar
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
@@ -11,9 +25,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Cottage
 import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -27,6 +43,10 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalMainPagerState
 import me.weishu.kernelsu.ui.component.FloatingBottomBar
 import me.weishu.kernelsu.ui.component.FloatingBottomBarItem
+import me.weishu.kernelsu.ui.component.search.GlassCircleButton
+import me.weishu.kernelsu.ui.component.search.LocalMainSearch
+import me.weishu.kernelsu.ui.component.search.SearchDock
+import me.weishu.kernelsu.ui.component.search.SearchablePages
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBar
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBarBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -55,13 +75,43 @@ fun BottomBarMiuix(
     val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
     val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
 
+    val search = LocalMainSearch.current
+    val searchable = SearchablePages.contains(mainState.selectedPage)
+    val searchLabel = stringResource(R.string.search_hint)
+    // the open search sits right above the keyboard, or above the navigation bar
+    val dockInsets = WindowInsets.ime.union(WindowInsets.navigationBars)
+
     val items = BottomBarDestination.entries.map { destination ->
         NavigationItem(
             label = stringResource(destination.label),
             icon = destination.icon,
         )
     }
+    if (search.active && searchable) {
+        SearchDock(
+            state = search,
+            backdrop = backdrop,
+            isBlurEnabled = enableFloatingBottomBarBlur,
+            modifier = modifier
+                .windowInsetsPadding(dockInsets)
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp),
+        )
+        return
+    }
+
     if (!enableFloatingBottomBar) {
+        Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+            AnimatedVisibility(visible = searchable, enter = fadeIn(), exit = fadeOut()) {
+                GlassCircleButton(
+                    icon = Icons.Rounded.Search,
+                    contentDescription = searchLabel,
+                    backdrop = backdrop,
+                    isBlurEnabled = enableFloatingBottomBarBlur,
+                    onClick = search::open,
+                    modifier = Modifier.padding(end = 16.dp, bottom = 10.dp),
+                    size = 52.dp,
+                )
+            }
         BlurredBar(blurBackdrop, glass = true) {
             NavigationBar(
                 modifier = modifier,
@@ -82,15 +132,21 @@ fun BottomBarMiuix(
                 }
             )
         }
+        }
     } else {
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             .let { inset -> if (inset != 0.dp) 8.dp + inset else 28.dp }
-        FloatingBottomBar(
+        Row(
             modifier = modifier
                 .pointerInput(Unit) {
                     detectTapGestures { }
                 }
-                .padding(start = 28.dp, end = 28.dp, bottom = bottomPadding),
+                .padding(start = if (searchable) 16.dp else 28.dp, end = if (searchable) 16.dp else 28.dp, bottom = bottomPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+        FloatingBottomBar(
+            modifier = Modifier.weight(1f, fill = false),
             selectedIndex = mainState.selectedPage,
             onSelected = { mainState.animateToPage(it) },
             backdrop = backdrop,
@@ -129,6 +185,23 @@ fun BottomBarMiuix(
                     )
                 }
             }
+        }
+        AnimatedVisibility(
+            visible = searchable,
+            enter = fadeIn() + expandHorizontally(),
+            exit = fadeOut() + shrinkHorizontally(),
+        ) {
+            Row {
+                Spacer(Modifier.width(10.dp))
+                GlassCircleButton(
+                    icon = Icons.Rounded.Search,
+                    contentDescription = searchLabel,
+                    backdrop = backdrop,
+                    isBlurEnabled = enableFloatingBottomBarBlur,
+                    onClick = search::open,
+                )
+            }
+        }
         }
     }
 }

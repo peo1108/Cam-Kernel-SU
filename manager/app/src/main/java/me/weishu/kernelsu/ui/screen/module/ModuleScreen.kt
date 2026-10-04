@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.SearchStatus
+import me.weishu.kernelsu.ui.component.search.mainSearchQueryFor
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.screen.flash.FlashIt
@@ -64,6 +65,9 @@ fun ModulePager(
     }
 
     var hasActivated by rememberSaveable { mutableStateOf(false) }
+    val searchQuery = mainSearchQueryFor(isCurrentPage)
+    LaunchedEffect(searchQuery) { viewModel.updateSearchText(searchQuery) }
+
     LaunchedEffect(isCurrentPage) {
         if (isCurrentPage) {
             if (!hasActivated) {

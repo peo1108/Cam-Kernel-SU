@@ -286,160 +286,16 @@ fun SuperUserPagerMiuix(
                             }
                         },
                         scrollBehavior = scrollBehavior,
-                        bottomContent = {
-                            Box(
-                                modifier = Modifier
-                                    .alpha(if (searchStatus.isCollapsed()) 1f else 0f)
-                                    .onGloballyPositioned { coordinates ->
-                                        with(density) {
-                                            val newOffsetY = coordinates.positionInWindow().y.toDp()
-                                            if (searchStatus.offsetY != newOffsetY) {
-                                                actions.onSearchStatusChange(searchStatus.copy(offsetY = newOffsetY))
-                                            }
-                                        }
-                                    }
-                                    .then(
-                                        if (searchStatus.isCollapsed()) {
-                                            Modifier.pointerInput(Unit) {
-                                                detectTapGestures {
-                                                    actions.onSearchStatusChange(searchStatus.copy(current = SearchStatus.Status.EXPANDING))
-                                                }
-                                            }
-                                        } else Modifier,
-                                    ),
-                            ) {
-                                SearchBarFake(searchStatus.label, dynamicTopPadding)
-                            }
-                        }
                     )
                 }
             }
         },
-        popupHost = {
-            val expandedSearchUids = remember { mutableStateOf(setOf<Int>()) }
-            val openSearchProfileUid = remember { mutableStateOf<Int?>(null) }
-            LaunchedEffect(uiState.searchResults) {
-                expandedSearchUids.value = uiState.searchResults
-                    .filter { it.apps.size > 1 }
-                    .map { it.uid }
-                    .toSet()
-            }
-            searchStatus.SearchPager(
-                onSearchStatusChange = actions.onSearchStatusChange,
-                defaultResult = {
-                    val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-                    if (uiState.recentlyInstalledResults.isNotEmpty()) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .overScrollVertical(),
-                        ) {
-                            item {
-                                Spacer(Modifier.height(6.dp))
-                                Text(
-                                    text = stringResource(R.string.recently_installed),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                                )
-                            }
-                            items(uiState.recentlyInstalledResults, key = { it.uid }, contentType = { "recent-group" }) { group ->
-                                Column {
-                                    GroupItem(
-                                        group = group,
-                                        onToggleExpand = {},
-                                    ) {
-                                        actions.onOpenProfile(group)
-                                    }
-                                    AnimatedVisibility(
-                                        visible = group.apps.size > 1,
-                                        enter = expandVertically() + fadeIn(),
-                                        exit = shrinkVertically() + fadeOut()
-                                    ) {
-                                        Column {
-                                            group.apps.forEach { app ->
-                                                SimpleAppItem(app = app)
-                                            }
-                                            Spacer(Modifier.height(6.dp))
-                                        }
-                                    }
-                                }
-                            }
-                            item {
-                                Spacer(Modifier.height(maxOf(bottomInnerPadding, imeBottomPadding)))
-                            }
-                        }
-                    }
-                },
-                searchBarTopPadding = dynamicTopPadding,
-            ) {
-                val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .overScrollVertical(),
-                ) {
-                    item {
-                        Spacer(Modifier.height(6.dp))
-                    }
-                    items(uiState.searchResults, key = { it.uid }, contentType = { "group" }) { group ->
-                        val profileExpanded = openSearchProfileUid.value == group.uid
-                        val expanded = expandedSearchUids.value.contains(group.uid)
-                        AnimatedVisibility(
-                            visible = uiState.searchResults.isNotEmpty(),
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            Column {
-                                GroupItem(
-                                    group = group,
-                                    onToggleExpand = {
-                                        if (group.apps.size > 1) {
-                                            expandedSearchUids.value =
-                                                if (expanded) expandedSearchUids.value - group.uid else expandedSearchUids.value + group.uid
-                                        }
-                                    },
-                                    profileExpanded = profileExpanded,
-                                    profileContent = {
-                                        InlineAppProfile(
-                                            group = group,
-                                            onOpenFullProfile = { actions.onOpenProfile(group) },
-                                            onEdited = actions.onProfileEdited,
-                                        )
-                                    },
-                                ) {
-                                    openSearchProfileUid.value = if (profileExpanded) null else group.uid
-                                }
-                                AnimatedVisibility(
-                                    visible = expanded && group.apps.size > 1,
-                                    enter = expandVertically() + fadeIn(),
-                                    exit = shrinkVertically() + fadeOut()
-                                ) {
-                                    Column {
-                                        group.apps.forEach { app ->
-                                            SimpleAppItem(
-                                                app = app,
-                                                matched = group.matchedIdentifiers.contains(app.displayIdentifier),
-                                            )
-                                        }
-                                        Spacer(Modifier.height(6.dp))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    item {
-                        Spacer(Modifier.height(maxOf(bottomInnerPadding, imeBottomPadding)))
-                    }
-                }
-            }
-        },
+        popupHost = { },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current
         val lazyListState = rememberLazyListState()
-        searchStatus.SearchBox {
+        run {
             val refreshTick = remember { mutableIntStateOf(0) }
             val latestGroupedApps = rememberUpdatedState(uiState.groupedApps)
             val latestRefreshing = rememberUpdatedState(uiState.isRefreshing)
@@ -490,8 +346,12 @@ fun SuperUserPagerMiuix(
                         ),
                         overscrollEffect = null,
                     ) {
-                        itemsIndexed(uiState.groupedApps, key = { _, it -> it.uid }, contentType = { _, _ -> "group" }) { index, group ->
-                            val expanded = expandedUids.value.contains(group.uid)
+                        // the bottom bar's search filters this very list: matches stay in place, top to bottom
+                        val searching = searchStatus.searchText.isNotBlank()
+                        val shownGroups = if (searching) uiState.searchResults else uiState.groupedApps
+                        itemsIndexed(shownGroups, key = { _, it -> it.uid }, contentType = { _, _ -> "group" }) { index, group ->
+                            // while searching, groups open up so the matching app shows
+                            val expanded = expandedUids.value.contains(group.uid) || (searching && group.apps.size > 1)
                             Column(modifier = Modifier.cardEntrance(lazyListState, index)) {
                                 GroupItem(
                                     group = group,
@@ -519,7 +379,10 @@ fun SuperUserPagerMiuix(
                                 ) {
                                     Column {
                                         group.apps.forEach { app ->
-                                            SimpleAppItem(app = app)
+                                            SimpleAppItem(
+                                                app = app,
+                                                matched = searching && group.matchedIdentifiers.contains(app.displayIdentifier),
+                                            )
                                         }
                                         Spacer(Modifier.height(6.dp))
                                     }

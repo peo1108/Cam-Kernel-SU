@@ -1,5 +1,6 @@
 package me.weishu.kernelsu.ui
 
+import androidx.activity.compose.BackHandler
 import me.weishu.kernelsu.ui.component.glass.rememberGradientStandIn
 import me.weishu.kernelsu.ui.component.glass.GlassSource
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
@@ -76,6 +77,8 @@ import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.Ksu
 import me.weishu.kernelsu.KsuServiceClient
 import me.weishu.kernelsu.ui.component.bottombar.BottomBar
+import me.weishu.kernelsu.ui.component.search.LocalMainSearch
+import me.weishu.kernelsu.ui.component.search.MainSearchState
 import me.weishu.kernelsu.ui.component.bottombar.MainPagerState
 import me.weishu.kernelsu.ui.component.bottombar.NavigationBadgeState
 import me.weishu.kernelsu.ui.component.bottombar.SideRail
@@ -439,8 +442,14 @@ fun MainScreen(
 
     MainScreenBackHandler(mainPagerState, navController)
 
+    // shared by the Superuser and Module pages; back and switching tabs close it first
+    val mainSearch = remember { MainSearchState() }
+    LaunchedEffect(mainPagerState.selectedPage) { mainSearch.close() }
+    BackHandler(enabled = mainSearch.active) { mainSearch.close() }
+
     CompositionLocalProvider(
-        LocalMainPagerState provides mainPagerState
+        LocalMainPagerState provides mainPagerState,
+        LocalMainSearch provides mainSearch,
     ) {
         val contentReady = rememberContentReady()
         val pagerContent = @Composable { bottomInnerPadding: Dp ->

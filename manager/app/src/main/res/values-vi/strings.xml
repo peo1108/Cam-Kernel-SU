@@ -116,6 +116,8 @@
     <string name="settings_check_update_summary">Tự động kiểm tra cập nhật khi mở ứng dụng.</string>
     <string name="open">Mở</string>
     <string name="close">Đóng</string>
+    <string name="search_hint">Tìm kiếm</string>
+    <string name="search_clear">Xóa</string>
     <string name="install_inactive_slot">Cài đặt vào phân vùng không hoạt động (Sau OTA)</string>
     <string name="install_inactive_slot_warning">Thiết bị của bạn sẽ **BUỘC** phải khởi động vào phân vùng không hoạt động hiện tại sau khi khởi động lại!\nChỉ dùng tùy chọn này khi cập nhật OTA đã hoàn tất!\nTiếp tục?</string>
     <string name="settings_uninstall_temporary_message">Gỡ cài đặt tạm thời KernelSU, khôi phục lại trạng thái ban đầu sau lần khởi động lại tiếp theo.</string>

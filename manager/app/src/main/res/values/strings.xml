@@ -408,4 +408,16 @@
     <string name="app_restore_system">Reinstall removed system apps</string>
     <string name="app_restore_none">Nothing to reinstall</string>
     <string name="app_restored">Reinstalled %1$s</string>
+    <string name="boot_guard_notice">KernelSU disabled %d module(s) because the device kept failing to boot. Tap to review</string>
+    <string name="boot_guard_dialog_title">Disabled by boot guard</string>
+    <string name="boot_guard_dialog_summary">A module enabled again takes effect after a reboot. If the device fails to boot again, it is disabled again.</string>
+    <string name="boot_guard_reenable">Enable again</string>
+    <string name="boot_guard_dismiss">Dismiss</string>
+    <string name="module_badge_auto_disabled">Disabled by boot guard</string>
+    <string name="module_badge_conflict">Conflict</string>
+    <string name="module_conflict_title">Conflicts with other modules</string>
+    <string name="module_conflict_file">%1$s is also changed by %2$s</string>
+    <string name="module_conflict_replace">%1$s is replaced as a whole; also touched by %2$s</string>
+    <string name="module_conflict_prop">Property %1$s is set differently by %2$s</string>
+    <string name="flash_conflict_warning">! This module conflicts with: %s</string>
 </resources>

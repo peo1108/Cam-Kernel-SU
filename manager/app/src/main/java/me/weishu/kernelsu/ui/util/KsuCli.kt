@@ -18,16 +18,19 @@ import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.Ksu
+import me.weishu.kernelsu.R
 import me.weishu.kernelsu.core.tasks.BootKernelVersion
 import me.weishu.kernelsu.core.tasks.ExtractImage
 import me.weishu.kernelsu.core.tasks.ProbeResult
 import me.weishu.kernelsu.core.utils.DataSourceChannel
 import me.weishu.kernelsu.data.model.BootGuardStatus
 import me.weishu.kernelsu.data.model.ModuleConflict
+import me.weishu.kernelsu.data.model.forModule
 import me.weishu.kernelsu.data.model.parseModuleConflicts
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.screen.install.SeedApp
 import me.weishu.kernelsu.ui.screen.install.isValidSeedPackageName
+import me.weishu.kernelsu.ui.util.module.readModuleIdFromZip
 import okhttp3.OkHttpClient
 import org.json.JSONArray
 import java.io.File
@@ -234,6 +237,18 @@ fun flashModule(
         val cmd = "module install ${file.absolutePath}"
         val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
         Log.i("KernelSU", "install module $uri result: $result")
+
+        // ksud checks the pending update in place of the installed copy
+        val moduleId = readModuleIdFromZip(file)
+        if (result.isSuccess && moduleId != null) {
+            val others = listModuleConflicts().forModule(moduleId)
+                .flatMap { it.modules }
+                .filter { it != moduleId }
+                .distinct()
+            if (others.isNotEmpty()) {
+                onStdout(ksuApp.getString(R.string.flash_conflict_warning, others.joinToString(", ")))
+            }
+        }
 
         file.delete()
 

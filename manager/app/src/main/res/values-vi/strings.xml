@@ -399,4 +399,16 @@
     <string name="app_restore_system">Cài lại app hệ thống đã gỡ</string>
     <string name="app_restore_none">Không có app nào để cài lại</string>
     <string name="app_restored">Đã cài lại %1$s</string>
+    <string name="boot_guard_notice">KernelSU đã tắt %d module vì máy khởi động lỗi liên tục. Nhấn để xem</string>
+    <string name="boot_guard_dialog_title">Bị tắt do lỗi khởi động</string>
+    <string name="boot_guard_dialog_summary">Module bật lại sẽ có hiệu lực sau khi khởi động lại. Nếu máy lại không khởi động được, module sẽ bị tắt lần nữa.</string>
+    <string name="boot_guard_reenable">Bật lại</string>
+    <string name="boot_guard_dismiss">Bỏ qua</string>
+    <string name="module_badge_auto_disabled">Tự tắt do lỗi khởi động</string>
+    <string name="module_badge_conflict">Xung đột</string>
+    <string name="module_conflict_title">Xung đột với module khác</string>
+    <string name="module_conflict_file">%1$s cũng bị sửa bởi %2$s</string>
+    <string name="module_conflict_replace">%1$s bị thay toàn bộ; %2$s cũng sửa trong đó</string>
+    <string name="module_conflict_prop">Prop %1$s được đặt khác giá trị bởi %2$s</string>
+    <string name="flash_conflict_warning">! Module này xung đột với: %s</string>
 </resources>

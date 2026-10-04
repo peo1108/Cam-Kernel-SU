@@ -190,6 +190,23 @@ enum Commands {
         #[arg(long, default_value = "false")]
         inactive: bool,
     },
+
+    /// Manage boot backups made by flash-ak3
+    Ak3Backup {
+        #[command(subcommand)]
+        command: Ak3Backup,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Ak3Backup {
+    /// List boot backups made before flashing AnyKernel3 zips, as JSON
+    List,
+    /// Write a boot backup back to its slot
+    Restore {
+        /// backup image path from `list`
+        file: String,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -931,6 +948,10 @@ pub fn run() -> Result<()> {
             no_backup,
             inactive,
         } => crate::anykernel::flash(&zip, no_backup, inactive),
+        Commands::Ak3Backup { command } => match command {
+            Ak3Backup::List => crate::anykernel::list_backups(),
+            Ak3Backup::Restore { file } => crate::anykernel::restore_backup(&file),
+        },
         Commands::Initrc { command } => match command {
             Initrc::Refresh => regenerate_preinit_rc(),
         },

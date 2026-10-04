@@ -4,9 +4,13 @@
 //!
 //! With `inactive`, AnyKernel3 flashes the other slot (`SLOT_SELECT=inactive`)
 //! and the device is switched to it, for installing right after an OTA.
+//!
+//! Backups live in `/data/adb/ksu/ak3_backup/`: `boot<slot>.img` is the kernel
+//! that was there before the last flash, `boot<slot>-original.img` the one from
+//! before the very first flash, which is never overwritten.
 
 use std::fs::{self, File};
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufRead, BufReader, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -16,6 +20,30 @@ use crate::{assets, boot_patch, defs};
 
 const UPDATE_BINARY: &str = "META-INF/com/google/android/update-binary";
 const AK3_SCRIPT: &str = "anykernel.sh";
+const ORIGINAL_SUFFIX: &str = "-original";
+
+fn backup_dir() -> PathBuf {
+    Path::new(defs::WORKING_DIR).join("ak3_backup")
+}
+
+fn boot_partition(slot_suffix: &str) -> Result<PathBuf> {
+    let partition = PathBuf::from(format!("/dev/block/by-name/boot{slot_suffix}"));
+    ensure!(
+        partition.exists(),
+        "boot partition {} not found",
+        partition.display()
+    );
+    Ok(partition)
+}
+
+fn copy_synced(src: &Path, dst: &Path) -> Result<()> {
+    let mut from = File::open(src).with_context(|| format!("open {}", src.display()))?;
+    let mut to = File::create(dst).with_context(|| format!("create {}", dst.display()))?;
+    io::copy(&mut from, &mut to)
+        .with_context(|| format!("copy {} to {} failed", src.display(), dst.display()))?;
+    to.sync_all()?;
+    Ok(())
+}
 
 fn check_zip(zip_path: &Path) -> Result<()> {
     let file = File::open(zip_path).with_context(|| format!("open {}", zip_path.display()))?;
@@ -41,26 +69,102 @@ fn extract_update_binary(zip_path: &Path, dest: &Path) -> Result<()> {
 }
 
 /// Copies the boot partition about to be flashed so a bad kernel can be
-/// undone with `fastboot flash boot<slot> <backup>`.
+/// undone with `ksud ak3-backup restore` or `fastboot flash boot<slot> <backup>`.
 fn backup_boot(inactive: bool) -> Result<PathBuf> {
     let slot_suffix = boot_patch::get_slot_suffix(inactive);
-    let partition = PathBuf::from(format!("/dev/block/by-name/boot{slot_suffix}"));
+    let partition = boot_partition(&slot_suffix)?;
+
+    let dir = backup_dir();
+    fs::create_dir_all(&dir)?;
+    let backup = dir.join(format!("boot{slot_suffix}.img"));
+    copy_synced(&partition, &backup)?;
+
+    // keep the first kernel ever replaced, so the device can always go back to it
+    let original = dir.join(format!("boot{slot_suffix}{ORIGINAL_SUFFIX}.img"));
+    if !original.exists() {
+        copy_synced(&backup, &original)?;
+    }
+    Ok(backup)
+}
+
+/// Prints the boot backups as JSON for the Manager.
+pub fn list_backups() -> Result<()> {
+    let mut backups = Vec::new();
+    if let Ok(entries) = fs::read_dir(backup_dir()) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let Some(stem) = name
+                .strip_prefix("boot")
+                .and_then(|n| n.strip_suffix(".img"))
+            else {
+                continue;
+            };
+            let (slot, original) = stem
+                .strip_suffix(ORIGINAL_SUFFIX)
+                .map_or((stem, false), |slot| (slot, true));
+            let meta = entry.metadata()?;
+            let modified = meta
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map_or(0, |d| d.as_secs());
+            backups.push(serde_json::json!({
+                "path": path.to_string_lossy(),
+                "slot": slot,
+                "original": original,
+                "size": meta.len(),
+                "modified": modified,
+            }));
+        }
+    }
+    println!("{}", serde_json::Value::Array(backups));
+    Ok(())
+}
+
+/// Writes a backup made by `flash` back to the boot partition of its slot.
+pub fn restore_backup(file: &str) -> Result<()> {
+    let path = fs::canonicalize(file).with_context(|| format!("realpath: {file} failed"))?;
+    let dir = fs::canonicalize(backup_dir())?;
     ensure!(
-        partition.exists(),
-        "boot partition {} not found",
+        path.parent() == Some(dir.as_path()),
+        "{} is not an AnyKernel3 boot backup",
+        path.display()
+    );
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .context("bad backup name")?;
+    let stem = name
+        .strip_prefix("boot")
+        .and_then(|n| n.strip_suffix(".img"))
+        .context("bad backup name")?;
+    let slot_suffix = stem.strip_suffix(ORIGINAL_SUFFIX).unwrap_or(stem);
+    let partition = boot_partition(slot_suffix)?;
+
+    let backup_size = fs::metadata(&path)?.len();
+    let partition_size = File::open(&partition)?.seek(io::SeekFrom::End(0))?;
+    ensure!(
+        backup_size <= partition_size,
+        "backup ({backup_size} bytes) is larger than {} ({partition_size} bytes)",
         partition.display()
     );
 
-    let backup_dir = Path::new(defs::WORKING_DIR).join("ak3_backup");
-    fs::create_dir_all(&backup_dir)?;
-    let backup = backup_dir.join(format!("boot{slot_suffix}.img"));
-
-    let mut src = File::open(&partition)?;
-    let mut dst = File::create(&backup)?;
-    io::copy(&mut src, &mut dst)
-        .with_context(|| format!("backup {} failed", partition.display()))?;
-    dst.sync_all()?;
-    Ok(backup)
+    let mut stdout = io::stdout();
+    writeln!(
+        stdout,
+        "- Restoring {} to {}",
+        path.display(),
+        partition.display()
+    )?;
+    let mut from = File::open(&path)?;
+    let mut to = fs::OpenOptions::new().write(true).open(&partition)?;
+    io::copy(&mut from, &mut to)?;
+    to.sync_all()?;
+    writeln!(stdout, "- Done, reboot to use the restored kernel")?;
+    Ok(())
 }
 
 pub fn flash(zip: &str, no_backup: bool, inactive: bool) -> Result<()> {

@@ -1,0 +1,164 @@
+name: Build SFS kernel (GKI + KernelSU + SUSFS)
+# Builds a GKI Image with KernelSU built in and SUSFS patched in, then packs
+# it as an AnyKernel3 zip. Users root with LKM first and flash this zip from
+# the Manager. Only GKI 6.1 and newer are supported.
+on:
+  workflow_dispatch:
+    inputs:
+      kmi:
+        description: 'KMI to build (empty = all)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - android14-6.1
+          - android15-6.6
+          - android16-6.12
+  push:
+    branches: [ "sfs" ]
+    paths:
+      - '.github/workflows/build-sfs-kernel.yml'
+      - 'kernel/**'
+      - 'uapi/**'
+      - 'sfs/**'
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      kmi: ${{ steps.set.outputs.kmi }}
+    steps:
+      - id: set
+        run: |
+          if [ -n "${{ inputs.kmi }}" ]; then
+            echo 'kmi=["${{ inputs.kmi }}"]' >> "$GITHUB_OUTPUT"
+          else
+            # susfs4ksu has no 6.18 branch yet; add android17-6.18 once it does
+            echo 'kmi=["android14-6.1","android15-6.6","android16-6.12"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: matrix
+    name: Build ${{ matrix.kmi }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kmi: ${{ fromJSON(needs.matrix.outputs.kmi) }}
+    env:
+      KMI: ${{ matrix.kmi }}
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - name: Checkout KernelSU
+        uses: actions/checkout@v7
+        with:
+          path: KernelSU
+          # Full history: the KernelSU version is 30000 + commit count
+          fetch-depth: 0
+
+      - name: Compute versions
+        run: |
+          echo "KERNEL_VERSION=${KMI#*-}" >> "$GITHUB_ENV"
+          echo "KSU_VERSION=$((30000 + $(git -C KernelSU rev-list --count HEAD)))" >> "$GITHUB_ENV"
+
+      - name: Install repo
+        run: |
+          mkdir -p ~/bin
+          curl -sSL https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod +x ~/bin/repo
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Sync GKI source
+        run: |
+          mkdir gki && cd gki
+          repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "common-$KMI" --repo-rev=v2.16
+          repo --trace sync -c -j"$(nproc --all)" --no-tags --fail-fast
+          df -h /
+
+      - name: Apply SUSFS
+        working-directory: gki
+        run: |
+          git clone --depth=1 -b "gki-$KMI" https://gitlab.com/simonpunk/susfs4ksu.git ../susfs4ksu
+          cp -r ../susfs4ksu/kernel_patches/fs/* common/fs/
+          cp -r ../susfs4ksu/kernel_patches/include/linux/* common/include/linux/
+          cd common
+          patch -p1 --forward --fuzz=3 < "../../susfs4ksu/kernel_patches/50_add_susfs_in_gki-$KMI.patch"
+          SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' include/linux/susfs.h | cut -d'"' -f2)
+          echo "SUSFS_VERSION=$SUSFS_VERSION" >> "$GITHUB_ENV"
+
+      - name: Add KernelSU
+        working-directory: gki
+        run: |
+          # Bazel sandboxes the build, so copy the sources instead of symlinking them
+          cp -r ../KernelSU/kernel common/drivers/kernelsu
+          rm -f common/drivers/kernelsu/include/uapi
+          cp -r ../KernelSU/uapi common/drivers/kernelsu/include/uapi
+          # No .git inside the sandbox: pin the version the Manager expects
+          sed -i "s/-DKSU_VERSION=16/-DKSU_VERSION=$KSU_VERSION/" common/drivers/kernelsu/Kbuild
+          grep -q kernelsu common/drivers/Makefile || printf '\nobj-$(CONFIG_KSU) += kernelsu/\n' >> common/drivers/Makefile
+          grep -q 'drivers/kernelsu/Kconfig' common/drivers/Kconfig || sed -i '/endmenu/i\source "drivers/kernelsu/Kconfig"' common/drivers/Kconfig
+
+      - name: Configure
+        working-directory: gki
+        run: |
+          DEFCONFIG=common/arch/arm64/configs/gki_defconfig
+          cat >> "$DEFCONFIG" <<'EOF'
+          CONFIG_KSU=y
+          CONFIG_KSU_SUSFS=y
+          CONFIG_KSU_SUSFS_SUS_PATH=y
+          CONFIG_KSU_SUSFS_SUS_MOUNT=y
+          CONFIG_KSU_SUSFS_SUS_KSTAT=y
+          CONFIG_KSU_SUSFS_SPOOF_UNAME=y
+          CONFIG_KSU_SUSFS_ENABLE_LOG=y
+          CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
+          CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
+          CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
+          CONFIG_KSU_SUSFS_SUS_MAP=y
+          EOF
+          sed -i 's/^ *//' "$DEFCONFIG"
+          # The extra configs and symbols are expected to differ from the frozen GKI ABI
+          sed -i 's/check_defconfig//' common/build.config.gki
+          rm -f common/android/abi_gki_protected_exports_*
+          perl -pi -e 's/^\s*"protected_exports_list"\s*:\s*"android\/abi_gki_protected_exports_aarch64",\s*$//;' common/BUILD.bazel || true
+          # Drop the -dirty suffix from the kernel release string
+          sed -i 's/-dirty//' common/scripts/setlocalversion
+          sed -i '/stable_scmversion_cmd/s/-maybe-dirty//' build/kernel/kleaf/impl/stamp.bzl || true
+
+      - name: Build
+        working-directory: gki
+        run: |
+          if tools/bazel run --help 2>/dev/null | grep -q destdir || grep -rq -- '--destdir' build/kernel/kleaf/*.py 2>/dev/null; then
+            tools/bazel run --config=fast --lto=thin //common:kernel_aarch64_dist -- --destdir=dist
+          else
+            tools/bazel run --config=fast --lto=thin //common:kernel_aarch64_dist -- --dist_dir=dist
+          fi
+          ls -la dist/Image
+
+      - name: Pack AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git ak3
+          rm -rf ak3/.git ak3/.github ak3/modules ak3/patch ak3/ramdisk ak3/README.md
+          cp KernelSU/sfs/anykernel3/anykernel.sh ak3/anykernel.sh
+          sed -i \
+            -e "s/@KMI@/$KMI/g" \
+            -e "s/@KERNEL_VERSION@/$KERNEL_VERSION/g" \
+            -e "s/@KSU_VERSION@/$KSU_VERSION/g" \
+            -e "s/@SUSFS_VERSION@/$SUSFS_VERSION/g" \
+            ak3/anykernel.sh
+          cp gki/dist/Image ak3/Image
+          ZIP="KernelSU-SFS-${KMI}-${KSU_VERSION}-susfs-${SUSFS_VERSION}.zip"
+          (cd ak3 && zip -r9 "../$ZIP" ./*)
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ZIP }}
+          path: ${{ env.ZIP }}
+          compression-level: 0

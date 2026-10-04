@@ -14,8 +14,13 @@ import java.io.IOException
 /** GitHub repo whose releases carry the GKI + SUSFS AnyKernel3 zips (built by build-sfs-kernel.yml). */
 const val SFS_RELEASE_REPO = "peo1108/Cam-Kernel-SU"
 
-// KernelSU-SFS-<kmi>-<ksu version>-susfs-<susfs version>.zip, see build-sfs-kernel.yml
-private val SFS_ASSET = Regex("""^KernelSU-SFS-(android\d+-\d+\.\d+)-(\d+)-susfs-(.+)\.zip$""")
+// KernelSU-SFS-<android release>-<KMI generation>-<kernel>-<ksu version>-susfs-<susfs version>.zip,
+// e.g. KernelSU-SFS-android16-5-6.12-32760-susfs-v2.3.0.zip; see build-sfs-kernel.yml
+private val SFS_ASSET = Regex("""^KernelSU-SFS-(android\d+)-(\d+)-(\d+\.\d+)-(\d+)-susfs-(.+)\.zip$""")
+
+/** android16-5 from a GKI release such as 6.12.30-android16-5-g1750f757fabe-ab13938768-4k */
+fun kmiTagOf(release: String): String =
+    Regex("""-(android\d+-\d+)(-|$)""").find(release)?.groupValues?.get(1).orEmpty()
 
 @Immutable
 @Parcelize
@@ -23,6 +28,8 @@ data class SfsBuild(
     val tag: String,
     val fileName: String,
     val kmi: String,
+    /** e.g. android16-5: the KMI generation, which must match the device's */
+    val kmiTag: String,
     val ksuVersion: Int,
     val susfsVersion: String,
     val url: String,
@@ -31,8 +38,11 @@ data class SfsBuild(
     val publishedAt: String,
 ) : Parcelable
 
-/** AnyKernel3 builds for [kmi] from the project's releases, newest release first. */
-suspend fun fetchSfsBuilds(kmi: String): List<SfsBuild> = withContext(Dispatchers.IO) {
+/**
+ * AnyKernel3 builds for [kmi] and the KMI generation [kmiTag] from the project's
+ * releases, newest release first. A build of another generation would bootloop.
+ */
+suspend fun fetchSfsBuilds(kmi: String, kmiTag: String): List<SfsBuild> = withContext(Dispatchers.IO) {
     val request = Request.Builder()
         .url("https://api.github.com/repos/$SFS_RELEASE_REPO/releases?per_page=30")
         .header("Accept", "application/vnd.github+json")
@@ -51,14 +61,18 @@ suspend fun fetchSfsBuilds(kmi: String): List<SfsBuild> = withContext(Dispatcher
                 val asset = assets.getJSONObject(j)
                 val name = asset.optString("name")
                 val match = SFS_ASSET.matchEntire(name) ?: continue
-                if (match.groupValues[1] != kmi) continue
+                val (android, generation, kernel) = match.destructured
+                val assetKmi = "$android-$kernel"
+                val assetTag = "$android-$generation"
+                if (assetKmi != kmi || assetTag != kmiTag) continue
                 add(
                     SfsBuild(
                         tag = release.optString("tag_name"),
                         fileName = name,
                         kmi = kmi,
-                        ksuVersion = match.groupValues[2].toInt(),
-                        susfsVersion = match.groupValues[3],
+                        kmiTag = assetTag,
+                        ksuVersion = match.groupValues[4].toInt(),
+                        susfsVersion = match.groupValues[5],
                         url = asset.optString("browser_download_url"),
                         size = asset.optLong("size"),
                         publishedAt = release.optString("published_at"),

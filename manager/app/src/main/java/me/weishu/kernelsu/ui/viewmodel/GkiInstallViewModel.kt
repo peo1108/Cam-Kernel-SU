@@ -42,12 +42,13 @@ class GkiInstallViewModel : ViewModel() {
 
     fun loadBuilds() {
         val kmi = _uiState.value.status.kmi
-        if (kmi.isBlank()) return
+        val kmiTag = _uiState.value.status.kmiTag
+        if (kmi.isBlank() || kmiTag.isBlank()) return
         buildsJob?.cancel()
         buildsJob = viewModelScope.launch {
             _uiState.update { it.copy(builds = BuildsState.Loading) }
             val result = try {
-                BuildsState.Loaded(fetchSfsBuilds(kmi))
+                BuildsState.Loaded(fetchSfsBuilds(kmi, kmiTag))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

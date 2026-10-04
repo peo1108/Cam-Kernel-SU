@@ -15,6 +15,8 @@ data class GkiStatus(
     val kernelRelease: String = "",
     /** e.g. android16-6.12: picks the project build that fits this device */
     val kmi: String = "",
+    /** e.g. android16-5: the KMI generation, which a build must match too */
+    val kmiTag: String = "",
     /** A/B device: installing to the inactive slot is possible */
     val abDevice: Boolean = false,
     /** GKI 6.1 or newer: the only kernels the SFS AnyKernel3 builds exist for */
@@ -30,6 +32,7 @@ suspend fun loadGkiStatus(): GkiStatus = withContext(Dispatchers.IO) {
     val builtIn = Ksu.isAvailable && !Ksu.isLkmMode
     GkiStatus(
         kernelRelease = Os.uname().release,
+        kmiTag = kmiTagOf(Os.uname().release),
         kmi = runCatching { getCurrentKmi().trim() }.getOrDefault(""),
         abDevice = runCatching { isAbDevice() }.getOrDefault(false),
         supported = version.major > 6 || (version.major == 6 && version.patchLevel >= 1),

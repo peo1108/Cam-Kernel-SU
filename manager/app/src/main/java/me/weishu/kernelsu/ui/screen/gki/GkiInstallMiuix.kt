@@ -156,7 +156,10 @@ private fun StatusCard(state: GkiInstallUiState) {
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(vertical = 4.dp)) {
             InfoRow(stringResource(R.string.gki_label_kernel), status.kernelRelease.ifBlank { "-" })
-            InfoRow(stringResource(R.string.gki_label_kmi), status.kmi.ifBlank { "-" })
+            InfoRow(
+                stringResource(R.string.gki_label_kmi),
+                listOf(status.kmi, status.kmiTag).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "-" },
+            )
             InfoRow(
                 stringResource(R.string.gki_label_mode),
                 stringResource(if (status.builtIn) R.string.gki_mode_value_builtin else R.string.gki_mode_value_lkm),

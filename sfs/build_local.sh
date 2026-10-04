@@ -93,8 +93,8 @@ rm -rf dist
 # No LTO, like the official android16-6.12 GKI: with LTO, Kconfig drops RUST
 # (BTF needs !LTO, GENDWARFKSYMS needs !LTO) and rust_binder.ko never gets built.
 tools/bazel run --config=fast --lto="$LTO" --jobs="$JOBS" //common:kernel_aarch64_dist -- --destdir=dist
-strings dist/Image | grep -m1 "susfs is initialized"
-strings dist/Image | grep -m1 -i "kernelsu"
+grep -aq "susfs is initialized" dist/Image || { echo "SUSFS is missing from the Image"; exit 1; }
+grep -aqi "kernelsu" dist/Image || { echo "KernelSU is missing from the Image"; exit 1; }
 
 log "AnyKernel3"
 AK3="$WORK/ak3"

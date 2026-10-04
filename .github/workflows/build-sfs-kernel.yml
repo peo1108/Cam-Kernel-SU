@@ -163,8 +163,8 @@ jobs:
           tools/bazel run --config=fast --lto=none //common:kernel_aarch64_dist -- --destdir=dist
           ls -la dist/Image
           # make sure KernelSU and SUSFS really ended up in the kernel
-          strings dist/Image | grep -m1 "susfs is initialized"
-          strings dist/Image | grep -m1 -i "kernelsu"
+          grep -aq "susfs is initialized" dist/Image || { echo "SUSFS is missing from the Image"; exit 1; }
+          grep -aqi "kernelsu" dist/Image || { echo "KernelSU is missing from the Image"; exit 1; }
 
       - name: Pack AnyKernel3
         run: |

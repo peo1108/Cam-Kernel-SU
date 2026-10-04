@@ -364,6 +364,12 @@ enum Module {
     /// list files and props that several modules override
     Conflicts,
 
+    /// bring back the version an update replaced (applies after reboot)
+    Restore {
+        /// module id
+        id: String,
+    },
+
     /// manage module configuration
     Config {
         /// target internal module name (resolved as internal.<name>)
@@ -612,6 +618,7 @@ pub fn run() -> Result<()> {
                 Module::Action { id } => module::run_action(&id),
                 Module::List => module::list_modules(),
                 Module::Conflicts => module::list_module_conflicts(),
+                Module::Restore { id } => module::restore_module(&id),
                 Module::Config { internal, command } => {
                     let module_id = match internal {
                         Some(internal_name) => format!("internal.{internal_name}"),

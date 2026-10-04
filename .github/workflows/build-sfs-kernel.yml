@@ -158,11 +158,9 @@ jobs:
       - name: Build
         working-directory: gki
         run: |
-          if tools/bazel run --help 2>/dev/null | grep -q destdir || grep -rq -- '--destdir' build/kernel/kleaf/*.py 2>/dev/null; then
-            tools/bazel run --config=fast --lto=thin //common:kernel_aarch64_dist -- --destdir=dist
-          else
-            tools/bazel run --config=fast --lto=thin //common:kernel_aarch64_dist -- --dist_dir=dist
-          fi
+          # No LTO, like the official android16-6.12 GKI: with LTO, Kconfig drops RUST
+          # (BTF needs !LTO, GENDWARFKSYMS needs !LTO) and rust_binder.ko never gets built.
+          tools/bazel run --config=fast --lto=none //common:kernel_aarch64_dist -- --destdir=dist
           ls -la dist/Image
           # make sure KernelSU and SUSFS really ended up in the kernel
           strings dist/Image | grep -m1 "susfs is initialized"

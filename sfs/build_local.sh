@@ -12,7 +12,7 @@
 #
 # Environment:
 #   SRC   repo seen from Linux     WORK  where GKI trees and outputs live
-#   JOBS  bazel --jobs             LTO   thin (like CI) or none (faster)
+#   JOBS  bazel --jobs             LTO   none, like the official android16-6.12 GKI
 set -euo pipefail
 
 KMI="${1:-android16-6.12}"
@@ -24,7 +24,7 @@ GKI_BRANCH="${2:-$DEFAULT_BRANCH}"
 SRC="${SRC:-/mnt/c/Users/cam/Desktop/Cam Kernel SU}"
 WORK="${WORK:-$HOME/sfs-build}"
 JOBS="${JOBS:-$(nproc)}"
-LTO="${LTO:-thin}"
+LTO="${LTO:-none}"
 TREE="$WORK/$KMI"
 OUT="$SRC/sfs/out"
 
@@ -90,8 +90,9 @@ sed -i '/stable_scmversion_cmd/s/-maybe-dirty//' build/kernel/kleaf/impl/stamp.b
 
 log "Build (lto=$LTO, jobs=$JOBS)"
 rm -rf dist
-tools/bazel run --config=fast --lto="$LTO" --jobs="$JOBS" //common:kernel_aarch64_dist -- --destdir=dist \
-  || tools/bazel run --config=fast --lto="$LTO" --jobs="$JOBS" //common:kernel_aarch64_dist -- --dist_dir=dist
+# No LTO, like the official android16-6.12 GKI: with LTO, Kconfig drops RUST
+# (BTF needs !LTO, GENDWARFKSYMS needs !LTO) and rust_binder.ko never gets built.
+tools/bazel run --config=fast --lto="$LTO" --jobs="$JOBS" //common:kernel_aarch64_dist -- --destdir=dist
 strings dist/Image | grep -m1 "susfs is initialized"
 strings dist/Image | grep -m1 -i "kernelsu"
 

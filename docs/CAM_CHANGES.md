@@ -28,6 +28,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 15 | Trang **Hồ sơ ứng dụng**: thêm 3 thẻ mở rộng (Thông tin + đường dẫn bấm để copy, Dung lượng, Quản lý: sao lưu APK, xoá cache/dữ liệu, đóng băng, gỡ cài đặt kể cả app hệ thống); menu "⋯" thêm "Thông tin hệ thống"; menu trang Superuser thêm "Cài lại app hệ thống đã gỡ" | Trang này trước đây trống |
 | 17 | **Boot guard**: `post-fs-data` đếm số lần boot chưa tới `boot-completed`; tới lần thứ 3 liên tiếp thì ksud tự tắt module mới cài/cập nhật/bật lại (không có thì tắt hết module đang bật). Home hiện thẻ đỏ + hộp thoại "Bật lại / Bỏ qua", thẻ module có chip "Tự tắt do lỗi khởi động" | Cứu máy khi module hỏng làm bootloop mà không cần bấm phím vào safe mode |
 | 18 | **Phát hiện xung đột module**: `ksud module conflicts` tìm file (kể cả whiteout), thư mục `.replace` và prop `system.prop` bị nhiều module cùng sửa; thẻ module có chip "Xung đột · N", màn hình flash ghi cảnh báo | Biết vì sao module này làm hỏng module kia |
+| 19 | **Tab "Tính năng"** trên thanh điều hướng (giữa Module và Cài đặt): thẻ mở rộng Chống bootloop (bật/tắt, số lần lỗi 1-4, tắt module nghi ngờ trước hay tắt hết, danh sách module bị tự tắt), Chống xung đột module (bật/tắt, cảnh báo khi cài, tính cả prop, danh sách + quét lại), Tự ẩn bootloader (sắp có) | Gom các tính năng riêng của SU Kernel vào một chỗ |
 | 16 | Font Baloo 2; bỏ thẻ "Tìm hiểu KernelSU" và "Ủng hộ" ở Home; mặc định cài đặt lấy theo máy của Cam (cử chỉ quay lại dự đoán bật, mô tả module 5 dòng) | Thương hiệu riêng, không còn dấu vết KernelSU trong giao diện |
 
 ## 2. Lịch sử commit
@@ -46,6 +47,7 @@ Các nhóm chính (theo thứ tự thời gian):
 - `c5c94e1e`, `9c7e2031`, `1c3c5037`, `2d449c13`: CI (workflow_dispatch, release, sửa Clippy, sửa phiên bản LKM trên CI).
 - `47a57e48 manager: Go glass-only and add the slime arena and app manager`: một commit lớn (178 file) gom toàn bộ đợt UI/UX: bỏ Material, thẻ 3D + slime, quản lý app, cài đặt/mặc định, font.
 - `1cfdc6d1` … `0566d61d`: boot guard và phát hiện xung đột module (kế hoạch: `docs/superpowers/plans/2026-10-04-bootguard-and-module-conflicts.md`), kèm `6789fb7b scripts: Keep every shell script LF on Windows checkouts`.
+- `43847238` … (sau): tab "Tính năng" (kế hoạch: `docs/superpowers/plans/2026-10-04-features-tab.md`).
 - `1b9b0673 kernel: trust the Cam Kernel SU manager signing key`: **đã lỗi thời** (kernel không còn kiểm tra chữ ký).
 
 ## 3. File bị đổi, theo khu vực
@@ -79,7 +81,7 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 - [mới] `src/boot_guard.rs` (trạng thái + quyết định, thuần, có unit test, file `/data/adb/ksu/bootguard.json`), `src/module_conflicts.rs` (quét cây module, parse `system.prop`, so xung đột, thuần, có unit test). Cả hai **không** gắn `cfg(android)` để `cargo test` chạy trên Linux.
 - [sửa] `src/init_event.rs`: `run_boot_guard()` chạy trong `on_post_data_fs` **sau** `handle_updated_modules` và **trước** `prune_modules` / `regenerate_preinit_rc` (module bị tắt không lọt vào `modules.rc`); `on_boot_completed` reset bộ đếm.
 - [sửa] `src/module.rs`: `handle_updated_modules()` trả `Vec<String>` id vừa cập nhật (đổi chữ ký, `late_load.rs` vẫn gọi được); `enable_module` gọi `boot_guard::on_module_enabled`; thêm `enabled_module_ids`, `list_module_conflicts`, `boot_guard_status`, `boot_guard_clear`.
-- [sửa] `src/cli.rs`: lệnh `boot-guard status|clear`, `module conflicts`; `src/defs.rs`: `BOOT_GUARD_PATH`; `Cargo.toml`: `serde_json` chuyển sang dependency chung (test host cần).
+- [sửa] `src/cli.rs`: lệnh `boot-guard status|clear|set [--enabled true|false] [--threshold 2-5] [--mode suspects|all]`, `module conflicts`; cấu hình nằm luôn trong `bootguard.json` (khoá `enabled`, `threshold`, `mode`; file cũ thiếu khoá thì ra mặc định bật / 3 / suspects); `src/defs.rs`: `BOOT_GUARD_PATH`; `Cargo.toml`: `serde_json` chuyển sang dependency chung (test host cần).
 
 ### Manager (`manager/`): phần root service
 - [mới] `Ksu.kt` (facade cho UI), `KsuServiceClient.kt` (bind root service), `ui/screen/install/SeedPicker.kt`
@@ -148,6 +150,13 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 - [sửa] `build.gradle.kts`, `gradle/libs.versions.toml`: `testImplementation(libs.json.org)` (`org.json` của android.jar chỉ là stub trong unit test).
 - Chuỗi mới `boot_guard_*`, `module_badge_*`, `module_conflict_*`, `flash_conflict_warning` (Anh + Việt).
 - Điểm dễ vỡ: `lastTrigger` trong `bootguard.json` **không** dùng làm ngày giờ được (lúc `post-fs-data` đồng hồ máy chưa đồng bộ, máy thật ghi `12320886`). Mở Manager là nó cài lại `libksud.so` của chính nó vào `/data/adb/ksud`: muốn thử ksud mới thì phải thay cả `lib/arm64/libksud.so` trong thư mục app, hoặc build lại Manager.
+
+### Manager: tab "Tính năng"
+- [mới] `ui/screen/features/FeaturesScreen.kt`, `FeaturesMiuix.kt`, `FeaturesUiState.kt`, `ui/viewmodel/FeaturesViewModel.kt`, `ui/viewmodel/ModuleListSignal.kt` (báo trang Module tải lại khi trang khác đổi tuỳ chọn xung đột hoặc bật lại module), `ui/component/glass/GlassExpandableCard.kt` (thẻ mở rộng, chuyển ra từ `AppManageCards.kt` để dùng chung, thêm tham số `enabled`).
+- [sửa] `ui/component/bottombar/BottomBarMiuix.kt` (enum `BottomBarDestination` thêm `Features` trước `Setting`), `ui/viewmodel/MainActivityViewModel.kt` (`PAGE_COUNT = 5`), `ui/MainActivity.kt` (`when (page)`: 3 = Tính năng, 4 = Cài đặt; `beyondViewportPageCount = LAST_PAGE_INDEX`), `ui/screen/module/ModuleScreen.kt` (nghe `ModuleListSignal`).
+- [sửa] `data/repository/SettingsRepository*.kt`: khoá `conflict_detection`, `conflict_warn_on_flash`, `conflict_include_props` (đều mặc định bật). `ModuleRepositoryImpl` và `flashModule` áp các khoá này qua `List<ModuleConflict>.visible()`.
+- Merge upstream: **upstream chỉ có 4 tab**. Code upstream nào ghi cứng chỉ số trang (3 = Cài đặt) phải đổi thành 4. Tìm bằng `rg "PAGE_COUNT|when \(page\)|BottomBarDestination" manager/`.
+- Chuỗi mới `features_*` (Anh + Việt).
 
 ### Manager: cài đặt, mặc định, font
 - [sửa] `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt`: thêm 3 khoá `roaming_slimes` (mặc định bật), `roaming_slime_count` (0 = ngẫu nhiên 1-4; hoặc 1..4), `slime_night_nap` (bật). **Đổi mặc định**: `enable_predictive_back` = `true`, `module_description_max_lines` = `5`. Kèm `SettingsUiState.kt`, `MainActivityUiState.kt`, `MainActivityViewModel.kt` (có danh sách `observedKeys`, thêm khoá mới vào đó), `SettingsViewModel.kt`.

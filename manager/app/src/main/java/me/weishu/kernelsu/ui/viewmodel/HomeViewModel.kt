@@ -54,6 +54,7 @@ class HomeViewModel(
     fun reenableModule(id: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { toggleModule(id, true) }
+            ModuleListSignal.invalidate()
             refresh()
         }
     }

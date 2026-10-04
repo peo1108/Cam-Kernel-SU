@@ -165,6 +165,9 @@ fun ModulePager(
         onUndoUninstallModule = { module ->
             viewModel.undoUninstallModule(module)
         },
+        onRestoreModule = { module ->
+            viewModel.restoreModule(module)
+        },
         onOpenFlash = { uris ->
             if (uris.isNotEmpty()) {
                 navigator.push(Route.Flash(FlashIt.FlashModules(uris)))

@@ -456,4 +456,10 @@
     <string name="features_attestation_chain_ok">Chuỗi chứng chỉ (%d): không cái nào bị Google thu hồi</string>
     <string name="features_attestation_revoked">Chứng chỉ #%1$d đã bị Google thu hồi (%2$s): kiểm tra mức STRONG sẽ trượt</string>
     <string name="features_attestation_revocation_unknown">Không tải được danh sách thu hồi của Google (không có mạng?)</string>
+    <string name="module_badge_restore">Bản trước: %s</string>
+    <string name="module_restore_title">Quay về bản trước?</string>
+    <string name="module_restore_summary">Bản %1$s sẽ được thay bằng bản %2$s đã giữ lại, sau khi khởi động lại.</string>
+    <string name="module_restore_confirm">Quay về</string>
+    <string name="module_restore_success">%s: sẽ quay về bản trước khi khởi động lại</string>
+    <string name="module_restore_failed">%s: không quay về bản trước được</string>
 </resources>

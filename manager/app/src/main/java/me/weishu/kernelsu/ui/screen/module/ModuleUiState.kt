@@ -76,6 +76,7 @@ data class ModuleActions(
     val onToggleModule: (Module) -> Unit,
     val onUninstallModule: (Module) -> Unit,
     val onUndoUninstallModule: (Module) -> Unit,
+    val onRestoreModule: (Module) -> Unit,
     val onOpenFlash: (List<Uri>) -> Unit,
     val onExecuteModuleAction: (Module) -> Unit,
 )

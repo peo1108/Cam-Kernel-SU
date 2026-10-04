@@ -211,6 +211,12 @@ fun toggleModule(id: String, enable: Boolean): Boolean {
     return result
 }
 
+fun restoreModule(id: String): Boolean {
+    val result = execKsud("module restore $id", true)
+    Log.i(TAG, "restore module $id result: $result")
+    return result
+}
+
 fun undoUninstallModule(id: String): Boolean {
     val cmd = "module undo-uninstall $id"
     val result = execKsud(cmd, true)

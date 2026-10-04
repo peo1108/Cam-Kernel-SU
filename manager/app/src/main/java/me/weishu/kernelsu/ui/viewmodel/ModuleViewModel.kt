@@ -43,6 +43,7 @@ import okhttp3.Request
 import java.text.Collator
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
+import me.weishu.kernelsu.ui.util.restoreModule as restoreModuleUtil
 import me.weishu.kernelsu.ui.util.toggleModule as toggleModuleUtil
 import me.weishu.kernelsu.ui.util.undoUninstallModule as undoUninstallModuleUtil
 import me.weishu.kernelsu.ui.util.uninstallModule as uninstallModuleUtil
@@ -405,6 +406,22 @@ class ModuleViewModel(
                     res.getString(
                         if (success) R.string.module_uninstall_success else R.string.module_uninstall_failed
                     ).format(module.name)
+                )
+            )
+        }
+    }
+
+    fun restoreModule(module: Module) {
+        viewModelScope.launch {
+            val res = ksuApp.resources
+            val success = withContext(Dispatchers.IO) { restoreModuleUtil(module.id) }
+            if (success) fetchModuleList(resort = false)
+            emitEffect(
+                ModuleEffect.SnackBar(
+                    res.getString(
+                        if (success) R.string.module_restore_success else R.string.module_restore_failed,
+                        module.name,
+                    )
                 )
             )
         }

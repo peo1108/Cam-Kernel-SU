@@ -57,6 +57,7 @@ class ModuleRepositoryImpl : ModuleRepository {
                         webUiIconPath = obj.optString("webuiIcon").takeIf { it.isNotBlank() },
                         autoDisabled = id in autoDisabled,
                         conflicts = conflicts.forModule(id),
+                        backupVersion = if (obj.has("backupVersion")) obj.optString("backupVersion") else null,
                     )
                 }.toList()
         }

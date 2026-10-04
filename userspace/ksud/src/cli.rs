@@ -135,6 +135,12 @@ enum Commands {
         command: BootGuard,
     },
 
+    /// Hide an unlocked bootloader from system properties
+    HideBootloader {
+        #[command(subcommand)]
+        command: HideBootloader,
+    },
+
     /// Show boot information
     BootInfo {
         #[command(subcommand)]
@@ -276,6 +282,18 @@ enum Sepolicy {
         /// sepolicy statements
         sepolicy: String,
     },
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum HideBootloader {
+    /// Print the watched properties and boot arguments as JSON
+    Status,
+
+    /// Turn it on and rewrite the revealing properties now
+    Enable,
+
+    /// Turn it off; the original values come back on the next boot
+    Disable,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -564,6 +582,12 @@ pub fn run() -> Result<()> {
         }
 
         Commands::SoftReboot => crate::soft_reboot::soft_reboot(),
+
+        Commands::HideBootloader { command } => match command {
+            HideBootloader::Status => crate::hide_bootloader::status(),
+            HideBootloader::Enable => crate::hide_bootloader::set_enabled(true),
+            HideBootloader::Disable => crate::hide_bootloader::set_enabled(false),
+        },
 
         Commands::BootGuard { command } => match command {
             BootGuard::Status => module::boot_guard_status(),

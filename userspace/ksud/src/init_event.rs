@@ -116,6 +116,9 @@ pub fn on_post_data_fs() -> Result<()> {
         warn!("load system.prop failed: {e}");
     }
 
+    // after system.prop, so a module cannot put a revealing value back
+    crate::hide_bootloader::apply_if_enabled();
+
     // execute metamodule mount script
     if let Err(e) = metamodule::exec_mount_script(module_dir) {
         warn!("execute metamodule mount failed: {e}");
@@ -203,6 +206,9 @@ pub fn on_boot_completed() {
 
     ksucalls::report_boot_complete();
     info!("on_boot_completed triggered!");
+
+    // the framework sets some of them (sys.oem_unlock_allowed) once it is up
+    crate::hide_bootloader::apply_if_enabled();
 
     let path = Path::new(defs::BOOT_GUARD_PATH);
     let mut state = boot_guard::load(path);

@@ -39,7 +39,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -336,33 +335,49 @@ private fun RestoreCard(state: GkiInstallUiState, actions: GkiInstallActions) {
             .fillMaxWidth()
             .padding(top = 12.dp),
     ) {
-        Column(modifier = Modifier.padding(bottom = 4.dp)) {
-            Text(
-                text = stringResource(R.string.gki_restore),
-                fontSize = 13.sp,
-                fontWeight = FontWeight(600),
-                color = colorScheme.onSurfaceVariantActions,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
-            )
-            if (state.backups.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.gki_restore_none),
-                    fontSize = 13.sp,
-                    color = colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        BasicComponent(
+            title = stringResource(R.string.gki_restore),
+            summary = if (state.backups.isEmpty()) {
+                stringResource(R.string.gki_restore_empty)
+            } else {
+                stringResource(R.string.gki_restore_count, state.backups.size)
+            },
+            onClick = actions.onToggleRestore,
+            endActions = {
+                Icon(
+                    if (state.restoreShown) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
+                    modifier = Modifier.size(16.dp),
+                    tint = colorScheme.onSurfaceVariantActions,
+                    contentDescription = stringResource(R.string.expand),
                 )
-            }
-            state.backups.forEach { backup ->
-                BasicComponent(
-                    title = backupLabel(context, backup),
-                    summary = stringResource(
-                        R.string.gki_backup_summary,
-                        backupDate(context, backup),
-                        Formatter.formatShortFileSize(context, backup.size),
-                    ),
-                    onClick = { actions.onRestore(backup) },
-                    endActions = { Chevron() },
-                )
+            },
+        )
+        AnimatedVisibility(
+            visible = state.restoreShown,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Column(modifier = Modifier.padding(bottom = 4.dp)) {
+                if (state.backups.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.gki_restore_none),
+                        fontSize = 13.sp,
+                        color = colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                    )
+                }
+                state.backups.forEach { backup ->
+                    BasicComponent(
+                        title = backupLabel(context, backup),
+                        summary = stringResource(
+                            R.string.gki_backup_summary,
+                            backupDate(context, backup),
+                            Formatter.formatShortFileSize(context, backup.size),
+                        ),
+                        onClick = { actions.onRestore(backup) },
+                        endActions = { Chevron() },
+                    )
+                }
             }
         }
     }

@@ -100,6 +100,7 @@ fun GkiInstallScreen() {
         },
         onToggleAdvanced = viewModel::toggleAdvanced,
         onSetBackupBoot = viewModel::setBackupBoot,
+        onToggleRestore = viewModel::toggleRestore,
         onRestore = { backup ->
             scope.launch {
                 val result = confirmDialog.awaitConfirm(

@@ -429,6 +429,8 @@
     <string name="gki_backup_boot_summary">Giữ kernel hiện tại để có thể khôi phục ở mục bên dưới</string>
     <string name="gki_restore">Khôi phục kernel</string>
     <string name="gki_restore_none">Chưa có bản backup. Mỗi lần flash zip sẽ tạo một bản.</string>
+    <string name="gki_restore_empty">Chưa có bản backup</string>
+    <string name="gki_restore_count">%1$d bản backup</string>
     <string name="gki_backup_previous">Kernel trước đó (%1$s)</string>
     <string name="gki_backup_original">Kernel gốc (%1$s)</string>
     <string name="gki_backup_summary">%1$s · %2$s</string>

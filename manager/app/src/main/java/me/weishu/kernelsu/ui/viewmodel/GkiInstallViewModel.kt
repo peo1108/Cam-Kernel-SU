@@ -71,5 +71,7 @@ class GkiInstallViewModel : ViewModel() {
 
     fun toggleAdvanced() = _uiState.update { it.copy(advancedShown = !it.advancedShown) }
 
+    fun toggleRestore() = _uiState.update { it.copy(restoreShown = !it.restoreShown) }
+
     fun setBackupBoot(enabled: Boolean) = _uiState.update { it.copy(backupBoot = enabled) }
 }

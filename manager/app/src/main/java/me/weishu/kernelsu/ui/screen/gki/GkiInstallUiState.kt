@@ -47,6 +47,7 @@ data class GkiInstallUiState(
     val localZipName: String? = null,
     val backupBoot: Boolean = true,
     val advancedShown: Boolean = false,
+    val restoreShown: Boolean = false,
 ) {
     val usesProjectBuild: Boolean
         get() = method == GkiMethod.Direct || (method == GkiMethod.Inactive && source == GkiSource.Project)
@@ -71,6 +72,7 @@ data class GkiInstallActions(
     val onPickLocalZip: () -> Unit,
     val onToggleAdvanced: () -> Unit,
     val onSetBackupBoot: (Boolean) -> Unit,
+    val onToggleRestore: () -> Unit,
     val onRestore: (Ak3Backup) -> Unit,
     val onNext: () -> Unit,
 )

@@ -209,6 +209,8 @@
     <string name="gki_backup_boot_summary">Keeps the current kernel so it can be restored below</string>
     <string name="gki_restore">Restore kernel</string>
     <string name="gki_restore_none">No backups yet. One is made each time a zip is flashed.</string>
+    <string name="gki_restore_empty">No backups yet</string>
+    <string name="gki_restore_count">%1$d backups</string>
     <string name="gki_backup_previous">Previous kernel (%1$s)</string>
     <string name="gki_backup_original">Original kernel (%1$s)</string>
     <string name="gki_backup_summary">%1$s · %2$s</string>

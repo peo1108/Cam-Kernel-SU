@@ -14,6 +14,7 @@ mod allow;
 #[cfg(target_os = "android")]
 mod anykernel;
 mod assets;
+mod boot_guard;
 mod boot_patch;
 #[cfg(target_os = "android")]
 mod cli;
@@ -24,6 +25,7 @@ mod debug;
 mod defs;
 #[cfg(target_os = "android")]
 mod feature;
+mod hide_bootloader;
 #[cfg(target_os = "android")]
 mod init_event;
 #[cfg(target_os = "android")]
@@ -40,6 +42,7 @@ mod metamodule;
 mod module;
 #[cfg(target_os = "android")]
 mod module_config;
+mod module_conflicts;
 #[cfg(target_os = "android")]
 mod profile;
 #[cfg(target_os = "android")]

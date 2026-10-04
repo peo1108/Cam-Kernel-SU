@@ -30,6 +30,7 @@ import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.screen.flash.FlashIt
 import me.weishu.kernelsu.ui.util.download
 import me.weishu.kernelsu.ui.util.module.Shortcut
+import me.weishu.kernelsu.ui.viewmodel.ModuleListSignal
 import me.weishu.kernelsu.ui.viewmodel.ModuleViewModel
 import me.weishu.kernelsu.ui.webui.WebUIActivity
 
@@ -56,6 +57,11 @@ fun ModulePager(
     ) { /* Download works regardless of result */ }
     val latestIsCurrentPage by rememberUpdatedState(isCurrentPage)
     val initialResumeHandled = rememberSaveable { mutableStateOf(false) }
+
+    val listSignal by ModuleListSignal.version.collectAsStateWithLifecycle()
+    LaunchedEffect(listSignal) {
+        if (listSignal > 0 && viewModel.uiState.value.hasLoaded) viewModel.fetchModuleList(resort = false)
+    }
 
     var hasActivated by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(isCurrentPage) {
@@ -158,6 +164,9 @@ fun ModulePager(
         },
         onUndoUninstallModule = { module ->
             viewModel.undoUninstallModule(module)
+        },
+        onRestoreModule = { module ->
+            viewModel.restoreModule(module)
         },
         onOpenFlash = { uris ->
             if (uris.isNotEmpty()) {

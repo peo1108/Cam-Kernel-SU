@@ -186,6 +186,18 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("slime_night_nap", true)
         set(value) = prefs.edit { putBoolean("slime_night_nap", value) }
 
+    override var conflictDetection: Boolean
+        get() = prefs.getBoolean("conflict_detection", true)
+        set(value) = prefs.edit { putBoolean("conflict_detection", value) }
+
+    override var conflictWarnOnFlash: Boolean
+        get() = prefs.getBoolean("conflict_warn_on_flash", true)
+        set(value) = prefs.edit { putBoolean("conflict_warn_on_flash", value) }
+
+    override var conflictIncludeProps: Boolean
+        get() = prefs.getBoolean("conflict_include_props", true)
+        set(value) = prefs.edit { putBoolean("conflict_include_props", value) }
+
     override val intentToken: String
         get() {
         val existing = prefs.getString(INTENT_TOKEN_KEY, null)

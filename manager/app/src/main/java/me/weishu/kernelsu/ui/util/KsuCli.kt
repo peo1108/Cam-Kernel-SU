@@ -18,13 +18,22 @@ import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.Ksu
+import me.weishu.kernelsu.R
 import me.weishu.kernelsu.core.tasks.BootKernelVersion
 import me.weishu.kernelsu.core.tasks.ExtractImage
 import me.weishu.kernelsu.core.tasks.ProbeResult
 import me.weishu.kernelsu.core.utils.DataSourceChannel
+import me.weishu.kernelsu.data.model.BootGuardStatus
+import me.weishu.kernelsu.data.model.HideBootloaderStatus
+import me.weishu.kernelsu.data.model.ModuleConflict
+import me.weishu.kernelsu.data.model.forModule
+import me.weishu.kernelsu.data.model.parseModuleConflicts
+import me.weishu.kernelsu.data.model.visible
+import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.screen.install.SeedApp
 import me.weishu.kernelsu.ui.screen.install.isValidSeedPackageName
+import me.weishu.kernelsu.ui.util.module.readModuleIdFromZip
 import okhttp3.OkHttpClient
 import org.json.JSONArray
 import org.json.JSONObject
@@ -142,6 +151,44 @@ fun listModules(): String {
     return out.joinToString("\n").ifBlank { "[]" }
 }
 
+private fun ksudStdout(args: String): String {
+    val out = getRootShell().newJob()
+        .add("${getKsuDaemonPath()} $args").to(ArrayList(), null).exec().out
+    return out.joinToString("\n")
+}
+
+fun getBootGuardStatus(): BootGuardStatus = BootGuardStatus.parse(ksudStdout("boot-guard status"))
+
+fun clearBootGuard(): Boolean {
+    val result = execKsud("boot-guard clear", true)
+    Log.i(TAG, "boot-guard clear result: $result")
+    return result
+}
+
+/** `null` keeps a setting; [threshold] is the boot attempt that triggers (2..5). */
+fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disableAll: Boolean? = null): Boolean {
+    val args = buildList {
+        enabled?.let { add("--enabled $it") }
+        threshold?.let { add("--threshold $it") }
+        disableAll?.let { add("--mode ${if (it) "all" else "suspects"}") }
+    }
+    if (args.isEmpty()) return true
+    val result = execKsud("boot-guard set ${args.joinToString(" ")}", true)
+    Log.i(TAG, "boot-guard set $args result: $result")
+    return result
+}
+
+fun getHideBootloaderStatus(): HideBootloaderStatus =
+    HideBootloaderStatus.parse(ksudStdout("hide-bootloader status"))
+
+fun setHideBootloader(enabled: Boolean): Boolean {
+    val result = execKsud("hide-bootloader ${if (enabled) "enable" else "disable"}", true)
+    Log.i(TAG, "hide-bootloader $enabled result: $result")
+    return result
+}
+
+fun listModuleConflicts(): List<ModuleConflict> = parseModuleConflicts(ksudStdout("module conflicts"))
+
 fun getModuleCount(): Int {
     val result = listModules()
     runCatching {
@@ -162,6 +209,12 @@ fun toggleModule(id: String, enable: Boolean): Boolean {
     }
     val result = execKsud(cmd, true)
     Log.i(TAG, "$cmd result: $result")
+    return result
+}
+
+fun restoreModule(id: String): Boolean {
+    val result = execKsud("module restore $id", true)
+    Log.i(TAG, "restore module $id result: $result")
     return result
 }
 
@@ -216,6 +269,21 @@ fun flashModule(
         val cmd = "module install ${file.absolutePath}"
         val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
         Log.i("KernelSU", "install module $uri result: $result")
+
+        // ksud checks the pending update in place of the installed copy
+        val moduleId = readModuleIdFromZip(file)
+        val settings = SettingsRepositoryImpl()
+        if (result.isSuccess && moduleId != null && settings.conflictDetection && settings.conflictWarnOnFlash) {
+            val others = listModuleConflicts()
+                .visible(detection = true, includeProps = settings.conflictIncludeProps)
+                .forModule(moduleId)
+                .flatMap { it.modules }
+                .filter { it != moduleId }
+                .distinct()
+            if (others.isNotEmpty()) {
+                onStdout(ksuApp.getString(R.string.flash_conflict_warning, others.joinToString(", ")))
+            }
+        }
 
         file.delete()
 

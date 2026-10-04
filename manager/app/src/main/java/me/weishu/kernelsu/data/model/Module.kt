@@ -19,4 +19,9 @@ data class Module(
     val metamodule: Boolean,
     val actionIconPath: String?,
     val webUiIconPath: String?,
+    /** disabled by ksud's boot guard and not enabled again since */
+    val autoDisabled: Boolean = false,
+    val conflicts: List<ModuleConflict> = emptyList(),
+    /** version kept by ksud when an update replaced it; null when there is none */
+    val backupVersion: String? = null,
 )

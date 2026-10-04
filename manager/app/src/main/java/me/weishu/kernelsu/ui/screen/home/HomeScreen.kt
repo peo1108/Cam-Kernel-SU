@@ -75,6 +75,8 @@ fun HomePager(
                 }
             }
         },
+        onReenableModule = viewModel::reenableModule,
+        onDismissBootGuard = viewModel::dismissBootGuard,
     )
 
     HomePagerMiuix(

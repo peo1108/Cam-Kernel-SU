@@ -26,6 +26,11 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 13 | Thẻ trạng thái ở Home là **hộp kính 3D (Filament)** với 4 slime (Mochi, Bơ, Soda, Chanh): 9 cảnh mở màn theo nước, 36 bộ đồ 3D, nhiều kiểu xếp hàng / ăn chữ / hóc / nôn | Thẻ "Đang hoạt động" có hồn, không chỉ là một dòng chữ |
 | 14 | **Slime đi dạo khắp app**: lớp 3D trong suốt phủ cả cửa sổ; rời Home thì phá kính chui ra, về Home thì vào cửa; đập tay, cưỡi Bơ, chơi khăm, rượt, đánh nhau; laser bằng ngón tay, lắc máy, ngủ ban đêm | Thay cho việc chỉ có slime trong thẻ; có công tắc trong Chủ đề |
 | 15 | Trang **Hồ sơ ứng dụng**: thêm 3 thẻ mở rộng (Thông tin + đường dẫn bấm để copy, Dung lượng, Quản lý: sao lưu APK, xoá cache/dữ liệu, đóng băng, gỡ cài đặt kể cả app hệ thống); menu "⋯" thêm "Thông tin hệ thống"; menu trang Superuser thêm "Cài lại app hệ thống đã gỡ" | Trang này trước đây trống |
+| 17 | **Boot guard**: `post-fs-data` đếm số lần boot chưa tới `boot-completed`; tới lần thứ 3 liên tiếp thì ksud tự tắt module mới cài/cập nhật/bật lại (không có thì tắt hết module đang bật). Home hiện thẻ đỏ + hộp thoại "Bật lại / Bỏ qua", thẻ module có chip "Tự tắt do lỗi khởi động" | Cứu máy khi module hỏng làm bootloop mà không cần bấm phím vào safe mode |
+| 18 | **Phát hiện xung đột module**: `ksud module conflicts` tìm file (kể cả whiteout), thư mục `.replace` và prop `system.prop` bị nhiều module cùng sửa; thẻ module có chip "Xung đột · N", màn hình flash ghi cảnh báo | Biết vì sao module này làm hỏng module kia |
+| 19 | **Tab "Tính năng"** trên thanh điều hướng (giữa Module và Cài đặt): thẻ mở rộng Chống bootloop (bật/tắt, số lần lỗi 1-4, tắt module nghi ngờ trước hay tắt hết, danh sách module bị tự tắt), Chống xung đột module (bật/tắt, cảnh báo khi cài, tính cả prop, danh sách + quét lại), Tự ẩn bootloader (sắp có) | Gom các tính năng riêng của SU Kernel vào một chỗ |
+| 20 | **Tự ẩn bootloader** (tầng prop, không cần module): ksud sửa các prop đang lộ trạng thái mở khoá về giá trị của máy đã khoá ở `post-fs-data` và `boot-completed`; thẻ trong tab Tính năng có công tắc, danh sách prop/bootconfig, nút **Kiểm tra attestation** (tự tạo key trong AndroidKeyStore, đọc RootOfTrust) | Ẩn với app chỉ đọc prop; bộ kiểm tra cho thấy app đọc chứng chỉ thấy gì |
+| 21 | **Thông báo khi chống bootloop ra tay** (ksud đăng thông báo hệ thống lúc `boot-completed`, dưới uid shell vì Android bỏ thông báo từ uid 0; mỗi lần kích hoạt báo một lần, khoá `notifyPending`), **giữ bản cũ khi cập nhật module** (`/data/adb/ksu/module_backup/<id>`, chép bằng `busybox cp -a` để giữ symlink và whiteout; `ksud module restore <id>` đưa bản cũ vào hàng chờ, có chip "↺ Bản trước" trên thẻ module), tab Tính năng làm mới khi mở lại app | Đi cùng chống bootloop: biết ngay khi module bị tắt và quay lại được bản chạy tốt |
 | 16 | Font Baloo 2; bỏ thẻ "Tìm hiểu KernelSU" và "Ủng hộ" ở Home; mặc định cài đặt lấy theo máy của Cam (cử chỉ quay lại dự đoán bật, mô tả module 5 dòng) | Thương hiệu riêng, không còn dấu vết KernelSU trong giao diện |
 
 ## 2. Lịch sử commit
@@ -43,6 +48,8 @@ Các nhóm chính (theo thứ tự thời gian):
 - `1c27052b` … `11e616ac`: tối ưu kính (vẽ card từ nền đã blur sẵn, chuyển trang, gradient), mép mờ khi cuộn, dropdown kính, About, icon tam giác.
 - `c5c94e1e`, `9c7e2031`, `1c3c5037`, `2d449c13`: CI (workflow_dispatch, release, sửa Clippy, sửa phiên bản LKM trên CI).
 - `47a57e48 manager: Go glass-only and add the slime arena and app manager`: một commit lớn (178 file) gom toàn bộ đợt UI/UX: bỏ Material, thẻ 3D + slime, quản lý app, cài đặt/mặc định, font.
+- `1cfdc6d1` … `0566d61d`: boot guard và phát hiện xung đột module (kế hoạch: `docs/superpowers/plans/2026-10-04-bootguard-and-module-conflicts.md`), kèm `6789fb7b scripts: Keep every shell script LF on Windows checkouts`.
+- `43847238` … (sau): tab "Tính năng" (kế hoạch: `docs/superpowers/plans/2026-10-04-features-tab.md`).
 - `1b9b0673 kernel: trust the Cam Kernel SU manager signing key`: **đã lỗi thời** (kernel không còn kiểm tra chữ ký).
 
 ## 3. File bị đổi, theo khu vực
@@ -73,6 +80,10 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 - [sửa] `src/main.rs`: khai báo module
 - [sửa] `src/sepolicy.rs`: dòng `#![allow(clippy::redundant_field_names)]` ở đầu file (code do `derive_new` sinh ra bị Clippy mới bắt lỗi)
 - [sửa] `build.rs`: `KSU_PACKAGE_NAME` mặc định `cam.su.kernel`
+- [mới] `src/boot_guard.rs` (trạng thái + quyết định, thuần, có unit test, file `/data/adb/ksu/bootguard.json`), `src/module_conflicts.rs` (quét cây module, parse `system.prop`, so xung đột, thuần, có unit test). Cả hai **không** gắn `cfg(android)` để `cargo test` chạy trên Linux.
+- [sửa] `src/init_event.rs`: `run_boot_guard()` chạy trong `on_post_data_fs` **sau** `handle_updated_modules` và **trước** `prune_modules` / `regenerate_preinit_rc` (module bị tắt không lọt vào `modules.rc`); `on_boot_completed` reset bộ đếm.
+- [sửa] `src/module.rs`: `handle_updated_modules()` trả `Vec<String>` id vừa cập nhật (đổi chữ ký, `late_load.rs` vẫn gọi được); `enable_module` gọi `boot_guard::on_module_enabled`; thêm `enabled_module_ids`, `list_module_conflicts`, `boot_guard_status`, `boot_guard_clear`.
+- [sửa] `src/cli.rs`: lệnh `boot-guard status|clear|set [--enabled true|false] [--threshold 2-5] [--mode suspects|all]`, `module conflicts`; cấu hình nằm luôn trong `bootguard.json` (khoá `enabled`, `threshold`, `mode`; file cũ thiếu khoá thì ra mặc định bật / 3 / suspects); `src/defs.rs`: `BOOT_GUARD_PATH`; `Cargo.toml`: `serde_json` chuyển sang dependency chung (test host cần).
 
 ### Manager (`manager/`): phần root service
 - [mới] `Ksu.kt` (facade cho UI), `KsuServiceClient.kt` (bind root service), `ui/screen/install/SeedPicker.kt`
@@ -135,6 +146,25 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
   - `isProtectedApp()` chặn gỡ/đóng băng/xoá dữ liệu cho các gói lõi (`android`, SystemUI, Settings, phone, launcher và bàn phím đang dùng, chính app này…). Upstream không có cơ chế này.
   - Sao lưu APK ghi vào cache rồi chia sẻ qua FileProvider; `res/xml/filepaths.xml` đã có `cache-path`, không cần sửa Manifest.
 
+### Manager: boot guard và xung đột module
+- [mới] `data/model/BootGuardStatus.kt`, `data/model/ModuleConflict.kt` (parse JSON của ksud, có unit test), `ui/util/module/ModuleZip.kt` (đọc `id` trong `module.prop` của zip, có unit test), `ui/screen/home/BootGuardNotice.kt` (thẻ + hộp thoại), `ui/screen/module/ModuleStatusBadges.kt` (chip + hộp thoại xung đột).
+- [sửa] `ui/util/KsuCli.kt` (`getBootGuardStatus`, `clearBootGuard`, `listModuleConflicts`, cảnh báo xung đột trong `flashModule`), `data/model/Module.kt` (`autoDisabled`, `conflicts`), `data/repository/ModuleRepositoryImpl.kt`, `HomeUiState.kt`, `HomeViewModel.kt`, `HomeScreen.kt`, **một dòng** trong `HomeMiuix.kt` (`BootGuardNotice`) và **một dòng** trong `ModuleMiuix.kt` (`ModuleStatusBadges`). Merge upstream mà hai file Miuix này conflict thì chỉ cần giữ lại hai lời gọi đó.
+- [sửa] `build.gradle.kts`, `gradle/libs.versions.toml`: `testImplementation(libs.json.org)` (`org.json` của android.jar chỉ là stub trong unit test).
+- Chuỗi mới `boot_guard_*`, `module_badge_*`, `module_conflict_*`, `flash_conflict_warning` (Anh + Việt).
+- Điểm dễ vỡ: `lastTrigger` trong `bootguard.json` **không** dùng làm ngày giờ được (lúc `post-fs-data` đồng hồ máy chưa đồng bộ, máy thật ghi `12320886`). Mở Manager là nó cài lại `libksud.so` của chính nó vào `/data/adb/ksud`: muốn thử ksud mới thì phải thay cả `lib/arm64/libksud.so` trong thư mục app, hoặc build lại Manager.
+
+### Manager: tab "Tính năng"
+- [mới] `ui/screen/features/FeaturesScreen.kt`, `FeaturesMiuix.kt`, `FeaturesUiState.kt`, `ui/viewmodel/FeaturesViewModel.kt`, `ui/viewmodel/ModuleListSignal.kt` (báo trang Module tải lại khi trang khác đổi tuỳ chọn xung đột hoặc bật lại module), `ui/component/glass/GlassExpandableCard.kt` (thẻ mở rộng, chuyển ra từ `AppManageCards.kt` để dùng chung, thêm tham số `enabled`).
+- [sửa] `ui/component/bottombar/BottomBarMiuix.kt` (enum `BottomBarDestination` thêm `Features` trước `Setting`), `ui/viewmodel/MainActivityViewModel.kt` (`PAGE_COUNT = 5`), `ui/MainActivity.kt` (`when (page)`: 3 = Tính năng, 4 = Cài đặt; `beyondViewportPageCount = LAST_PAGE_INDEX`), `ui/screen/module/ModuleScreen.kt` (nghe `ModuleListSignal`).
+- [sửa] `data/repository/SettingsRepository*.kt`: khoá `conflict_detection`, `conflict_warn_on_flash`, `conflict_include_props` (đều mặc định bật). `ModuleRepositoryImpl` và `flashModule` áp các khoá này qua `List<ModuleConflict>.visible()`.
+- Merge upstream: **upstream chỉ có 4 tab**. Code upstream nào ghi cứng chỉ số trang (3 = Cài đặt) phải đổi thành 4. Tìm bằng `rg "PAGE_COUNT|when \(page\)|BottomBarDestination" manager/`.
+- Chuỗi mới `features_*` (Anh + Việt).
+
+### Tự ẩn bootloader
+- ksud: [mới] `src/hide_bootloader.rs` (bảng quy tắc prop → giá trị an toàn, thuần, có unit test; phần Android `apply_if_enabled`/`status`/`set_enabled`); [sửa] `src/resetprop.rs` (`list_props`, `set_prop`), `src/init_event.rs` (gọi sau `load_system_prop` và trong `on_boot_completed`), `src/cli.rs` (`hide-bootloader status|enable|disable`), `src/defs.rs` (cờ `/data/adb/ksu/.hide_bootloader`). Chỉ sửa prop **có sẵn**, không thêm prop mới; không đụng `ro.oem_unlock_supported`; `/proc/bootconfig` và `/proc/cmdline` chỉ báo.
+- Manager: [mới] `data/model/HideBootloaderStatus.kt`, `data/model/KeyAttestation.kt` (bộ đọc DER viết tay cho KeyDescription/RootOfTrust, có unit test), `data/model/Revocation.kt` (đối chiếu serial cả chuỗi chứng chỉ với danh sách thu hồi công khai `https://android.googleapis.com/attestation/status`, có unit test), `ui/util/AttestationCheck.kt`; [sửa] thẻ thứ ba trong `ui/screen/features/FeaturesMiuix.kt`, `FeaturesViewModel.kt`, `KsuCli.kt`; chuỗi `features_bootloader_*`, `features_attestation_*`.
+- Giới hạn: **không** đổi được chứng chỉ attestation (cần tầng keystore2, chưa làm). Máy của Cam root bằng EFISP nên bootloader luôn khoá: thử trên máy bằng cách tạm đặt `ro.boot.verifiedbootstate=orange` qua resetprop; attestation thật báo TEE / khoá / Verified.
+
 ### Manager: cài đặt, mặc định, font
 - [sửa] `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt`: thêm 3 khoá `roaming_slimes` (mặc định bật), `roaming_slime_count` (0 = ngẫu nhiên 1-4; hoặc 1..4), `slime_night_nap` (bật). **Đổi mặc định**: `enable_predictive_back` = `true`, `module_description_max_lines` = `5`. Kèm `SettingsUiState.kt`, `MainActivityUiState.kt`, `MainActivityViewModel.kt` (có danh sách `observedKeys`, thêm khoá mới vào đó), `SettingsViewModel.kt`.
 - [sửa] Giao diện ba công tắc slime nằm cuối trang **Chủ đề**: `colorpalette/ColorPaletteScreenMiuix.kt`, `ColorPaletteScreen.kt`, `ColorPaletteUiState.kt` (không nằm ở trang Cài đặt).
@@ -144,7 +174,7 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 - [sửa] `.github/workflows/build-manager.yml`: thêm `workflow_dispatch`
 - [sửa] `.github/workflows/release.yml`: `permissions: contents: write`, `generate_release_notes: true`
 - [sửa] `.github/workflows/ddk-lkm.yml`: `safe.directory "$GITHUB_WORKSPACE"` (thay cho tên repo gốc ghi cứng) và checkout `fetch-depth: 0`. Thiếu hai dòng này module CI báo phiên bản **16**
-- [sửa] `.gitattributes`: `scripts/*.sh` luôn LF
+- [sửa] `.gitattributes`: **mọi** `*.sh` luôn LF (trước chỉ `scripts/*.sh`; `installer.sh` CRLF bị nhúng vào ksud làm mọi lệnh cài module lỗi `umask: illegal mode: 022\r`)
 - [mới] `scripts/build_lkm_ksud.sh` (build LKM + ksud từ một commit trong WSL)
 
 ## 4. Kéo bản cập nhật upstream (làm theo thứ tự)
@@ -274,7 +304,7 @@ Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã d
 
 | Bẫy | Hậu quả | Cách tránh |
 |---|---|---|
-| `core.autocrlf=true` | `installer.sh` bị nhúng vào ksud với CRLF → **cài module lỗi** `syntax error ... expecting "do"` | Build ksud trong WSL từ một bản `git clone` (LF); hoặc thêm `*.sh eol=lf` vào `.gitattributes` |
+| `core.autocrlf=true` | `installer.sh` bị nhúng vào ksud với CRLF → **cài module lỗi** `syntax error ... expecting "do"` | Đã sửa: `.gitattributes` có `*.sh text eol=lf`. Checkout cũ còn CRLF thì xoá các file `.sh` rồi `git checkout` lại đúng các file đó |
 | `core.symlinks=false` | `manager/app/src/main/cpp/uapi` là file text, CMake báo `uapi/ksu.h not found` | Tạo junction cục bộ (PowerShell): `New-Item -ItemType Junction -Path "...\manager\app\src\main\cpp\uapi" -Target "...\uapi"`. `git status` sẽ luôn hiện ` D manager/app/src/main/cpp/uapi`: bình thường, **không commit, không add**. **Không bao giờ** chạy `git checkout -- manager/...`, `git stash`, `git clean` trên đường dẫn này: git ghi đè junction và **xoá luôn `uapi/*.h` ở gốc repo** (đã xảy ra 2026-10-02). Lỡ bị thì `git checkout -- uapi` rồi tạo lại junction |
 | CI: LKM báo phiên bản **16** (Home ghi `16-5`) | `ddk-lkm.yml` của upstream ghi cứng `safe.directory /__w/KernelSU/KernelSU`; repo fork khác tên nên git trong container DDK từ chối đọc repo | Đã sửa: `safe.directory "$GITHUB_WORKSPACE"` + checkout `fetch-depth: 0`. Merge upstream mà `ddk-lkm.yml` conflict thì giữ hai dòng này; sau mỗi lần CI chạy, log bước LKM phải ghi `KernelSU version: 3xxxx` |
 | Build kernel từ `git archive` (không có `.git`) | `kernelsu.ko` báo version 16 → Manager coi là kernel quá cũ | Build từ thư mục có `.git` (git clone) |
@@ -309,8 +339,9 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 ## 6. Test
 
 - **Kernel (logic seed):** harness chạy trên host với header giả, gồm 11 test, chạy dưới ASan. Harness đang nằm ngoài repo (thư mục scratchpad), chưa đưa vào repo.
-- **ksud:** `cargo test seed:: allow::` (chạy trên Linux/WSL). Hai test `lkm_image` / `lkm_image_btf` vốn đã fail sẵn trên upstream khi thiếu asset CI, không liên quan.
+- **ksud:** `cargo test seed:: allow:: boot_guard module_conflicts` (chạy trên Linux/WSL; build Android trong WSL cần `LIBCLANG_PATH` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android26 --sysroot=<NDK>/toolchains/llvm/prebuilt/windows-x86_64/sysroot"`). Hai test `lkm_image` / `lkm_image_btf` vốn đã fail sẵn trên upstream khi thiếu asset CI, không liên quan.
 - **Trên máy thật (Y700 Gen5, 2026-10-03/04), phần UI mới:** đã thấy chạy đúng: phá kính khi vuốt khỏi Home, cửa + vá kính khi về, slime 3D chạy trên mép thẻ, đập tay / cưỡi Bơ / chơi khăm / rượt / đánh nhau, laser bằng ngón tay giữ yên, ngủ ban đêm, bật/tắt slime trong Chủ đề, 3 thẻ Hồ sơ ứng dụng (Thông tin, đường dẫn, Dung lượng) trên Chrome. Khung hình trung bình khoảng 9 ms, GPU khoảng 6 ms. **Chưa thử trên máy:** lắc máy, tự ẩn khi Flash / cài module, các nút Quản lý (sao lưu, xoá cache/dữ liệu, đóng băng, gỡ), nút copy đường dẫn.
+- **Trên máy thật (Y700 Gen5, 2026-10-04), boot guard và xung đột:** module thử `bg-test` reboot trong `service.sh` (tự dừng sau 5 lần) → 2 lần reboot, lần boot thứ 3 ksud tắt `bg-test`, máy lên bình thường; reboot thường thì `failCount` về 0; module `scune-support` đang tắt không bị đụng. Hai module `cf-a`/`cf-b` (cùng file `/system/etc`, file vendor đã bị installer chuyển ra `<module>/vendor`, prop khác giá trị) → báo đúng 3 xung đột, prop cùng giá trị không báo. Manager: thẻ Home, hộp thoại Bật lại / Bỏ qua, chip trên thẻ module, hộp thoại xung đột, dòng cảnh báo khi flash.
 - **Trên máy thật (Y700 Gen5, 2026-10-02):** boot OK; seed cấp root cho Manager; seed không áp lại khi nonce giữ nguyên; prune xoá quyền khi gỡ app; cài module + WebUI OK; dialog chọn app OK; `ksud allow` OK.
 
 ## 7. Giới hạn đã biết
@@ -325,6 +356,8 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 - **Nhóm app dùng chung UID và mục đặc biệt (WebView zygote)** không hiện 3 thẻ quản lý app (không rõ thao tác áp lên app nào).
 - **Gỡ systemless** cần khởi động lại mới có hiệu lực; chỉ hiện khi app có đường dẫn gốc trong ROM.
 - Chuỗi mới (`settings_slime*`, `app_*`) chỉ có tiếng Anh và tiếng Việt.
+- **Boot guard không cứu được** máy loop *trước* `post-fs-data` (kernel, `init`, hoặc metamodule mount sớm qua `modules.rc`): bộ đếm không tăng. Khi đó vẫn dùng safe mode (phím âm lượng). Ngưỡng cố định 3; người dùng reboot giữa chừng lúc đang boot 2 lần liên tiếp cũng tính là boot lỗi.
+- **Phát hiện xung đột** chỉ đọc file `.replace`, không đọc xattr `trusted.overlay.opaque`; không biết module nào "thắng" (tuỳ thứ tự mount của metamodule).
 
 ## 8. Phát hành bản mới (GitHub Actions)
 

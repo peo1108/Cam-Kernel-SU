@@ -2,7 +2,7 @@ package me.weishu.kernelsu.ui.screen.home
 
 import androidx.compose.runtime.Immutable
 import me.weishu.kernelsu.KernelVersion
-import me.weishu.kernelsu.ui.util.SusfsInfo
+import me.weishu.kernelsu.data.model.BootGuardStatus
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
 
 @Immutable
@@ -25,8 +25,11 @@ data class HomeUiState(
     val latestVersionInfo: LatestVersionInfo,
     val currentManagerVersionCode: Long,
     val systemInfo: SystemInfo,
-    val susfsInfo: SusfsInfo? = null,
+    val bootGuard: BootGuardStatus = BootGuardStatus.Empty,
 ) {
+    val showBootGuardNotice: Boolean
+        get() = bootGuard.autoDisabled.isNotEmpty()
+
     val isSELinuxPermissive: Boolean
         get() = systemInfo.selinuxStatus == "Permissive"
 
@@ -62,4 +65,6 @@ data class HomeActions(
     val onInstallClick: () -> Unit,
     val onOpenUrl: (String) -> Unit,
     val onJailbreakClick: () -> Unit = {},
+    val onReenableModule: (String) -> Unit = {},
+    val onDismissBootGuard: () -> Unit = {},
 )

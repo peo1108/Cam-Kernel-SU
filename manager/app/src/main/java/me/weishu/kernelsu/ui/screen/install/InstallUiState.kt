@@ -20,7 +20,6 @@ internal data class InstallUiState(
     val enableAdb: Boolean,
     val forceBackup: Boolean,
     val canForceBackup: Boolean,
-    val isAnyKernel: Boolean,
 )
 
 @Immutable
@@ -28,7 +27,6 @@ internal data class InstallScreenActions(
     val onBack: () -> Unit,
     val onSelectMethod: (InstallMethod) -> Unit,
     val onDownloadFile: () -> Unit,
-    val onSelectAnyKernel: () -> Unit,
     val onSelectBootImage: () -> Unit,
     val onUploadLkm: () -> Unit,
     val onClearLkm: () -> Unit,

@@ -22,11 +22,13 @@ import me.weishu.kernelsu.ui.screen.home.HomeUiState
 import me.weishu.kernelsu.ui.screen.home.SystemInfo
 import me.weishu.kernelsu.ui.screen.home.getManagerVersion
 import me.weishu.kernelsu.ui.util.checkNewVersion
+import me.weishu.kernelsu.ui.util.clearBootGuard
+import me.weishu.kernelsu.ui.util.getBootGuardStatus
 import me.weishu.kernelsu.ui.util.getSELinuxStatusRaw
-import me.weishu.kernelsu.ui.util.getSusfsInfo
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
 import me.weishu.kernelsu.ui.util.resolveDeviceName
 import me.weishu.kernelsu.ui.util.rootAvailable
+import me.weishu.kernelsu.ui.util.toggleModule
 
 class HomeViewModel(
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl()
@@ -37,18 +39,30 @@ class HomeViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            val baseState = withContext(Dispatchers.IO) { buildState() }
-            // keep the last SUSFS info so the card does not flicker while it reloads
-            _uiState.update { baseState.copy(susfsInfo = it.susfsInfo) }
-            // SUSFS is only reachable through ksud as root, so keep it off the main thread
-            if (baseState.isRootAvailable) {
-                val susfsInfo = withContext(Dispatchers.IO) { getSusfsInfo() }
-                _uiState.update { it.copy(susfsInfo = susfsInfo) }
+            val baseState = withContext(Dispatchers.IO) {
+                val state = buildState()
+                if (state.isManager && state.isRootAvailable) state.copy(bootGuard = getBootGuardStatus()) else state
             }
+            _uiState.update { baseState }
             if (baseState.checkUpdateEnabled) {
                 val latestVersionInfo = withContext(Dispatchers.IO) { checkNewVersion() }
                 _uiState.update { it.copy(latestVersionInfo = latestVersionInfo) }
             }
+        }
+    }
+
+    fun reenableModule(id: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { toggleModule(id, true) }
+            ModuleListSignal.invalidate()
+            refresh()
+        }
+    }
+
+    fun dismissBootGuard() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { clearBootGuard() }
+            refresh()
         }
     }
 

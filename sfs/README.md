@@ -10,9 +10,9 @@ Older kernels are refused at build time (`kernel/core/init.c`) and by the zip.
 ## User flow
 
 1. Root with LKM as usual (`main` builds).
-2. Manager → Install → **Flash AnyKernel3 zip**, pick the zip from this
-   branch's CI.
-3. Reboot. Home shows the SUSFS version and enabled features.
+2. Manager → Features → **KernelSU GKI** → **Flash AnyKernel3 zip**, pick the
+   zip from this branch's CI.
+3. Reboot. The same card shows the SUSFS version and enabled features.
 
 The LKM patch in `init_boot` can stay: `ksuinit` skips loading
 `kernelsu.ko` when KernelSU is already in the kernel. Allowlist, app profiles
@@ -30,8 +30,10 @@ does not boot: `fastboot flash boot boot<slot>.img`.
   tells userspace SUSFS is present.
 - **ksud**: `ksud susfs info [--json]` and `ksud flash-ak3 <zip> [--no-backup]`.
   SUSFS itself is driven by simonpunk's `ksu_susfs` tool / module as usual.
-- **Manager**: AnyKernel3 install method (GKI 6.1+ with root) and a SUSFS
-  card on Home.
+- **Manager**: the Install screen stays LKM only. Everything GKI lives in the
+  **KernelSU GKI** card on the Features tab: kernel and KernelSU mode, SUSFS
+  version and features, and flashing an AnyKernel3 zip (GKI 6.1+).
+  This branch carries `feat/boot-guard-extras` for the Features tab.
 - **CI**: `.github/workflows/build-sfs-kernel.yml` syncs GKI, applies
   `50_add_susfs_in_gki-<kmi>.patch`, copies `kernel/` in, builds with Kleaf and
   packs `sfs/anykernel3/anykernel.sh` with the Image.

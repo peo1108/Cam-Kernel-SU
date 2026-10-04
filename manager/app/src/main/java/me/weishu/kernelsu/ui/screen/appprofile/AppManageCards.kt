@@ -78,6 +78,7 @@ import me.weishu.kernelsu.ui.component.dialog.ConfirmResult
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
 import me.weishu.kernelsu.ui.component.glass.GlassDialog
+import me.weishu.kernelsu.ui.component.glass.GlassExpandableCard
 import me.weishu.kernelsu.ui.component.glass.GlassListCard
 import me.weishu.kernelsu.ui.util.AppDetails
 import me.weishu.kernelsu.ui.util.AppStorage
@@ -160,7 +161,7 @@ private fun InfoCard(d: AppDetails) {
         d.isSystem -> stringResource(R.string.app_type_system)
         else -> stringResource(R.string.app_type_user)
     }
-    ExpandableCard(
+    GlassExpandableCard(
         icon = Icons.Rounded.Info,
         title = stringResource(R.string.app_info),
         summary = "${d.versionName} · SDK ${d.targetSdk} · $type",
@@ -220,7 +221,7 @@ private fun InfoCard(d: AppDetails) {
 @Composable
 private fun StorageCard(storage: AppStorage?) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    ExpandableCard(
+    GlassExpandableCard(
         icon = Icons.Rounded.Storage,
         title = stringResource(R.string.app_storage),
         summary = storage?.let { stringResource(R.string.app_storage_total, formatBytes(it.total)) }
@@ -229,7 +230,7 @@ private fun StorageCard(storage: AppStorage?) {
         onToggle = { expanded = !expanded },
         header = { if (storage != null) StorageBar(storage) },
     ) {
-        if (storage == null) return@ExpandableCard
+        if (storage == null) return@GlassExpandableCard
         StorageRow(ApkColor, stringResource(R.string.app_storage_apk), storage.apk)
         StorageRow(DataColor, stringResource(R.string.app_storage_data), storage.data)
         StorageRow(CacheColor, stringResource(R.string.app_storage_cache), storage.cache)
@@ -254,7 +255,7 @@ private fun ManageCard(
     var askUninstall by remember { mutableStateOf(false) }
     val failed = stringResource(R.string.app_action_failed)
 
-    ExpandableCard(
+    GlassExpandableCard(
         icon = Icons.Rounded.Handyman,
         title = stringResource(R.string.app_manage),
         summary = stringResource(R.string.app_manage_summary),
@@ -466,70 +467,6 @@ private fun finish(
 // ---------------------------------------------------------------------------------------------
 
 /** A card with a tappable header that opens up to show [content], arrow turning like Superuser's. */
-@Composable
-private fun ExpandableCard(
-    icon: ImageVector,
-    title: String,
-    summary: String?,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    header: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 90f else 0f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
-        label = "ExpandableCardArrow",
-    )
-    GlassListCard(
-        modifier = Modifier
-            .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
-        insideMargin = PaddingValues(0.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onToggle)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = colorScheme.onBackground, modifier = Modifier.padding(end = 14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(text = title, fontWeight = FontWeight(550), color = colorScheme.onSurface)
-                    if (summary != null) {
-                        Text(text = summary, fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary, maxLines = 1)
-                    }
-                }
-                val layoutDirection = LocalLayoutDirection.current
-                Image(
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .graphicsLayer {
-                            if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
-                            rotationZ = arrowRotation
-                        }
-                        .size(width = 10.dp, height = 16.dp),
-                    imageVector = MiuixIcons.Basic.ArrowRight,
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(colorScheme.onSurfaceVariantActions),
-                )
-            }
-            if (header != null) {
-                Spacer(Modifier.height(12.dp))
-                header()
-            }
-        }
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
-            exit = shrinkVertically(spring(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)) + fadeOut(),
-        ) {
-            Column(Modifier.padding(bottom = 8.dp), content = content)
-        }
-    }
-}
-
 @Composable
 private fun InfoRow(label: String, value: String, copy: Boolean = false, onLongClick: (() -> Unit)? = null) {
     val context = LocalContext.current

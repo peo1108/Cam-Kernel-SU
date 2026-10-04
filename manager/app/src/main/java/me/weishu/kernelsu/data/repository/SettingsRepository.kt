@@ -35,6 +35,9 @@ interface SettingsRepository {
     var roamingSlimes: Boolean
     var roamingSlimeCount: Int
     var slimeNightNap: Boolean
+    var conflictDetection: Boolean
+    var conflictWarnOnFlash: Boolean
+    var conflictIncludeProps: Boolean
     val intentToken: String
 
     suspend fun getSuCompatStatus(): String

@@ -250,6 +250,32 @@ fn run_from_args(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// A resetprop that writes property areas directly (needed for `ro.*`) and stays quiet.
+const fn direct() -> ResetProp {
+    ResetProp {
+        skip_svc: true,
+        persistent: false,
+        persist_only: false,
+        verbose: false,
+        show_context: false,
+        rebuild: false,
+    }
+}
+
+pub fn list_props() -> Result<Vec<(String, String)>> {
+    sys_prop::init().context("Failed to initialize system property API")?;
+    let props = direct().list_all().context("Failed to list properties")?;
+    Ok(props.into_iter().collect())
+}
+
+pub fn set_prop(name: &str, value: &str) -> Result<()> {
+    sys_prop::init().context("Failed to initialize system property API")?;
+    direct()
+        .set(name, value)
+        .with_context(|| format!("Failed to set {name}"))?;
+    Ok(())
+}
+
 /// Load system.prop file using internal resetprop API.
 ///
 /// Equivalent to `resetprop -n --file <path>`.

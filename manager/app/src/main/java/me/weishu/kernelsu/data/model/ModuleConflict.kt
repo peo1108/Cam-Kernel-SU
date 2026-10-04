@@ -33,3 +33,10 @@ fun parseModuleConflicts(json: String): List<ModuleConflict> = runCatching {
 }.getOrDefault(emptyList())
 
 fun List<ModuleConflict>.forModule(id: String): List<ModuleConflict> = filter { id in it.modules }
+
+/** Applies the Features page options: detection off hides everything, props can be left out. */
+fun List<ModuleConflict>.visible(detection: Boolean, includeProps: Boolean): List<ModuleConflict> = when {
+    !detection -> emptyList()
+    includeProps -> this
+    else -> filter { it.kind != ConflictKind.Prop }
+}

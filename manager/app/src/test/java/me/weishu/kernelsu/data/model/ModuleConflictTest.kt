@@ -26,6 +26,22 @@ class ModuleConflictTest {
     }
 
     @Test
+    fun visibleConflictsDropsProps() {
+        val conflicts = listOf(
+            ModuleConflict(ConflictKind.File, "/system/etc/hosts", listOf("a", "b")),
+            ModuleConflict(ConflictKind.Prop, "ro.x", listOf("a", "b")),
+        )
+        assertEquals(listOf(conflicts[0]), conflicts.visible(detection = true, includeProps = false))
+        assertEquals(conflicts, conflicts.visible(detection = true, includeProps = true))
+    }
+
+    @Test
+    fun detectionOffHidesAll() {
+        val conflicts = listOf(ModuleConflict(ConflictKind.File, "/system/etc/hosts", listOf("a", "b")))
+        assertEquals(emptyList<ModuleConflict>(), conflicts.visible(detection = false, includeProps = true))
+    }
+
+    @Test
     fun forModuleFilters() {
         val conflicts = listOf(
             ModuleConflict(ConflictKind.File, "/system/etc/hosts", listOf("a", "b")),

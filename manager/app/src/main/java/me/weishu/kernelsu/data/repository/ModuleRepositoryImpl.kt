@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.model.Module
 import me.weishu.kernelsu.data.model.ModuleUpdateInfo
 import me.weishu.kernelsu.data.model.forModule
+import me.weishu.kernelsu.data.model.visible
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.util.getBootGuardStatus
 import me.weishu.kernelsu.ui.util.isNetworkAvailable
@@ -27,7 +28,12 @@ class ModuleRepositoryImpl : ModuleRepository {
             val array = JSONArray(result)
             // one ksud call each for the whole list, not one per module
             val autoDisabled = getBootGuardStatus().autoDisabled.toSet()
-            val conflicts = listModuleConflicts()
+            val settings = SettingsRepositoryImpl()
+            val conflicts = if (settings.conflictDetection) {
+                listModuleConflicts().visible(detection = true, includeProps = settings.conflictIncludeProps)
+            } else {
+                emptyList()
+            }
             (0 until array.length())
                 .asSequence()
                 .map { array.getJSONObject(it) }

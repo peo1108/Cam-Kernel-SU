@@ -27,6 +27,8 @@ import me.weishu.kernelsu.data.model.BootGuardStatus
 import me.weishu.kernelsu.data.model.ModuleConflict
 import me.weishu.kernelsu.data.model.forModule
 import me.weishu.kernelsu.data.model.parseModuleConflicts
+import me.weishu.kernelsu.data.model.visible
+import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.screen.install.SeedApp
 import me.weishu.kernelsu.ui.screen.install.isValidSeedPackageName
@@ -161,6 +163,19 @@ fun clearBootGuard(): Boolean {
     return result
 }
 
+/** `null` keeps a setting; [threshold] is the boot attempt that triggers (2..5). */
+fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disableAll: Boolean? = null): Boolean {
+    val args = buildList {
+        enabled?.let { add("--enabled $it") }
+        threshold?.let { add("--threshold $it") }
+        disableAll?.let { add("--mode ${if (it) "all" else "suspects"}") }
+    }
+    if (args.isEmpty()) return true
+    val result = execKsud("boot-guard set ${args.joinToString(" ")}", true)
+    Log.i(TAG, "boot-guard set $args result: $result")
+    return result
+}
+
 fun listModuleConflicts(): List<ModuleConflict> = parseModuleConflicts(ksudStdout("module conflicts"))
 
 fun getModuleCount(): Int {
@@ -240,8 +255,11 @@ fun flashModule(
 
         // ksud checks the pending update in place of the installed copy
         val moduleId = readModuleIdFromZip(file)
-        if (result.isSuccess && moduleId != null) {
-            val others = listModuleConflicts().forModule(moduleId)
+        val settings = SettingsRepositoryImpl()
+        if (result.isSuccess && moduleId != null && settings.conflictDetection && settings.conflictWarnOnFlash) {
+            val others = listModuleConflicts()
+                .visible(detection = true, includeProps = settings.conflictIncludeProps)
+                .forModule(moduleId)
                 .flatMap { it.modules }
                 .filter { it != moduleId }
                 .distinct()

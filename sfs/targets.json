@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "Kernels CI builds (sfs/build.sh <tag>). Each target is a GKI release tag of kernel/common,",
+    "i.e. a kernel Google shipped: building the very release a device runs keeps its stock",
+    "modules' CRCs matching. manifest is the kernel/manifest branch of that release, for a",
+    "toolchain and Kleaf of the same era. fixups names a set in sfs/patches/fixup_susfs.py that",
+    "makes susfs4ksu's patch apply with --fuzz=0. 6.12 builds without LTO like its official GKI",
+    "(with LTO, Kconfig drops RUST and rust_binder.ko); 6.1 and 6.6 use thin LTO.",
+    "The Manager recommends the build whose kernel version matches the device (or the closest)."
+  ],
+  "targets": [
+    { "kmi": "android14-6.1", "kernel": "6.1.128", "tag": "android14-6.1-2025-03_r15", "manifest": "common-android14-6.1-2025-03", "lto": "thin", "fixups": "6.1-2025-03" },
+    { "kmi": "android14-6.1", "kernel": "6.1.141", "tag": "android14-6.1-2025-07_r13", "manifest": "common-android14-6.1-2025-07", "lto": "thin", "fixups": "6.1-2025-07" },
+    { "kmi": "android14-6.1", "kernel": "6.1.145", "tag": "android14-6.1-2025-08_r12", "manifest": "common-android14-6.1-2025-08", "lto": "thin", "fixups": "none" },
+    { "kmi": "android14-6.1", "kernel": "6.1.157", "tag": "android14-6.1-2025-12_r31", "manifest": "common-android14-6.1-2025-12", "lto": "thin", "fixups": "6.1-2025-12" },
+    { "kmi": "android14-6.1", "kernel": "6.1.162", "tag": "android14-6.1-2026-03_r24", "manifest": "common-android14-6.1-2026-03", "lto": "thin", "fixups": "6.1-2025-12" },
+
+    { "kmi": "android15-6.6", "kernel": "6.6.77", "tag": "android15-6.6-2025-03_r33", "manifest": "common-android15-6.6-2025-03", "lto": "thin", "fixups": "6.6-2025-03" },
+    { "kmi": "android15-6.6", "kernel": "6.6.87", "tag": "android15-6.6-2025-05_r21", "manifest": "common-android15-6.6-2025-05", "lto": "thin", "fixups": "6.6-2025-05" },
+    { "kmi": "android15-6.6", "kernel": "6.6.98", "tag": "android15-6.6-2025-08_r35", "manifest": "common-android15-6.6-2025-08", "lto": "thin", "fixups": "none" },
+    { "kmi": "android15-6.6", "kernel": "6.6.102", "tag": "android15-6.6-2025-10_r32", "manifest": "common-android15-6.6-2025-10", "lto": "thin", "fixups": "none" },
+    { "kmi": "android15-6.6", "kernel": "6.6.118", "tag": "android15-6.6-2026-01_r42", "manifest": "common-android15-6.6-2026-01", "lto": "thin", "fixups": "none" },
+
+    { "kmi": "android16-6.12", "kernel": "6.12.23", "tag": "android16-6.12-2025-06_r58", "manifest": "common-android16-6.12-2025-06", "lto": "none", "fixups": "6.12-gen5" },
+    { "kmi": "android16-6.12", "kernel": "6.12.30", "tag": "android16-6.12-2025-07_r29", "manifest": "common-android16-6.12-2025-07", "lto": "none", "fixups": "6.12-gen5" },
+    { "kmi": "android16-6.12", "kernel": "6.12.38", "tag": "android16-6.12-2025-09_r39", "manifest": "common-android16-6.12-2025-09", "lto": "none", "fixups": "6.12-gen5" },
+    { "kmi": "android16-6.12", "kernel": "6.12.58", "tag": "android16-6.12-2025-12_r59", "manifest": "common-android16-6.12-2025-12", "lto": "none", "fixups": "6.12-2025-12" },
+    { "kmi": "android16-6.12", "kernel": "6.12.69", "tag": "android16-6.12-2026-03_r72", "manifest": "common-android16-6.12-2026-03", "lto": "none", "fixups": "6.12-2026" }
+  ]
+}

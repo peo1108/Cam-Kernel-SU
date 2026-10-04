@@ -77,4 +77,4 @@ jobs:
             lkm/lkm-*_kernelsu.ko
             ksud/ksud-*
             ksuinit/*
-            KernelSU-SFS-*/KernelSU-SFS-*.zip
+            */KernelSU-SFS-*.zip

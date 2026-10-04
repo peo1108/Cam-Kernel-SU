@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.screen.features.FeaturesUiState
-import me.weishu.kernelsu.ui.util.checkAttestation as readAttestation
+import me.weishu.kernelsu.ui.util.checkAttestationReport
 import me.weishu.kernelsu.ui.util.clearBootGuard
 import me.weishu.kernelsu.ui.util.getBootGuardStatus
 import me.weishu.kernelsu.ui.util.getHideBootloaderStatus
@@ -111,8 +111,16 @@ class FeaturesViewModel(
     fun checkAttestation() {
         _uiState.update { it.copy(checkingAttestation = true) }
         viewModelScope.launch {
-            val info = withContext(Dispatchers.IO) { readAttestation() }
-            _uiState.update { it.copy(attestation = info, attestationChecked = true, checkingAttestation = false) }
+            val report = withContext(Dispatchers.IO) { checkAttestationReport() }
+            _uiState.update {
+                it.copy(
+                    attestation = report.info,
+                    chainSize = report.chainSize,
+                    revoked = report.revoked,
+                    attestationChecked = true,
+                    checkingAttestation = false,
+                )
+            }
         }
     }
 

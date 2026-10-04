@@ -285,6 +285,14 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
                     ok = info.deviceLocked,
                 )
                 CheckLine(stringResource(R.string.features_attestation_state, bootState), ok = info.verifiedBootState == 0)
+                val revoked = state.revoked
+                when {
+                    revoked == null -> CheckLine(stringResource(R.string.features_attestation_revocation_unknown), ok = false)
+                    revoked.isEmpty() -> CheckLine(stringResource(R.string.features_attestation_chain_ok, state.chainSize), ok = true)
+                    else -> revoked.forEach { cert ->
+                        CheckLine(stringResource(R.string.features_attestation_revoked, cert.index + 1, cert.reason), ok = false)
+                    }
+                }
                 if (!info.deviceLocked || info.verifiedBootState != 0) {
                     Text(
                         text = stringResource(R.string.features_attestation_layer2),

@@ -5,6 +5,7 @@ import me.weishu.kernelsu.data.model.AttestationInfo
 import me.weishu.kernelsu.data.model.BootGuardStatus
 import me.weishu.kernelsu.data.model.HideBootloaderStatus
 import me.weishu.kernelsu.data.model.ModuleConflict
+import me.weishu.kernelsu.data.model.RevokedCert
 import me.weishu.kernelsu.data.model.visible
 
 @Immutable
@@ -20,6 +21,9 @@ data class FeaturesUiState(
     /** null until checked, or when the certificate could not be read */
     val attestation: AttestationInfo? = null,
     val attestationChecked: Boolean = false,
+    val chainSize: Int = 0,
+    /** null when the revocation list could not be fetched */
+    val revoked: List<RevokedCert>? = null,
     val checkingAttestation: Boolean = false,
 ) {
     val conflicts: List<ModuleConflict>

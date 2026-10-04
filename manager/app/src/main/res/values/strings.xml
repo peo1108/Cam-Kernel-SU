@@ -462,4 +462,7 @@
     <string name="features_attestation_no">no</string>
     <string name="features_attestation_state">Verified boot: %s</string>
     <string name="features_attestation_layer2">Apps that check the certificate still see an unlocked device. Properties cannot change this; it needs the keystore layer, which is not built yet.</string>
+    <string name="features_attestation_chain_ok">Certificate chain (%d): none revoked by Google</string>
+    <string name="features_attestation_revoked">Certificate #%1$d is revoked by Google (%2$s): strong integrity checks fail</string>
+    <string name="features_attestation_revocation_unknown">Could not fetch the Google revocation list (offline?)</string>
 </resources>

@@ -161,7 +161,7 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 
 ### Tự ẩn bootloader
 - ksud: [mới] `src/hide_bootloader.rs` (bảng quy tắc prop → giá trị an toàn, thuần, có unit test; phần Android `apply_if_enabled`/`status`/`set_enabled`); [sửa] `src/resetprop.rs` (`list_props`, `set_prop`), `src/init_event.rs` (gọi sau `load_system_prop` và trong `on_boot_completed`), `src/cli.rs` (`hide-bootloader status|enable|disable`), `src/defs.rs` (cờ `/data/adb/ksu/.hide_bootloader`). Chỉ sửa prop **có sẵn**, không thêm prop mới; không đụng `ro.oem_unlock_supported`; `/proc/bootconfig` và `/proc/cmdline` chỉ báo.
-- Manager: [mới] `data/model/HideBootloaderStatus.kt`, `data/model/KeyAttestation.kt` (bộ đọc DER viết tay cho KeyDescription/RootOfTrust, có unit test), `ui/util/AttestationCheck.kt`; [sửa] thẻ thứ ba trong `ui/screen/features/FeaturesMiuix.kt`, `FeaturesViewModel.kt`, `KsuCli.kt`; chuỗi `features_bootloader_*`, `features_attestation_*`.
+- Manager: [mới] `data/model/HideBootloaderStatus.kt`, `data/model/KeyAttestation.kt` (bộ đọc DER viết tay cho KeyDescription/RootOfTrust, có unit test), `data/model/Revocation.kt` (đối chiếu serial cả chuỗi chứng chỉ với danh sách thu hồi công khai `https://android.googleapis.com/attestation/status`, có unit test), `ui/util/AttestationCheck.kt`; [sửa] thẻ thứ ba trong `ui/screen/features/FeaturesMiuix.kt`, `FeaturesViewModel.kt`, `KsuCli.kt`; chuỗi `features_bootloader_*`, `features_attestation_*`.
 - Giới hạn: **không** đổi được chứng chỉ attestation (cần tầng keystore2, chưa làm). Máy của Cam root bằng EFISP nên bootloader luôn khoá: thử trên máy bằng cách tạm đặt `ro.boot.verifiedbootstate=orange` qua resetprop; attestation thật báo TEE / khoá / Verified.
 
 ### Manager: cài đặt, mặc định, font

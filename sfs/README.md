@@ -10,12 +10,17 @@ Older kernels are refused at build time (`kernel/core/init.c`) and by the zip.
 ## User flow
 
 1. Root with LKM as usual: the Install screen stays LKM only.
-2. Manager → Features → **KernelSU GKI** → Install GKI kernel:
-   - **Direct install**: lists the project's release builds for the device's
-     KMI (newest preselected), downloads the chosen zip and flashes it.
-   - **Local AnyKernel3 file**: flash a zip picked on the device.
-   - **Install to inactive slot (after OTA)**: asks for a project build or a
-     local zip, flashes the other slot (`SLOT_SELECT=inactive`) and switches to it.
+2. Manager → Features → **KernelSU GKI** → **GKI install** opens a page laid
+   out like the LKM installer:
+   - **Direct install**: the project's release builds for the device's KMI
+     (newest preselected, tap *Version* to pick another), downloaded and flashed.
+   - **Local AnyKernel3 file**: a zip picked on the device.
+   - **Install to inactive slot (after OTA)**: a project build or a local zip
+     (*Source*), flashed to the other slot (`SLOT_SELECT=inactive`), which then
+     becomes active.
+   - *Advanced options*: back up boot before flashing (on by default).
+   - *Restore kernel*: write a backup back — the previous kernel, or the
+     original one kept from before the very first flash.
 3. Reboot. The same card shows the SUSFS version and enabled features.
 
 Releases (`release.yml`, tag on this branch) attach
@@ -37,7 +42,7 @@ does not boot: `fastboot flash boot boot<slot>.img`.
   SUSFS hooks live in the GKI source, so the tracepoint hook manager, symbol
   resolver and LKM/late-load paths are not built. `KSU_GET_INFO_FLAG_SUSFS`
   tells userspace SUSFS is present.
-- **ksud**: `ksud susfs info [--json]` and `ksud flash-ak3 <zip> [--no-backup] [--inactive]`.
+- **ksud**: `ksud susfs info [--json]` and `ksud flash-ak3 <zip> [--no-backup] [--inactive]` and `ksud ak3-backup list|restore <file>`.
   SUSFS itself is driven by simonpunk's `ksu_susfs` tool / module as usual.
 - **Manager**: the Install screen stays LKM only. Everything GKI lives in the
   **KernelSU GKI** card on the Features tab: kernel and KernelSU mode, SUSFS

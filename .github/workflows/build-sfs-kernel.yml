@@ -122,8 +122,11 @@ jobs:
           git clone --depth=1 -b "gki-$KMI" https://gitlab.com/simonpunk/susfs4ksu.git ../susfs4ksu
           cp -r ../susfs4ksu/kernel_patches/fs/* common/fs/
           cp -r ../susfs4ksu/kernel_patches/include/linux/* common/include/linux/
+          PATCH="../susfs4ksu/kernel_patches/50_add_susfs_in_gki-$KMI.patch"
+          # adjust context to the pinned GKI branch, then apply strictly: fuzz once misplaced a hunk
+          python3 ../KernelSU/sfs/patches/fixup_susfs.py "$KMI" "$PATCH"
           cd common
-          patch -p1 --forward --fuzz=3 < "../../susfs4ksu/kernel_patches/50_add_susfs_in_gki-$KMI.patch"
+          patch -p1 --forward --fuzz=0 < "../$PATCH"
           SUSFS_VERSION=$(grep -E '^#define SUSFS_VERSION' include/linux/susfs.h | cut -d'"' -f2)
           echo "SUSFS_VERSION=$SUSFS_VERSION" >> "$GITHUB_ENV"
 

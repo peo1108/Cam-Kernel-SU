@@ -60,8 +60,17 @@ command -v repo >/dev/null || {
 log "$TAG: tools from $MANIFEST -> $TREE"
 mkdir -p "$TREE"
 cd "$TREE"
-if [ ! -d .repo ]; then
-  repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "$MANIFEST" --repo-rev=v2.16
+[ -d .repo ] || repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "$MANIFEST" --repo-rev=v2.16
+# Monthly manifests pin common to a release branch Google deletes later on; the
+# release tag stays, so sync common at the tag itself.
+mkdir -p .repo/local_manifests
+cat > .repo/local_manifests/sfs.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <extend-project name="kernel/common" revision="refs/tags/$TAG" />
+</manifest>
+EOF
+if [ ! -e common/.git ]; then
   repo sync -c -j"$(nproc)" --no-tags --fail-fast
 else
   # back to a pristine tree: drop the previous run's SUSFS patch and KernelSU copy

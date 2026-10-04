@@ -1,7 +1,7 @@
 #[allow(clippy::wildcard_imports)]
 use crate::utils::*;
 use crate::{
-    assets, boot_guard, defs, ksucalls, metamodule,
+    assets, boot_guard, defs, ksucalls, metamodule, module_conflicts,
     restorecon::{restore_syscon, setsyscon},
     sepolicy,
 };
@@ -791,6 +791,52 @@ pub fn enabled_module_ids() -> Vec<String> {
     }
     ids.sort();
     ids
+}
+
+/// Print the files and props several enabled modules override, as JSON.
+/// A pending update is checked in place of the installed version.
+pub fn list_module_conflicts() -> Result<()> {
+    let mut ids = enabled_module_ids();
+    if let Ok(dir) = std::fs::read_dir(MODULE_UPDATE_DIR) {
+        for entry in dir.flatten() {
+            let path = entry.path();
+            if let Some(id) = path.file_name().and_then(|name| name.to_str())
+                && path.join("module.prop").exists()
+                && !Path::new(MODULE_DIR).join(id).exists()
+                && !ids.iter().any(|known| known == id)
+            {
+                ids.push(id.to_owned());
+            }
+        }
+    }
+
+    let inputs: Vec<module_conflicts::ModuleInput> = ids
+        .into_iter()
+        .map(|id| {
+            let pending = Path::new(MODULE_UPDATE_DIR).join(&id);
+            let root = if pending.is_dir() {
+                pending
+            } else {
+                Path::new(MODULE_DIR).join(&id)
+            };
+            let entries = if root.join("skip_mount").exists() {
+                Vec::new()
+            } else {
+                module_conflicts::scan_module_tree(&root)
+            };
+            let props = std::fs::read_to_string(root.join("system.prop"))
+                .map(|text| module_conflicts::parse_system_prop(&text))
+                .unwrap_or_default();
+            module_conflicts::ModuleInput { id, entries, props }
+        })
+        .collect();
+
+    let conflicts = module_conflicts::find_conflicts(&inputs);
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&module_conflicts::conflicts_json(&conflicts))?
+    );
+    Ok(())
 }
 
 pub fn boot_guard_status() -> Result<()> {

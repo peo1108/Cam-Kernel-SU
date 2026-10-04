@@ -328,6 +328,9 @@ enum Module {
     /// list all modules
     List,
 
+    /// list files and props that several modules override
+    Conflicts,
+
     /// manage module configuration
     Config {
         /// target internal module name (resolved as internal.<name>)
@@ -564,6 +567,7 @@ pub fn run() -> Result<()> {
                 Module::Disable { id } => module::disable_module(&id),
                 Module::Action { id } => module::run_action(&id),
                 Module::List => module::list_modules(),
+                Module::Conflicts => module::list_module_conflicts(),
                 Module::Config { internal, command } => {
                     let module_id = match internal {
                         Some(internal_name) => format!("internal.{internal_name}"),

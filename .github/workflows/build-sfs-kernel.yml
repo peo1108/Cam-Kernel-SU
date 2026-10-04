@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       kmi:
-        description: 'KMI to build (empty = all)'
+        description: 'KMI to build (empty = all verified)'
         required: false
         default: ''
         type: choice
@@ -15,6 +15,11 @@ on:
           - android14-6.1
           - android15-6.6
           - android16-6.12
+      branch:
+        description: 'GKI manifest branch override (e.g. common-android16-6.12-2026-03)'
+        required: false
+        default: ''
+        type: string
   push:
     branches: [ "sfs" ]
     paths:
@@ -27,27 +32,45 @@ jobs:
   matrix:
     runs-on: ubuntu-latest
     outputs:
-      kmi: ${{ steps.set.outputs.kmi }}
+      include: ${{ steps.set.outputs.include }}
     steps:
       - id: set
+        env:
+          KMI_INPUT: ${{ inputs.kmi }}
+          BRANCH_INPUT: ${{ inputs.branch }}
         run: |
-          if [ -n "${{ inputs.kmi }}" ]; then
-            echo 'kmi=["${{ inputs.kmi }}"]' >> "$GITHUB_OUTPUT"
+          # susfs4ksu patches target a GKI release branch, not the moving tip:
+          # pin each KMI to a release branch its 50_add_susfs patch applies to cleanly.
+          # Only verified KMIs are built by default. susfs4ksu has no 6.18 branch yet.
+          branch_for() {
+            case "$1" in
+              android16-6.12) echo common-android16-6.12-2026-06 ;;
+              # not verified yet: tip of the KMI branch
+              *) echo "common-$1" ;;
+            esac
+          }
+          if [ -n "$KMI_INPUT" ]; then
+            kmis="$KMI_INPUT"
           else
-            # susfs4ksu has no 6.18 branch yet; add android17-6.18 once it does
-            echo 'kmi=["android14-6.1","android15-6.6","android16-6.12"]' >> "$GITHUB_OUTPUT"
+            kmis="android16-6.12"
           fi
+          include=$(for k in $kmis; do
+            b="${BRANCH_INPUT:-$(branch_for "$k")}"
+            printf '{"kmi":"%s","branch":"%s"}\n' "$k" "$b"
+          done | jq -sc .)
+          echo "include=$include" >> "$GITHUB_OUTPUT"
 
   build:
     needs: matrix
-    name: Build ${{ matrix.kmi }}
+    name: Build ${{ matrix.kmi }} (${{ matrix.branch }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        kmi: ${{ fromJSON(needs.matrix.outputs.kmi) }}
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
     env:
       KMI: ${{ matrix.kmi }}
+      GKI_BRANCH: ${{ matrix.branch }}
     steps:
       - name: Free disk space
         run: |
@@ -77,7 +100,7 @@ jobs:
       - name: Sync GKI source
         run: |
           mkdir gki && cd gki
-          repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "common-$KMI" --repo-rev=v2.16
+          repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "$GKI_BRANCH" --repo-rev=v2.16
           repo --trace sync -c -j"$(nproc --all)" --no-tags --fail-fast
           df -h /
 

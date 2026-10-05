@@ -5,10 +5,17 @@
 //! With `inactive`, AnyKernel3 flashes the other slot (`SLOT_SELECT=inactive`)
 //! and the device is switched to it, for installing right after an OTA.
 //!
+//! Before anything is written, the stock modules (`system_dlkm`, `vendor_dlkm`,
+//! `vendor`, `odm`) are checked against the `vmlinux.symvers` the project's
+//! builds carry: a module whose symbol CRCs the new kernel does not export
+//! is refused at load time. After flashing, the next boot checks the kernel
+//! that came up (see `kernel_check`).
+//!
 //! Backups live in `/data/adb/ksu/ak3_backup/`: `boot<slot>.img` is the kernel
 //! that was there before the last flash, `boot<slot>-original.img` the one from
 //! before the very first flash, which is never overwritten.
 
+use std::collections::{BTreeMap, HashSet};
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
@@ -16,12 +23,29 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail, ensure};
 
+use crate::kernel_check::{self, Expected};
+use crate::modversions::{self, ModuleCrcs};
 use crate::{assets, boot_patch, defs, utils};
 
 const UPDATE_BINARY: &str = "META-INF/com/google/android/update-binary";
 const AK3_SCRIPT: &str = "anykernel.sh";
 const AK3_BUSYBOX: &str = "tools/busybox";
 const ORIGINAL_SUFFIX: &str = "-original";
+/// CRCs of the symbols the zip's kernel exports (`0x<crc>\t<symbol>` lines)
+const SYMVERS: &str = "vmlinux.symvers";
+/// what a project build is: kernel release, KernelSU and SUSFS versions
+const SFS_JSON: &str = "sfs.json";
+/// an uncompressed kernel, whose banner gives the release of other zips
+const IMAGE: &str = "Image";
+/// where the device keeps the modules it loads after the first stage
+const MODULE_DIRS: [&str; 4] = [
+    "/system_dlkm/lib/modules",
+    "/vendor_dlkm/lib/modules",
+    "/vendor/lib/modules",
+    "/odm/lib/modules",
+];
+/// mismatched symbols printed per module
+const MISMATCHES_SHOWN: usize = 3;
 
 fn backup_dir() -> PathBuf {
     Path::new(defs::WORKING_DIR).join("ak3_backup")
@@ -91,6 +115,178 @@ fn extract_update_binary(zip_path: &Path, dest: &Path) -> Result<()> {
     let mut entry = archive.by_name(UPDATE_BINARY)?;
     let mut out = File::create(dest).with_context(|| format!("create {}", dest.display()))?;
     io::copy(&mut entry, &mut out)?;
+    Ok(())
+}
+
+fn read_entry(zip_path: &Path, name: &str) -> Result<Option<Vec<u8>>> {
+    let mut archive = zip::ZipArchive::new(File::open(zip_path)?)?;
+    let Ok(mut entry) = archive.by_name(name) else {
+        return Ok(None);
+    };
+    let mut data = Vec::with_capacity(usize::try_from(entry.size()).unwrap_or(0));
+    entry.read_to_end(&mut data)?;
+    Ok(Some(data))
+}
+
+/// What the next boot should find: a project build says so in `sfs.json`;
+/// for another zip the release comes from its Image banner, when readable.
+fn expected_kernel(zip_path: &Path) -> Expected {
+    if let Some(expected) = read_entry(zip_path, SFS_JSON)
+        .ok()
+        .flatten()
+        .and_then(|data| kernel_check::expected_from_sfs_json(&String::from_utf8_lossy(&data)))
+    {
+        return expected;
+    }
+    Expected {
+        release: read_entry(zip_path, IMAGE)
+            .ok()
+            .flatten()
+            .and_then(|image| kernel_check::banner_release(&image)),
+        ..Expected::default()
+    }
+}
+
+fn collect_modules(
+    dir: &Path,
+    depth: u32,
+    seen: &mut HashSet<String>,
+    out: &mut Vec<(String, ModuleCrcs)>,
+) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if depth > 0 {
+                collect_modules(&path, depth - 1, seen, out);
+            }
+            continue;
+        }
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if path.extension().is_none_or(|ext| ext != "ko") {
+            continue;
+        }
+        // vendor/lib/modules often holds the same modules as vendor_dlkm: count each once
+        let name = modversions::module_name(file_name);
+        if seen.contains(&name) {
+            continue;
+        }
+        if let Some(crcs) = fs::read(&path)
+            .ok()
+            .and_then(|elf| modversions::module_crcs(&elf))
+        {
+            seen.insert(name.clone());
+            out.push((name, crcs));
+        }
+    }
+}
+
+fn loaded_modules() -> HashSet<String> {
+    fs::read_to_string("/proc/modules")
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|line| line.split_whitespace().next())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn print_mismatches(
+    out: &mut impl Write,
+    report: &BTreeMap<String, Vec<modversions::Mismatch>>,
+) -> io::Result<()> {
+    for (module, bad) in report {
+        let shown: Vec<String> = bad
+            .iter()
+            .take(MISMATCHES_SHOWN)
+            .map(|m| {
+                format!(
+                    "{} ({:#010x} != {:#010x})",
+                    m.symbol, m.module_crc, m.kernel_crc
+                )
+            })
+            .collect();
+        let more = bad.len().saturating_sub(MISMATCHES_SHOWN);
+        if more > 0 {
+            writeln!(out, "  {module}: {} and {more} more", shown.join(", "))?;
+        } else {
+            writeln!(out, "  {module}: {}", shown.join(", "))?;
+        }
+    }
+    Ok(())
+}
+
+/// Refuses the zip when a module the device has loaded right now would be
+/// refused by the new kernel. Modules that are not loaded only get a warning:
+/// images often carry modules for hardware the device does not have.
+fn check_modules(zip_path: &Path, skip: bool) -> Result<()> {
+    let mut stdout = io::stdout();
+    if skip {
+        writeln!(stdout, "- Skipping the module check")?;
+        return Ok(());
+    }
+    let Some(symvers) = read_entry(zip_path, SYMVERS)? else {
+        writeln!(
+            stdout,
+            "- No {SYMVERS} in this zip, cannot check the stock modules"
+        )?;
+        return Ok(());
+    };
+    let kernel = modversions::parse_symvers(&String::from_utf8_lossy(&symvers));
+    if kernel.is_empty() {
+        writeln!(
+            stdout,
+            "- {SYMVERS} lists no symbols, cannot check the stock modules"
+        )?;
+        return Ok(());
+    }
+
+    let mut seen = HashSet::new();
+    let mut found = Vec::new();
+    for dir in MODULE_DIRS {
+        collect_modules(Path::new(dir), 4, &mut seen, &mut found);
+    }
+    if found.is_empty() {
+        writeln!(stdout, "- No stock modules found to check")?;
+        return Ok(());
+    }
+    writeln!(
+        stdout,
+        "- Checking {} stock modules against the new kernel",
+        found.len()
+    )?;
+
+    let report = modversions::report(&found, &kernel);
+    let loaded = loaded_modules();
+    let (in_use, unused): (BTreeMap<_, _>, BTreeMap<_, _>) = report
+        .into_iter()
+        .partition(|(name, _)| loaded.contains(name));
+
+    if !unused.is_empty() {
+        writeln!(
+            stdout,
+            "- Warning: {} module(s) not loaded now would not load with this kernel:",
+            unused.len()
+        )?;
+        print_mismatches(&mut stdout, &unused)?;
+    }
+    if !in_use.is_empty() {
+        writeln!(
+            stdout,
+            "- {} loaded module(s) would be refused by this kernel:",
+            in_use.len()
+        )?;
+        print_mismatches(&mut stdout, &in_use)?;
+        bail!(
+            "this kernel does not match the device's modules: it could boot without them or not \
+             at all. Use the build of the device's own GKI release (the recommended one), or \
+             pass --skip-module-check to flash anyway"
+        );
+    }
+    writeln!(stdout, "- The modules in use match the new kernel")?;
     Ok(())
 }
 
@@ -189,11 +385,12 @@ pub fn restore_backup(file: &str) -> Result<()> {
     let mut to = fs::OpenOptions::new().write(true).open(&partition)?;
     io::copy(&mut from, &mut to)?;
     to.sync_all()?;
+    kernel_check::clear_pending();
     writeln!(stdout, "- Done, reboot to use the restored kernel")?;
     Ok(())
 }
 
-pub fn flash(zip: &str, no_backup: bool, inactive: bool) -> Result<()> {
+pub fn flash(zip: &str, no_backup: bool, inactive: bool, skip_module_check: bool) -> Result<()> {
     let zip_path = fs::canonicalize(zip).with_context(|| format!("realpath: {zip} failed"))?;
     check_zip(&zip_path)?;
 
@@ -208,14 +405,24 @@ pub fn flash(zip: &str, no_backup: bool, inactive: bool) -> Result<()> {
             "- Target: inactive slot {}",
             boot_patch::get_slot_suffix(true)
         )?;
+        // the mounted modules are this slot's; the OTA put new ones in the other
+        writeln!(
+            stdout,
+            "- The inactive slot's modules are not mounted, skipping the module check"
+        )?;
+    } else {
+        check_modules(&zip_path, skip_module_check)?;
     }
-    if no_backup {
+    let backup = if no_backup {
         writeln!(stdout, "- Skipping boot backup")?;
+        None
     } else {
         writeln!(stdout, "- Backing up boot partition")?;
         let backup = backup_boot(inactive)?;
         writeln!(stdout, "- Boot backup: {}", backup.display())?;
-    }
+        Some(backup)
+    };
+    let expected = expected_kernel(&zip_path);
 
     let work_dir = Path::new(defs::WORKING_DIR).join("ak3");
     if work_dir.exists() {
@@ -277,6 +484,17 @@ pub fn flash(zip: &str, no_backup: bool, inactive: bool) -> Result<()> {
     if inactive {
         writeln!(stdout, "- Switching to the inactive slot")?;
         boot_patch::post_ota()?;
+    }
+
+    let zip_name = zip_path
+        .file_name()
+        .map_or_else(String::new, |n| n.to_string_lossy().into_owned());
+    match &expected.release {
+        Some(release) => writeln!(stdout, "- The next boot checks that {release} runs")?,
+        None => writeln!(stdout, "- The next boot checks the new kernel")?,
+    }
+    if let Err(e) = kernel_check::record_flash(&zip_name, backup.as_deref(), expected) {
+        log::warn!("kernel check: cannot record the flash: {e}");
     }
 
     writeln!(stdout, "- Done, reboot to use the new kernel")?;

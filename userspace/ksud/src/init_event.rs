@@ -161,34 +161,55 @@ fn run_boot_guard(updated: &[String]) {
     }
 }
 
-/// Posts a system notification as the shell user: notifications from uid 0 are dropped.
-fn notify_boot_guard(ids: &[String]) {
-    use std::os::unix::process::CommandExt;
-
-    let vietnamese = ["persist.sys.locale", "ro.product.locale"]
+fn prefers_vietnamese() -> bool {
+    ["persist.sys.locale", "ro.product.locale"]
         .iter()
         .find_map(|prop| utils::getprop(prop).filter(|v| !v.is_empty()))
-        .is_some_and(|locale| locale.starts_with("vi"));
-    let (title, body) = boot_guard::notice_text(ids, vietnamese);
+        .is_some_and(|locale| locale.starts_with("vi"))
+}
+
+/// Posts a system notification as the shell user: notifications from uid 0 are dropped.
+fn post_notification(tag: &str, title: &str, body: &str) -> bool {
+    use std::os::unix::process::CommandExt;
+
     // the notification service can still be starting right after boot-completed
     for attempt in 0..3 {
         let posted = std::process::Command::new("cmd")
-            .args(["notification", "post", "-S", "bigtext", "-t", &title])
-            .args(["su_kernel_boot_guard", &body])
+            .args(["notification", "post", "-S", "bigtext", "-t", title])
+            .args([tag, body])
             .uid(2000)
             .gid(2000)
             .stdout(std::process::Stdio::null())
             .status()
             .is_ok_and(|status| status.success());
         if posted {
-            info!("boot guard: notified about {ids:?}");
-            return;
+            return true;
         }
         if attempt < 2 {
             std::thread::sleep(std::time::Duration::from_secs(5));
         }
     }
-    warn!("boot guard: could not post the notification");
+    false
+}
+
+fn notify_boot_guard(ids: &[String]) {
+    let (title, body) = boot_guard::notice_text(ids, prefers_vietnamese());
+    if post_notification("su_kernel_boot_guard", &title, &body) {
+        info!("boot guard: notified about {ids:?}");
+    } else {
+        warn!("boot guard: could not post the notification");
+    }
+}
+
+/// The first boot after flash-ak3: is the flashed kernel the one running?
+fn run_kernel_check() {
+    let Some((release, problems)) = crate::kernel_check::on_boot_completed() else {
+        return;
+    };
+    let (title, body) = crate::kernel_check::notice_text(&release, &problems, prefers_vietnamese());
+    if !post_notification("su_kernel_check", &title, &body) {
+        warn!("kernel check: could not post the notification");
+    }
 }
 
 pub fn run_stage(stage: &str, wait: ScriptWait) {
@@ -269,6 +290,9 @@ pub fn on_boot_completed() {
 
     // forks: it waits for storage before the sus paths
     crate::susfs::apply_stage(crate::susfs_config::Stage::BootCompleted);
+
+    // last: its notification may wait for the notification service
+    run_kernel_check();
 }
 
 fn catch_bootlog(logname: &str, command: &[&str]) -> Result<()> {

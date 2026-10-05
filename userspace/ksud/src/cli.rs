@@ -189,6 +189,10 @@ enum Commands {
         /// Flash the inactive slot and switch to it (after an OTA)
         #[arg(long, default_value = "false")]
         inactive: bool,
+
+        /// Flash even if loaded stock modules do not match the new kernel's symbol CRCs
+        #[arg(long, default_value = "false")]
+        skip_module_check: bool,
     },
 
     /// Manage boot backups made by flash-ak3
@@ -196,6 +200,20 @@ enum Commands {
         #[command(subcommand)]
         command: Ak3Backup,
     },
+
+    /// Outcome of the check the first boot after flash-ak3 runs on the new kernel
+    Ak3Check {
+        #[command(subcommand)]
+        command: Ak3Check,
+    },
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Ak3Check {
+    /// Print whether a check is pending and the last outcome, as JSON
+    Status,
+    /// Forget the last outcome
+    Clear,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -228,6 +246,12 @@ enum Susfs {
     Bootconfig,
     /// Print what the last boot and the last changes did
     Log,
+    /// Check what non-root apps can still see and which settings would hide it, as JSON
+    Audit {
+        /// Apply every suggested fix to the SUSFS settings (and hide bootloader)
+        #[arg(long, default_value = "false")]
+        apply: bool,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -963,15 +987,24 @@ pub fn run() -> Result<()> {
                 crate::susfs::print_log();
                 Ok(())
             }
+            Susfs::Audit { apply } => crate::susfs_audit::run(apply),
         },
         Commands::FlashAk3 {
             zip,
             no_backup,
             inactive,
-        } => crate::anykernel::flash(&zip, no_backup, inactive),
+            skip_module_check,
+        } => crate::anykernel::flash(&zip, no_backup, inactive, skip_module_check),
         Commands::Ak3Backup { command } => match command {
             Ak3Backup::List => crate::anykernel::list_backups(),
             Ak3Backup::Restore { file } => crate::anykernel::restore_backup(&file),
+        },
+        Commands::Ak3Check { command } => match command {
+            Ak3Check::Status => {
+                crate::kernel_check::print_status();
+                Ok(())
+            }
+            Ak3Check::Clear => crate::kernel_check::clear(),
         },
         Commands::Initrc { command } => match command {
             Initrc::Refresh => regenerate_preinit_rc(),

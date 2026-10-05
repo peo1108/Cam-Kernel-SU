@@ -991,39 +991,38 @@ pub fn set_config(file: &str) -> Result<()> {
         std::fs::read_to_string(file).with_context(|| format!("read {file}"))?
     };
     let value: serde_json::Value = serde_json::from_str(&raw).context("settings are not JSON")?;
-    let new = SusfsConfig::from_json(&value);
+    println!("{}", save_and_apply(&SusfsConfig::from_json(&value))?);
+    Ok(())
+}
+
+/// Saves `new` and applies what SUSFS can take now; the JSON says what happened.
+pub fn save_and_apply(new: &SusfsConfig) -> Result<serde_json::Value> {
     let errors = new.validate();
     if !errors.is_empty() {
-        println!(
-            "{}",
-            json!({ "saved": false, "errors": errors, "failed": [], "rebootNeeded": false })
+        return Ok(
+            json!({ "saved": false, "errors": errors, "failed": [], "rebootNeeded": false }),
         );
-        return Ok(());
     }
 
     let old = load_config();
-    save_config(&new)?;
+    save_config(new)?;
     let module = module_active();
     let (failed, reboot_needed) = if module || !is_built_in() {
         (Vec::new(), false)
     } else {
-        let plan = plan_live(&old, &new);
+        let plan = plan_live(&old, new);
         if !plan.actions.is_empty() {
             log_line("== settings changed");
         }
         (run_actions(&plan.actions, false), plan.reboot_needed)
     };
-    println!(
-        "{}",
-        json!({
-            "saved": true,
-            "errors": [],
-            "failed": failed,
-            "rebootNeeded": reboot_needed,
-            "moduleActive": module,
-        })
-    );
-    Ok(())
+    Ok(json!({
+        "saved": true,
+        "errors": [],
+        "failed": failed,
+        "rebootNeeded": reboot_needed,
+        "moduleActive": module,
+    }))
 }
 
 /// `ksud susfs bootconfig`: what auto mode would hand the kernel on this device.

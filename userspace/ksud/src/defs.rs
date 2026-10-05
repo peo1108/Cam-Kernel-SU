@@ -18,6 +18,9 @@ mod android {
     pub const BOOT_GUARD_PATH: &str = concatcp!(WORKING_DIR, "bootguard.json");
     pub const HIDE_BOOTLOADER_FLAG: &str = concatcp!(WORKING_DIR, ".hide_bootloader");
     pub const SUSFS_CONFIG_PATH: &str = concatcp!(WORKING_DIR, "susfs.json");
+    /// what the next boot should run after flash-ak3, and the outcome of that check
+    pub const KERNEL_CHECK_PENDING_PATH: &str = concatcp!(WORKING_DIR, "ak3_pending.json");
+    pub const KERNEL_CHECK_PATH: &str = concatcp!(WORKING_DIR, "ak3_check.json");
     /// the installed copy of a module, kept when an update replaces it
     pub const MODULE_BACKUP_DIR: &str = concatcp!(WORKING_DIR, "module_backup/");
 

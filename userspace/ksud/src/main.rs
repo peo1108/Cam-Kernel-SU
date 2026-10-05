@@ -29,6 +29,7 @@ mod feature;
 mod hide_bootloader;
 #[cfg(target_os = "android")]
 mod init_event;
+mod kernel_check;
 #[cfg(target_os = "android")]
 mod ksucalls;
 #[cfg(target_os = "android")]
@@ -44,6 +45,7 @@ mod module;
 #[cfg(target_os = "android")]
 mod module_config;
 mod module_conflicts;
+mod modversions;
 #[cfg(target_os = "android")]
 mod profile;
 #[cfg(target_os = "android")]
@@ -61,6 +63,7 @@ mod su;
 mod sulog;
 #[cfg(target_os = "android")]
 mod susfs;
+mod susfs_audit;
 mod susfs_config;
 #[cfg(target_os = "android")]
 mod unload;

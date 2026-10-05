@@ -28,11 +28,33 @@ Older kernels are refused at build time (`kernel/core/init.c`) and by the zip.
    - **Install to inactive slot (after OTA)**: a project build or a local zip
      (*Source*), flashed to the other slot (`SLOT_SELECT=inactive`), which then
      becomes active.
-   - *Advanced options*: back up boot before flashing (on by default), and
-     **SUSFS settings** (below).
+   - *Advanced options*: back up boot before flashing (on by default), skip
+     the module check (below), and **SUSFS settings** (below).
    - *Restore kernel*: write a backup back — the previous kernel, or the
      original one kept from before the very first flash.
 3. Reboot. The same card shows the SUSFS version and enabled features.
+
+## Flash safety
+
+- **Checksum.** Each release carries `sfs-manifest.json`: build info and the
+  sha256 of every zip. The Manager refuses a download whose sha256 differs.
+- **Module check before flashing.** Every zip carries `vmlinux.symvers` (CRC and
+  symbol columns only). `ksud flash-ak3` reads the symbol CRCs each stock module
+  in `system_dlkm`, `vendor_dlkm`, `vendor` and `odm` was built against (both
+  `__versions` and the extended `__version_ext_*` of 6.12) and compares them with
+  the new kernel's. A mismatch in a module loaded right now refuses the zip,
+  since that module would not load (`disagrees about version of symbol`); one in a
+  module that is not loaded is only a warning. `--skip-module-check` (Advanced
+  options in the Manager) flashes anyway. Flashing the inactive slot skips the
+  check: the OTA's modules are not mounted. vendor_boot's first-stage modules are
+  not on any mounted partition and are not checked.
+- **Check after flashing.** `flash-ak3` writes what it expects to
+  `/data/adb/ksu/ak3_pending.json` (the release from the zip's `sfs.json`, or
+  from its Image banner for other zips). At boot-completed of the next boot,
+  ksud checks that the device runs that kernel, with KernelSU built in and SUSFS
+  for project builds, keeps the outcome in `ak3_check.json`
+  (`ksud ak3-check status|clear`) and posts a notification. The GKI install page
+  shows it, with a button to restore the previous kernel when the check failed.
 
 ## SUSFS settings (no module needed)
 
@@ -58,9 +80,23 @@ If the susfs4ksu module is installed and enabled, ksud leaves SUSFS to it,
 and nothing is applied in safe mode.
 Full details (Vietnamese): [SUSFS_SETTINGS.md](SUSFS_SETTINGS.md).
 
+**Root hiding check** (Features tab, `ksud susfs audit [--apply]`) lists what a
+non-root app can still see: mounts modules made themselves (a bind from
+`/data/adb`, an overlay over module dirs; KernelSU only unmounts its own), files
+from `/data/adb` mapped into running app processes, bootloader props and
+bootconfig, LSPosed / ReVanced / custom ROM traces, su binaries and recovery
+folders, permissive SELinux and USB debugging. Each finding that a setting can
+hide comes with it, derived from what is installed: try_umount for those mount
+points, sus_map for those libraries, sus_path for those files, force hide
+LSPosed, hide ReVanced, fake bootconfig, hide custom ROM (level 1), or ksud's
+hide bootloader. *Apply* merges them into `susfs.json` and applies them like a
+save from the settings page. Without SUSFS (or with the susfs4ksu module) only
+hide bootloader is offered.
+
 Releases (`release.yml`, tag on this branch) attach
-`KernelSU-SFS-<kmi>-<ksu version>-susfs-<susfs version>.zip`; the Manager reads
-them from `SFS_RELEASE_REPO` in `ui/util/SfsReleases.kt`. The LKM bundled in a
+`KernelSU-SFS-<kmi>-<ksu version>-susfs-<susfs version>.zip` and
+`sfs-manifest.json`; the Manager reads them from `SFS_RELEASE_REPO` in
+`ui/util/SfsReleases.kt`. The LKM bundled in a
 release of this branch is built from main's `kernel/` (see `ddk-lkm.yml`).
 
 The LKM patch in `init_boot` can stay: `ksuinit` skips loading
@@ -77,7 +113,9 @@ does not boot: `fastboot flash boot boot<slot>.img`.
   SUSFS hooks live in the GKI source, so the tracepoint hook manager, symbol
   resolver and LKM/late-load paths are not built. `KSU_GET_INFO_FLAG_SUSFS`
   tells userspace SUSFS is present.
-- **ksud**: `ksud susfs info [--json]` and `ksud flash-ak3 <zip> [--no-backup] [--inactive]` and `ksud ak3-backup list|restore <file>`.
+- **ksud**: `ksud susfs info [--json]`, `ksud susfs audit [--apply]`,
+  `ksud flash-ak3 <zip> [--no-backup] [--inactive] [--skip-module-check]`,
+  `ksud ak3-backup list|restore <file>` and `ksud ak3-check status|clear`.
   `ksud susfs config|set-config <file>|bootconfig|log` back the SUSFS settings page,
   which replaces simonpunk's `ksu_susfs` tool and the susfs4ksu module.
 - **Manager**: the Install screen stays LKM only. Everything GKI lives in the
@@ -87,6 +125,20 @@ does not boot: `fastboot flash boot boot<slot>.img`.
 - **CI**: `.github/workflows/build-sfs-kernel.yml` syncs GKI, applies
   `50_add_susfs_in_gki-<kmi>.patch`, copies `kernel/` in, builds with Kleaf and
   packs `sfs/anykernel3/anykernel.sh` with the Image.
+
+## Keeping up with GKI and susfs4ksu
+
+`.github/workflows/sfs-watch.yml` runs `sfs/watch.py` every Monday (and on
+demand). For each KMI it finds the newest monthly GKI release past the newest
+target (once its `common-<kmi>-YYYY-MM` manifest branch exists) and tries the
+fixup sets until susfs4ksu's current patch applies with `--fuzz=0`, fetching only
+the files the patch touches from gitiles. It also re-checks every existing
+target, since `build.sh` always takes susfs4ksu's head. A release that applies
+becomes a pull request adding it to `targets.json`; anything that does not
+apply becomes an issue listing the failed hunks. Scheduled runs only start from
+the default branch, so the workflow file must be on `main` too for the weekly
+run (it checks out `sfs` itself); `workflow_dispatch` works from `sfs`.
+`python3 sfs/watch.py report.json` runs the same check locally.
 
 ## Updating SUSFS
 

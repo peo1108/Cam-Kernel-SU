@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.ui.screen.gki.BuildsState
 import me.weishu.kernelsu.ui.screen.gki.GkiInstallUiState
 import me.weishu.kernelsu.ui.screen.gki.GkiMethod
@@ -50,7 +51,7 @@ class GkiInstallViewModel : ViewModel() {
         buildsJob = viewModelScope.launch {
             _uiState.update { it.copy(builds = BuildsState.Loading) }
             val result = try {
-                BuildsState.Loaded(fetchSfsBuilds(kmi, kmiTag))
+                BuildsState.Loaded(fetchSfsBuilds(kmi, kmiTag, BuildConfig.VERSION_CODE))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

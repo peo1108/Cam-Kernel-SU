@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
@@ -256,7 +257,7 @@ private fun SourceCards(state: GkiInstallUiState, actions: GkiInstallActions) {
                     buildSummary(build, sublevelOf(state.status.kernelRelease))
                 }"
 
-                builds.builds.isEmpty() -> stringResource(R.string.gki_builds_empty, state.status.kmi)
+                builds.builds.isEmpty() -> stringResource(R.string.gki_builds_empty, state.status.kmi, BuildConfig.VERSION_CODE)
                 else -> stringResource(R.string.gki_build_none)
             }
         }

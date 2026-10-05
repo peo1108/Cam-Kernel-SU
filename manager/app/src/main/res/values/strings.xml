@@ -227,7 +227,7 @@
     <string name="gki_builds_title">Choose a build</string>
     <string name="gki_builds_kmi">For %1$s</string>
     <string name="gki_builds_loading">Loading builds…</string>
-    <string name="gki_builds_empty">No builds for %1$s yet</string>
+    <string name="gki_builds_empty">No KernelSU %2$d builds for %1$s yet. Only builds matching this Manager are offered</string>
     <string name="gki_builds_error">Could not load builds: %1$s</string>
     <string name="gki_builds_retry">Retry</string>
     <string name="gki_build_title">%1$s · KernelSU %2$d · SUSFS %3$s</string>

@@ -8,6 +8,7 @@ import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.ksuApp
 import okhttp3.Request
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 
@@ -65,49 +66,69 @@ fun recommendSfsBuild(builds: List<SfsBuild>, deviceSublevel: Int): SfsBuild? {
 }
 
 /**
- * AnyKernel3 builds for [kmi] and the KMI generation [kmiTag] from the project's
- * releases, newest release first. A build of another generation would bootloop,
- * so those are left out; any sublevel of the right generation is offered.
+ * AnyKernel3 builds for [kmi] and the KMI generation [kmiTag] that carry exactly
+ * [ksuVersion], the version of this Manager: release.yml builds the Manager and
+ * the kernels from one commit, so a kernel of another version would not match
+ * this Manager's ksud and is never offered. A build of another generation would
+ * bootloop, so those are left out too; any sublevel of the right generation is
+ * offered. Empty when no release carries this version (e.g. a local build).
  */
-suspend fun fetchSfsBuilds(kmi: String, kmiTag: String): List<SfsBuild> = withContext(Dispatchers.IO) {
-    val request = Request.Builder()
-        .url("https://api.github.com/repos/$SFS_RELEASE_REPO/releases?per_page=30")
-        .header("Accept", "application/vnd.github+json")
-        .build()
-    val body = ksuApp.okhttpClient.newCall(request).execute().use { response ->
-        if (!response.isSuccessful) throw IOException("GitHub: HTTP ${response.code}")
-        response.body.string()
-    }
-    val releases = JSONArray(body)
-    buildList {
-        for (i in 0 until releases.length()) {
-            val release = releases.getJSONObject(i)
-            if (release.optBoolean("draft")) continue
-            val assets = release.optJSONArray("assets") ?: continue
-            for (j in 0 until assets.length()) {
-                val asset = assets.getJSONObject(j)
-                val name = asset.optString("name")
-                val match = SFS_ASSET.matchEntire(name) ?: continue
-                val (android, generation, kernel, sublevel) = match.destructured
-                val assetKmi = "$android-$kernel"
-                val assetTag = "$android-$generation"
-                if (assetKmi != kmi || assetTag != kmiTag) continue
-                add(
-                    SfsBuild(
-                        tag = release.optString("tag_name"),
-                        fileName = name,
-                        kmi = kmi,
-                        kmiTag = assetTag,
-                        sublevel = sublevel.toInt(),
-                        ksuVersion = match.groupValues[5].toInt(),
-                        susfsVersion = match.groupValues[6],
-                        url = asset.optString("browser_download_url"),
-                        size = asset.optLong("size"),
-                        publishedAt = release.optString("published_at"),
+suspend fun fetchSfsBuilds(kmi: String, kmiTag: String, ksuVersion: Int): List<SfsBuild> =
+    withContext(Dispatchers.IO) {
+        // the release is tagged sfs-<version>; look it up directly first
+        val tagged = getJson("https://api.github.com/repos/$SFS_RELEASE_REPO/releases/tags/sfs-$ksuVersion")
+        val releases = if (tagged != null) {
+            JSONArray().put(JSONObject(tagged))
+        } else {
+            // the tag is named otherwise: find the version among the recent releases
+            JSONArray(
+                getJson("https://api.github.com/repos/$SFS_RELEASE_REPO/releases?per_page=100")
+                    ?: throw IOException("GitHub: HTTP 404")
+            )
+        }
+        buildList {
+            for (i in 0 until releases.length()) {
+                val release = releases.getJSONObject(i)
+                if (release.optBoolean("draft")) continue
+                val assets = release.optJSONArray("assets") ?: continue
+                for (j in 0 until assets.length()) {
+                    val asset = assets.getJSONObject(j)
+                    val name = asset.optString("name")
+                    val match = SFS_ASSET.matchEntire(name) ?: continue
+                    val (android, generation, kernel, sublevel, version) = match.destructured
+                    val assetKmi = "$android-$kernel"
+                    val assetTag = "$android-$generation"
+                    if (assetKmi != kmi || assetTag != kmiTag) continue
+                    if (version.toIntOrNull() != ksuVersion) continue
+                    add(
+                        SfsBuild(
+                            tag = release.optString("tag_name"),
+                            fileName = name,
+                            kmi = kmi,
+                            kmiTag = assetTag,
+                            sublevel = sublevel.toInt(),
+                            ksuVersion = ksuVersion,
+                            susfsVersion = match.groupValues[6],
+                            url = asset.optString("browser_download_url"),
+                            size = asset.optLong("size"),
+                            publishedAt = release.optString("published_at"),
+                        )
                     )
-                )
+                }
             }
         }
+    }
+
+/** The body of a GitHub API GET, or null on 404. */
+private fun getJson(url: String): String? {
+    val request = Request.Builder()
+        .url(url)
+        .header("Accept", "application/vnd.github+json")
+        .build()
+    return ksuApp.okhttpClient.newCall(request).execute().use { response ->
+        if (response.code == 404) return@use null
+        if (!response.isSuccessful) throw IOException("GitHub: HTTP ${response.code}")
+        response.body.string()
     }
 }
 

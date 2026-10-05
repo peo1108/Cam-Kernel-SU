@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.glass.GlassDialog
 import me.weishu.kernelsu.ui.util.SfsBuild
@@ -75,7 +76,7 @@ fun SfsBuildDialog(
                 is BuildsState.Failed -> Message(stringResource(R.string.gki_builds_error, state.message))
 
                 is BuildsState.Loaded -> if (state.builds.isEmpty()) {
-                    Message(stringResource(R.string.gki_builds_empty, kmi))
+                    Message(stringResource(R.string.gki_builds_empty, kmi, BuildConfig.VERSION_CODE))
                 } else {
                     LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
                         // highest kernel first, so the versions read in order

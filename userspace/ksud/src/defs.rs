@@ -16,6 +16,8 @@ mod android {
     pub const LOG_DIR: &str = concatcp!(WORKING_DIR, "log/");
     pub const SULOGD_LOCK_PATH: &str = concatcp!(WORKING_DIR, "sulogd.lock");
     pub const BOOT_GUARD_PATH: &str = concatcp!(WORKING_DIR, "bootguard.json");
+    /// boot_id of the boot that last ran the service stage
+    pub const SERVICES_STARTED_PATH: &str = concatcp!(WORKING_DIR, ".services_started");
     pub const HIDE_BOOTLOADER_FLAG: &str = concatcp!(WORKING_DIR, ".hide_bootloader");
     pub const SUSFS_CONFIG_PATH: &str = concatcp!(WORKING_DIR, "susfs.json");
     /// what the next boot should run after flash-ak3, and the outcome of that check

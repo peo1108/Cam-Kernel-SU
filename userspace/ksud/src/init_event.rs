@@ -18,6 +18,13 @@ pub fn on_post_fs_data() -> Result<()> {
 
     ksucalls::report_post_fs_data();
 
+    // like the kernel flag: a (soft) reboot runs the service stage again
+    if let Err(e) = std::fs::remove_file(defs::SERVICES_STARTED_PATH)
+        && e.kind() != std::io::ErrorKind::NotFound
+    {
+        warn!("clear services marker failed: {e}");
+    }
+
     utils::umask(0);
 
     // Clear all temporary module configs early
@@ -246,21 +253,68 @@ pub fn on_services() {
         return;
     }
 
-    match ksucalls::report_services() {
-        Ok(true) => {}
+    let kernel_first = match ksucalls::report_services() {
+        Ok(first) => Some(first),
+        Err(e) => {
+            warn!("Failed to report services: {e:#}");
+            None
+        }
+    };
+
+    // A kernelsu.ko older than this ksud does not know EVENT_SERVICES and answers
+    // "already started" every time, so the marker decides and the kernel is the fallback.
+    match claim_services_stage() {
+        Ok(true) => {
+            if kernel_first == Some(false) {
+                warn!(
+                    "kernel says services already started, but not on this boot; kernelsu.ko is likely older than ksud"
+                );
+            }
+        }
         Ok(false) => {
             info!("services already started, skipping");
             return;
         }
         Err(e) => {
-            error!("Failed to report services: {e:#}");
-            return;
+            warn!("services marker failed: {e}");
+            if kernel_first != Some(true) {
+                info!("services already started, skipping");
+                return;
+            }
         }
     }
 
     info!("on_services triggered!");
     crate::susfs::apply_stage(crate::susfs_config::Stage::Service);
     run_stage("service", ScriptWait::NoWait);
+}
+
+/// Ok(true) for the first call of this boot; post-fs-data removes the marker.
+fn claim_services_stage() -> std::io::Result<bool> {
+    use std::io::{ErrorKind, Write};
+
+    let boot_id = std::fs::read_to_string("/proc/sys/kernel/random/boot_id")?;
+    let boot_id = boot_id.trim();
+    let path = defs::SERVICES_STARTED_PATH;
+    match std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+    {
+        Ok(mut file) => {
+            file.write_all(boot_id.as_bytes())?;
+            Ok(true)
+        }
+        Err(e) if e.kind() == ErrorKind::AlreadyExists => {
+            if std::fs::read_to_string(path)?.trim() == boot_id {
+                return Ok(false);
+            }
+            // left over from a boot whose post-fs-data did not clear it
+            std::fs::write(path, boot_id)?;
+            Ok(true)
+        }
+        Err(e) => Err(e),
+    }
 }
 
 pub fn on_boot_completed() {

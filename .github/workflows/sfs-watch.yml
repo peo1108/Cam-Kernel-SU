@@ -1,0 +1,71 @@
+name: SFS watch
+# Weekly: are there GKI releases newer than sfs/targets.json, and does susfs4ksu's
+# current patch still apply? sfs/watch.py checks both (fetching only the files the
+# patch touches); a new release that applies becomes a pull request adding it to
+# sfs/targets.json, anything that does not apply becomes an issue.
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: sfs
+
+      - name: Check GKI releases and susfs4ksu
+        run: python3 sfs/watch.py report.json --update
+
+      - name: Pull request for new targets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [ "$(jq '.newTargets | length' report.json)" -gt 0 ] || { echo "no new GKI release"; exit 0; }
+          tags=$(jq -r '[.newTargets[].tag] | join(", ")' report.json)
+          branch="sfs-watch/$(jq -r '[.newTargets[].tag] | join("+")' report.json)"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+            echo "$branch is already proposed"
+            exit 0
+          fi
+          title="ci: Add GKI release $tags to the SFS targets"
+          body=$(
+            echo "New GKI releases that susfs4ksu's patch applies to with \`--fuzz=0\`:"
+            echo
+            jq -r '.newTargets[] | "- `\(.tag)` (\(.kernel)), fixups `\(.fixups)`"' report.json
+            echo
+            echo "Each KMI is meant to carry five builds: drop its oldest target before merging if needed."
+          )
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -qam "$title"
+          git push -q origin "$branch"
+          # repos may not let Actions open pull requests: fall back to an issue
+          if ! gh pr create --base sfs --head "$branch" --title "$title" --body "$body"; then
+            gh issue create --title "SFS watch: $tags ready on $branch" \
+              --body "$body"$'\n\n'"Open a pull request from \`$branch\` to \`sfs\`."
+          fi
+
+      - name: Issues for what does not apply
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          jq -c '.failures[]' report.json | while read -r failure; do
+            title=$(jq -r '.title' <<<"$failure")
+            open=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length')
+            if [ "$open" -gt 0 ]; then
+              echo "already open: $title"
+              continue
+            fi
+            gh issue create --title "$title" --body "$(jq -r '.body' <<<"$failure")"
+          done

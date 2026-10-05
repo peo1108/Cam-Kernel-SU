@@ -3,6 +3,7 @@ on:
   push:
     tags:
       - "v*"
+      - "sfs-*"
   workflow_dispatch:
 
 jobs:

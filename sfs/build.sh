@@ -146,7 +146,10 @@ BANNER=$(grep -aoE 'Linux version [0-9]+\.[0-9]+\.[0-9]+-android[0-9]+-[0-9]+' d
 KVER=$(echo "$BANNER" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 KMI_TAG=$(echo "$BANNER" | grep -oE 'android[0-9]+-[0-9]+$')
 [ -n "$KVER" ] && [ -n "$KMI_TAG" ] || { echo "cannot read the kernel version from the Image"; exit 1; }
-echo "kernel $KVER, KMI $KMI_TAG"
+# the whole uname -r, which the first boot after flashing checks against
+RELEASE=$(grep -aoE 'Linux version [^ ]+ \(' dist/Image | head -1 | cut -d' ' -f3)
+[ -n "$RELEASE" ] || { echo "cannot read the kernel release from the Image"; exit 1; }
+echo "kernel $KVER, KMI $KMI_TAG, release $RELEASE"
 
 log "AnyKernel3"
 AK3="$WORK/ak3"
@@ -163,11 +166,35 @@ sed -i \
   -e "s/@KMI_TAG@/$KMI_TAG/g" \
   "$AK3/anykernel.sh"
 cp dist/Image "$AK3/Image"
+# ksud flash-ak3 checks the device's stock modules against these CRCs before flashing;
+# only the CRC and symbol columns are needed
+cut -f1,2 dist/vmlinux.symvers > "$AK3/vmlinux.symvers"
+[ -s "$AK3/vmlinux.symvers" ] || { echo "dist/vmlinux.symvers is missing or empty"; exit 1; }
+# what this build is; the first boot after flashing checks the running kernel against it
+python3 - "$AK3/sfs.json" "$KMI" "$KMI_TAG" "$KVER" "$RELEASE" "$TAG" "$KSU_VERSION" "$SUSFS_VERSION" <<'PY'
+import json, sys
+out, kmi, kmi_tag, kernel, release, tag, ksu, susfs = sys.argv[1:]
+json.dump({"kmi": kmi, "kmiTag": kmi_tag, "kernel": kernel, "release": release,
+           "gkiTag": tag, "ksuVersion": int(ksu), "susfsVersion": susfs},
+          open(out, "w"), indent=2)
+PY
 mkdir -p "$OUT"
 # the Manager reads <KMI generation>-<kernel version> from this name to recommend a build
 ZIP="$OUT/KernelSU-SFS-$KMI_TAG-$KVER-$KSU_VERSION-susfs-$SUSFS_VERSION.zip"
 rm -f "$ZIP"
 (cd "$AK3" && zip -qr9 "$ZIP" ./*)
 ls -la "$ZIP"
+# release.yml merges these into sfs-manifest.json; the Manager checks the download's sha256
+python3 - "$AK3/sfs.json" "$ZIP" <<'PY'
+import hashlib, json, os, sys
+info, zip_path = sys.argv[1:]
+entry = json.load(open(info))
+entry["file"] = os.path.basename(zip_path)
+entry["size"] = os.path.getsize(zip_path)
+with open(zip_path, "rb") as f:
+    entry["sha256"] = hashlib.sha256(f.read()).hexdigest()
+json.dump(entry, open(zip_path + ".json", "w"), indent=2)
+print(f"sha256 {entry['sha256']}")
+PY
 [ -n "${GITHUB_ENV:-}" ] && echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 exit 0

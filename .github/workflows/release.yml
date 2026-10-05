@@ -66,6 +66,17 @@ jobs:
             fi
           done
 
+      - name: SFS manifest
+        # one entry per kernel zip (build info + sha256); the Manager lists builds from it
+        # and checks each download against its sha256
+        run: |
+          shopt -s nullglob
+          infos=(*/KernelSU-SFS-*.zip.json)
+          if [ ${#infos[@]} -gt 0 ]; then
+            jq -s '{version: .[0].ksuVersion, builds: (sort_by(.file))}' "${infos[@]}" > sfs-manifest.json
+            jq -r '.builds[] | "\(.sha256)  \(.file)"' sfs-manifest.json
+          fi
+
       - name: Display structure of downloaded files
         run: ls -R
 
@@ -79,3 +90,4 @@ jobs:
             ksud/ksud-*
             ksuinit/*
             */KernelSU-SFS-*.zip
+            sfs-manifest.json

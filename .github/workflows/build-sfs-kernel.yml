@@ -101,5 +101,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.tag }}
-          path: ${{ env.ZIP }}
+          # the zip, and its sha256 + build info that release.yml merges into sfs-manifest.json
+          path: |
+            ${{ env.ZIP }}
+            ${{ env.ZIP }}.json
           compression-level: 0

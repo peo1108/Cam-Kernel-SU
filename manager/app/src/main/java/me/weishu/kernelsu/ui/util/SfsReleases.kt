@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.ksuApp
+import okhttp3.CacheControl
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
@@ -77,44 +78,43 @@ suspend fun fetchSfsBuilds(kmi: String, kmiTag: String, ksuVersion: Int): List<S
     withContext(Dispatchers.IO) {
         // the release is tagged sfs-<version>; look it up directly first
         val tagged = getJson("https://api.github.com/repos/$SFS_RELEASE_REPO/releases/tags/sfs-$ksuVersion")
-        val releases = if (tagged != null) {
-            JSONArray().put(JSONObject(tagged))
-        } else {
-            // the tag is named otherwise: find the version among the recent releases
-            JSONArray(
-                getJson("https://api.github.com/repos/$SFS_RELEASE_REPO/releases?per_page=100")
-                    ?: throw IOException("GitHub: HTTP 404")
-            )
-        }
-        buildList {
-            for (i in 0 until releases.length()) {
-                val release = releases.getJSONObject(i)
-                if (release.optBoolean("draft")) continue
-                val assets = release.optJSONArray("assets") ?: continue
-                for (j in 0 until assets.length()) {
-                    val asset = assets.getJSONObject(j)
-                    val name = asset.optString("name")
-                    val match = SFS_ASSET.matchEntire(name) ?: continue
-                    val (android, generation, kernel, sublevel, version) = match.destructured
-                    val assetKmi = "$android-$kernel"
-                    val assetTag = "$android-$generation"
-                    if (assetKmi != kmi || assetTag != kmiTag) continue
-                    if (version.toIntOrNull() != ksuVersion) continue
-                    add(
-                        SfsBuild(
-                            tag = release.optString("tag_name"),
-                            fileName = name,
-                            kmi = kmi,
-                            kmiTag = assetTag,
-                            sublevel = sublevel.toInt(),
-                            ksuVersion = ksuVersion,
-                            susfsVersion = match.groupValues[6],
-                            url = asset.optString("browser_download_url"),
-                            size = asset.optLong("size"),
-                            publishedAt = release.optString("published_at"),
-                        )
+            ?.let { sfsBuildsOf(JSONArray().put(JSONObject(it)), kmi, kmiTag, ksuVersion) }
+        if (!tagged.isNullOrEmpty()) return@withContext tagged
+        // no such tag, or it lacks this KMI: the zip may sit in another release of this version
+        val recent = getJson("https://api.github.com/repos/$SFS_RELEASE_REPO/releases?per_page=30")
+            ?: throw IOException("GitHub: HTTP 404")
+        sfsBuildsOf(JSONArray(recent), kmi, kmiTag, ksuVersion)
+    }
+
+private fun sfsBuildsOf(releases: JSONArray, kmi: String, kmiTag: String, ksuVersion: Int): List<SfsBuild> =
+    buildList {
+        for (i in 0 until releases.length()) {
+            val release = releases.getJSONObject(i)
+            if (release.optBoolean("draft")) continue
+            val assets = release.optJSONArray("assets") ?: continue
+            for (j in 0 until assets.length()) {
+                val asset = assets.getJSONObject(j)
+                val name = asset.optString("name")
+                val match = SFS_ASSET.matchEntire(name) ?: continue
+                val (android, generation, kernel, sublevel, version) = match.destructured
+                val assetKmi = "$android-$kernel"
+                val assetTag = "$android-$generation"
+                if (assetKmi != kmi || assetTag != kmiTag) continue
+                if (version.toIntOrNull() != ksuVersion) continue
+                add(
+                    SfsBuild(
+                        tag = release.optString("tag_name"),
+                        fileName = name,
+                        kmi = kmi,
+                        kmiTag = assetTag,
+                        sublevel = sublevel.toInt(),
+                        ksuVersion = ksuVersion,
+                        susfsVersion = match.groupValues[6],
+                        url = asset.optString("browser_download_url"),
+                        size = asset.optLong("size"),
+                        publishedAt = release.optString("published_at"),
                     )
-                }
+                )
             }
         }
     }
@@ -124,6 +124,8 @@ private fun getJson(url: String): String? {
     val request = Request.Builder()
         .url(url)
         .header("Accept", "application/vnd.github+json")
+        // revalidate: a retry right after the zips are uploaded must not get the cached list
+        .cacheControl(CacheControl.Builder().noCache().build())
         .build()
     return ksuApp.okhttpClient.newCall(request).execute().use { response ->
         if (response.code == 404) return@use null

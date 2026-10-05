@@ -106,7 +106,7 @@ fun SfsBuildDialog(
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(20.dp))
-                if (state is BuildsState.Failed) {
+                if (state is BuildsState.Failed || (state is BuildsState.Loaded && state.builds.isEmpty())) {
                     TextButton(
                         onClick = onRetry,
                         text = stringResource(R.string.gki_builds_retry),

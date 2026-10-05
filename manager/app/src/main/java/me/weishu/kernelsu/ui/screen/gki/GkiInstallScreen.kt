@@ -95,7 +95,8 @@ fun GkiInstallScreen() {
         },
         onSelectSource = viewModel::selectSource,
         onPickBuild = {
-            if (uiState.builds is BuildsState.Failed) viewModel.loadBuilds()
+            // an empty list too: the release may have got its zips since
+            if (!uiState.builds.hasBuilds && uiState.builds !is BuildsState.Loading) viewModel.loadBuilds()
             showBuilds = true
         },
         onPickLocalZip = {

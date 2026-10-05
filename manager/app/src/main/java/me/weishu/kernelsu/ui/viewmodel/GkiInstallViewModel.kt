@@ -14,6 +14,7 @@ import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.ui.screen.gki.BuildsState
 import me.weishu.kernelsu.ui.screen.gki.GkiInstallUiState
 import me.weishu.kernelsu.ui.screen.gki.GkiMethod
+import me.weishu.kernelsu.ui.screen.gki.hasBuilds
 import me.weishu.kernelsu.ui.screen.gki.GkiSource
 import me.weishu.kernelsu.ui.util.SfsBuild
 import me.weishu.kernelsu.ui.util.fetchSfsBuilds
@@ -33,13 +34,13 @@ class GkiInstallViewModel : ViewModel() {
         refresh()
     }
 
-    /** Status and backups change after a flash or restore; the build list is kept. */
+    /** Status and backups change after a flash or restore; a non-empty build list is kept. */
     fun refresh() {
         viewModelScope.launch {
             val status = loadGkiStatus()
             val backups = getAk3Backups()
             _uiState.update { it.copy(status = status, backups = backups) }
-            if (_uiState.value.builds !is BuildsState.Loaded) loadBuilds()
+            if (!_uiState.value.builds.hasBuilds) loadBuilds()
         }
     }
 

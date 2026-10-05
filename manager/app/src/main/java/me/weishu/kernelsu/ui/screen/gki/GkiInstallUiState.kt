@@ -35,6 +35,10 @@ sealed interface BuildsState {
     data class Failed(val message: String) : BuildsState
 }
 
+/** True once a non-empty list is loaded; anything else is worth fetching again. */
+val BuildsState.hasBuilds: Boolean
+    get() = this is BuildsState.Loaded && builds.isNotEmpty()
+
 @Immutable
 data class GkiInstallUiState(
     val status: GkiStatus = GkiStatus(),

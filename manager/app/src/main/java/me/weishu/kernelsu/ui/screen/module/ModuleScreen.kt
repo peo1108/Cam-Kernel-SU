@@ -163,6 +163,9 @@ fun ModulePager(
         onToggleModule = { module ->
             viewModel.toggleModule(module)
         },
+        onDisableModule = { id ->
+            viewModel.disableModule(id)
+        },
         onUninstallModule = { module ->
             viewModel.uninstallModule(module)
         },

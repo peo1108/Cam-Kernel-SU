@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,9 +17,12 @@ import me.weishu.kernelsu.ui.screen.gki.GkiInstallUiState
 import me.weishu.kernelsu.ui.screen.gki.GkiMethod
 import me.weishu.kernelsu.ui.screen.gki.hasBuilds
 import me.weishu.kernelsu.ui.screen.gki.GkiSource
+import me.weishu.kernelsu.data.model.KernelCheck
 import me.weishu.kernelsu.ui.util.SfsBuild
+import me.weishu.kernelsu.ui.util.clearKernelCheck
 import me.weishu.kernelsu.ui.util.fetchSfsBuilds
 import me.weishu.kernelsu.ui.util.getAk3Backups
+import me.weishu.kernelsu.ui.util.getKernelCheck
 import me.weishu.kernelsu.ui.util.loadGkiStatus
 import me.weishu.kernelsu.ui.util.recommendSfsBuild
 import me.weishu.kernelsu.ui.util.sublevelOf
@@ -39,7 +43,8 @@ class GkiInstallViewModel : ViewModel() {
         viewModelScope.launch {
             val status = loadGkiStatus()
             val backups = getAk3Backups()
-            _uiState.update { it.copy(status = status, backups = backups) }
+            val kernelCheck = getKernelCheck()
+            _uiState.update { it.copy(status = status, backups = backups, kernelCheck = kernelCheck) }
             if (!_uiState.value.builds.hasBuilds) loadBuilds()
         }
     }
@@ -81,4 +86,14 @@ class GkiInstallViewModel : ViewModel() {
     fun toggleRestore() = _uiState.update { it.copy(restoreShown = !it.restoreShown) }
 
     fun setBackupBoot(enabled: Boolean) = _uiState.update { it.copy(backupBoot = enabled) }
+
+    fun setSkipModuleCheck(enabled: Boolean) = _uiState.update { it.copy(skipModuleCheck = enabled) }
+
+    /** Forgets the last check outcome; a pending check stays. */
+    fun dismissKernelCheck() {
+        viewModelScope.launch(Dispatchers.IO) {
+            clearKernelCheck()
+            _uiState.update { it.copy(kernelCheck = it.kernelCheck.copy(result = null)) }
+        }
+    }
 }

@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.data.model.KernelCheck
 import me.weishu.kernelsu.ui.util.Ak3Backup
 import me.weishu.kernelsu.ui.util.GkiStatus
 import me.weishu.kernelsu.ui.util.SfsBuild
@@ -52,6 +53,10 @@ data class GkiInstallUiState(
     val localZip: Uri? = null,
     val localZipName: String? = null,
     val backupBoot: Boolean = true,
+    /** flash even if loaded stock modules do not match the new kernel */
+    val skipModuleCheck: Boolean = false,
+    /** the check the first boot after the last flash ran */
+    val kernelCheck: KernelCheck = KernelCheck.Empty,
     val advancedShown: Boolean = false,
     val restoreShown: Boolean = false,
 ) {
@@ -78,6 +83,8 @@ data class GkiInstallActions(
     val onPickLocalZip: () -> Unit,
     val onToggleAdvanced: () -> Unit,
     val onSetBackupBoot: (Boolean) -> Unit,
+    val onSetSkipModuleCheck: (Boolean) -> Unit,
+    val onDismissKernelCheck: () -> Unit,
     val onToggleRestore: () -> Unit,
     val onOpenSusfsSettings: () -> Unit,
     val onRestore: (Ak3Backup) -> Unit,

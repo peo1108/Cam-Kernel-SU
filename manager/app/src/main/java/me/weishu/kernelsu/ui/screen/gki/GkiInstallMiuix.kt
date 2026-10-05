@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.data.model.KernelCheck
 import me.weishu.kernelsu.ui.component.glass.GlassCard
 import me.weishu.kernelsu.ui.component.glass.GlassDropdownPreference
 import me.weishu.kernelsu.ui.component.glass.GlassIconButton
@@ -126,6 +127,7 @@ internal fun GkiInstallScreenMiuix(
             ) {
                 item {
                     StatusCard(state)
+                    KernelCheckCard(state, actions)
                     MethodCard(state, actions)
                     SourceCards(state, actions)
                     AdvancedCard(state, actions)
@@ -176,6 +178,78 @@ private fun StatusCard(state: GkiInstallUiState) {
         Note(stringResource(R.string.gki_summary_unsupported), warning = true)
     } else {
         Note(stringResource(R.string.gki_flash_ak3_summary))
+    }
+}
+
+/** What the first boot after the last flash found; nothing when there is no check to show. */
+@Composable
+private fun KernelCheckCard(state: GkiInstallUiState, actions: GkiInstallActions) {
+    val check = state.kernelCheck
+    val result = check.result
+    if (check.pending) {
+        GlassCard(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+            BasicComponent(
+                title = stringResource(R.string.gki_check_pending),
+                summary = stringResource(R.string.gki_check_pending_summary),
+            )
+        }
+        return
+    }
+    if (result == null) return
+    val backup = result.backup?.let { path -> state.backups.firstOrNull { it.path == path } }
+    GlassCard(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+            Text(
+                text = stringResource(if (result.ok) R.string.gki_check_ok else R.string.gki_check_failed),
+                fontSize = 17.sp,
+                color = if (result.ok) colorScheme.onSurface else colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+            )
+            result.problems.forEach { problem ->
+                val text = when (problem) {
+                    KernelCheck.PROBLEM_RELEASE -> stringResource(
+                        R.string.gki_check_problem_release,
+                        result.expectedRelease ?: "?",
+                    )
+
+                    KernelCheck.PROBLEM_LKM -> stringResource(R.string.gki_check_problem_lkm)
+                    KernelCheck.PROBLEM_SUSFS -> stringResource(R.string.gki_check_problem_susfs)
+                    else -> problem
+                }
+                Text(
+                    text = "• $text",
+                    fontSize = 14.sp,
+                    color = colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                )
+            }
+            InfoRow(stringResource(R.string.gki_label_kernel), result.runningRelease.ifBlank { "-" })
+            InfoRow(
+                stringResource(R.string.gki_label_mode),
+                stringResource(if (result.builtIn) R.string.gki_mode_value_builtin else R.string.gki_mode_value_lkm),
+            )
+            InfoRow(stringResource(R.string.gki_label_susfs), result.susfs ?: stringResource(R.string.gki_susfs_none))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                if (!result.ok && backup != null) {
+                    TextButton(
+                        text = stringResource(R.string.gki_check_restore),
+                        onClick = { actions.onRestore(backup) },
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.size(12.dp))
+                }
+                TextButton(
+                    text = stringResource(R.string.gki_check_dismiss),
+                    onClick = actions.onDismissKernelCheck,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
     }
 }
 
@@ -326,6 +400,12 @@ private fun AdvancedCard(state: GkiInstallUiState, actions: GkiInstallActions) {
                     summary = stringResource(R.string.gki_backup_boot_summary),
                     checked = state.backupBoot,
                     onCheckedChange = actions.onSetBackupBoot,
+                )
+                CheckboxPreference(
+                    title = stringResource(R.string.gki_skip_module_check),
+                    summary = stringResource(R.string.gki_skip_module_check_summary),
+                    checked = state.skipModuleCheck,
+                    onCheckedChange = actions.onSetSkipModuleCheck,
                 )
                 val susfs = state.status.susfs
                 BasicComponent(

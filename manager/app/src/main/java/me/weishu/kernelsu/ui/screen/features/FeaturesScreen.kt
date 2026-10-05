@@ -49,6 +49,8 @@ fun FeaturesPager(
         onSetHideBootloader = viewModel::setHideBootloader,
         onCheckAttestation = viewModel::checkAttestation,
         onOpenGkiInstall = { navigator.push(Route.GkiInstall) },
+        onRunAudit = viewModel::runAudit,
+        onApplyAuditFixes = viewModel::applyAuditFixes,
     )
 
     FeaturesPagerMiuix(uiState, actions, bottomInnerPadding)

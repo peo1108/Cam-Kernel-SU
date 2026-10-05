@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -37,7 +38,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /** "Disabled by boot guard" and "Conflict" chips under a module's author line. */
 @Composable
-fun ModuleStatusBadges(module: Module, onRestoreBackup: () -> Unit = {}) {
+fun ModuleStatusBadges(module: Module, onRestoreBackup: () -> Unit = {}, onDisableModule: (String) -> Unit = {}) {
     val showAutoDisabled = module.autoDisabled && !module.enabled
     val conflicts = module.conflicts
     // a pending update (or restore) is applied on the next boot; offer nothing until then
@@ -124,6 +125,34 @@ fun ModuleStatusBadges(module: Module, onRestoreBackup: () -> Unit = {}) {
                         fontSize = 14.sp,
                         modifier = Modifier.padding(vertical = 6.dp),
                     )
+                }
+                // this module first, then the others: disabling any one of them ends the conflict
+                val involved = (listOf(module.id) + conflicts.flatMap { it.modules }).distinct()
+                Text(
+                    text = stringResource(R.string.module_conflict_disable_hint),
+                    fontSize = 13.sp,
+                    color = colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                )
+                involved.forEach { id ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = if (id == module.id) stringResource(R.string.module_conflict_this, id) else id,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = stringResource(R.string.module_conflict_disable),
+                            onClick = {
+                                showConflicts = false
+                                onDisableModule(id)
+                            },
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))

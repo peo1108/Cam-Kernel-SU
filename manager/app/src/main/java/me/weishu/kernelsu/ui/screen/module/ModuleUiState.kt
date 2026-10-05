@@ -74,6 +74,8 @@ data class ModuleActions(
     val onToggleSortEnabledFirst: () -> Unit,
     val onOpenWebUi: (Module) -> Unit,
     val onToggleModule: (Module) -> Unit,
+    /** disables a module by id, e.g. one this module conflicts with */
+    val onDisableModule: (String) -> Unit,
     val onUninstallModule: (Module) -> Unit,
     val onUndoUninstallModule: (Module) -> Unit,
     val onRestoreModule: (Module) -> Unit,

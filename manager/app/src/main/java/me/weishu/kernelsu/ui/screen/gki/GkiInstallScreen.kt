@@ -104,6 +104,8 @@ fun GkiInstallScreen() {
         },
         onToggleAdvanced = viewModel::toggleAdvanced,
         onSetBackupBoot = viewModel::setBackupBoot,
+        onSetSkipModuleCheck = viewModel::setSkipModuleCheck,
+        onDismissKernelCheck = viewModel::dismissKernelCheck,
         onToggleRestore = viewModel::toggleRestore,
         onOpenSusfsSettings = dropUnlessResumed { navigator.push(Route.SusfsSettings) },
         onRestore = { backup ->
@@ -126,11 +128,22 @@ fun GkiInstallScreen() {
             val inactive = state.method == GkiMethod.Inactive
             val flash = when {
                 state.usesProjectBuild -> state.build?.let {
-                    FlashIt.FlashAnyKernel(url = it.url, inactive = inactive, backup = state.backupBoot)
+                    FlashIt.FlashAnyKernel(
+                        url = it.url,
+                        inactive = inactive,
+                        backup = state.backupBoot,
+                        sha256 = it.sha256.ifBlank { null },
+                        skipModuleCheck = state.skipModuleCheck,
+                    )
                 }
 
                 state.usesLocalZip -> state.localZip?.let {
-                    FlashIt.FlashAnyKernel(uri = it, inactive = inactive, backup = state.backupBoot)
+                    FlashIt.FlashAnyKernel(
+                        uri = it,
+                        inactive = inactive,
+                        backup = state.backupBoot,
+                        skipModuleCheck = state.skipModuleCheck,
+                    )
                 }
 
                 else -> null

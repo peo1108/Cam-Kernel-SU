@@ -108,6 +108,10 @@ sealed class FlashIt : Parcelable {
         val inactive: Boolean = false,
         /** back up the boot partition first so the kernel can be restored */
         val backup: Boolean = true,
+        /** of the [url] download, from the release's manifest; null when it has none */
+        val sha256: String? = null,
+        /** flash even if loaded stock modules do not match the new kernel */
+        val skipModuleCheck: Boolean = false,
     ) : FlashIt()
 
     @Parcelize
@@ -175,6 +179,8 @@ fun flashIt(
             flashIt.url,
             flashIt.inactive,
             flashIt.backup,
+            flashIt.sha256,
+            flashIt.skipModuleCheck,
             onStdout,
             onStderr
         )

@@ -12,12 +12,14 @@ import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.screen.features.FeaturesUiState
+import me.weishu.kernelsu.ui.util.applyHidingFixes
 import me.weishu.kernelsu.ui.util.checkAttestationReport
 import me.weishu.kernelsu.ui.util.clearBootGuard
 import me.weishu.kernelsu.ui.util.getBootGuardStatus
 import me.weishu.kernelsu.ui.util.getHideBootloaderStatus
 import me.weishu.kernelsu.ui.util.loadGkiStatus
 import me.weishu.kernelsu.ui.util.listModuleConflicts
+import me.weishu.kernelsu.ui.util.runHidingAudit
 import me.weishu.kernelsu.ui.util.setBootGuardConfig
 import me.weishu.kernelsu.ui.util.setHideBootloader as writeHideBootloader
 import me.weishu.kernelsu.ui.util.toggleModule
@@ -122,6 +124,33 @@ class FeaturesViewModel(
                     revoked = report.revoked,
                     attestationChecked = true,
                     checkingAttestation = false,
+                )
+            }
+        }
+    }
+
+    fun runAudit() {
+        _uiState.update { it.copy(auditing = true) }
+        viewModelScope.launch {
+            val audit = withContext(Dispatchers.IO) { runHidingAudit() }
+            _uiState.update { it.copy(audit = audit, auditRun = true, auditing = false) }
+        }
+    }
+
+    /** Applies every suggested fix, then audits again so the card shows what is left. */
+    fun applyAuditFixes() {
+        _uiState.update { it.copy(auditing = true) }
+        viewModelScope.launch {
+            val (rebootNeeded, audit, hideBootloader) = withContext(Dispatchers.IO) {
+                Triple(applyHidingFixes(), runHidingAudit(), getHideBootloaderStatus())
+            }
+            _uiState.update {
+                it.copy(
+                    audit = audit,
+                    auditRun = true,
+                    auditing = false,
+                    auditRebootNeeded = rebootNeeded,
+                    hideBootloader = hideBootloader,
                 )
             }
         }

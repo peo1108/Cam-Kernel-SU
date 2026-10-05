@@ -25,6 +25,8 @@ import me.weishu.kernelsu.core.tasks.ProbeResult
 import me.weishu.kernelsu.core.utils.DataSourceChannel
 import me.weishu.kernelsu.data.model.BootGuardStatus
 import me.weishu.kernelsu.data.model.HideBootloaderStatus
+import me.weishu.kernelsu.data.model.HidingAudit
+import me.weishu.kernelsu.data.model.KernelCheck
 import me.weishu.kernelsu.data.model.ModuleConflict
 import me.weishu.kernelsu.data.model.forModule
 import me.weishu.kernelsu.data.model.parseModuleConflicts
@@ -156,6 +158,12 @@ internal fun ksudStdout(args: String): String {
         .add("${getKsuDaemonPath()} $args").to(ArrayList(), null).exec().out
     return out.joinToString("\n")
 }
+
+/** What non-root apps can still see; null when ksud could not run the audit. */
+fun runHidingAudit(): HidingAudit? = HidingAudit.parse(ksudStdout("susfs audit"))
+
+/** Applies every fix the audit offers; true when some of it needs a reboot. */
+fun applyHidingFixes(): Boolean = HidingAudit.rebootNeededAfterApply(ksudStdout("susfs audit --apply"))
 
 fun getBootGuardStatus(): BootGuardStatus = BootGuardStatus.parse(ksudStdout("boot-guard status"))
 
@@ -293,13 +301,16 @@ fun flashModule(
 
 /**
  * Flashes an AnyKernel3 zip, either a local [uri] or a project build downloaded from [url].
- * With [inactive] the other slot is flashed and made active (after an OTA).
+ * With [inactive] the other slot is flashed and made active (after an OTA). A download is
+ * checked against [sha256] when the release lists one.
  */
 fun flashAnyKernel(
     uri: Uri?,
     url: String?,
     inactive: Boolean,
     backup: Boolean,
+    sha256: String?,
+    skipModuleCheck: Boolean,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit
 ): FlashResult {
@@ -326,9 +337,24 @@ fun flashAnyKernel(
         return FlashResult(1, "Download failed: ${e.message}", false)
     }
 
+    if (url != null) {
+        if (sha256.isNullOrBlank()) {
+            onStdout("- This release has no checksum, cannot verify the download")
+        } else {
+            val actual = sha256Of(file)
+            if (!actual.equals(sha256, ignoreCase = true)) {
+                file.delete()
+                onStderr("- SHA-256 mismatch: expected $sha256, got $actual")
+                return FlashResult(1, "The download is corrupted (SHA-256 mismatch), try again", false)
+            }
+            onStdout("- SHA-256 verified")
+        }
+    }
+
     val flags = buildString {
         if (inactive) append(" --inactive")
         if (!backup) append(" --no-backup")
+        if (skipModuleCheck) append(" --skip-module-check")
     }
     val result = flashWithIO("${getKsuDaemonPath()} flash-ak3 ${file.absolutePath}$flags", onStdout, onStderr)
     Log.i("KernelSU", "flash anykernel3 ${url ?: uri} inactive=$inactive result: $result")
@@ -352,6 +378,17 @@ suspend fun getAk3Backups(): List<Ak3Backup> = withContext(Dispatchers.IO) {
             )
         }.sortedByDescending { it.modified }
     }.getOrDefault(emptyList())
+}
+
+/** The check the first boot after flashing a kernel zip runs; see `ksud ak3-check`. */
+suspend fun getKernelCheck(): KernelCheck = withContext(Dispatchers.IO) {
+    KernelCheck.parse(ShellUtils.fastCmd(KsuCli.SHELL, "${getKsuDaemonPath()} ak3-check status"))
+}
+
+fun clearKernelCheck(): Boolean {
+    val result = execKsud("ak3-check clear", true)
+    Log.i(TAG, "ak3-check clear result: $result")
+    return result
 }
 
 fun restoreAk3Backup(

@@ -464,4 +464,16 @@
     <string name="module_restore_confirm">Quay về</string>
     <string name="module_restore_success">%s: sẽ quay về bản trước khi khởi động lại</string>
     <string name="module_restore_failed">%s: không quay về bản trước được</string>
+    <string name="app_identity">Tên &amp; biểu tượng ứng dụng</string>
+    <string name="app_identity_summary">Đổi cách ứng dụng hiển thị trong ngăn ứng dụng (cần root)</string>
+    <string name="app_identity_default">Mặc định</string>
+    <string name="app_identity_custom">Tuỳ chỉnh</string>
+    <string name="app_identity_name">Tên hiển thị</string>
+    <string name="app_identity_icon">Biểu tượng</string>
+    <string name="app_identity_gallery">Thư viện</string>
+    <string name="app_identity_import_failed">Không đọc được ảnh này</string>
+    <string name="app_identity_apply">Áp dụng</string>
+    <string name="app_identity_applying">Đang áp dụng…</string>
+    <string name="app_identity_applied">Xong. Launcher có thể mất vài giây để cập nhật.</string>
+    <string name="app_identity_apply_failed">Không đổi được tên hoặc biểu tượng</string>
 </resources>

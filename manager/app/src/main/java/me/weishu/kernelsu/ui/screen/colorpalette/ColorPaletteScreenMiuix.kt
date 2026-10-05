@@ -291,6 +291,8 @@ fun ColorPaletteScreenMiuix(
 
                     GlassBackgroundSection(uiState = uiState, actions = actions)
 
+                    AppIdentitySection()
+
                     GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)

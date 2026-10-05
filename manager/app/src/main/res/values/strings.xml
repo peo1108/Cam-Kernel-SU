@@ -650,4 +650,18 @@
     <string name="susfs_unsaved_title">Unsaved changes</string>
     <string name="susfs_unsaved_message">Leave without saving your SUSFS changes?</string>
     <string name="susfs_discard">Discard</string>
+    <string name="app_identity_momo" translatable="false">MoMo</string>
+    <string name="app_identity_tiktok" translatable="false">TikTok</string>
+    <string name="app_identity">App name &amp; icon</string>
+    <string name="app_identity_summary">Change how this app appears in the app drawer (needs root)</string>
+    <string name="app_identity_default">Default</string>
+    <string name="app_identity_custom">Custom</string>
+    <string name="app_identity_name">Display name</string>
+    <string name="app_identity_icon">Icon</string>
+    <string name="app_identity_gallery">Gallery</string>
+    <string name="app_identity_import_failed">Could not load that image</string>
+    <string name="app_identity_apply">Apply</string>
+    <string name="app_identity_applying">Applying…</string>
+    <string name="app_identity_applied">Done. The launcher may take a few seconds to refresh.</string>
+    <string name="app_identity_apply_failed">Could not change the app name or icon</string>
 </resources>

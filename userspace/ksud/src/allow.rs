@@ -111,7 +111,7 @@ mod tests {
     use super::*;
 
     const PKGS: &str = "com.termux 10234 0 /data/user/0/com.termux default:targetSdkVersion=28 3003 0 1\n\
-                        me.weishu.kernelsu 10324 1 /data/user/0/me.weishu.kernelsu default 3003 0 1\n\
+                        cam.su.kernel 10324 1 /data/user/0/cam.su.kernel default 3003 0 1\n\
                         broken-line\n\
                         com.bad notanumber 0 /data x\n\
                         com.android.shell 2000 0 /data/user_de/0/com.android.shell platform 3003 0 1\n";
@@ -122,7 +122,7 @@ mod tests {
             parse_packages_list(PKGS),
             vec![
                 ("com.termux".to_owned(), 10234),
-                ("me.weishu.kernelsu".to_owned(), 10324),
+                ("cam.su.kernel".to_owned(), 10324),
                 ("com.android.shell".to_owned(), 2000),
             ]
         );

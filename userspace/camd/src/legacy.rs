@@ -59,7 +59,7 @@ fn move_and_link(old: &str, new: &str) {
     let target = Path::new(new).file_name().unwrap_or_default();
     match symlink(target, old) {
         Ok(()) => {
-            let _ = restorecon::lsetfilecon(old, restorecon::KSU_CON);
+            let _ = restorecon::set_su_file_con(old);
             info!("legacy: linked {old} -> {new}");
         }
         Err(e) => warn!("legacy: link {old} -> {new}: {e}"),

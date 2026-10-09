@@ -106,9 +106,15 @@ pub fn init() -> Result<()> {
     if caminit::has_kernelsu() {
         log::info!("KernelSU may be already loaded in kernel, skip!");
     } else {
-        log::info!("Loading kernelsu.ko..");
-        if let Err(e) = load_module_from_path("/kernelsu.ko") {
-            log::error!("Cannot load kernelsu.ko: {:?}", e);
+        log::info!("Loading camsu.ko..");
+        // a ramdisk patched before the rename only has the old name
+        let path = if access("/camsu.ko", Access::EXISTS).is_ok() {
+            "/camsu.ko"
+        } else {
+            "/kernelsu.ko"
+        };
+        if let Err(e) = load_module_from_path(path) {
+            log::error!("Cannot load {path}: {:?}", e);
         }
     }
 
@@ -131,6 +137,6 @@ fn load_module_from_path(path: &str) -> Result<()> {
     let buffer = std::fs::read(path).with_context(|| format!("Cannot read file {}", path))?;
     let params = std::fs::read("/ksu_config").unwrap_or_default();
     let params = unsafe { CString::from_vec_unchecked(params) };
-    log::info!("load kernelsu with params {params:?}");
+    log::info!("load camsu with params {params:?}");
     caminit::load_module(&buffer, &params)
 }

@@ -51,21 +51,21 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
         )?;
         info!("Detected KMI: {kmi}");
 
-        // 3. Get kernelsu.ko from embedded assets
-        let ko_name = format!("{kmi}_kernelsu.ko");
+        // 3. Get camsu.ko from embedded assets
+        let ko_name = format!("{kmi}_camsu.ko");
         let ko_data = assets::get_asset_data(&ko_name)
             .with_context(|| format!("Failed to get {ko_name} from assets"))?;
 
-        // 4. Load kernelsu.ko from memory with manual relocation
-        info!("Loading kernelsu.ko for KMI {kmi}...");
+        // 4. Load camsu.ko from memory with manual relocation
+        info!("Loading camsu.ko for KMI {kmi}...");
         // bundled flag is meaningless in jailbreak mode since we can't flash boot to update it.
         let params = if allow_shell {
             cstr!("allow_shell=1")
         } else {
             cstr!("")
         };
-        caminit::load_module(&ko_data, params).context("Failed to load kernelsu.ko")?;
-        info!("kernelsu.ko loaded successfully!");
+        caminit::load_module(&ko_data, params).context("Failed to load camsu.ko")?;
+        info!("camsu.ko loaded successfully!");
         dump_process_info("after load_module");
     }
 

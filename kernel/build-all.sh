@@ -16,10 +16,10 @@ for kmi in $KMIS; do
     echo "========== Building $kmi =========="
     ODIR="$(realpath .)/out/$kmi"
     if ddk build "$kmi" "ODIR=$ODIR" -e CONFIG_KSU=m; then
-        if [ -f "$ODIR/kernelsu.ko" ]; then
-            cp "$ODIR/kernelsu.ko" "kernelsu-${kmi}.ko"
-            llvm-strip -d "kernelsu-${kmi}.ko"
-            echo "✓ Built kernelsu-${kmi}.ko"
+        if [ -f "$ODIR/camsu.ko" ]; then
+            cp "$ODIR/camsu.ko" "camsu-${kmi}.ko"
+            llvm-strip -d "camsu-${kmi}.ko"
+            echo "✓ Built camsu-${kmi}.ko"
         fi
     else
         echo "✗ Build failed for $kmi"
@@ -30,4 +30,4 @@ done
 mv .ddk-version.bak .ddk-version 2> /dev/null || true
 
 echo "========== Final output =========="
-ls -l kernelsu-*.ko
+ls -l camsu-*.ko

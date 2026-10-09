@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build kernelsu.ko (per KMI) and camd from ONE clean clone of a branch, so the LKM and the
+# Build camsu.ko (per KMI) and camd from ONE clean clone of a branch, so the LKM and the
 # Manager built afterwards from the same commit report the same version (30000 + commit count).
 #
 # Run inside WSL (root), then build the Manager on Windows from the same commit:
@@ -7,7 +7,7 @@
 #   cd manager && ./gradlew :app:assembleRelease
 #
 # Results are copied back into the Windows repo:
-#   userspace/camd/bin/aarch64/<kmi>_kernelsu.ko
+#   userspace/camd/bin/aarch64/<kmi>_camsu.ko
 #   manager/app/src/main/jniLibs/arm64-v8a/libcamd.so
 #
 # Environment (defaults match Cam's machine):
@@ -43,8 +43,8 @@ for pair in $KMIS; do
   PATH="$KW/toolchains/$clang/bin:$PATH" make -C "$KW/$kmi/kernel" M="$PWD" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
     CONFIG_KSU=m KBUILD_MODPOST_WARN=1 modules > "/root/ko-$kmi.log" 2>&1 \
     || { grep -E "error" "/root/ko-$kmi.log" | head -20; exit 1; }
-  cp kernelsu.ko "$WORK/userspace/camd/bin/aarch64/${kmi}_kernelsu.ko"
-  echo "== built ${kmi}_kernelsu.ko"
+  cp camsu.ko "$WORK/userspace/camd/bin/aarch64/${kmi}_camsu.ko"
+  echo "== built ${kmi}_camsu.ko"
 done
 
 # caminit is not in git; reuse the copy from the Windows repo.
@@ -74,6 +74,6 @@ cargo build --release --target aarch64-linux-android > /root/camd-build.log 2>&1
 CAMD="$WORK/target/aarch64-linux-android/release/camd"
 
 cp "$CAMD" "$SRC/manager/app/src/main/jniLibs/arm64-v8a/libcamd.so"
-cp "$WORK/userspace/camd/bin/aarch64/"*_kernelsu.ko "$SRC/userspace/camd/bin/aarch64/"
+cp "$WORK/userspace/camd/bin/aarch64/"*_camsu.ko "$SRC/userspace/camd/bin/aarch64/"
 echo "== camd $(strings "$CAMD" | grep -m1 -oE '3\.[0-9]+\.[0-9]+-[0-9]+-g[0-9a-f]+ \(uapi: [0-9]+\)')"
-echo "== copied libcamd.so and kernelsu.ko back; now build the Manager from the same commit"
+echo "== copied libcamd.so and camsu.ko back; now build the Manager from the same commit"

@@ -5,8 +5,14 @@
 #include <linux/version.h>
 #include <linux/cred.h>
 
-#define KERNEL_SU_DOMAIN "ksu"
-#define KERNEL_SU_FILE "ksu_file"
+#define KERNEL_SU_DOMAIN "cam"
+#define KERNEL_SU_FILE "cam_file"
+
+// The KernelSU names: still declared with the same rules, and a profile asking
+// for the legacy context runs in ours (see setup_selinux).
+#define KSU_LEGACY_DOMAIN "ksu"
+#define KSU_LEGACY_FILE "ksu_file"
+#define KSU_LEGACY_CONTEXT "u:r:" KSU_LEGACY_DOMAIN ":s0"
 
 #define KERNEL_SU_CONTEXT "u:r:" KERNEL_SU_DOMAIN ":s0"
 #define KSU_FILE_CONTEXT "u:object_r:" KERNEL_SU_FILE ":s0"

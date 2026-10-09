@@ -240,13 +240,13 @@ pub fn on_services() {
         }
     };
 
-    // A kernelsu.ko older than this camd does not know EVENT_SERVICES and answers
+    // A camsu.ko older than this camd does not know EVENT_SERVICES and answers
     // "already started" every time, so the marker decides and the kernel is the fallback.
     match claim_services_stage() {
         Ok(true) => {
             if kernel_first == Some(false) {
                 warn!(
-                    "kernel says services already started, but not on this boot; kernelsu.ko is likely older than camd"
+                    "kernel says services already started, but not on this boot; camsu.ko is likely older than camd"
                 );
             }
         }

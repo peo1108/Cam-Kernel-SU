@@ -5,7 +5,7 @@ use std::process::Command;
 
 use crate::utils;
 
-/// Find PIDs of processes running in the KernelSU su domain (u:r:ksu:s0).
+/// Find PIDs of processes running in our su domain (u:r:cam:s0, or u:r:ksu:s0 before the rename).
 /// Returns a list of PIDs excluding our own.
 fn find_su_domain_pids() -> Vec<i32> {
     let my_pid = std::process::id() as i32;
@@ -27,7 +27,7 @@ fn find_su_domain_pids() -> Vec<i32> {
         let attr_path = format!("/proc/{pid}/attr/current");
         if let Ok(context) = fs::read_to_string(&attr_path) {
             let context = context.trim().trim_end_matches('\0');
-            if context == "u:r:ksu:s0" {
+            if context == "u:r:cam:s0" || context == "u:r:ksu:s0" {
                 pids.push(pid);
             }
         }
@@ -140,10 +140,13 @@ pub fn unload() -> Result<()> {
     info!("unload: closing all ksu fds...");
     close_ksu_fds();
 
-    // 4. delete_module("kernelsu")
-    info!("unload: removing kernelsu module...");
-    if let Err(e) = rustix::system::delete_module(c"kernelsu", 0) {
-        warn!("unload: delete_module kernelsu failed: {e}");
+    // 4. delete_module, under the old name too for a kernelsu.ko loaded before the rename
+    info!("unload: removing camsu module...");
+    if let Err(e) = rustix::system::delete_module(c"camsu", 0) {
+        warn!("unload: delete_module camsu failed: {e}");
+        if let Err(e) = rustix::system::delete_module(c"kernelsu", 0) {
+            warn!("unload: delete_module kernelsu failed: {e}");
+        }
     }
 
     // 5. start (Android init start command - restarts all services)

@@ -19,6 +19,10 @@ use regex_lite::Regex;
 use crate::assets;
 use crate::seed::{SeedEntry, build_seed_param, random_nonce};
 
+/// The LKM inside a patched ramdisk; images patched before the Cam rename carry the old name.
+const LKM_NAME: &str = "camsu.ko";
+const LEGACY_LKM_NAME: &str = "kernelsu.ko";
+
 #[cfg(target_os = "android")]
 mod android {
     use super::Result;
@@ -675,14 +679,14 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             #[cfg(target_os = "android")]
             {
                 println!("- KMI: {kmi}");
-                let name = format!("{kmi}_kernelsu.ko");
+                let name = format!("{kmi}_camsu.ko");
                 assets::get_asset(&name).with_context(|| format!("Failed to load {name}"))?
             }
             #[cfg(not(target_os = "android"))]
             {
                 println!("- KMI: {kmi}");
                 println!("- Arch: {arch}");
-                let name = format!("{arch}/{kmi}_kernelsu.ko");
+                let name = format!("{arch}/{kmi}_camsu.ko");
                 assets::get_asset(&name).with_context(|| format!("Failed to load {name}"))?
             }
         };
@@ -717,14 +721,16 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             );
 
             println!("- Adding KernelSU LKM");
-            let is_kernelsu_patched = cpio.exists("kernelsu.ko");
+            let is_kernelsu_patched = cpio.exists(LKM_NAME) || cpio.exists(LEGACY_LKM_NAME);
 
             if !is_kernelsu_patched && cpio.exists("init") {
                 cpio.mv("init", "init.real")?;
             }
 
             cpio.add("init", CpioEntry::regular(0o755, ksu_init))?;
-            cpio.add("kernelsu.ko", CpioEntry::regular(0o755, kernelsu_ko))?;
+            // an image patched before the rename still carries the old name
+            cpio.rm(LEGACY_LKM_NAME, false);
+            cpio.add(LKM_NAME, CpioEntry::regular(0o755, kernelsu_ko))?;
 
             #[cfg(target_os = "android")]
             if (backup || (!is_kernelsu_patched && flash))
@@ -845,7 +851,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             let output_dir = out.unwrap_or(std::env::current_dir()?);
             let name = out_name.unwrap_or_else(|| {
                 let now = chrono::Utc::now();
-                format!("kernelsu_patched_{}.img", now.format("%Y%m%d_%H%M%S"))
+                format!("camsu_patched_{}.img", now.format("%Y%m%d_%H%M%S"))
             });
             let output_image = output_dir.join(name);
             std::fs::write(&output_image, &new_boot_bytes).context("write out new boot failed")?;
@@ -944,7 +950,7 @@ pub fn restore(args: BootRestoreArgs) -> Result<()> {
         };
 
     ensure!(
-        cpio.exists("kernelsu.ko"),
+        cpio.exists(LKM_NAME) || cpio.exists(LEGACY_LKM_NAME),
         "boot image is not patched by KernelSU"
     );
 
@@ -1014,7 +1020,7 @@ pub fn restore(args: BootRestoreArgs) -> Result<()> {
         let output_dir = out.unwrap_or(std::env::current_dir()?);
         let name = out_name.unwrap_or_else(|| {
             let now = chrono::Utc::now();
-            format!("kernelsu_restore_{}.img", now.format("%Y%m%d_%H%M%S"))
+            format!("camsu_restore_{}.img", now.format("%Y%m%d_%H%M%S"))
         });
         let output_image = output_dir.join(name);
         std::fs::write(&output_image, &new_boot_bytes).context("copy out new boot failed")?;
@@ -1032,7 +1038,8 @@ fn rebuild_without_ksu(
     vendor_ramdisk_idx: Option<usize>,
 ) -> Result<Vec<u8>> {
     println!("- Removing KernelSU from boot image");
-    cpio.rm("kernelsu.ko", false);
+    cpio.rm(LKM_NAME, false);
+    cpio.rm(LEGACY_LKM_NAME, false);
     if cpio.exists("init.real") {
         cpio.mv("init.real", "init")?;
     }

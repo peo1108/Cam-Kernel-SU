@@ -1,5 +1,6 @@
 #include "selinux.h"
 #include "linux/cred.h"
+#include "linux/string.h"
 #include "linux/sched.h"
 #include "objsec.h"
 #include "linux/version.h"
@@ -19,6 +20,7 @@
  * does not cause a functional failure.
  */
 static u32 cached_su_sid __read_mostly = 0;
+static u32 cached_legacy_su_sid __read_mostly = 0;
 static u32 cached_zygote_sid __read_mostly = 0;
 static u32 cached_init_sid __read_mostly = 0;
 u32 ksu_file_sid __read_mostly = 0;
@@ -55,6 +57,10 @@ static int transive_to_domain(const char *domain, struct cred *cred, bool clear_
 
 void setup_selinux(const char *domain, struct cred *cred)
 {
+    // profiles saved for the KernelSU domain keep their text, so an older kernel can still read them
+    if (!strcmp(domain, KSU_LEGACY_CONTEXT)) {
+        domain = KERNEL_SU_CONTEXT;
+    }
     if (transive_to_domain(domain, cred, false)) {
         pr_err("transive domain failed.\n");
         return;
@@ -126,6 +132,12 @@ void cache_sid(void)
         pr_info("Cached su SID: %u\n", cached_su_sid);
     }
 
+    err = security_secctx_to_secid(KSU_LEGACY_CONTEXT, strlen(KSU_LEGACY_CONTEXT), &cached_legacy_su_sid);
+    if (err) {
+        pr_warn("Failed to cache legacy su domain SID: %d\n", err);
+        cached_legacy_su_sid = 0;
+    }
+
     err = security_secctx_to_secid(ZYGOTE_CONTEXT, strlen(ZYGOTE_CONTEXT), &cached_zygote_sid);
     if (err) {
         pr_warn("Failed to cache zygote SID: %d\n", err);
@@ -187,7 +199,8 @@ static bool is_sid_match(const struct cred *cred, u32 cached_sid, const char *fa
 
 bool is_task_ksu_domain(const struct cred *cred)
 {
-    return is_sid_match(cred, cached_su_sid, KERNEL_SU_CONTEXT);
+    return is_sid_match(cred, cached_su_sid, KERNEL_SU_CONTEXT) ||
+           is_sid_match(cred, cached_legacy_su_sid, KSU_LEGACY_CONTEXT);
 }
 
 bool is_ksu_domain(void)

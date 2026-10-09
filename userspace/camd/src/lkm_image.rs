@@ -72,7 +72,7 @@ pub struct BootPatchV2Args {
     #[arg(short, long)]
     pub boot: PathBuf,
 
-    /// Exact kernelsu.ko; auto-select the embedded KMI build when omitted
+    /// Exact camsu.ko; auto-select the embedded KMI build when omitted
     #[arg(short, long)]
     pub module: Option<PathBuf>,
 
@@ -2531,11 +2531,11 @@ fn inject_image(original_image: &[u8], module: &[u8]) -> Result<(Vec<u8>, ImageI
 fn embedded_module_name(kmi: &str) -> String {
     #[cfg(target_os = "android")]
     {
-        format!("{kmi}_kernelsu.ko")
+        format!("{kmi}_camsu.ko")
     }
     #[cfg(not(target_os = "android"))]
     {
-        format!("aarch64/{kmi}_kernelsu.ko")
+        format!("aarch64/{kmi}_camsu.ko")
     }
 }
 
@@ -2908,9 +2908,9 @@ mod tests {
     fn embedded_module_uses_release_asset_layout() {
         let name = embedded_module_name("android12-5.10");
         #[cfg(target_os = "android")]
-        assert_eq!(name, "android12-5.10_kernelsu.ko");
+        assert_eq!(name, "android12-5.10_camsu.ko");
         #[cfg(not(target_os = "android"))]
-        assert_eq!(name, "aarch64/android12-5.10_kernelsu.ko");
+        assert_eq!(name, "aarch64/android12-5.10_camsu.ko");
         assert!(!assets::get_asset_data(&name).unwrap().is_empty());
     }
 

@@ -1,54 +1,54 @@
-kernelsu-objs := core/init.o
+camsu-objs := core/init.o
 
-kernelsu-objs += feature/kernel_umount.o
-kernelsu-objs += feature/sulog.o
-kernelsu-objs += feature/sucompat.o
+camsu-objs += feature/kernel_umount.o
+camsu-objs += feature/sulog.o
+camsu-objs += feature/sucompat.o
 
-kernelsu-objs += hook/lsm_hook.o
-kernelsu-objs += hook/setuid_hook.o
-kernelsu-objs += hook/syscall_event_bridge.o
-kernelsu-objs += hook/syscall_hook_manager.o
-kernelsu-objs += hook/tp_marker.o
+camsu-objs += hook/lsm_hook.o
+camsu-objs += hook/setuid_hook.o
+camsu-objs += hook/syscall_event_bridge.o
+camsu-objs += hook/syscall_hook_manager.o
+camsu-objs += hook/tp_marker.o
 ifeq ($(CONFIG_ARM64),y)
-kernelsu-objs += hook/arm64/patch_memory.o
-kernelsu-objs += hook/arm64/syscall_hook.o
+camsu-objs += hook/arm64/patch_memory.o
+camsu-objs += hook/arm64/syscall_hook.o
 else ifeq ($(CONFIG_X86_64),y)
-kernelsu-objs += hook/x86_64/patch_memory.o
-kernelsu-objs += hook/x86_64/syscall_hook.o
+camsu-objs += hook/x86_64/patch_memory.o
+camsu-objs += hook/x86_64/syscall_hook.o
 else ifeq ($(CONFIG_RISCV),y)
-kernelsu-objs += hook/riscv64/patch_memory.o
-kernelsu-objs += hook/riscv64/syscall_hook.o
+camsu-objs += hook/riscv64/patch_memory.o
+camsu-objs += hook/riscv64/syscall_hook.o
 endif
 
-kernelsu-objs += infra/file_wrapper.o
-kernelsu-objs += infra/event_queue.o
-kernelsu-objs += infra/seccomp_cache.o
-kernelsu-objs += infra/su_mount_ns.o
-kernelsu-objs += infra/symbol_resolver.o
+camsu-objs += infra/file_wrapper.o
+camsu-objs += infra/event_queue.o
+camsu-objs += infra/seccomp_cache.o
+camsu-objs += infra/su_mount_ns.o
+camsu-objs += infra/symbol_resolver.o
 
-kernelsu-objs += policy/allowlist.o
-kernelsu-objs += policy/app_profile.o
-kernelsu-objs += policy/feature.o
-kernelsu-objs += policy/pkg_observer.o
-kernelsu-objs += policy/pkg_tracker.o
+camsu-objs += policy/allowlist.o
+camsu-objs += policy/app_profile.o
+camsu-objs += policy/feature.o
+camsu-objs += policy/pkg_observer.o
+camsu-objs += policy/pkg_tracker.o
 
-kernelsu-objs += runtime/boot_event.o
-kernelsu-objs += runtime/camd_integration.o
+camsu-objs += runtime/boot_event.o
+camsu-objs += runtime/camd_integration.o
 
-kernelsu-objs += selinux/selinux.o
-kernelsu-objs += selinux/rules.o
-kernelsu-objs += selinux/sepolicy.o
+camsu-objs += selinux/selinux.o
+camsu-objs += selinux/rules.o
+camsu-objs += selinux/sepolicy.o
 
-kernelsu-objs += sulog/event.o
-kernelsu-objs += sulog/fd.o
+camsu-objs += sulog/event.o
+camsu-objs += sulog/fd.o
 
-kernelsu-objs += supercall/dispatch.o
-kernelsu-objs += supercall/perm.o
-kernelsu-objs += supercall/supercall.o
+camsu-objs += supercall/dispatch.o
+camsu-objs += supercall/perm.o
+camsu-objs += supercall/supercall.o
 
-kernelsu-objs += feature/adb_root.o
+camsu-objs += feature/adb_root.o
 
-kernelsu-objs += feature/selinux_hide.o
+camsu-objs += feature/selinux_hide.o
 
 ifdef KBUILD_EXTMOD
 ifeq ($(CONFIG_KSU_DISABLE_POLICY),y)
@@ -81,7 +81,7 @@ endif
 
 ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include
 
-obj-$(CONFIG_KSU) += kernelsu.o
+obj-$(CONFIG_KSU) += camsu.o
 
 MDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 

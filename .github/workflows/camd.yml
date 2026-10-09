@@ -27,8 +27,8 @@ jobs:
     - name: Prepare LKM files
       if: ${{ inputs.pack_lkm }}
       run: |
-        cp aarch64-android*-lkm/*_kernelsu.ko ./userspace/camd/bin/aarch64/
-        cp x86_64-android*-lkm/*_kernelsu.ko ./userspace/camd/bin/x86_64/
+        cp aarch64-android*-lkm/*_camsu.ko ./userspace/camd/bin/aarch64/
+        cp x86_64-android*-lkm/*_camsu.ko ./userspace/camd/bin/x86_64/
     
     - name: Prepare caminit
       if: ${{ inputs.pack_caminit }}

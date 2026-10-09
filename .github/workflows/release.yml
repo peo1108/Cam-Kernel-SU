@@ -55,8 +55,8 @@ jobs:
             if [ -d "$dir" ]; then
                 echo "----- Rename $dir -----"
                 lkm_platform_name=$(basename "$dir")
-                lkm_platform_name="lkm-${lkm_platform_name%-lkm}_kernelsu.ko"
-                KO="$(ls $dir/*_kernelsu.ko)"
+                lkm_platform_name="lkm-${lkm_platform_name%-lkm}_camsu.ko"
+                KO="$(ls $dir/*_camsu.ko)"
                 mv "$KO" "lkm/$lkm_platform_name"
             fi
           done
@@ -70,6 +70,6 @@ jobs:
           generate_release_notes: true
           files: |
             manager/*.apk
-            lkm/lkm-*_kernelsu.ko
+            lkm/lkm-*_camsu.ko
             camd/camd-*
             caminit/*

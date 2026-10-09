@@ -28,7 +28,9 @@
 #define FILE_FORMAT_VERSION 4 // u32
 
 #define KSU_APP_PROFILE_PRESERVE_UID 9999 // NOBODY_UID
-#define KSU_DEFAULT_SELINUX_DOMAIN "u:r:" KERNEL_SU_DOMAIN ":s0"
+// stored text stays the KernelSU context so an older kernel can read the allowlist;
+// setup_selinux runs it in our domain
+#define KSU_DEFAULT_SELINUX_DOMAIN KSU_LEGACY_CONTEXT
 
 static DEFINE_MUTEX(allowlist_mutex);
 

@@ -239,7 +239,7 @@ pub fn install(libadbroot: Option<PathBuf>, data_path: Option<PathBuf>) -> Resul
         "/proc/self/exe",
         defs::DAEMON_PATH,
     )?;
-    restorecon::lsetfilecon(defs::DAEMON_PATH, restorecon::KSU_CON)?;
+    restorecon::set_su_file_con(defs::DAEMON_PATH)?;
     // install binary assets
     assets::ensure_binaries(false).with_context(|| "Failed to extract assets")?;
 

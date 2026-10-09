@@ -9,7 +9,7 @@ config KSU
 	  Requires CONFIG_KPROBES for kernel hooking support.
 	  Requires CONFIG_EXT4_FS for `ext4_unregister_sysfs`.
 	  To compile as a module, choose M here: the
-	  module will be called kernelsu.
+	  module will be called camsu.
 
 config KSU_DEBUG
 	bool "KernelSU debug mode"

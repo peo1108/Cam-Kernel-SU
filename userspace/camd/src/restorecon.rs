@@ -7,6 +7,8 @@ use anyhow::{Context, Ok};
 use extattr::{Flags as XattrFlags, lsetxattr};
 
 pub const SYSTEM_CON: &str = "u:object_r:system_file:s0";
+pub const CAM_CON: &str = "u:object_r:cam_file:s0";
+/// what a kernel from before the Cam rename knows
 pub const KSU_CON: &str = "u:object_r:ksu_file:s0";
 pub const UNLABEL_CON: &str = "u:object_r:unlabeled:s0";
 
@@ -20,6 +22,29 @@ pub fn lsetfilecon<P: AsRef<Path>>(path: P, con: &str) -> Result<()> {
         )
     })?;
     Ok(())
+}
+
+/// Labels one of our files; uses the KernelSU label on a kernel without cam_file.
+/// Asks the policy first: with mac_admin, setting an unknown label succeeds and
+/// leaves a file init cannot run after a reboot.
+pub fn set_su_file_con<P: AsRef<Path>>(path: P) -> Result<()> {
+    let con = if is_context_valid(CAM_CON) {
+        CAM_CON
+    } else {
+        KSU_CON
+    };
+    lsetfilecon(path, con)
+}
+
+/// Same check as libselinux security_check_context: the write fails for a context the policy lacks.
+fn is_context_valid(con: &str) -> bool {
+    let mut buf = con.as_bytes().to_vec();
+    buf.push(0);
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open("/sys/fs/selinux/context")
+        .and_then(|mut file| std::io::Write::write_all(&mut file, &buf))
+        .is_ok()
 }
 
 pub fn lgetfilecon<P: AsRef<Path>>(path: P) -> Result<String> {
@@ -59,7 +84,7 @@ fn restore_syscon_if_unlabeled<P: AsRef<Path>>(dir: P) -> Result<()> {
 }
 
 pub fn restorecon() -> Result<()> {
-    lsetfilecon(defs::DAEMON_PATH, KSU_CON)?;
+    set_su_file_con(defs::DAEMON_PATH)?;
     restore_syscon_if_unlabeled(defs::MODULE_DIR)?;
     Ok(())
 }

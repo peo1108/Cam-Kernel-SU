@@ -141,6 +141,13 @@ enum Commands {
         command: HideBootloader,
     },
 
+    /// Check what non-root apps can still see, as JSON
+    HidingAudit {
+        /// Turn on every suggested fix (kernel umount, SELinux hide, hide bootloader)
+        #[arg(long, default_value = "false")]
+        apply: bool,
+    },
+
     /// Show boot information
     BootInfo {
         #[command(subcommand)]
@@ -588,6 +595,8 @@ pub fn run() -> Result<()> {
         }
 
         Commands::SoftReboot => crate::soft_reboot::soft_reboot(),
+
+        Commands::HidingAudit { apply } => crate::hiding_audit::run(apply),
 
         Commands::HideBootloader { command } => match command {
             HideBootloader::Status => crate::hide_bootloader::status(),

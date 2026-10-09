@@ -391,6 +391,12 @@ class ModuleViewModel(
         }
     }
 
+    /** Disables [id] if it is enabled; the conflict dialog offers this for every module involved. */
+    fun disableModule(id: String) {
+        val module = _uiState.value.modules.firstOrNull { it.id == id } ?: return
+        if (module.enabled) toggleModule(module)
+    }
+
     fun uninstallModule(module: Module) {
         viewModelScope.launch {
             val res = ksuApp.resources

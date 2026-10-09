@@ -706,7 +706,10 @@ private fun ModuleList(
                             actions.onOpenWebUi(module)
                         }
                     },
-                    onRestoreBackup = { actions.onRestoreModule(module) }
+                    onRestoreBackup = { actions.onRestoreModule(module) },
+                    onDisableModule = { id ->
+                        scope.launch { loadingDialog.withLoading { actions.onDisableModule(id) } }
+                    },
                 )
             }
 
@@ -730,6 +733,7 @@ fun ModuleItem(
     onAddActionShortcut: (ShortcutType) -> Unit,
     onOpenWebUi: () -> Unit,
     onRestoreBackup: () -> Unit = {},
+    onDisableModule: (String) -> Unit = {},
 ) {
     val secondaryContainer = colorScheme.secondaryContainer.copy(alpha = 0.8f)
     val actionIconTint = colorScheme.onSurface.copy(alpha = if (isInDarkTheme()) 0.7f else 0.9f)
@@ -823,7 +827,7 @@ fun ModuleItem(
                     color = colorScheme.onSurfaceVariantSummary,
                     textDecoration = textDecoration
                 )
-                ModuleStatusBadges(module = module, onRestoreBackup = onRestoreBackup)
+                ModuleStatusBadges(module = module, onRestoreBackup = onRestoreBackup, onDisableModule = onDisableModule)
             }
             Switch(
                 enabled = !module.update,

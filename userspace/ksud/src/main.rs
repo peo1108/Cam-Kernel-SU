@@ -25,6 +25,7 @@ mod defs;
 #[cfg(target_os = "android")]
 mod feature;
 mod hide_bootloader;
+mod hiding_audit;
 #[cfg(target_os = "android")]
 mod init_event;
 #[cfg(target_os = "android")]

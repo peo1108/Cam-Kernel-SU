@@ -4,8 +4,9 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 
 - Upstream gốc lúc tách nhánh: commit `08a3b087` (`refactor(ksud): update waitsys and refactor logic (#3755)`)
 - Remote: `origin` = `peo1108/Cam-Kernel-SU`, `upstream` = `tiann/KernelSU`
-- Nhánh làm việc: `feat/glass-only`. Đợt UI/UX gần nhất nằm trong commit `47a57e48` (bỏ Material, thẻ 3D, slime, quản lý app). Tài liệu cập nhật lần cuối 2026-10-04.
-- Mục 3 liệt kê file, mục 4 là quy trình kéo upstream, mục 9 là bản đồ phần slime/3D để sửa cho đúng chỗ, mục 10 là cách tạo lại file vật liệu `roam_jelly.filamat`.
+- Nhánh làm việc: `main`. Đợt UI/UX gần nhất nằm trong commit `47a57e48` (bỏ Material, thẻ 3D, slime, quản lý app). Tài liệu cập nhật lần cuối 2026-10-09.
+- Mục 3 liệt kê file, mục 4 là quy trình kéo upstream, mục 9 là bản đồ phần slime/3D để sửa cho đúng chỗ, mục 10 là cách tạo lại file vật liệu `roam_jelly.filamat`, **mục 11 là đợt đổi tên sang Cam** (đọc trước khi merge upstream).
+- **Từ 2026-10-09 mọi tên đã đổi** (mục 11): `me.weishu.kernelsu` → `cam.su.kernel`, `Ksu`/`Natives`/`KsuService`/`MainActivity` → `Cam`/`CamNative`/`CamRootService`/`CamActivity`, `ksud` → `camd` (`userspace/camd`), `/data/adb/ksu` → `/data/adb/cam`, `kernelsu.ko` → `camsu.ko`. Mục 1-3 viết trước đó nên còn ghi tên cũ; tra bảng đối chiếu ở mục 11.
 
 ## 1. Tóm tắt thay đổi
 
@@ -32,6 +33,8 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 20 | **Tự ẩn bootloader** (tầng prop, không cần module): ksud sửa các prop đang lộ trạng thái mở khoá về giá trị của máy đã khoá ở `post-fs-data` và `boot-completed`; thẻ trong tab Tính năng có công tắc, danh sách prop/bootconfig, nút **Kiểm tra attestation** (tự tạo key trong AndroidKeyStore, đọc RootOfTrust) | Ẩn với app chỉ đọc prop; bộ kiểm tra cho thấy app đọc chứng chỉ thấy gì |
 | 21 | **Thông báo khi chống bootloop ra tay** (ksud đăng thông báo hệ thống lúc `boot-completed`, dưới uid shell vì Android bỏ thông báo từ uid 0; mỗi lần kích hoạt báo một lần, khoá `notifyPending`), **giữ bản cũ khi cập nhật module** (`/data/adb/ksu/module_backup/<id>`, chép bằng `busybox cp -a` để giữ symlink và whiteout; `ksud module restore <id>` đưa bản cũ vào hàng chờ, có chip "↺ Bản trước" trên thẻ module), tab Tính năng làm mới khi mở lại app | Đi cùng chống bootloop: biết ngay khi module bị tắt và quay lại được bản chạy tốt |
 | 16 | Font Baloo 2; bỏ thẻ "Tìm hiểu KernelSU" và "Ủng hộ" ở Home; mặc định cài đặt lấy theo máy của Cam (cử chỉ quay lại dự đoán bật, mô tả module 5 dòng) | Thương hiệu riêng, không còn dấu vết KernelSU trong giao diện |
+| 22 | **Đổi tên toàn bộ sang Cam** (mục 11): gói nguồn, class Manager, thư viện JNI (`libcamjni.so`), ksud → `camd` (`libcamd.so`), `/data/adb/ksu` → `/data/adb/cam`, `kernelsu.ko` → `camsu.ko`, SELinux domain `ksu` → `cam`, Magica → jailbreak | Dự án dùng riêng, không còn tên KernelSU ở tầng người dùng/userspace |
+| 23 | **Lớp tương thích khi đổi tên**: camd tự chuyển dữ liệu cũ; kernel vẫn khai báo `ksu`/`ksu_file` cùng quyền và chạy profile `u:r:ksu:s0` trong `cam`; camd/caminit nhận `kernelsu.ko` cũ; module được thêm biến `CAM_*` cạnh `KSU_*`, WebUI có bridge `cam` cạnh `ksu`, deep link `cam://` (vẫn nhận `ksu://`) | Cập nhật từ bản cũ không mất root, không mất allowlist/module |
 
 ## 2. Lịch sử commit
 
@@ -175,7 +178,8 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 - [sửa] `.github/workflows/release.yml`: `permissions: contents: write`, `generate_release_notes: true`
 - [sửa] `.github/workflows/ddk-lkm.yml`: `safe.directory "$GITHUB_WORKSPACE"` (thay cho tên repo gốc ghi cứng) và checkout `fetch-depth: 0`. Thiếu hai dòng này module CI báo phiên bản **16**
 - [sửa] `.gitattributes`: **mọi** `*.sh` luôn LF (trước chỉ `scripts/*.sh`; `installer.sh` CRLF bị nhúng vào ksud làm mọi lệnh cài module lỗi `umask: illegal mode: 022\r`)
-- [mới] `scripts/build_lkm_ksud.sh` (build LKM + ksud từ một commit trong WSL)
+- [mới] `scripts/build_lkm_camd.sh` (trước là `build_lkm_ksud.sh`; build LKM + camd từ một commit trong WSL)
+- [mới] `scripts/cam_rename.sed` + `scripts/cam_rename.skip` (đổi tên KernelSU → Cam cho code upstream mới merge vào; danh sách file tương thích không được chạy qua; mục 11)
 
 ## 4. Kéo bản cập nhật upstream (làm theo thứ tự)
 
@@ -195,29 +199,42 @@ git log --oneline main..upstream/main | wc -l   # upstream có bao nhiêu commit
 
 ```bash
 git checkout -b merge-upstream-YYYYMMDD
-git merge upstream/main
+git -c merge.renameLimit=10000 merge upstream/main
 ```
 
-Dùng `merge` thay vì `rebase`: chỉ phải giải conflict một lần.
+Dùng `merge` thay vì `rebase`: chỉ phải giải conflict một lần. `renameLimit` để git nhận ra các file đã đổi chỗ trong đợt đổi tên (mục 11); thiếu nó, thay đổi upstream ở `me/weishu/kernelsu/...`, `userspace/ksud/...` sẽ thành conflict "deleted by us" thay vì tự áp vào file mới.
 
 **Đừng** chạy `git checkout -- <thư mục>`, `git clean`, hay `git add manager/app/src/main` (có junction `cpp/uapi`, xem mục 5). Luôn add từng file cụ thể.
 
 ### Bước 3: giải conflict
 
-Kernel / ksud:
+Đổi tên (làm trước, xem mục 11):
+- **Upstream sửa/thêm file ở đường dẫn cũ** (`manager/app/src/main/java/me/weishu/kernelsu/...`, `userspace/ksud/...`, `userspace/ksuinit/...`, `kernel/runtime/ksud*`, `.github/workflows/ksud*.yml`): nếu git đã tự áp vào file mới thì thôi. Nếu nó tạo lại file ở đường dẫn cũ, `git mv` file đó sang đường dẫn mới theo bảng ở mục 11 (file đổi tên class thì đổi cả tên file, ví dụ `Natives.kt` → `CamNative.kt`).
+- Giải xong conflict thì chạy script đổi tên cho **đúng các file merge mang vào** (không chạy trên cả repo, không chạy trên file tương thích trong `scripts/cam_rename.skip`):
+
+  ```bash
+  git diff --name-only ORIG_HEAD HEAD -- manager/app/src userspace kernel .github scripts \
+    | grep -v -f scripts/cam_rename.skip | xargs -r sed -i -f scripts/cam_rename.sed
+  ```
+
+  Chạy trước khi commit merge thì thay `ORIG_HEAD HEAD` bằng `--cached` (file đã `git add`) hoặc liệt kê tay. File nằm trong `cam_rename.skip` mà upstream có sửa thì nhận thay đổi của upstream bằng tay, giữ nguyên phần tương thích (mục 11).
+- Upstream thêm tên mới có chữ `ksu`/`Ksu`/`kernelsu` mà script chưa biết: quyết định đổi hay giữ, rồi thêm luật vào `scripts/cam_rename.sed` cho lần sau.
+
+Kernel / camd (ksud):
 - **Upstream sửa các file Cam đã xoá** (`apk_sign.c`, `throne_tracker.c`, `manager_observer.h`, `apk_sign.rs`…): giữ trạng thái **xoá** (`git rm <file>`). Nếu upstream thêm tính năng mới vào đó, xem có cần chuyển sang `policy/pkg_tracker.c` không.
 - **Upstream sửa `pkg_observer.c` ở chỗ cũ (`kernel/manager/`)**: áp thay đổi đó vào `kernel/policy/pkg_observer.c`.
 - **`policy/pkg_tracker.c`**: là file của Cam; giữ `ksu_seed_apply()` và `ksu_manager_pin_apply()`, thứ tự gọi trong `ksu_pkg_tracker_update()`: seed → pin → prune.
 - **`manager_identity.h`**: luôn giữ bản của Cam (chỉ có `is_manager()` = uid 0).
-- **`Kbuild` / `Kconfig`**: giữ bản đã bỏ `EXPECTED_*`, `DISABLE_MANAGER`, `MANAGER_PACKAGE`; nhận các dòng `kernelsu-objs` mới của upstream. Conflict ở đoạn `KSU_EXPECTED_*` (từ commit lỗi thời `1b9b0673`) thì xoá cả đoạn.
+- **`Kbuild` / `Kconfig`**: giữ bản đã bỏ `EXPECTED_*`, `DISABLE_MANAGER`, `MANAGER_PACKAGE`; nhận các dòng `kernelsu-objs` mới của upstream rồi đổi thành `camsu-objs` (module tên `camsu.o`). Conflict ở đoạn `KSU_EXPECTED_*` (từ commit lỗi thời `1b9b0673`) thì xoá cả đoạn.
+- **`kernel/selinux/rules.c`**: rule cho domain su nằm trong hàm `add_su_domain()` (gọi 2 lần: `cam` và `ksu`). Upstream thêm rule mới dạng `ksu_allow(db, ..., KERNEL_SU_DOMAIN, ...)` vào `apply_kernelsu_rules()` thì chuyển vào `add_su_domain()` và thay `KERNEL_SU_DOMAIN`/`KERNEL_SU_FILE` bằng `domain`/`file`, để cả hai domain cùng có.
 - **`uapi/supercall.h`**: nếu upstream tăng `KERNEL_SU_UAPI_VERSION`, đặt bản Cam = **số của upstream + 1**, để bản Cam và upstream không bao giờ trùng uapi.
-- **`ksud/build.rs`**: giữ gói `cam.su.kernel`. **`sepolicy.rs`**: giữ dòng `#![allow(clippy::redundant_field_names)]` ở đầu file.
+- **`userspace/camd/build.rs`**: giữ gói `cam.su.kernel`. **`sepolicy.rs`**: giữ dòng `#![allow(clippy::redundant_field_names)]` ở đầu file.
 
 Manager:
-- **File có `Ksu.xxx`**: nhận thay đổi của upstream, rồi đổi lại mọi `Natives.<hàm>` thành `Ksu.<hàm>`. Upstream thêm hàm mới vào `Natives` thì làm theo "Nếu upstream thêm hàm mới" bên dưới.
+- **File có `Cam.xxx`**: nhận thay đổi của upstream (script đổi `Ksu.` → `Cam.`, `Natives.` → `CamNative.`), rồi đổi mọi lời gọi `CamNative.<hàm>` từ UI thành `Cam.<hàm>`. Upstream thêm hàm mới vào `Natives` thì làm theo "Nếu upstream thêm hàm mới" bên dưới.
 - **File `*Miuix.kt`**: nhận thay đổi của upstream, rồi đổi lại component sang bản kính theo bảng ở mục 3. Màn hình hoặc component mới của upstream cũng phải đổi theo bảng đó; quên `Scaffold(containerColor = Color.Transparent)` thì trang che mất hình nền.
 - **Upstream sửa hoặc thêm file Material** (`UiMode.kt`, `MaterialTheme.kt`, `ui/component/material/*`, mọi `*Material.kt`): git báo conflict "modified/deleted" → `git rm <file>`, không port. Màn hình mới của upstream thường đi kèm bộ ba `XxxMaterial.kt` + `XxxMiuix.kt` + `XxxScreen.kt` (chọn bản theo `LocalUiMode`): giữ bản Miuix, trong `XxxScreen.kt` gọi thẳng `XxxMiuix(...)`, xoá `XxxMaterial.kt`, bỏ import `LocalUiMode` / `UiMode`. Nếu upstream thêm tham số vào cả hai bản thì chỉ cần giữ tham số ở bản Miuix.
-- **`ui/MainActivity.kt`**: route mới upstream thêm vào `NavDisplay` phải bọc `GlassPage { … }` như các `entry<…>` khác. Giữ khối nạp sẵn nền (`GlassBackgroundCache.preload`), `LocalEnableBlur provides true`, **khối `SlimeLayer(…)` bọc `navDisplay()`** và đoạn `LaunchedEffect` báo `SlimeHome.pagerPos`. Không còn `LocalUiMode` / `UiMode`.
+- **`ui/CamActivity.kt`** (upstream: `ui/MainActivity.kt`): route mới upstream thêm vào `NavDisplay` phải bọc `GlassPage { … }` như các `entry<…>` khác. Giữ khối nạp sẵn nền (`GlassBackgroundCache.preload`), `LocalEnableBlur provides true`, **khối `SlimeLayer(…)` bọc `navDisplay()`** và đoạn `LaunchedEffect` báo `SlimeHome.pagerPos`. Không còn `LocalUiMode` / `UiMode`.
 - **`ui/component/glass/GlassCard.kt`**: phải còn `.slimeSurface()` trước `.glassMaterial(…)`, không thì slime không có chỗ đứng trên thẻ.
 - **`ui/screen/home/HomeMiuix.kt`**: giữ lời gọi `StatusArena(…)`. Upstream thêm trường dữ liệu mới vào thẻ trạng thái thì lấy phần dữ liệu, không lấy phần giao diện.
 - **`data/repository/SettingsRepositoryImpl.kt`, `SettingsUiState.kt`, `MainActivityUiState.kt`**: giữ mặc định của Cam (`enable_predictive_back` true, `module_description_max_lines` 5) và 3 khoá slime.
@@ -244,12 +261,20 @@ rg -n "throne|apk_sign|is_uid_manager|manager_appid|EXPECTED_(SIZE|HASH)|KSU_DIS
 # 2. Code mới của upstream có dùng khái niệm manager không? Xem kỹ từng chỗ
 rg -n "is_manager\(|only_manager|manager_or_root" kernel
 
-# 3. UI không gọi thẳng Natives (chỉ được ra Natives.kt, KsuService.kt, Ksu.kt, managerUAPIVersion)
-rg -n "Natives\.(version|kernelUAPIVersion|is[A-Z]|get[A-Z]|set[A-Z]|uid)" manager/app/src/main/java
+# 3. UI không gọi thẳng CamNative (chỉ được ra CamNative.kt, CamRootService.kt, Cam.kt, managerUAPIVersion)
+rg -n "CamNative\.(version|kernelUAPIVersion|is[A-Z]|get[A-Z]|set[A-Z]|uid)" manager/app/src/main/java
 
 # 4. Gói vẫn là cam.su.kernel; pin Manager vẫn được gọi
-rg -n "cam.su.kernel" manager/app/build.gradle.kts userspace/ksud/build.rs kernel/policy/pkg_tracker.c
+rg -n "cam.su.kernel" manager/app/build.gradle.kts userspace/camd/build.rs kernel/policy/pkg_tracker.c
 rg -n "ksu_manager_pin_apply" kernel/policy/pkg_tracker.c        # phải ra 2 dòng: định nghĩa + lời gọi
+
+# 4b. Tên cũ không lọt lại (mục 11). Phải rỗng, trừ file binary userspace/camd/bin/*/waitsys
+#     (chứa chuỗi "ksud-waitsys" của upstream, bình thường). Git Bash không có rg thì dùng:
+#     git grep -nP "<cùng biểu thức>" -- manager/app/src userspace kernel .github scripts ':!manager/app/src/main/res/values-*'
+rg -n "me\.weishu|me/weishu|\bksud\b|\bksuinit\b|/data/adb/ksu\b|kernelsu\.ko|\bNatives\b|\bKsu(Service|Cli)?\b|MainActivity|libksud" \
+   manager/app/src userspace kernel .github scripts --glob '!**/res/values-*/**' \
+   | rg -v -f scripts/cam_rename.skip | rg -v "^scripts/cam_rename"
+ls userspace    # phải là camd, caminit (không còn ksud, ksuinit)
 
 # 5. Giao diện Miuix không còn component gốc lọt vào (phải rỗng; webui/ không tính)
 rg -n "[^A-Za-z.](Card|IconButton|OverlayDialog|OverlayListPopup|OverlayDropdownPreference|FloatingActionButton)\(" manager/app/src/main/java --glob "*Miuix.kt" --glob "!**/webui/**"
@@ -263,8 +288,9 @@ rg -n "LocalUiMode|UiMode\b" manager/app/src/main/java
 rg -n "filament" manager/gradle/libs.versions.toml manager/app/build.gradle.kts manager/app/proguard-rules.pro
 ls manager/app/src/main/assets/roam_jelly.filamat
 
-# 8. Test và build
+# 8. Test và build (Windows: chạy từ ổ K:, xem mục 5)
 cd manager && ./gradlew :app:testDebugUnitTest :app:assembleRelease
+# camd/caminit (WSL): cargo ndk -t arm64-v8a check && cargo ndk -t arm64-v8a clippy && cargo fmt --check
 ```
 
 **Kiểm tra bằng mắt trên máy** (build xong chạy được chưa chắc đã đúng, phần này compile không bắt được):
@@ -275,15 +301,16 @@ cd manager && ./gradlew :app:testDebugUnitTest :app:assembleRelease
 5. Thử một lệnh Quản lý với app **không quan trọng** (xoá cache), không thử trên app của hệ thống.
 Mẹo test bằng adb: `adb -s <serial> exec-out screencap -p`, `adb shell screenrecord`, `adb shell input swipe/tap`. Màn hình máy phải sáng, nếu tắt thì app không vẽ gì. Trên Git Bash nhớ `export MSYS_NO_PATHCONV=1` khi dùng đường dẫn `/sdcard`.
 
-**Nếu upstream thêm hàm mới vào `Natives`:**
-1. Thêm hàm tương ứng vào `IKsuInterface.aidl`.
-2. Cài đặt hàm đó trong `KsuService.Stub` (gọi `Natives`).
-3. Thêm hàm cùng tên vào `Ksu.kt` (gọi qua `KsuServiceClient`, trả giá trị mặc định khi chưa kết nối).
-4. Cho UI gọi `Ksu.<hàm>`.
+**Nếu upstream thêm hàm mới vào `Natives` (bên Cam là `CamNative`):**
+1. Thêm hàm tương ứng vào `ICamRootService.aidl`.
+2. Cài đặt hàm đó trong `CamRootService.Stub` (gọi `CamNative`).
+3. Thêm hàm cùng tên vào `Cam.kt` (gọi qua `CamRootClient`, trả giá trị mặc định khi chưa kết nối).
+4. Cho UI gọi `Cam.<hàm>`.
+5. Hàm JNI mới trong `cpp/jni.cc` phải tên `Java_cam_su_kernel_CamNative_<hàm>` (script mục 11 tự đổi); sai tên thì app chỉ crash lúc gọi, build không báo.
 
 Lý do: app process không có quyền gọi kernel, chỉ root service gọi được.
 
-**Nếu upstream thêm ioctl mới chỉ cho manager (`only_manager`):** với Cam, ioctl đó nghĩa là "chỉ uid 0", nên phải gọi từ `KsuService` theo đúng 4 bước trên.
+**Nếu upstream thêm ioctl mới chỉ cho manager (`only_manager`):** với Cam, ioctl đó nghĩa là "chỉ uid 0", nên phải gọi từ `CamRootService` theo đúng các bước trên.
 
 ### Bước 5: đưa lên GitHub, build và cài
 
@@ -295,8 +322,9 @@ git push origin main          # CI "Build Manager" tự chạy: APK ký khóa re
 
 1. Chờ CI xanh (Actions trên GitHub, hoặc `gh run list -R peo1108/Cam-Kernel-SU --branch main`). Mở log bước build LKM, phải thấy `KernelSU version: 3xxxx` (không phải 16).
 2. Tải APK ở mục Artifacts (`manager`), **cài đè** lên máy (cùng khóa release nên không mất dữ liệu).
-3. Mở app → bấm thẻ "Hiện có phiên bản LKM tích hợp mới hơn" → **Cài đặt trực tiếp** → khởi động lại. Sau đó app và LKM cùng một số phiên bản.
-4. Ra bản cho người dùng: gắn tag (mục 8).
+3. Mở app → bấm thẻ "Hiện có phiên bản LKM tích hợp mới hơn" → **Cài đặt trực tiếp** → khởi động lại. Sau đó app và LKM cùng một số phiên bản. Cách làm bằng adb (đã dùng 2026-10-09): `su -c "/data/adb/camd boot-patch --flash -o /data/local/tmp"` rồi reboot; nên `dd` sao lưu `init_boot_<slot>` về PC trước.
+4. Kiểm tra sau khi boot: `su -c id` ra `context=u:r:cam:s0`; `grep camsu /proc/modules`; `/data/adb/cam/.services_started` bằng `/proc/sys/kernel/random/boot_id`; `ls /data/adb` chỉ còn `cam camd modules modules_update`.
+5. Ra bản cho người dùng: gắn tag (mục 8).
 
 Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã dùng".
 
@@ -311,15 +339,19 @@ Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã d
 | Chạy `git` của WSL trên repo `/mnt/c/...` | Làm hỏng junction `cpp/uapi` | Chỉ dùng git của Windows cho repo này; trong WSL chỉ dùng git trên bản clone riêng |
 | `cargo ndk` không cài được trên Windows (thiếu `dlltool`) | | Build Rust trong WSL với clang Android + sysroot NDK |
 | Nâng `filament` trong `libs.versions.toml` | `assets/roam_jelly.filamat` được biên dịch bằng đúng phiên bản 1.77.1; khác phiên bản thì Filament có thể từ chối nạp (lỗi bắt được thì lớp đi dạo rơi về vẽ 2D, nhưng cũng có thể app thoát; chưa thử) | Sau khi nâng, tạo lại file theo mục 10 rồi mở app, vào Superuser xem slime có hiện không |
+| `gradlew.bat` chạy trong thư mục có dấu (`dự án đã done`) | `Unable to access jarfile ...gradle-wrapper.jar` (cả `./gradlew` trong Git Bash) | Ổ `K:` là `subst` của repo: PowerShell `Push-Location K:\manager; & K:\manager\gradlew.bat :app:assembleDebug` |
+| `adb pull/push /data/...` trong Git Bash | Git Bash đổi `/data/...` thành `C:/Program Files/Git/data/...` | `MSYS_NO_PATHCONV=1 adb ...` |
+| `git mv` thư mục báo `Permission denied` | Shell (hoặc IDE) đang đứng trong thư mục đó, Windows khoá nó | `cd` ra ngoài rồi chạy lại |
+| `cargo test` của camd | 2 test `lkm_image` / `lkm_image_btf` fail | Đã fail từ trước đợt đổi tên (thiếu `.ko` android12 cục bộ, BTF), không phải lỗi mới |
 | Mở bản release xong thấy slime ngoài hộp biến mất, chỉ còn vẽ 2D phẳng | `Roam3D.createOrNull()` trả `null` (Filament không khởi tạo được, hoặc thiếu `roam_jelly.filamat`) | Xem `logcat` có dòng `Filament`; kiểm tra file `.filamat` còn trong `assets/` |
 
 ### Lệnh build đã dùng (WSL, máy của Cam)
 
-Một lệnh build cả `kernelsu.ko` (từng KMI) lẫn ksud **từ cùng một commit**, rồi chép về repo Windows:
+Một lệnh build cả `camsu.ko` (từng KMI) lẫn camd **từ cùng một commit**, rồi chép về repo Windows (`userspace/camd/bin/aarch64/<kmi>_camsu.ko` và `manager/app/src/main/jniLibs/arm64-v8a/libcamd.so`):
 
 ```bash
 # trong WSL (root); tham số là nhánh cần build, mặc định feat/managerless-seed
-bash "/mnt/c/Users/cam/Desktop/Cam Kernel SU/scripts/build_lkm_ksud.sh" main
+bash "/mnt/c/Users/cam/Desktop/dự án đã done/Cam Kernel SU/scripts/build_lkm_camd.sh" main
 # sau đó trên Windows, KHÔNG commit gì thêm ở giữa:
 cd manager && ./gradlew :app:assembleRelease
 ```
@@ -333,22 +365,26 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 | WSL không có NDK cho Linux | Dùng clang của AOSP (`clang-r536225`) làm linker, `--sysroot` + `libunwind` lấy từ NDK **Windows** (các file này không phụ thuộc hệ điều hành) |
 | `build.rs` báo `llvm-mc: No such file` (assemble LKM bootstrap) | `KSU_LKM_BOOTSTRAP_CC=<clang AOSP>` |
 | `bindgen`: `Unable to find libclang` | `LIBCLANG_PATH=<clang AOSP>/lib` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=... --sysroot=..."` |
-| Không thấy file `ksud` sau khi build | ksud là thành viên workspace: file nằm ở `target/` của **gốc repo**, không phải `userspace/ksud/target/` |
-| `ksuinit` không có trong git | Script lấy bản trong `userspace/ksud/bin/aarch64/` của repo Windows |
+| Không thấy file `camd` sau khi build | camd là thành viên workspace: file nằm ở `target/` của **gốc repo**, không phải `userspace/camd/target/` |
+| `caminit` không có trong git | Script lấy bản trong `userspace/camd/bin/aarch64/` của repo Windows (file tên `caminit`, LKM tên `<kmi>_camsu.ko`; tên cũ `ksuinit` / `_kernelsu.ko` sẽ không được nhúng) |
+
+Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `userspace/camd` chạy `cargo ndk -t arm64-v8a check`, `cargo ndk -t arm64-v8a clippy`, `cargo fmt`, với `LIBCLANG_PATH=<NDK>/toolchains/llvm/prebuilt/linux-x86_64/lib` và `CARGO_TARGET_DIR` nằm ngoài `/mnt/c` cho nhanh.
 
 ## 6. Test
 
 - **Kernel (logic seed):** harness chạy trên host với header giả, gồm 11 test, chạy dưới ASan. Harness đang nằm ngoài repo (thư mục scratchpad), chưa đưa vào repo.
-- **ksud:** `cargo test seed:: allow:: boot_guard module_conflicts` (chạy trên Linux/WSL; build Android trong WSL cần `LIBCLANG_PATH` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android26 --sysroot=<NDK>/toolchains/llvm/prebuilt/windows-x86_64/sysroot"`). Hai test `lkm_image` / `lkm_image_btf` vốn đã fail sẵn trên upstream khi thiếu asset CI, không liên quan.
+- **Trên máy thật (Y700 Gen5, 2026-10-09), đợt đổi tên:** cài Manager mới khi máy còn LKM cũ → camd chuyển `/data/adb/ksu` → `/data/adb/cam`, `ksud` → `camd`, `/metadata/watchdog/ksu` → `cam`, allowlist giữ nguyên, nhãn file vẫn `ksu_file`; reboot với LKM cũ (chạy qua symlink) → root OK, giai đoạn services chạy. Flash LKM `camsu.ko` → `su` ra `u:r:cam:s0`, module tên `camsu`, `camd` được gắn nhãn `cam_file`, `u:r:ksu:s0`/`ksu_file` vẫn hợp lệ trong policy; camd mới xoá symlink cũ, reboot lại vẫn root. **Chưa thử:** app uid ≥ 10000 dò domain `ksu` khi bật SELinux hide; tính năng jailbreak.
+- **camd (ksud):** `cargo test seed:: allow:: boot_guard module_conflicts` (trong `userspace/camd`) (chạy trên Linux/WSL; build Android trong WSL cần `LIBCLANG_PATH` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android26 --sysroot=<NDK>/toolchains/llvm/prebuilt/windows-x86_64/sysroot"`). Hai test `lkm_image` / `lkm_image_btf` vốn đã fail sẵn trên upstream khi thiếu asset CI, không liên quan.
 - **Trên máy thật (Y700 Gen5, 2026-10-03/04), phần UI mới:** đã thấy chạy đúng: phá kính khi vuốt khỏi Home, cửa + vá kính khi về, slime 3D chạy trên mép thẻ, đập tay / cưỡi Bơ / chơi khăm / rượt / đánh nhau, laser bằng ngón tay giữ yên, ngủ ban đêm, bật/tắt slime trong Chủ đề, 3 thẻ Hồ sơ ứng dụng (Thông tin, đường dẫn, Dung lượng) trên Chrome. Khung hình trung bình khoảng 9 ms, GPU khoảng 6 ms. **Chưa thử trên máy:** lắc máy, tự ẩn khi Flash / cài module, các nút Quản lý (sao lưu, xoá cache/dữ liệu, đóng băng, gỡ), nút copy đường dẫn.
 - **Trên máy thật (Y700 Gen5, 2026-10-04), boot guard và xung đột:** module thử `bg-test` reboot trong `service.sh` (tự dừng sau 5 lần) → 2 lần reboot, lần boot thứ 3 ksud tắt `bg-test`, máy lên bình thường; reboot thường thì `failCount` về 0; module `scune-support` đang tắt không bị đụng. Hai module `cf-a`/`cf-b` (cùng file `/system/etc`, file vendor đã bị installer chuyển ra `<module>/vendor`, prop khác giá trị) → báo đúng 3 xung đột, prop cùng giá trị không báo. Manager: thẻ Home, hộp thoại Bật lại / Bỏ qua, chip trên thẻ module, hộp thoại xung đột, dòng cảnh báo khi flash.
 - **Trên máy thật (Y700 Gen5, 2026-10-02):** boot OK; seed cấp root cho Manager; seed không áp lại khi nonce giữ nguyên; prune xoá quyền khi gỡ app; cài module + WebUI OK; dialog chọn app OK; `ksud allow` OK.
 
 ## 7. Giới hạn đã biết
 
-- **Chế độ late-load / magica không có seed.** Chỉ hỗ trợ LKM qua patch init_boot.
+- **Chế độ late-load / jailbreak (trước là "magica") không có seed.** Chỉ hỗ trợ LKM qua patch init_boot. Phần jailbreak không được test sau đợt đổi tên (khách dùng EFISP, không cần).
 - **Gỡ Manager rồi cài lại** không còn mất root: kernel cấp lại root cho `cam.su.kernel` ngay khi `packages.list` đổi (cần LKM có commit "keep root for the manager package"). Cũng vì vậy **không thu root của chính Manager được**: lần thay đổi gói kế tiếp kernel sẽ cấp lại. Đánh đổi có chủ đích: app lạ đặt trùng tên gói `cam.su.kernel` cũng sẽ có root.
-- **Lần boot đầu sau flash,** app khác chỉ dùng `su` được sau khi mở Manager một lần (Manager cài `/data/adb/ksud`).
+- **Lần boot đầu sau flash,** app khác chỉ dùng `su` được sau khi mở Manager một lần (Manager cài `/data/adb/camd`).
+- **Module ghi cứng `/data/adb/ksu/...` hoặc `/data/adb/ksud`** sẽ lỗi trên kernel `cam`: camd xoá các symlink tên cũ (Cam chọn vậy, dự án dùng cho việc riêng). Biến `KSU*`, bridge WebUI `ksu`, thư mục `/data/adb/modules` vẫn còn nên module viết đúng chuẩn vẫn chạy. `sepolicy.rule` của module nhắc domain `ksu` chỉ áp cho domain `ksu`, không áp cho `cam`.
 - **ROM ZUI (Lenovo):** dialog chọn app cần thêm quyền riêng `GET_INSTALLED_APP` của ROM. Lần đầu ROM sẽ hỏi; sau khi cho phép phải mở lại dialog.
 - **Slime đi dạo bị tắt hẳn** khi máy bật "giảm chuyển động" (animator scale = 0): khi đó cả 4 ở yên trong hộp. Chủ ý.
 - **Chạm vào slime ở lớp ngoài** chỉ lấy touch khi trúng thân; chạm hụt đi thẳng xuống app. Giữ yên ngón tay nửa giây thì thành laser và lớp slime **giữ luôn** thao tác đó (không cuộn trang, không bấm nhầm) tới khi nhấc tay.
@@ -364,7 +400,7 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 CI build trên GitHub là bản đầy đủ: module kernel cho cả 8 KMI (`android12-5.10` → `android17-6.18`), ksud nhiều kiến trúc, Manager ký bằng khóa release.
 
 - **Push lên `main`**: workflow "Build Manager" tự build và ký; tải file ở mục Artifacts của lượt chạy. Chạy tay: Actions → Build Manager → Run workflow.
-- **Ra bản cho người dùng**: gắn tag rồi push tag, workflow "Release" tạo GitHub Release kèm APK, `lkm-*_kernelsu.ko`, ksud, ksuinit và ghi chú tự sinh:
+- **Ra bản cho người dùng**: gắn tag rồi push tag, workflow "Release" tạo GitHub Release kèm APK, `lkm-*_camsu.ko`, camd, caminit và ghi chú tự sinh:
 
 ```bash
 git tag v1.0.0
@@ -455,3 +491,93 @@ object MaterialForge {
     }
 }
 ```
+
+## 11. Đổi tên sang Cam (2026-10-09)
+
+Mục tiêu: không còn tên KernelSU ở gói, class, binary, đường dẫn trên máy, tên module kernel và SELinux domain. Tên nội bộ của kernel thì **giữ nguyên có chủ đích** để còn merge upstream được.
+
+Các commit, theo thứ tự:
+
+| Commit | Nội dung |
+|---|---|
+| `3fc77996` | Gói nguồn `me.weishu.kernelsu` → `cam.su.kernel` (thư mục java/test/aidl, JNI) |
+| `c0f76778` | `libksud.so` → `libksucam.so` (sau đó thành `libcamd.so`) |
+| `8e8bbfc8` | Class Manager, thư viện JNI `libkernelsu.so` → `libcamjni.so` |
+| `414fecd8` | `ksud` → `camd`, `ksuinit` → `caminit`, `/data/adb/ksu` → `/data/adb/cam`, chuyển dữ liệu (`legacy.rs`) |
+| `3da955dd` | Biến môi trường `CAM_*` cho module, bridge WebUI `cam`, deep link `cam://` |
+| `01c6512f` | `kernelsu.ko` → `camsu.ko`, SELinux domain `ksu` → `cam` (giữ `ksu` song song) |
+| `4420ef9f` | Xoá symlink tên cũ khi kernel đã là `cam` |
+| `84583443`, `2d6bb63f` | Magica → jailbreak (`CamZygotePreload`, `CamJailbreakService`, `CamBootReceiver`, `--jailbreak`) |
+
+### Bảng đối chiếu tên cũ → mới
+
+Manager (`manager/app/src/main/`):
+
+| Cũ | Mới |
+|---|---|
+| `java/me/weishu/kernelsu/`, `aidl/me/weishu/kernelsu/`, `test/java/me/weishu/kernelsu/` | `.../cam/su/kernel/` (`namespace = "cam.su.kernel"`) |
+| `KernelSUApplication` | `CamApplication` |
+| `Ksu` (`Ksu.kt`) | `Cam` (`Cam.kt`) |
+| `Natives` (`Natives.kt`) | `CamNative` (`CamNative.kt`) |
+| `KsuService` / `KsuServiceClient` / `IKsuInterface` | `CamRootService` / `CamRootClient` / `ICamRootService` |
+| `KsuCli` (`ui/util/KsuCli.kt`) | `CamCli` (`ui/util/CamCli.kt`) |
+| `KsuValidCheck` / `KsuIsValid` / `KsuDeepLink` | `CamValidCheck` / `CamIsValid` / `CamDeepLink` |
+| `MainActivity`, `MainActivityUiState`, `MainActivityViewModel` | `CamActivity`, `CamActivityUiState`, `CamActivityViewModel` |
+| `KernelSUTheme`, `MiuixKernelSUTheme`, `rememberKernelSUColorScheme`, style `Theme.KernelSU*` | `CamTheme`, `MiuixCamTheme`, `rememberCamColorScheme`, `Theme.Cam*` |
+| `ksuApp`, `ksuVersion`, `ksuReady`… ; `execKsud`, `getKsuDaemonPath` | `camApp`, `camVersion`, `camReady`… ; `execCamd`, `getCamDaemonPath` |
+| `magica/AppZygotePreload`, `MagicaService`, `BootCompletedReceiver` | `jailbreak/CamZygotePreload`, `CamJailbreakService`, `CamBootReceiver` |
+| `libkernelsu.so` (CMake `project("kernelsu")`), hàm `Java_me_weishu_kernelsu_Natives_*` | `libcamjni.so` (`project("camjni")`), `Java_cam_su_kernel_CamNative_*` |
+| `jniLibs/<abi>/libksud.so` | `jniLibs/<abi>/libcamd.so` |
+| Log tag `KernelSU`, file `KernelSU_bugreport_*`, User-Agent `KernelSU/…` | `Cam`, `Cam_bugreport_*`, `CamSU/…` |
+
+Userspace, kernel, CI:
+
+| Cũ | Mới |
+|---|---|
+| `userspace/ksud/` (crate `ksud`), `userspace/ksuinit/` (crate `ksuinit`) | `userspace/camd/` (`camd`), `userspace/caminit/` (`caminit`) |
+| `.github/workflows/ksud.yml`, `ksud-extra.yml`, `ksuinit.yml`; artifact `ksud-<target>`, `ksuinit-<arch>` | `camd.yml`, `camd-extra.yml`, `caminit.yml`; `camd-<target>`, `caminit-<arch>` |
+| `scripts/build_lkm_ksud.sh` | `scripts/build_lkm_camd.sh` |
+| `kernel/runtime/ksud.h`, `ksud_boot.h`, `ksud_integration.c`, `KSUD_PATH` | `camd.h`, `camd_boot.h`, `camd_integration.c`, `CAMD_PATH` |
+| `/data/adb/ksud`, `/data/adb/ksu/` (`.allowlist`, `.seed`, `bin/`, `lib/`, `log/`…), `.ksurc`, `ksu_backup_*` | `/data/adb/camd`, `/data/adb/cam/`, `.camrc`, `cam_backup_*` |
+| `/metadata/ksu/`, `/metadata/watchdog/ksu/` (`modules.rc`) | `/metadata/cam/`, `/metadata/watchdog/cam/` |
+| `kernelsu.ko` (Kbuild `kernelsu-objs`), asset `<kmi>_kernelsu.ko`, file trong ramdisk `/kernelsu.ko` | `camsu.ko` (`camsu-objs`), `<kmi>_camsu.ko`, `/camsu.ko` |
+| SELinux `u:r:ksu:s0`, `u:object_r:ksu_file:s0` | `u:r:cam:s0`, `u:object_r:cam_file:s0` (cũ vẫn còn, xem dưới) |
+| `ksud late-load --magica / --post-magica`, `magica.rs` | `camd late-load --jailbreak / --post-jailbreak`, `jailbreak.rs` |
+| Khoá `ksuMounts` trong JSON `hiding-audit`, chuỗi `audit_ksu_mounts` | `camMounts`, `audit_cam_mounts` |
+
+### Cố ý giữ tên KernelSU
+
+- Kernel: mọi hàm/biến `ksu_*`, macro `KSU_*` và `KERNEL_SU_*`, `kernelsu_init`, `apply_kernelsu_rules`, tên LSM `"ksu"`, tiền tố log `KernelSU:`, tham số ramdisk `ksu_config`. Đổi thì merge upstream gần như không làm được (khoảng 1800 chỗ), người dùng không thấy khác gì.
+- `uapi/` (tên struct, ioctl). Số ioctl/magic không đổi nên ABI giữ nguyên.
+- Nhãn mount `KSU` của module, biến build `KSU_PACKAGE_NAME`, `kernel/setup.sh` (bản builtin GKI), `js/` (gói npm `kernelsu` cho WebUI).
+- Dòng `@author weishu` / `Created by weishu` (giấy phép GPL yêu cầu giữ ghi công).
+- Chuỗi giao diện `strings.xml` vẫn còn chữ "KernelSU" / "Magica" (chưa chọn tên hiển thị).
+
+### Lớp tương thích, **không được xoá khi merge**
+
+Các file này nằm trong `scripts/cam_rename.skip` (script đổi tên không chạy qua chúng):
+
+| Chỗ | Làm gì |
+|---|---|
+| `userspace/camd/src/legacy.rs` (`migrate()`, gọi ở đầu/cuối `utils::install` và đầu `on_post_fs_data`) | Chuyển `/data/adb/ksu`, `/data/adb/ksud`, `/metadata/{,watchdog/}ksu`, `.ksurc`, `ksu_backup_*` sang tên mới. Kernel chưa có domain `cam` (đang cập nhật dở) thì để symlink tên cũ cho kernel cũ chạy; kernel đã là `cam` thì xoá symlink |
+| `userspace/camd/src/restorecon.rs` (`set_su_file_con`, `kernel_has_cam_domain`) | Gắn nhãn `cam_file` **chỉ khi** `/sys/fs/selinux/context` chấp nhận, không thì `ksu_file`. Đừng đổi thành "thử ghi rồi lùi": camd có `mac_admin` nên ghi nhãn lạ vẫn thành công và kernel cũ sẽ không chạy được camd lúc boot |
+| `kernel/selinux/selinux.h`, `selinux.c`, `rules.c` | `KERNEL_SU_DOMAIN "cam"` + `KSU_LEGACY_*` (`ksu`, `ksu_file`); `add_su_domain()` gọi cho cả hai; `setup_selinux` đổi `u:r:ksu:s0` → `u:r:cam:s0`; `is_task_ksu_domain` nhận cả hai SID |
+| `kernel/policy/allowlist.c` | `KSU_DEFAULT_SELINUX_DOMAIN = KSU_LEGACY_CONTEXT`: allowlist trên đĩa vẫn ghi `u:r:ksu:s0` để quay về kernel cũ vẫn đọc được |
+| `manager/.../CamNative.kt` (`CAM_DOMAIN = "u:r:ksu:s0"`), `TemplateViewModel.kt` | Cùng lý do: profile/template lưu chữ `ksu`, kernel `cam` tự đổi lúc chạy |
+| `userspace/camd/src/boot_patch.rs` (`LKM_NAME`, `LEGACY_LKM_NAME`), `unload.rs`, `userspace/caminit/src/init.rs` | Nhận ramdisk vá bằng bản cũ có `kernelsu.ko` (gỡ đi khi vá lại, nạp nếu chưa có `camsu.ko`); unload thử `camsu` rồi `kernelsu`; `unload.rs` tìm tiến trình ở cả `u:r:cam:s0` và `u:r:ksu:s0` |
+| `userspace/camd/src/module.rs` (`CAM_ENV_ALIASES`), `cli.rs`, `feature.rs` | Script module có cả `KSU_*` lẫn `CAM_*`; đọc `CAM_MODULE` trước, `KSU_MODULE` sau |
+| `ui/webui/WebViewHelper.kt`, `ui/navigation3/IntentDispatcher.kt`, `ui/util/module/Shortcut.kt`, `AndroidManifest.xml` | Bridge `ksu` + `cam`; scheme `ksu://icon` + `cam://icon`; deep link tạo bằng `cam://`, vẫn nhận `ksu://` (shortcut ghim từ trước) |
+| `CamApplication.onCreate` | Bật lại `CamBootReceiver` nếu cài đặt `auto_jailbreak` đang bật (đổi tên component làm mất trạng thái bật) |
+
+### Merge upstream sau khi đổi tên
+
+1. Merge với `-c merge.renameLimit=10000` (mục 4, bước 2).
+2. Giải conflict như mục 4, bước 3. File upstream ở đường dẫn cũ → `git mv` sang đường dẫn mới theo bảng trên.
+3. Chạy `scripts/cam_rename.sed` trên các file merge mang vào (lệnh ở mục 4, bước 3). Script đã được thử: chạy trên toàn bộ code trước đổi tên (`1dc68cc9`) ra **giống hệt** code sau đổi tên ở 341 file; phần còn lệch đều là logic viết tay (các file ở bảng trên, `defs.rs` `WORKING_DIR`, lời gọi `legacy::migrate`).
+4. Chạy lệnh kiểm tra 4b ở mục 4, bước 4 để chắc không còn tên cũ lọt vào.
+5. Upstream thêm file mới trong `userspace/ksud/bin/` hoặc asset có tên `ksuinit` / `_kernelsu.ko`: đổi thành `caminit` / `_camsu.ko` (`assets.rs` chỉ nhận tên mới).
+6. Upstream tăng `KERNEL_SU_UAPI_VERSION` hay đổi định dạng allowlist: kiểm tra lại `allowlist.c` vẫn dùng `KSU_LEGACY_CONTEXT` làm mặc định.
+
+### Nếu muốn bỏ hẳn tên `ksu` trong SELinux (chưa làm)
+
+SELinux hide đã giấu domain `ksu` khỏi app (trả lời theo policy gốc chụp trước khi thêm rule), nên giữ `ksu` song song không làm lộ thêm. Muốn bỏ hẳn: (1) kernel đổi chữ `u:r:ksu:s0` → `u:r:cam:s0` trong allowlist khi đọc (rồi `KSU_DEFAULT_SELINUX_DOMAIN` = `KERNEL_SU_CONTEXT`, `CAM_DOMAIN` = `u:r:cam:s0`); (2) đợi máy đã chạy kernel đó ít nhất một lần để camd gắn lại nhãn `cam_file`; (3) bỏ dòng `add_su_domain(db, KSU_LEGACY_DOMAIN, …)`. Sau đó không quay về kernel cũ được nữa (allowlist ghi `cam`), và `sepolicy.rule` của module nhắc `ksu` sẽ báo lỗi.

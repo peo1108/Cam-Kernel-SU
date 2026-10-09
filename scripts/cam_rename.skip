@@ -1,0 +1,16 @@
+userspace/camd/src/legacy.rs
+userspace/camd/src/restorecon.rs
+userspace/camd/src/boot_patch.rs
+userspace/camd/src/unload.rs
+userspace/camd/src/module.rs
+userspace/camd/src/cli.rs
+userspace/camd/src/feature.rs
+userspace/caminit/src/init.rs
+kernel/selinux/
+kernel/policy/allowlist.c
+manager/app/src/main/java/cam/su/kernel/CamNative.kt
+manager/app/src/main/java/cam/su/kernel/ui/navigation3/IntentDispatcher.kt
+manager/app/src/main/java/cam/su/kernel/ui/webui/WebViewHelper.kt
+manager/app/src/main/java/cam/su/kernel/ui/viewmodel/TemplateViewModel.kt
+manager/app/src/main/AndroidManifest.xml
+manager/app/src/main/java/cam/su/kernel/ui/util/module/Shortcut.kt

@@ -4,7 +4,7 @@ import android.os.Parcelable
 import android.util.Log
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 import cam.su.kernel.profile.Capabilities
 import cam.su.kernel.profile.Groups
 import org.json.JSONArray
@@ -19,15 +19,15 @@ data class TemplateInfo(
     val description: String = "",
     val author: String = "",
     val local: Boolean = true,
-    val namespace: Int = Natives.Profile.Namespace.INHERITED.ordinal,
-    val uid: Int = Natives.ROOT_UID,
-    val gid: Int = Natives.ROOT_GID,
+    val namespace: Int = CamNative.Profile.Namespace.INHERITED.ordinal,
+    val uid: Int = CamNative.ROOT_UID,
+    val gid: Int = CamNative.ROOT_GID,
     val groups: List<Int> = mutableListOf(),
     val capabilities: List<Int> = mutableListOf(),
-    val context: String = Natives.KERNEL_SU_DOMAIN,
+    val context: String = CamNative.CAM_DOMAIN,
     val rules: List<String> = mutableListOf(),
     val flags: List<Int> = mutableListOf(
-        Natives.Profile.RootProfileFlag.NO_NEW_PRIVS.ordinal // default no new privs for new template
+        CamNative.Profile.RootProfileFlag.NO_NEW_PRIVS.ordinal // default no new privs for new template
     )
 ) : Parcelable {
     companion object {
@@ -39,9 +39,9 @@ data class TemplateInfo(
                 val capabilitiesJsonArray = templateJson.optJSONArray("capabilities")
                 val flagsJsonArray = templateJson.optJSONArray("flags")
                 val context = templateJson.optString("context").takeIf { it.isNotEmpty() }
-                    ?: Natives.KERNEL_SU_DOMAIN
+                    ?: CamNative.CAM_DOMAIN
                 val namespace = templateJson.optString("namespace").takeIf { it.isNotEmpty() }
-                    ?: Natives.Profile.Namespace.INHERITED.name
+                    ?: CamNative.Profile.Namespace.INHERITED.name
 
                 val rulesJsonArray = templateJson.optJSONArray("rules")
                 val templateInfo = TemplateInfo(
@@ -50,11 +50,11 @@ data class TemplateInfo(
                     description = getLocaleString(templateJson, "description"),
                     author = templateJson.optString("author"),
                     local = templateJson.optBoolean("local"),
-                    namespace = Natives.Profile.Namespace.valueOf(
+                    namespace = CamNative.Profile.Namespace.valueOf(
                         namespace.uppercase()
                     ).ordinal,
-                    uid = templateJson.optInt("uid", Natives.ROOT_UID),
-                    gid = templateJson.optInt("gid", Natives.ROOT_GID),
+                    uid = templateJson.optInt("uid", CamNative.ROOT_UID),
+                    gid = templateJson.optInt("gid", CamNative.ROOT_GID),
                     groups = getEnumOrdinals(groupsJsonArray, Groups::class.java).map { it.gid },
                     capabilities = getEnumOrdinals(
                         capabilitiesJsonArray, Capabilities::class.java
@@ -66,9 +66,9 @@ data class TemplateInfo(
                     flags = flagsJsonArray?.let {
                         getEnumOrdinals(
                             it,
-                            Natives.Profile.RootProfileFlag::class.java
+                            CamNative.Profile.RootProfileFlag::class.java
                         ).map { flag -> flag.ordinal }
-                    } ?: listOf(Natives.Profile.RootProfileFlag.NO_NEW_PRIVS.ordinal)
+                    } ?: listOf(CamNative.Profile.RootProfileFlag.NO_NEW_PRIVS.ordinal)
                 )
                 templateInfo
             }.onFailure {
@@ -125,7 +125,7 @@ data class TemplateInfo(
             if (template.author.isNotEmpty()) {
                 put("author", template.author)
             }
-            put("namespace", Natives.Profile.Namespace.entries[template.namespace].name)
+            put("namespace", CamNative.Profile.Namespace.entries[template.namespace].name)
             put("uid", template.uid)
             put("gid", template.gid)
 
@@ -161,7 +161,7 @@ data class TemplateInfo(
 
             put(
                 "flags", JSONArray(
-                    Natives.Profile.RootProfileFlag.entries.filter {
+                    CamNative.Profile.RootProfileFlag.entries.filter {
                         template.flags.contains(it.ordinal)
                     }.map {
                         it.name

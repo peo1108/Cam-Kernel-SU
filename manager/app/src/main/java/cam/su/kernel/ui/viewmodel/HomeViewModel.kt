@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import cam.su.kernel.BuildConfig
-import cam.su.kernel.Ksu
-import cam.su.kernel.Natives
+import cam.su.kernel.Cam
+import cam.su.kernel.CamNative
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.getKernelVersion
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.screen.home.HomeUiState
 import cam.su.kernel.ui.screen.home.SystemInfo
 import cam.su.kernel.ui.screen.home.getManagerVersion
@@ -68,29 +68,29 @@ class HomeViewModel(
 
     private fun buildState(): HomeUiState {
         val kernelVersion = getKernelVersion()
-        val isManager = Ksu.isAvailable
-        val ksuVersion = if (isManager) Ksu.version else null
-        val kernelUAPIVersion = if (isManager) Ksu.kernelUAPIVersion else null
-        val managerUAPIVersion = Natives.managerUAPIVersion
-        val lkmMode = ksuVersion?.let { if (kernelVersion.isGKI()) Ksu.isLkmMode else null }
+        val isManager = Cam.isAvailable
+        val camVersion = if (isManager) Cam.version else null
+        val kernelUAPIVersion = if (isManager) Cam.kernelUAPIVersion else null
+        val managerUAPIVersion = CamNative.managerUAPIVersion
+        val lkmMode = camVersion?.let { if (kernelVersion.isGKI()) Cam.isLkmMode else null }
         val isRootAvailable = rootAvailable()
-        val managerVersion = getManagerVersion(ksuApp)
+        val managerVersion = getManagerVersion(camApp)
 
         return HomeUiState(
             kernelVersion = kernelVersion,
-            ksuVersion = ksuVersion,
+            camVersion = camVersion,
             lkmMode = lkmMode,
-            isLkmBundled = lkmMode == true && Ksu.isLkmBundled,
+            isLkmBundled = lkmMode == true && Cam.isLkmBundled,
             isManager = isManager,
             isManagerPrBuild = BuildConfig.IS_PR_BUILD,
-            isKernelPrBuild = Ksu.isPrBuild,
-            requiresNewKernel = isManager && Natives.managerUAPIVersion > Ksu.kernelUAPIVersion,
-            requiresNewManager = isManager && Natives.managerUAPIVersion < Ksu.kernelUAPIVersion,
+            isKernelPrBuild = Cam.isPrBuild,
+            requiresNewKernel = isManager && CamNative.managerUAPIVersion > Cam.kernelUAPIVersion,
+            requiresNewManager = isManager && CamNative.managerUAPIVersion < Cam.kernelUAPIVersion,
             kernelUAPIVersion = kernelUAPIVersion,
             managerUAPIVersion = managerUAPIVersion,
             isRootAvailable = isRootAvailable,
-            isSafeMode = Ksu.isSafeMode,
-            isLateLoadMode = Ksu.isLateLoadMode,
+            isSafeMode = Cam.isSafeMode,
+            isLateLoadMode = Cam.isLateLoadMode,
             checkUpdateEnabled = settingsRepo.checkUpdate,
             latestVersionInfo = LatestVersionInfo(),
             currentManagerVersionCode = managerVersion.versionCode,

@@ -15,10 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.core.net.toUri
 import kotlinx.coroutines.channels.ReceiveChannel
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
 import cam.su.kernel.ui.screen.flash.FlashIt
 import cam.su.kernel.ui.util.DownloadService
@@ -76,9 +76,9 @@ private sealed interface PendingAction {
     data class OpenWebUI(val moduleId: String) : PendingAction
 }
 
-private sealed interface KsuDeepLink {
-    data class Action(val moduleId: String) : KsuDeepLink
-    data class WebUi(val moduleId: String) : KsuDeepLink
+private sealed interface CamDeepLink {
+    data class Action(val moduleId: String) : CamDeepLink
+    data class WebUi(val moduleId: String) : CamDeepLink
 }
 
 private fun buildInternalWebUiUri(moduleId: String): Uri {
@@ -90,7 +90,7 @@ private fun buildInternalWebUiUri(moduleId: String): Uri {
 }
 
 fun getDisplayName(uri: Uri): String {
-    return uri.getFileName(ksuApp) ?: uri.lastPathSegment ?: "Unknown"
+    return uri.getFileName(camApp) ?: uri.lastPathSegment ?: "Unknown"
 }
 
 /**
@@ -124,13 +124,13 @@ private fun resolveIntent(intent: Intent): PendingAction? {
 
     // Check deep links
     return when (val deepLink = parseValidatedDeepLink(intent.data)) {
-        is KsuDeepLink.Action -> PendingAction.ExecuteAction(deepLink.moduleId)
-        is KsuDeepLink.WebUi -> PendingAction.OpenWebUI(deepLink.moduleId)
+        is CamDeepLink.Action -> PendingAction.ExecuteAction(deepLink.moduleId)
+        is CamDeepLink.WebUi -> PendingAction.OpenWebUI(deepLink.moduleId)
         null -> null
     }
 }
 
-private fun parseValidatedDeepLink(uri: Uri?): KsuDeepLink? {
+private fun parseValidatedDeepLink(uri: Uri?): CamDeepLink? {
     if (uri?.scheme != SCHEME_KSU) return null
 
     val moduleId = uri.getQueryParameter(PARAM_ID)?.takeIf { it.isNotBlank() } ?: return null
@@ -138,8 +138,8 @@ private fun parseValidatedDeepLink(uri: Uri?): KsuDeepLink? {
     if (token != SettingsRepositoryImpl().intentToken) return null
 
     return when (uri.host) {
-        HOST_ACTION -> KsuDeepLink.Action(moduleId)
-        HOST_WEBUI -> KsuDeepLink.WebUi(moduleId)
+        HOST_ACTION -> CamDeepLink.Action(moduleId)
+        HOST_WEBUI -> CamDeepLink.WebUi(moduleId)
         else -> null
     }
 }
@@ -150,8 +150,8 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val navigator = LocalNavigator.current
-    val isSafeMode = Ksu.isSafeMode
-    val isManager = Ksu.isAvailable
+    val isSafeMode = Cam.isSafeMode
+    val isManager = Cam.isAvailable
     var pendingZipInstall by rememberSaveable(stateSaver = PendingAction.InstallModule.InstallModuleSaver) { mutableStateOf(null) }
 
     val installDialog = rememberConfirmDialog(

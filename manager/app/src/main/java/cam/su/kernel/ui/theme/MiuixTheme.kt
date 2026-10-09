@@ -20,7 +20,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
-fun MiuixKernelSUTheme(
+fun MiuixCamTheme(
     appSettings: AppSettings,
     content: @Composable () -> Unit
 ) {

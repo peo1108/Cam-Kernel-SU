@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.util.module
 
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.isNetworkAvailable
 import okhttp3.Request
 import org.json.JSONArray
@@ -44,10 +44,10 @@ fun stripTicks(s: String): String {
 }
 
 fun fetchReleaseDescriptionHtml(moduleId: String, latestTag: String): String? {
-    if (!isNetworkAvailable(ksuApp)) return null
+    if (!isNetworkAvailable(camApp)) return null
     val url = "https://modules.kernelsu.org/module/$moduleId.json"
     return runCatching {
-        ksuApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { resp ->
+        camApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { resp ->
             if (!resp.isSuccessful) null else {
                 val body = resp.body.string()
                 val obj = JSONObject(body)
@@ -72,10 +72,10 @@ fun fetchReleaseDescriptionHtml(moduleId: String, latestTag: String): String? {
 
 
 fun fetchModuleDetail(moduleId: String): ModuleDetail? {
-    if (!isNetworkAvailable(ksuApp)) return null
+    if (!isNetworkAvailable(camApp)) return null
     val url = "https://modules.kernelsu.org/module/$moduleId.json"
     return runCatching {
-        ksuApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { resp ->
+        camApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { resp ->
             if (!resp.isSuccessful) return@use null
             val body = resp.body.string()
             val obj = JSONObject(body)

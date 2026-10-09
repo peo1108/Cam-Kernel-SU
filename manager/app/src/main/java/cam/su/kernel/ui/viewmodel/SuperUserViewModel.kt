@@ -14,12 +14,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.data.repository.SuperUserRepository
 import cam.su.kernel.data.repository.SuperUserRepositoryImpl
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.component.SearchStatus
 import cam.su.kernel.ui.screen.superuser.GroupedApps
 import cam.su.kernel.ui.screen.superuser.SuperUserUiState
@@ -257,7 +257,7 @@ class SuperUserViewModel(
         val currentState = _uiState.value
 
         return list.filter {
-            if (it.packageName == ksuApp.packageName) return@filter false
+            if (it.packageName == camApp.packageName) return@filter false
             // UID 1053 is the single system-wide WebView zygote (primary user only).
             if (it.isWebViewZygote) return@filter true
             if (it.allowSu || it.hasCustomProfile) {
@@ -273,12 +273,12 @@ class SuperUserViewModel(
     }
 
     private fun buildCachedGroups(apps: List<AppInfo>): List<GroupedApps> {
-        return buildGroups(apps.filter { it.packageName != ksuApp.packageName })
+        return buildGroups(apps.filter { it.packageName != camApp.packageName })
     }
 
     private fun buildGroups(
         apps: List<AppInfo>,
-        umount: (Int) -> Boolean = { Ksu.uidShouldUmount(it) },
+        umount: (Int) -> Boolean = { Cam.uidShouldUmount(it) },
     ): List<GroupedApps> {
         val collator = Collator.getInstance(Locale.getDefault())
         val comparator = compareBy<AppInfo> {
@@ -338,7 +338,7 @@ class SuperUserViewModel(
                 val (cachedGroups, grouped) = withContext(Dispatchers.IO) {
                     val cached = buildCachedGroups(newApps)
                     val umountByUid = cached.associate { it.uid to it.shouldUmount }
-                    cached to buildGroups(filterApps(newApps)) { umountByUid[it] ?: Ksu.uidShouldUmount(it) }
+                    cached to buildGroups(filterApps(newApps)) { umountByUid[it] ?: Cam.uidShouldUmount(it) }
                 }
 
                 // Update cache for static method
@@ -374,14 +374,14 @@ class SuperUserViewModel(
                     val cached = buildCachedGroups(updatedApps)
                     val umountByUid = cached.associate { it.uid to it.shouldUmount }
                     val visible = buildGroups(filterApps(updatedApps)) {
-                        umountByUid[it] ?: Ksu.uidShouldUmount(it)
+                        umountByUid[it] ?: Cam.uidShouldUmount(it)
                     }
                     val result = if (resort) {
                         visible
                     } else {
                         val byUid = visible.associateBy { it.uid }
                         _uiState.value.groupedApps.map { group ->
-                            byUid[group.uid] ?: group.copy(shouldUmount = Ksu.uidShouldUmount(group.uid))
+                            byUid[group.uid] ?: group.copy(shouldUmount = Cam.uidShouldUmount(group.uid))
                         }
                     }
                     cached to result

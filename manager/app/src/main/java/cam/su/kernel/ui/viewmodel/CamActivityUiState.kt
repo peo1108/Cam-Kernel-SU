@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import cam.su.kernel.ui.theme.AppSettings
 
 @Immutable
-data class MainActivityUiState(
+data class CamActivityUiState(
     val appSettings: AppSettings,
     val pageScale: Float,
     val enableBlur: Boolean,

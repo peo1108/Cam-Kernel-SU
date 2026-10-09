@@ -12,8 +12,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
-import cam.su.kernel.Ksu
-import cam.su.kernel.Natives
+import cam.su.kernel.Cam
+import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.ui.navigation3.LocalNavigator
 import cam.su.kernel.ui.navigation3.Route
@@ -26,7 +26,7 @@ import cam.su.kernel.ui.viewmodel.getTemplateInfoById
 @Stable
 class AppProfileEditor(
     val state: AppProfileUiState,
-    val onProfileChange: (Natives.Profile) -> Unit,
+    val onProfileChange: (CamNative.Profile) -> Unit,
     val onViewTemplate: (String) -> Unit,
     val onManageTemplate: () -> Unit,
 )
@@ -51,7 +51,7 @@ fun rememberAppProfileEditor(appGroup: GroupedApps, onSaved: () -> Unit = {}): A
     }
 
     val initialProfile = remember(uid, packageName, primaryAppInfo.special) {
-        Ksu.getAppProfile(packageName, uid).let {
+        Cam.getAppProfile(packageName, uid).let {
             if (primaryAppInfo.special) it.copy(allowSu = false) else it
         }.also {
             if (it.allowSu && !primaryAppInfo.special) {
@@ -102,7 +102,7 @@ fun rememberAppProfileEditor(appGroup: GroupedApps, onSaved: () -> Unit = {}): A
                         return@launch
                     }
                 }
-                if (!Ksu.setAppProfile(profileToSave)) {
+                if (!Cam.setAppProfile(profileToSave)) {
                     showMessage(failToUpdateAppProfile)
                 } else {
                     profile = profileToSave

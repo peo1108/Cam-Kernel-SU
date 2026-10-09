@@ -63,7 +63,7 @@ static inline int scan_driver_fd() {
     return found;
 }
 
-// Only a uid 0 process (KsuService) may ask the kernel for a driver fd:
+// Only a uid 0 process (CamRootService) may ask the kernel for a driver fd:
 // app processes are not allowed the reboot syscall and seccomp would kill them.
 static inline int install_driver_fd() {
     if (getuid() != 0) {

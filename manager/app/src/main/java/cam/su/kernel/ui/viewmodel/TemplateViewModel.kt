@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 import cam.su.kernel.data.repository.TemplateRepository
 import cam.su.kernel.data.repository.TemplateRepositoryImpl
 import cam.su.kernel.profile.Capabilities
@@ -95,13 +95,13 @@ fun generateTemplates() {
     templateJson.put("name", "Example")
     templateJson.put("description", "This is an example template")
     templateJson.put("local", true)
-    templateJson.put("namespace", Natives.Profile.Namespace.INHERITED.name)
+    templateJson.put("namespace", CamNative.Profile.Namespace.INHERITED.name)
     templateJson.put("uid", 0)
     templateJson.put("gid", 0)
 
     templateJson.put("groups", JSONArray().apply { put(Groups.INET.name) })
     templateJson.put("capabilities", JSONArray().apply { put(Capabilities.CAP_NET_RAW.name) })
     templateJson.put("context", "u:r:ksu:s0")
-    templateJson.put("flags", JSONArray().apply { put(Natives.Profile.RootProfileFlag.NO_NEW_PRIVS.name) })
+    templateJson.put("flags", JSONArray().apply { put(CamNative.Profile.RootProfileFlag.NO_NEW_PRIVS.name) })
     Log.i(TAG, "$templateJson")
 }

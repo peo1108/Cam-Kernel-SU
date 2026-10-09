@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.system.Os
 import com.topjohnwu.superuser.ShellUtils
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.ui.screen.home.getManagerVersion
 import java.io.File
 import java.io.FileWriter
@@ -31,7 +31,7 @@ fun getBugreportFile(context: Context): File {
     val fileSystemsFile = File(bugreportDir, "filesystems.txt")
     val adbFileTree = File(bugreportDir, "adb_tree.txt")
     val adbFileDetails = File(bugreportDir, "adb_details.txt")
-    val ksuFileSize = File(bugreportDir, "ksu_size.txt")
+    val camFileSize = File(bugreportDir, "ksu_size.txt")
     val appListFile = File(bugreportDir, "packages.txt")
     val propFile = File(bugreportDir, "props.txt")
     val allowListFile = File(bugreportDir, "allowlist.bin")
@@ -57,7 +57,7 @@ fun getBugreportFile(context: Context): File {
     shell.newJob().add("cat /proc/filesystems > ${fileSystemsFile.absolutePath}").exec()
     shell.newJob().add("busybox tree /data/adb > ${adbFileTree.absolutePath}").exec()
     shell.newJob().add("ls -alRZ /data/adb > ${adbFileDetails.absolutePath}").exec()
-    shell.newJob().add("du -sh /data/adb/ksu/* > ${ksuFileSize.absolutePath}").exec()
+    shell.newJob().add("du -sh /data/adb/ksu/* > ${camFileSize.absolutePath}").exec()
     shell.newJob().add("cp /data/system/packages.list ${appListFile.absolutePath}").exec()
     shell.newJob().add("getprop > ${propFile.absolutePath}").exec()
     shell.newJob().add("cp /data/adb/ksu/.allowlist ${allowListFile.absolutePath}").exec()
@@ -92,11 +92,11 @@ fun getBugreportFile(context: Context): File {
         pw.println("Nodename: ${uname.nodename}")
         pw.println("Sysname: ${uname.sysname}")
 
-        val ksuKernel = Ksu.version
-        pw.println("KernelSU: $ksuKernel")
-        val safeMode = Ksu.isSafeMode
+        val camKernel = Cam.version
+        pw.println("Cam: $camKernel")
+        val safeMode = Cam.isSafeMode
         pw.println("SafeMode: $safeMode")
-        val lkmMode = Ksu.isLkmMode
+        val lkmMode = Cam.isLkmMode
         pw.println("LKM: $lkmMode")
     }
 
@@ -107,7 +107,7 @@ fun getBugreportFile(context: Context): File {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
     val current = LocalDateTime.now().format(formatter)
 
-    val targetFile = File(context.cacheDir, "KernelSU_bugreport_${current}.tar.gz")
+    val targetFile = File(context.cacheDir, "Cam_bugreport_${current}.tar.gz")
 
     shell.newJob().add("tar czf ${targetFile.absolutePath} -C ${bugreportDir.absolutePath} .").exec()
     shell.newJob().add("rm -rf ${bugreportDir.absolutePath}").exec()

@@ -2,15 +2,15 @@ package cam.su.kernel.ui.component.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 
 @Composable
 fun AppProfileConfig(
     modifier: Modifier = Modifier,
     fixedName: Boolean,
     enabled: Boolean,
-    profile: Natives.Profile,
-    onProfileChange: (Natives.Profile) -> Unit,
+    profile: CamNative.Profile,
+    onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     AppProfileConfigMiuix(
         modifier = modifier,
@@ -26,8 +26,8 @@ fun RootProfileConfig(
     modifier: Modifier = Modifier,
     fixedName: Boolean,
     enabled: Boolean = true,
-    profile: Natives.Profile,
-    onProfileChange: (Natives.Profile) -> Unit,
+    profile: CamNative.Profile,
+    onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     RootProfileConfigMiuix(
         modifier = modifier,
@@ -41,10 +41,10 @@ fun RootProfileConfig(
 @Composable
 fun TemplateConfig(
     modifier: Modifier = Modifier,
-    profile: Natives.Profile,
+    profile: CamNative.Profile,
     onViewTemplate: (id: String) -> Unit = {},
     onManageTemplate: () -> Unit = {},
-    onProfileChange: (Natives.Profile) -> Unit
+    onProfileChange: (CamNative.Profile) -> Unit
 ) {
     TemplateConfigMiuix(
         modifier = modifier,

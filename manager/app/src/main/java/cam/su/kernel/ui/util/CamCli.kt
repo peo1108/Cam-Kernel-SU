@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import cam.su.kernel.BuildConfig
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.core.tasks.BootKernelVersion
 import cam.su.kernel.core.tasks.ExtractImage
@@ -31,7 +31,7 @@ import cam.su.kernel.data.model.forModule
 import cam.su.kernel.data.model.parseModuleConflicts
 import cam.su.kernel.data.model.visible
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.screen.install.SeedApp
 import cam.su.kernel.ui.screen.install.isValidSeedPackageName
 import cam.su.kernel.ui.util.module.readModuleIdFromZip
@@ -46,10 +46,10 @@ import java.util.concurrent.TimeUnit
  * @author weishu
  * @date 2023/1/1.
  */
-private const val TAG = "KsuCli"
+private const val TAG = "CamCli"
 
-private fun getKsuDaemonPath(): String {
-    return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksucam.so"
+private fun getCamDaemonPath(): String {
+    return camApp.applicationInfo.nativeLibraryDir + File.separator + "libksucam.so"
 }
 
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {
@@ -57,14 +57,14 @@ data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) 
     constructor(result: Shell.Result) : this(result, result.isSuccess)
 }
 
-object KsuCli {
+object CamCli {
     val SHELL: Shell = createRootShell()
     val GLOBAL_MNT_SHELL: Shell = createRootShell(true)
 }
 
 fun getRootShell(globalMnt: Boolean = false): Shell {
-    return if (globalMnt) KsuCli.GLOBAL_MNT_SHELL else {
-        KsuCli.SHELL
+    return if (globalMnt) CamCli.GLOBAL_MNT_SHELL else {
+        CamCli.SHELL
     }
 }
 
@@ -92,9 +92,9 @@ fun createRootShell(globalMnt: Boolean = false): Shell {
     val builder = Shell.Builder.create()
     return try {
         if (globalMnt) {
-            builder.build(getKsuDaemonPath(), "debug", "su", "-g")
+            builder.build(getCamDaemonPath(), "debug", "su", "-g")
         } else {
-            builder.build(getKsuDaemonPath(), "debug", "su")
+            builder.build(getCamDaemonPath(), "debug", "su")
         }
     } catch (e: Throwable) {
         Log.w(TAG, "ksu failed: ", e)
@@ -111,35 +111,35 @@ fun createRootShell(globalMnt: Boolean = false): Shell {
     }
 }
 
-fun execKsud(args: String, newShell: Boolean = false, globalMnt: Boolean = false): Boolean {
+fun execCamd(args: String, newShell: Boolean = false, globalMnt: Boolean = false): Boolean {
     return if (newShell) {
         withNewRootShell(globalMnt = globalMnt) {
-            ShellUtils.fastCmdResult(this, "${getKsuDaemonPath()} $args")
+            ShellUtils.fastCmdResult(this, "${getCamDaemonPath()} $args")
         }
     } else {
-        ShellUtils.fastCmdResult(getRootShell(globalMnt), "${getKsuDaemonPath()} $args")
+        ShellUtils.fastCmdResult(getRootShell(globalMnt), "${getCamDaemonPath()} $args")
     }
 }
 
 suspend fun getFeatureStatus(feature: String): String = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val out = shell.newJob()
-        .add("${getKsuDaemonPath()} feature check $feature").to(ArrayList<String>(), null).exec().out
+        .add("${getCamDaemonPath()} feature check $feature").to(ArrayList<String>(), null).exec().out
     out.firstOrNull()?.trim().orEmpty()
 }
 
 suspend fun getFeaturePersistValue(feature: String): Long? = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val out = shell.newJob()
-        .add("${getKsuDaemonPath()} feature get --config $feature").to(ArrayList<String>(), null).exec().out
+        .add("${getCamDaemonPath()} feature get --config $feature").to(ArrayList<String>(), null).exec().out
     val valueLine = out.firstOrNull { it.trim().startsWith("Value:") } ?: return@withContext null
     valueLine.substringAfter("Value:").trim().toLongOrNull()
 }
 
 fun install() {
     val start = SystemClock.elapsedRealtime()
-    val libadbroot = File(ksuApp.applicationInfo.nativeLibraryDir, "libadbroot.so").absolutePath
-    val result = execKsud("install --libadbroot $libadbroot --data-path ${ksuApp.applicationInfo.deviceProtectedDataDir}", true)
+    val libadbroot = File(camApp.applicationInfo.nativeLibraryDir, "libadbroot.so").absolutePath
+    val result = execCamd("install --libadbroot $libadbroot --data-path ${camApp.applicationInfo.deviceProtectedDataDir}", true)
     Log.w(TAG, "install result: $result, cost: ${SystemClock.elapsedRealtime() - start}ms")
 }
 
@@ -147,20 +147,20 @@ fun listModules(): String {
     val shell = getRootShell()
 
     val out = shell.newJob()
-        .add("${getKsuDaemonPath()} module list").to(ArrayList(), null).exec().out
+        .add("${getCamDaemonPath()} module list").to(ArrayList(), null).exec().out
     return out.joinToString("\n").ifBlank { "[]" }
 }
 
-private fun ksudStdout(args: String): String {
+private fun camdStdout(args: String): String {
     val out = getRootShell().newJob()
-        .add("${getKsuDaemonPath()} $args").to(ArrayList(), null).exec().out
+        .add("${getCamDaemonPath()} $args").to(ArrayList(), null).exec().out
     return out.joinToString("\n")
 }
 
-fun getBootGuardStatus(): BootGuardStatus = BootGuardStatus.parse(ksudStdout("boot-guard status"))
+fun getBootGuardStatus(): BootGuardStatus = BootGuardStatus.parse(camdStdout("boot-guard status"))
 
 fun clearBootGuard(): Boolean {
-    val result = execKsud("boot-guard clear", true)
+    val result = execCamd("boot-guard clear", true)
     Log.i(TAG, "boot-guard clear result: $result")
     return result
 }
@@ -173,27 +173,27 @@ fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disable
         disableAll?.let { add("--mode ${if (it) "all" else "suspects"}") }
     }
     if (args.isEmpty()) return true
-    val result = execKsud("boot-guard set ${args.joinToString(" ")}", true)
+    val result = execCamd("boot-guard set ${args.joinToString(" ")}", true)
     Log.i(TAG, "boot-guard set $args result: $result")
     return result
 }
 
 /** What non-root apps can still see; null when ksud could not run the audit. */
-fun runHidingAudit(): HidingAudit? = HidingAudit.parse(ksudStdout("hiding-audit"))
+fun runHidingAudit(): HidingAudit? = HidingAudit.parse(camdStdout("hiding-audit"))
 
 /** Turns on every fix the audit offers; true when some of it needs a reboot. */
-fun applyHidingFixes(): Boolean = HidingAudit.rebootNeededAfterApply(ksudStdout("hiding-audit --apply"))
+fun applyHidingFixes(): Boolean = HidingAudit.rebootNeededAfterApply(camdStdout("hiding-audit --apply"))
 
 fun getHideBootloaderStatus(): HideBootloaderStatus =
-    HideBootloaderStatus.parse(ksudStdout("hide-bootloader status"))
+    HideBootloaderStatus.parse(camdStdout("hide-bootloader status"))
 
 fun setHideBootloader(enabled: Boolean): Boolean {
-    val result = execKsud("hide-bootloader ${if (enabled) "enable" else "disable"}", true)
+    val result = execCamd("hide-bootloader ${if (enabled) "enable" else "disable"}", true)
     Log.i(TAG, "hide-bootloader $enabled result: $result")
     return result
 }
 
-fun listModuleConflicts(): List<ModuleConflict> = parseModuleConflicts(ksudStdout("module conflicts"))
+fun listModuleConflicts(): List<ModuleConflict> = parseModuleConflicts(camdStdout("module conflicts"))
 
 fun getModuleCount(): Int {
     val result = listModules()
@@ -204,7 +204,7 @@ fun getModuleCount(): Int {
 }
 
 fun getSuperuserCount(): Int {
-    return Ksu.getSuperuserCount()
+    return Cam.getSuperuserCount()
 }
 
 fun toggleModule(id: String, enable: Boolean): Boolean {
@@ -213,27 +213,27 @@ fun toggleModule(id: String, enable: Boolean): Boolean {
     } else {
         "module disable $id"
     }
-    val result = execKsud(cmd, true)
+    val result = execCamd(cmd, true)
     Log.i(TAG, "$cmd result: $result")
     return result
 }
 
 fun restoreModule(id: String): Boolean {
-    val result = execKsud("module restore $id", true)
+    val result = execCamd("module restore $id", true)
     Log.i(TAG, "restore module $id result: $result")
     return result
 }
 
 fun undoUninstallModule(id: String): Boolean {
     val cmd = "module undo-uninstall $id"
-    val result = execKsud(cmd, true)
+    val result = execCamd(cmd, true)
     Log.i(TAG, "undo uninstall module $id result: $result")
     return result
 }
 
 fun uninstallModule(id: String): Boolean {
     val cmd = "module uninstall $id"
-    val result = execKsud(cmd, true)
+    val result = execCamd(cmd, true)
     Log.i(TAG, "uninstall module $id result: $result")
     return result
 }
@@ -266,15 +266,15 @@ fun flashModule(
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit
 ): FlashResult {
-    val resolver = ksuApp.contentResolver
+    val resolver = camApp.contentResolver
     with(resolver.openInputStream(uri)) {
-        val file = File(ksuApp.cacheDir, "module.zip")
+        val file = File(camApp.cacheDir, "module.zip")
         file.outputStream().use { output ->
             this?.copyTo(output)
         }
         val cmd = "module install ${file.absolutePath}"
-        val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
-        Log.i("KernelSU", "install module $uri result: $result")
+        val result = flashWithIO("${getCamDaemonPath()} $cmd", onStdout, onStderr)
+        Log.i("Cam", "install module $uri result: $result")
 
         // ksud checks the pending update in place of the installed copy
         val moduleId = readModuleIdFromZip(file)
@@ -287,7 +287,7 @@ fun flashModule(
                 .filter { it != moduleId }
                 .distinct()
             if (others.isNotEmpty()) {
-                onStdout(ksuApp.getString(R.string.flash_conflict_warning, others.joinToString(", ")))
+                onStdout(camApp.getString(R.string.flash_conflict_warning, others.joinToString(", ")))
             }
         }
 
@@ -313,11 +313,11 @@ fun runModuleAction(
     }
 
     val result = withNewRootShell(true) {
-        newJob().add("${getKsuDaemonPath()} module action $moduleId")
+        newJob().add("${getCamDaemonPath()} module action $moduleId")
             .to(stdoutCallback, stderrCallback).exec()
     }
 
-    Log.i("KernelSU", "Module runAction result: $result")
+    Log.i("Cam", "Module runAction result: $result")
 
     return result.isSuccess
 }
@@ -325,14 +325,14 @@ fun runModuleAction(
 fun restoreBoot(
     onStdout: (String) -> Unit, onStderr: (String) -> Unit
 ): FlashResult {
-    val result = flashWithIO("${getKsuDaemonPath()} boot-restore -f", onStdout, onStderr)
+    val result = flashWithIO("${getCamDaemonPath()} boot-restore -f", onStdout, onStderr)
     return FlashResult(result)
 }
 
 fun uninstallPermanently(
     onStdout: (String) -> Unit, onStderr: (String) -> Unit
 ): FlashResult {
-    val result = flashWithIO("${getKsuDaemonPath()} uninstall --package-name ${BuildConfig.APPLICATION_ID}", onStdout, onStderr)
+    val result = flashWithIO("${getCamDaemonPath()} uninstall --package-name ${BuildConfig.APPLICATION_ID}", onStdout, onStderr)
     return FlashResult(result)
 }
 
@@ -350,8 +350,8 @@ sealed class LkmSelection : Parcelable {
 
 private fun writeLkmFile(lkm: LkmSelection): File? {
     if (lkm !is LkmSelection.LkmUri) return null
-    val file = File(ksuApp.cacheDir, "kernelsu-tmp-lkm.ko")
-    ksuApp.contentResolver.openInputStream(lkm.uri)?.use { input ->
+    val file = File(camApp.cacheDir, "cam-tmp-lkm.ko")
+    camApp.contentResolver.openInputStream(lkm.uri)?.use { input ->
         file.outputStream().use { output -> input.copyTo(output) }
     }
     return file
@@ -383,11 +383,11 @@ fun installBoot(
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
-    val resolver = ksuApp.contentResolver
+    val resolver = camApp.contentResolver
 
     val bootFile = bootUri?.let { uri ->
         with(resolver.openInputStream(uri)) {
-            val bootFile = File(ksuApp.cacheDir, "boot.img")
+            val bootFile = File(camApp.cacheDir, "boot.img")
             bootFile.outputStream().use { output ->
                 this?.copyTo(output)
             }
@@ -427,8 +427,8 @@ fun installBoot(
         cmd += " --partition $part"
     }
 
-    val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
-    Log.i("KernelSU", "install boot result: ${result.isSuccess}")
+    val result = flashWithIO("${getCamDaemonPath()} $cmd", onStdout, onStderr)
+    Log.i("Cam", "install boot result: ${result.isSuccess}")
 
     bootFile?.delete()
     lkmFile?.delete()
@@ -452,7 +452,7 @@ fun downloadBoot(
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
-    val bootFile = File(ksuApp.cacheDir, "download-boot.img")
+    val bootFile = File(camApp.cacheDir, "download-boot.img")
     var probedKmi: String? = null
     try {
         onStdout("- Downloading and extracting boot image")
@@ -504,7 +504,7 @@ fun downloadBoot(
         return FlashResult(-1, "Failed to determine KMI from the package", false)
     }
 
-    var cmd = "${getKsuDaemonPath()} boot-patch -b ${bootFile.absolutePath}"
+    var cmd = "${getCamDaemonPath()} boot-patch -b ${bootFile.absolutePath}"
     cmd += bootPatchFlags(allowShell, enableAdb, forceBackup, seeds)
 
     val lkmFile = writeLkmFile(lkm)
@@ -571,7 +571,7 @@ private fun readMagic(channel: DataSourceChannel): String {
 
 fun reboot(reason: String = "") {
     if (reason == "soft_reboot") {
-        execKsud("soft-reboot", true, true)
+        execCamd("soft-reboot", true, true)
         return
     }
     val shell = getRootShell()
@@ -590,27 +590,27 @@ fun rootAvailable(): Boolean {
 suspend fun getCurrentKmi(): String = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val cmd = "boot-info current-kmi"
-    ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} $cmd")
+    ShellUtils.fastCmd(shell, "${getCamDaemonPath()} $cmd")
 }
 
 suspend fun getSupportedKmis(): List<String> = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val cmd = "boot-info supported-kmis"
-    val out = shell.newJob().add("${getKsuDaemonPath()} $cmd").to(ArrayList(), null).exec().out
+    val out = shell.newJob().add("${getCamDaemonPath()} $cmd").to(ArrayList(), null).exec().out
     out.filter { it.isNotBlank() }.map { it.trim() }
 }
 
 suspend fun isAbDevice(): Boolean = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val cmd = "boot-info is-ab-device"
-    ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} $cmd").trim().toBoolean()
+    ShellUtils.fastCmd(shell, "${getCamDaemonPath()} $cmd").trim().toBoolean()
 }
 
 suspend fun getDefaultPartition(): String = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     if (shell.isRoot) {
         val cmd = "boot-info default-partition"
-        ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} $cmd").trim()
+        ShellUtils.fastCmd(shell, "${getCamDaemonPath()} $cmd").trim()
     } else {
         if (!Os.uname().release.contains("android12-")) "init_boot" else "boot"
     }
@@ -623,13 +623,13 @@ suspend fun getSlotSuffix(ota: Boolean): String = withContext(Dispatchers.IO) {
     } else {
         "boot-info slot-suffix"
     }
-    ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} $cmd").trim()
+    ShellUtils.fastCmd(shell, "${getCamDaemonPath()} $cmd").trim()
 }
 
 suspend fun getAvailablePartitions(): List<String> = withContext(Dispatchers.IO) {
     val shell = getRootShell()
     val cmd = "boot-info available-partitions"
-    val out = shell.newJob().add("${getKsuDaemonPath()} $cmd").to(ArrayList(), null).exec().out
+    val out = shell.newJob().add("${getCamDaemonPath()} $cmd").to(ArrayList(), null).exec().out
     out.filter { it.isNotBlank() }.map { it.trim() }
 }
 
@@ -646,7 +646,7 @@ fun isSepolicyValid(rules: String?): Boolean {
     }
     val shell = getRootShell()
     val result =
-        shell.newJob().add("${getKsuDaemonPath()} sepolicy check '$rules'").to(ArrayList(), null)
+        shell.newJob().add("${getCamDaemonPath()} sepolicy check '$rules'").to(ArrayList(), null)
             .exec()
     return result.isSuccess
 }
@@ -654,7 +654,7 @@ fun isSepolicyValid(rules: String?): Boolean {
 fun getSepolicy(pkg: String): String {
     val shell = getRootShell()
     val result =
-        shell.newJob().add("${getKsuDaemonPath()} profile get-sepolicy $pkg").to(ArrayList(), null)
+        shell.newJob().add("${getCamDaemonPath()} profile get-sepolicy $pkg").to(ArrayList(), null)
             .exec()
     Log.i(TAG, "code: ${result.code}, out: ${result.out}, err: ${result.err}")
     return result.out.joinToString("\n")
@@ -662,7 +662,7 @@ fun getSepolicy(pkg: String): String {
 
 fun setSepolicy(pkg: String, rules: String): Boolean {
     val shell = getRootShell()
-    val result = shell.newJob().add("${getKsuDaemonPath()} profile set-sepolicy $pkg '$rules'")
+    val result = shell.newJob().add("${getCamDaemonPath()} profile set-sepolicy $pkg '$rules'")
         .to(ArrayList(), null).exec()
     Log.i(TAG, "set sepolicy result: ${result.code}")
     return result.isSuccess
@@ -670,27 +670,27 @@ fun setSepolicy(pkg: String, rules: String): Boolean {
 
 fun listAppProfileTemplates(): List<String> {
     val shell = getRootShell()
-    return shell.newJob().add("${getKsuDaemonPath()} profile list-templates").to(ArrayList(), null)
+    return shell.newJob().add("${getCamDaemonPath()} profile list-templates").to(ArrayList(), null)
         .exec().out
 }
 
 fun getAppProfileTemplate(id: String): String {
     val shell = getRootShell()
-    return shell.newJob().add("${getKsuDaemonPath()} profile get-template '${id}'")
+    return shell.newJob().add("${getCamDaemonPath()} profile get-template '${id}'")
         .to(ArrayList(), null).exec().out.joinToString("\n")
 }
 
 fun setAppProfileTemplate(id: String, template: String): Boolean {
     val shell = getRootShell()
     val escapedTemplate = template.replace("'", "'\\''")
-    val cmd = """${getKsuDaemonPath()} profile set-template "$id" '$escapedTemplate'"""
+    val cmd = """${getCamDaemonPath()} profile set-template "$id" '$escapedTemplate'"""
     return shell.newJob().add(cmd)
         .to(ArrayList(), null).exec().isSuccess
 }
 
 fun deleteAppProfileTemplate(id: String): Boolean {
     val shell = getRootShell()
-    return shell.newJob().add("${getKsuDaemonPath()} profile delete-template '${id}'")
+    return shell.newJob().add("${getCamDaemonPath()} profile delete-template '${id}'")
         .to(ArrayList(), null).exec().isSuccess
 }
 

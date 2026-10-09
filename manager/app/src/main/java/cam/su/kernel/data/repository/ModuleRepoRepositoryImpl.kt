@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 import cam.su.kernel.data.model.Author
 import cam.su.kernel.data.model.ReleaseAsset
 import cam.su.kernel.data.model.RepoModule
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.isNetworkAvailable
 import okhttp3.Request
 import org.json.JSONArray
@@ -19,12 +19,12 @@ class ModuleRepoRepositoryImpl : ModuleRepoRepository {
 
     override suspend fun fetchModules(): Result<List<RepoModule>> = withContext(Dispatchers.IO) {
         runCatching {
-            if (!isNetworkAvailable(ksuApp)) {
+            if (!isNetworkAvailable(camApp)) {
                 throw Exception("Network unavailable")
             }
 
             val request = Request.Builder().url(MODULES_URL).build()
-            ksuApp.okhttpClient.newCall(request).execute().use { response ->
+            camApp.okhttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw Exception("Fetch failed: ${response.code}")
                 }

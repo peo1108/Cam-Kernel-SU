@@ -1,19 +1,19 @@
 package cam.su.kernel.ui.screen.templateeditor
 
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 import cam.su.kernel.data.model.TemplateInfo
 import cam.su.kernel.toRawFlags
 import cam.su.kernel.ui.util.getAppProfileTemplate
 import cam.su.kernel.ui.util.setAppProfileTemplate
 
-fun toNativeProfile(templateInfo: TemplateInfo): Natives.Profile {
-    val allFlags = Natives.Profile.RootProfileFlag.entries
+fun toNativeProfile(templateInfo: TemplateInfo): CamNative.Profile {
+    val allFlags = CamNative.Profile.RootProfileFlag.entries
 
     val mappedFlags = templateInfo.flags.mapNotNull { ordinal ->
         if (ordinal in allFlags.indices) allFlags[ordinal] else null
     }
 
-    return Natives.Profile().copy(
+    return CamNative.Profile().copy(
         rootTemplate = templateInfo.id,
         uid = templateInfo.uid,
         gid = templateInfo.gid,

@@ -10,7 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.ui.LocalMainPagerState
@@ -24,7 +24,7 @@ fun NavigationRailMiuix(
     navigationBadge: NavigationBadgeState,
     modifier: Modifier = Modifier,
 ) {
-    val fullFeatured = Ksu.isFullFeatured()
+    val fullFeatured = Cam.isFullFeatured()
     if (!fullFeatured) return
 
     val mainState = LocalMainPagerState.current

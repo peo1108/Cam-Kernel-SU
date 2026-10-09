@@ -16,9 +16,9 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
 import java.io.File
 import java.util.Locale
 
-lateinit var ksuApp: KernelSUApplication
+lateinit var camApp: CamApplication
 
-class KernelSUApplication : Application(), ViewModelStoreOwner {
+class CamApplication : Application(), ViewModelStoreOwner {
 
     companion object {
         fun setEnableOnBackInvokedCallback(appInfo: ApplicationInfo, enable: Boolean) {
@@ -39,7 +39,7 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
 
     override fun onCreate() {
         super.onCreate()
-        ksuApp = this
+        camApp = this
 
         if (!isUserUnlocked()) {
             return
@@ -67,7 +67,7 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
                 .addInterceptor { block ->
                     block.proceed(
                         block.request().newBuilder()
-                            .header("User-Agent", "KernelSU/${BuildConfig.VERSION_CODE}")
+                            .header("User-Agent", "CamSU/${BuildConfig.VERSION_CODE}")
                             .header("Accept-Language", Locale.getDefault().toLanguageTag()).build()
                     )
                 }.build()

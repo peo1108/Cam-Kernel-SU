@@ -17,52 +17,52 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import cam.su.kernel.ui.KsuService
-import cam.su.kernel.ui.util.KsuCli
+import cam.su.kernel.ui.CamRootService
+import cam.su.kernel.ui.util.CamCli
 import kotlin.coroutines.resume
 
 /**
- * Keeps one binding to [KsuService], the uid 0 process that talks to the kernel.
+ * Keeps one binding to [CamRootService], the uid 0 process that talks to the kernel.
  */
-object KsuServiceClient {
-    private const val TAG = "KsuServiceClient"
+object CamRootClient {
+    private const val TAG = "CamRootClient"
     private const val BIND_TIMEOUT_MS = 15_000L
     const val PROFILE_KEY = "profile"
 
     private val mutex = Mutex()
-    private val _service = MutableStateFlow<IKsuInterface?>(null)
+    private val _service = MutableStateFlow<ICamRootService?>(null)
 
     /** Emits the bound service, or null while unbound. */
-    val serviceFlow: StateFlow<IKsuInterface?> = _service.asStateFlow()
+    val serviceFlow: StateFlow<ICamRootService?> = _service.asStateFlow()
 
-    val service: IKsuInterface?
+    val service: ICamRootService?
         get() = _service.value?.takeIf { it.asBinder().isBinderAlive }
 
     /** Binds the root service if root is available. Returns true when bound. */
     suspend fun connect(): Boolean = mutex.withLock {
         if (service != null) return true
-        val hasRoot = withContext(Dispatchers.IO) { KsuCli.SHELL.isRoot }
+        val hasRoot = withContext(Dispatchers.IO) { CamCli.SHELL.isRoot }
         if (!hasRoot) {
-            Log.i(TAG, "no root, KsuService not bound")
+            Log.i(TAG, "no root, CamRootService not bound")
             return false
         }
         val binder = withTimeoutOrNull(BIND_TIMEOUT_MS) { bind() }
         if (binder == null) {
-            Log.w(TAG, "bind KsuService timed out")
+            Log.w(TAG, "bind CamRootService timed out")
             return false
         }
-        _service.value = IKsuInterface.Stub.asInterface(binder)
+        _service.value = ICamRootService.Stub.asInterface(binder)
         true
     }
 
-    fun readProfile(bundle: Bundle?): Natives.Profile? {
+    fun readProfile(bundle: Bundle?): CamNative.Profile? {
         bundle ?: return null
-        bundle.classLoader = Natives.Profile::class.java.classLoader
+        bundle.classLoader = CamNative.Profile::class.java.classLoader
         @Suppress("DEPRECATION")
         return bundle.getParcelable(PROFILE_KEY)
     }
 
-    fun writeProfile(profile: Natives.Profile?): Bundle =
+    fun writeProfile(profile: CamNative.Profile?): Bundle =
         Bundle().apply { putParcelable(PROFILE_KEY, profile) }
 
     private suspend fun bind(): IBinder = withContext(Dispatchers.Main) {
@@ -73,13 +73,13 @@ object KsuServiceClient {
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {
-                    Log.w(TAG, "KsuService disconnected")
+                    Log.w(TAG, "CamRootService disconnected")
                     _service.value = null
                 }
             }
-            val intent = Intent(ksuApp, KsuService::class.java)
+            val intent = Intent(camApp, CamRootService::class.java)
             val task = RootService.bindOrTask(intent, Shell.EXECUTOR, connection)
-            task?.let { KsuCli.SHELL.execTask(it) }
+            task?.let { CamCli.SHELL.execTask(it) }
         }
     }
 }

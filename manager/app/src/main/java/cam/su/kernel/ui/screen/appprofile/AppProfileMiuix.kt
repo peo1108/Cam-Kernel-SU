@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.AppIconImage
 import cam.su.kernel.ui.component.ListPopupDefaults
@@ -193,13 +193,13 @@ private fun AppProfileInner(
     sharedUserId: String = "",
     appVersionName: String,
     appVersionCode: Long,
-    profile: Natives.Profile,
+    profile: CamNative.Profile,
     isUidGroup: Boolean = false,
     isSpecialApp: Boolean = false,
     affectedApps: List<SuperUserViewModel.AppInfo> = emptyList(),
     onViewTemplate: (id: String) -> Unit = {},
     onManageTemplate: () -> Unit = {},
-    onProfileChange: (Natives.Profile) -> Unit,
+    onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     val userId = appUid / 100000
     val appId = appUid % 100000
@@ -453,12 +453,12 @@ private fun TopBar(
  */
 @Composable
 fun AppProfileEditorBody(
-    profile: Natives.Profile,
+    profile: CamNative.Profile,
     isSpecialApp: Boolean,
     carded: Boolean,
     onViewTemplate: (id: String) -> Unit,
     onManageTemplate: () -> Unit,
-    onProfileChange: (Natives.Profile) -> Unit,
+    onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     val isRootGranted = !isSpecialApp && profile.allowSu
     val templates = remember { listAppProfileTemplates() }

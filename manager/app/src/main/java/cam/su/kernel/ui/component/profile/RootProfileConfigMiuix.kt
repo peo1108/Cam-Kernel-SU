@@ -28,7 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.profile.Capabilities
 import cam.su.kernel.profile.Groups
@@ -50,8 +50,8 @@ fun RootProfileConfigMiuix(
     modifier: Modifier = Modifier,
     fixedName: Boolean,
     enabled: Boolean = true,
-    profile: Natives.Profile,
-    onProfileChange: (Natives.Profile) -> Unit,
+    profile: CamNative.Profile,
+    onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -250,7 +250,7 @@ private fun GroupsPanel(
 @Composable
 private fun MountNameSpacePanel(
     enabled: Boolean,
-    profile: Natives.Profile,
+    profile: CamNative.Profile,
     onMntNamespaceChange: (namespaceType: Int) -> Unit
 ) {
     GlassDropdownPreference(
@@ -270,13 +270,13 @@ private fun MountNameSpacePanel(
 @Composable
 private fun RootProfileFlagPanel(
     enabled: Boolean,
-    selected: List<Natives.Profile.RootProfileFlag>,
-    closeSelection: (selection: List<Natives.Profile.RootProfileFlag>) -> Unit
+    selected: List<CamNative.Profile.RootProfileFlag>,
+    closeSelection: (selection: List<CamNative.Profile.RootProfileFlag>) -> Unit
 ) {
     val showDialog = remember { mutableStateOf(false) }
 
     val caps = remember {
-        Natives.Profile.RootProfileFlag.entries.toTypedArray().sortedBy { it.display }
+        CamNative.Profile.RootProfileFlag.entries.toTypedArray().sortedBy { it.display }
     }
 
     val currentSelection = remember(selected) { mutableStateOf(selected.toSet()) }
@@ -442,7 +442,7 @@ private fun CapsPanel(
 @Composable
 private fun SELinuxPanel(
     enabled: Boolean,
-    profile: Natives.Profile,
+    profile: CamNative.Profile,
     onSELinuxChange: (domain: String, rules: String) -> Unit
 ) {
     val showDialog = remember { mutableStateOf(false) }

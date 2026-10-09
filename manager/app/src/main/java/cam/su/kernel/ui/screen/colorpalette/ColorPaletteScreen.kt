@@ -9,7 +9,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
-import cam.su.kernel.KernelSUApplication
+import cam.su.kernel.CamApplication
 import cam.su.kernel.ui.navigation3.LocalNavigator
 import cam.su.kernel.ui.theme.ColorMode
 import cam.su.kernel.ui.viewmodel.SettingsViewModel
@@ -51,7 +51,7 @@ fun ColorPaletteScreen() {
         onSetEnableNavigationBadge = viewModel::setEnableNavigationBadge,
         onSetEnablePredictiveBack = {
             viewModel.setEnablePredictiveBack(it)
-            KernelSUApplication.setEnableOnBackInvokedCallback(context.applicationInfo, it)
+            CamApplication.setEnableOnBackInvokedCallback(context.applicationInfo, it)
             activity?.recreate()
         },
         onSetEnableSwipeDismiss = viewModel::setEnableSwipeDismiss,

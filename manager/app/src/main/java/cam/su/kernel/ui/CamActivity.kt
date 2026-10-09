@@ -74,8 +74,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Ksu
-import cam.su.kernel.KsuServiceClient
+import cam.su.kernel.Cam
+import cam.su.kernel.CamRootClient
 import cam.su.kernel.ui.component.bottombar.BottomBar
 import cam.su.kernel.ui.component.search.LocalMainSearch
 import cam.su.kernel.ui.component.search.MainSearchState
@@ -105,7 +105,7 @@ import cam.su.kernel.ui.screen.sulog.SulogScreen
 import cam.su.kernel.ui.screen.superuser.SuperUserPager
 import cam.su.kernel.ui.screen.template.AppProfileTemplateScreen
 import cam.su.kernel.ui.screen.templateeditor.TemplateEditorScreen
-import cam.su.kernel.ui.theme.KernelSUTheme
+import cam.su.kernel.ui.theme.CamTheme
 import cam.su.kernel.ui.theme.LocalColorMode
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.theme.LocalEnableFloatingBottomBar
@@ -120,7 +120,7 @@ import cam.su.kernel.ui.util.getSuperuserCount
 import cam.su.kernel.ui.util.install
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import cam.su.kernel.ui.util.rememberContentReady
-import cam.su.kernel.ui.viewmodel.MainActivityViewModel
+import cam.su.kernel.ui.viewmodel.CamActivityViewModel
 import cam.su.kernel.ui.viewmodel.MainPagerConfig
 import cam.su.kernel.ui.viewmodel.ModuleViewModel
 import cam.su.kernel.ui.viewmodel.SuperUserViewModel
@@ -137,11 +137,11 @@ import top.yukonga.miuix.kmp.utils.PagerInterceptionMode
 import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 
-class MainActivity : ComponentActivity() {
+class CamActivity : ComponentActivity() {
 
     private val intentChannel = Channel<Intent>(capacity = Channel.BUFFERED)
     private var contentReady = false
-    private val ksuInitDone = MutableStateFlow(false)
+    private val camInitDone = MutableStateFlow(false)
     @Volatile
     private var glassBackgroundReady = false
     private var splashStartedAt = 0L
@@ -168,18 +168,18 @@ class MainActivity : ComponentActivity() {
         // Root comes from the allowlist now: bind the uid 0 service first, and keep the
         // splash up until we know whether kernel features are reachable.
         lifecycleScope.launch {
-            if (KsuServiceClient.connect() && Ksu.isFullFeatured()) {
+            if (CamRootClient.connect() && Cam.isFullFeatured()) {
                 withContext(Dispatchers.IO) { install() }
             }
-            ksuInitDone.value = true
+            camInitDone.value = true
         }
 
         if (savedInstanceState == null) intent?.let { intentChannel.trySend(it) }
 
         setContent {
-            val ksuReady by ksuInitDone.collectAsStateWithLifecycle()
-            if (!ksuReady) return@setContent
-            val viewModel = viewModel<MainActivityViewModel>()
+            val camReady by camInitDone.collectAsStateWithLifecycle()
+            if (!camReady) return@setContent
+            val viewModel = viewModel<CamActivityViewModel>()
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val selectedMainPage by viewModel.selectedMainPage.collectAsStateWithLifecycle()
             val appSettings = uiState.appSettings
@@ -220,7 +220,7 @@ class MainActivity : ComponentActivity() {
                 LocalEnableNavigationBadge provides uiState.enableNavigationBadge,
                 LocalModuleDescriptionMaxLines provides uiState.moduleDescriptionMaxLines,
             ) {
-                KernelSUTheme(appSettings = appSettings) {
+                CamTheme(appSettings = appSettings) {
                     IntentDispatcher(intentChannel = intentChannel)
                     val swipeDismiss = if (uiState.enableSwipeDismiss) {
                         if (LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl) {
@@ -340,7 +340,7 @@ fun MainScreen(
         pagerState = pagerState,
         animatePageChanges = !useNavigationRail,
     )
-    val isFullFeatured = Ksu.isFullFeatured()
+    val isFullFeatured = Cam.isFullFeatured()
     val pagerMode = PagerInterceptionMode.entries.getOrElse(pagerInterceptionMode) {
         PagerInterceptionMode.Native
     }

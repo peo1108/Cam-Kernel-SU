@@ -16,7 +16,7 @@ import cam.su.kernel.data.repository.ModuleRepoRepository
 import cam.su.kernel.data.repository.ModuleRepoRepositoryImpl
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.component.SearchStatus
 import cam.su.kernel.ui.screen.modulerepo.ModuleRepoUiState
 import cam.su.kernel.ui.screen.modulerepo.RepoSort
@@ -47,7 +47,7 @@ class ModuleRepoViewModel(
         _uiState.update {
             it.copy(
                 sortOrder = initial,
-                offline = !isNetworkAvailable(ksuApp)
+                offline = !isNetworkAvailable(camApp)
             )
         }
 
@@ -130,7 +130,7 @@ class ModuleRepoViewModel(
                 it.copy(
                     isRefreshing = true,
                     error = null,
-                    offline = !isNetworkAvailable(ksuApp)
+                    offline = !isNetworkAvailable(camApp)
                 )
             }
             val result = repo.fetchModules()
@@ -142,7 +142,7 @@ class ModuleRepoViewModel(
                     _uiState.update {
                         it.copy(
                             modules = sorted,
-                            offline = !isNetworkAvailable(ksuApp)
+                            offline = !isNetworkAvailable(camApp)
                         )
                     }
                     refreshSearchResults()
@@ -150,14 +150,14 @@ class ModuleRepoViewModel(
                 }.onFailure { e ->
                     Log.e(TAG, "fetch modules failed", e)
                     Toast.makeText(
-                        ksuApp,
-                        ksuApp.getString(R.string.network_offline), Toast.LENGTH_SHORT
+                        camApp,
+                        camApp.getString(R.string.network_offline), Toast.LENGTH_SHORT
                     ).show()
                     _uiState.update {
                         it.copy(
                             isRefreshing = false,
                             error = e,
-                            offline = !isNetworkAvailable(ksuApp)
+                            offline = !isNetworkAvailable(camApp)
                         )
                     }
                 }

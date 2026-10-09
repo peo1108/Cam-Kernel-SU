@@ -11,7 +11,7 @@ import cam.su.kernel.data.model.findRevoked
 import cam.su.kernel.data.model.parseKeyDescription
 import cam.su.kernel.data.model.parseRevocationList
 import cam.su.kernel.data.model.serialHex
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import okhttp3.Request
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -39,7 +39,7 @@ fun checkAttestationReport(): AttestationReport {
 
 private fun fetchRevocationList(): Map<String, String>? = runCatching {
     val request = Request.Builder().url(ATTESTATION_STATUS_URL).header("Cache-Control", "no-cache").build()
-    ksuApp.okhttpClient.newCall(request).execute().use { response ->
+    camApp.okhttpClient.newCall(request).execute().use { response ->
         if (!response.isSuccessful) return@use null
         parseRevocationList(response.body.string())
     }

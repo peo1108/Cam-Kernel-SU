@@ -95,7 +95,7 @@ val LocalGlassBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 fun glassImageFile(context: Context): File = File(context.filesDir, "glass_bg.jpg")
 
 /**
- * Process-wide copy of the last decoded background. MainActivity preloads it from the app's own
+ * Process-wide copy of the last decoded background. CamActivity preloads it from the app's own
  * cached file (no root needed) while the splash is up, so the first frame already shows the
  * wallpaper instead of flashing the plain surface.
  */

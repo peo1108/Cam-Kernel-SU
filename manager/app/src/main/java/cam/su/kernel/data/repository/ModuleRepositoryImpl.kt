@@ -6,7 +6,7 @@ import cam.su.kernel.data.model.Module
 import cam.su.kernel.data.model.ModuleUpdateInfo
 import cam.su.kernel.data.model.forModule
 import cam.su.kernel.data.model.visible
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.isNetworkAvailable
 import cam.su.kernel.ui.util.listModuleConflicts
@@ -65,7 +65,7 @@ class ModuleRepositoryImpl : ModuleRepository {
 
     override suspend fun checkUpdate(module: Module): Result<ModuleUpdateInfo> = withContext(Dispatchers.IO) {
         runCatching {
-            if (!isNetworkAvailable(ksuApp)) {
+            if (!isNetworkAvailable(camApp)) {
                 return@runCatching ModuleUpdateInfo.Empty
             }
             if (module.updateJson.isEmpty() || module.remove || module.update || !module.enabled) {
@@ -73,7 +73,7 @@ class ModuleRepositoryImpl : ModuleRepository {
             }
 
             val url = module.updateJson
-            val response = ksuApp.okhttpClient.newCall(
+            val response = camApp.okhttpClient.newCall(
                 Request.Builder().url(url).build()
             ).execute()
 

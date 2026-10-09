@@ -9,7 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import cam.su.kernel.R
-import cam.su.kernel.ui.component.KsuIsValid
+import cam.su.kernel.ui.component.CamIsValid
 import cam.su.kernel.ui.component.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
@@ -24,7 +24,7 @@ fun RebootListPopupMiuix(
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.TopEnd
 ) {
     val showTopPopup = remember { mutableStateOf(false) }
-    KsuIsValid {
+    CamIsValid {
         val onReboot = rememberRebootAction()
         GlassIconButton(
             modifier = modifier,

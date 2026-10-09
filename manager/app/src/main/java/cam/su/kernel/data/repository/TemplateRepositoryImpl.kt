@@ -4,7 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import cam.su.kernel.data.model.TemplateInfo
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.getAppProfileTemplate
 import cam.su.kernel.ui.util.listAppProfileTemplates
 import cam.su.kernel.ui.util.setAppProfileTemplate
@@ -77,7 +77,7 @@ class TemplateRepositoryImpl : TemplateRepository {
 
     private fun fetchRemoteTemplates() {
         runCatching {
-            ksuApp.okhttpClient.newCall(
+            camApp.okhttpClient.newCall(
                 Request.Builder().url(TEMPLATE_INDEX_URL).build()
             ).execute().use { response ->
                 if (!response.isSuccessful) {
@@ -88,7 +88,7 @@ class TemplateRepositoryImpl : TemplateRepository {
                 (0 until remoteTemplateIds.length()).forEach { i ->
                     val id = remoteTemplateIds.getString(i)
                     Log.i(TAG, "fetch template: $id")
-                    val templateJson = ksuApp.okhttpClient.newCall(
+                    val templateJson = camApp.okhttpClient.newCall(
                         Request.Builder().url(TEMPLATE_URL.format(id)).build()
                     ).runCatching {
                         execute().use { response ->

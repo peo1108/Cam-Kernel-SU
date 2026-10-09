@@ -15,7 +15,7 @@
     <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
 
     <application
-        android:name=".KernelSUApplication"
+        android:name=".CamApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:directBootAware="true"
@@ -25,12 +25,12 @@
         android:label="@string/app_name"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.KernelSU"
+        android:theme="@style/Theme.Cam"
         android:zygotePreloadName="cam.su.kernel.magica.AppZygotePreload">
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".ui.CamActivity"
             android:exported="true"
-            android:theme="@style/Theme.KernelSU.Starting"
+            android:theme="@style/Theme.Cam.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -73,7 +73,7 @@
             android:documentLaunchMode="intoExisting"
             android:exported="false"
             android:taskAffinity="${applicationId}.webui"
-            android:theme="@style/Theme.KernelSU.WebUI" />
+            android:theme="@style/Theme.Cam.WebUI" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

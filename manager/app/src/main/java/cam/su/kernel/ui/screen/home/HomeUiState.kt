@@ -8,7 +8,7 @@ import cam.su.kernel.ui.util.module.LatestVersionInfo
 @Immutable
 data class HomeUiState(
     val kernelVersion: KernelVersion,
-    val ksuVersion: Int?,
+    val camVersion: Int?,
     val managerUAPIVersion: Int,
     val kernelUAPIVersion: Int?,
     val lkmMode: Boolean?,
@@ -34,13 +34,13 @@ data class HomeUiState(
         get() = systemInfo.selinuxStatus == "Permissive"
 
     val showGkiWarning: Boolean
-        get() = ksuVersion != null && lkmMode == false
+        get() = camVersion != null && lkmMode == false
 
     val showLkmUpdate: Boolean
         get() = isManager &&
                 lkmMode == true &&
                 isLkmBundled &&
-                ksuVersion?.toLong() != currentManagerVersionCode &&
+                camVersion?.toLong() != currentManagerVersionCode &&
                 !requiresNewKernel &&
                 !requiresNewManager
 
@@ -52,7 +52,7 @@ data class HomeUiState(
         get() = lkmMode == true && !isLkmBundled
 
     val showRootWarning: Boolean
-        get() = ksuVersion != null && !isRootAvailable
+        get() = camVersion != null && !isRootAvailable
 
     val showManagerPrBuildWarning: Boolean
         get() = isManager && isManagerPrBuild

@@ -25,8 +25,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import cam.su.kernel.R
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ksuApp
-import cam.su.kernel.ui.MainActivity
+import cam.su.kernel.camApp
+import cam.su.kernel.ui.CamActivity
 import okhttp3.Call
 import okhttp3.Request
 import java.io.IOException
@@ -111,7 +111,7 @@ class DownloadService : Service() {
             var pendingUri: Uri? = null
             var displayName = fileName
             try {
-                val call = ksuApp.okhttpClient.newCall(Request.Builder().url(url).build())
+                val call = camApp.okhttpClient.newCall(Request.Builder().url(url).build())
                 activeCalls[id] = call
                 ensureActive()
                 val uri = call.execute()
@@ -252,7 +252,7 @@ class DownloadService : Service() {
             .setAutoCancel(true)
 
         // Add "Install" action button
-        val installIntent = Intent(this, MainActivity::class.java).apply {
+        val installIntent = Intent(this, CamActivity::class.java).apply {
             action = ACTION_INSTALL_MODULE
             putExtra(EXTRA_MODULE_URI, uri.toString())
             putExtra(EXTRA_DOWNLOAD_ID, id)

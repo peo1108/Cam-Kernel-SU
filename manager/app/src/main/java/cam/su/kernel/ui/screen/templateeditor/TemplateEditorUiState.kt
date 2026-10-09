@@ -1,7 +1,7 @@
 package cam.su.kernel.ui.screen.templateeditor
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 import cam.su.kernel.data.model.TemplateInfo
 
 @Immutable
@@ -25,5 +25,5 @@ data class TemplateEditorActions(
     val onIdChange: (String) -> Unit,
     val onAuthorChange: (String) -> Unit,
     val onDescriptionChange: (String) -> Unit,
-    val onProfileChange: (Natives.Profile) -> Unit,
+    val onProfileChange: (CamNative.Profile) -> Unit,
 )

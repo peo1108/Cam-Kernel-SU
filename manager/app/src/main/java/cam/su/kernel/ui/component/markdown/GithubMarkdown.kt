@@ -28,7 +28,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.theme.isInDarkTheme
 import cam.su.kernel.ui.util.adjustLightnessArgb
 import cam.su.kernel.ui.util.cssColorFromArgb
@@ -78,7 +78,7 @@ fun GithubMarkdown(
 
     val template = remember(isDark) {
         val name = if (isDark) "webview/template_dark.html" else "webview/template.html"
-        ksuApp.assets.open(name).bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+        camApp.assets.open(name).bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
     }
     val extensions = remember {
         listOf(
@@ -233,7 +233,7 @@ fun GithubMarkdown(
                             assetLoader.shouldInterceptRequest(request.url)?.let { return it }
                             val scheme = request.url.scheme ?: return null
                             if (!scheme.startsWith("http")) return null
-                            val client: OkHttpClient = ksuApp.okhttpClient
+                            val client: OkHttpClient = camApp.okhttpClient
                             val call = client.newCall(
                                 Request.Builder()
                                     .url(request.url.toString())

@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.ui.util.listAppProfileTemplates
 import cam.su.kernel.ui.util.setSepolicy
@@ -25,10 +25,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun TemplateConfigMiuix(
     modifier: Modifier = Modifier,
-    profile: Natives.Profile,
+    profile: CamNative.Profile,
     onViewTemplate: (id: String) -> Unit = {},
     onManageTemplate: () -> Unit = {},
-    onProfileChange: (Natives.Profile) -> Unit
+    onProfileChange: (CamNative.Profile) -> Unit
 ) {
     val profileTemplates = listAppProfileTemplates()
     val noTemplates = profileTemplates.isEmpty()

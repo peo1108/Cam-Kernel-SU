@@ -225,7 +225,7 @@ suspend fun removeSystemAppSystemless(context: Context, d: AppDetails): Boolean 
         Log.e(TAG, "module zip failed", it)
         return@withContext false
     }
-    val ok = execKsud("module install ${q(zip.absolutePath)}")
+    val ok = execCamd("module install ${q(zip.absolutePath)}")
     zip.delete()
     if (ok) su("pm uninstall --user ${d.userId} ${d.packageName}")
     ok

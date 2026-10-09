@@ -38,7 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.ui.LocalMainPagerState
 import cam.su.kernel.ui.component.FloatingBottomBar
@@ -68,7 +68,7 @@ fun BottomBarMiuix(
     navigationBadge: NavigationBadgeState,
     modifier: Modifier,
 ) {
-    val fullFeatured = Ksu.isFullFeatured()
+    val fullFeatured = Cam.isFullFeatured()
     if (!fullFeatured) return
 
     val mainState = LocalMainPagerState.current

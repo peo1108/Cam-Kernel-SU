@@ -1,7 +1,7 @@
 package cam.su.kernel.ui.util
 
-import cam.su.kernel.Ksu
-import cam.su.kernel.ksuApp
+import cam.su.kernel.Cam
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.viewmodel.SuperUserViewModel
 import java.util.concurrent.ConcurrentHashMap
 
@@ -36,12 +36,12 @@ fun ownerNameForUid(uid: Int, appSource: List<SuperUserViewModel.AppInfo>? = nul
     val apps = appSource ?: SuperUserViewModel.apps.filter { it.uid == uid }
     val labeledApp = apps.firstOrNull { it.packageInfo.sharedUserLabel != 0 }
     val name = if (labeledApp != null) {
-        val pm = ksuApp.packageManager
+        val pm = camApp.packageManager
         val resId = labeledApp.packageInfo.sharedUserLabel
         val text = runCatching { pm.getText(labeledApp.packageName, resId, labeledApp.packageInfo.applicationInfo) }.getOrNull()
         text?.toString() ?: ""
     } else {
-        Ksu.getUserName(uid) ?: ""
+        Cam.getUserName(uid) ?: ""
     }
     val appId = uid % 100000
     val isAppRange = appId in 10000..19999

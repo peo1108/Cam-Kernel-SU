@@ -4,21 +4,21 @@ import android.os.RemoteException
 import android.util.Log
 
 /**
- * UI-side access to the kernel. Every call goes through [KsuServiceClient] (uid 0),
+ * UI-side access to the kernel. Every call goes through [CamRootClient] (uid 0),
  * because the kernel no longer recognizes a manager app uid.
  * Returns safe defaults when the service is not bound.
  */
-object Ksu {
-    private const val TAG = "Ksu"
+object Cam {
+    private const val TAG = "Cam"
     private const val NON_ROOT_DEFAULT_PROFILE_KEY = "$"
     private const val NOBODY_UID = 9999
 
-    private inline fun <T> call(default: T, block: (IKsuInterface) -> T): T {
-        val service = KsuServiceClient.service ?: return default
+    private inline fun <T> call(default: T, block: (ICamRootService) -> T): T {
+        val service = CamRootClient.service ?: return default
         return try {
             block(service)
         } catch (e: RemoteException) {
-            Log.w(TAG, "KsuService call failed", e)
+            Log.w(TAG, "CamRootService call failed", e)
             default
         }
     }
@@ -50,12 +50,12 @@ object Ksu {
 
     fun uidShouldUmount(uid: Int): Boolean = call(false) { it.uidShouldUmount(uid) }
 
-    fun getAppProfile(key: String?, uid: Int): Natives.Profile =
-        call(null) { KsuServiceClient.readProfile(it.getAppProfile(key, uid)) }
-            ?: Natives.Profile(name = key ?: "", currentUid = uid)
+    fun getAppProfile(key: String?, uid: Int): CamNative.Profile =
+        call(null) { CamRootClient.readProfile(it.getAppProfile(key, uid)) }
+            ?: CamNative.Profile(name = key ?: "", currentUid = uid)
 
-    fun setAppProfile(profile: Natives.Profile?): Boolean =
-        call(false) { it.setAppProfile(KsuServiceClient.writeProfile(profile)) }
+    fun setAppProfile(profile: CamNative.Profile?): Boolean =
+        call(false) { it.setAppProfile(CamRootClient.writeProfile(profile)) }
 
     fun isSuEnabled(): Boolean = call(false) { it.isSuEnabled }
     fun setSuEnabled(enabled: Boolean): Boolean = call(false) { it.setSuEnabled(enabled) }
@@ -68,11 +68,11 @@ object Ksu {
 
     fun getSuperuserCount(): Int = call(0) { it.superuserCount }
 
-    fun getUserName(uid: Int): String? = Natives.getUserName(uid)
+    fun getUserName(uid: Int): String? = CamNative.getUserName(uid)
 
     fun setDefaultUmountModules(umountModules: Boolean): Boolean =
         setAppProfile(
-            Natives.Profile(
+            CamNative.Profile(
                 NON_ROOT_DEFAULT_PROFILE_KEY,
                 NOBODY_UID,
                 false,
@@ -84,5 +84,5 @@ object Ksu {
         getAppProfile(NON_ROOT_DEFAULT_PROFILE_KEY, NOBODY_UID).umountModules
 
     fun isFullFeatured(): Boolean =
-        isAvailable && kernelUAPIVersion == Natives.managerUAPIVersion
+        isAvailable && kernelUAPIVersion == CamNative.managerUAPIVersion
 }

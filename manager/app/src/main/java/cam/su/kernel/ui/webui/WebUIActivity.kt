@@ -26,7 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.theme.KernelSUTheme
+import cam.su.kernel.ui.theme.CamTheme
 import cam.su.kernel.ui.theme.ThemeController
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 
@@ -55,7 +55,7 @@ class WebUIActivity : ComponentActivity() {
                 onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            KernelSUTheme(appSettings = appSettings) {
+            CamTheme(appSettings = appSettings) {
                 MainContent(activity = this, onFinish = { finish() })
             }
         }

@@ -9,14 +9,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.theme.ThemeController
 
-class MainActivityViewModel(
+class CamActivityViewModel(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val prefs = ksuApp.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    private val prefs = camApp.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val settingRepo: SettingsRepository = SettingsRepositoryImpl()
     private val mainPageState = MainPageState(savedStateHandle)
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -26,7 +26,7 @@ class MainActivityViewModel(
     }
 
     private val _uiState = MutableStateFlow(readUiState())
-    val uiState: StateFlow<MainActivityUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<CamActivityUiState> = _uiState.asStateFlow()
     val selectedMainPage: StateFlow<Int> = mainPageState.selectedPage
 
     init {
@@ -41,8 +41,8 @@ class MainActivityViewModel(
         mainPageState.updateSelectedPage(page)
     }
 
-    private fun readUiState(): MainActivityUiState {
-        return MainActivityUiState(
+    private fun readUiState(): CamActivityUiState {
+        return CamActivityUiState(
             appSettings = ThemeController.getAppSettings(),
             pageScale = settingRepo.pageScale,
             enableBlur = settingRepo.enableBlur,

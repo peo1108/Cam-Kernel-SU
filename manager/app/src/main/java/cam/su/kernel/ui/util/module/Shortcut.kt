@@ -18,7 +18,7 @@ import com.topjohnwu.superuser.io.SuFile
 import com.topjohnwu.superuser.io.SuFileInputStream
 import cam.su.kernel.R
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.MainActivity
+import cam.su.kernel.ui.CamActivity
 import cam.su.kernel.ui.screen.module.ShortcutType
 import cam.su.kernel.ui.util.getRootShell
 import cam.su.kernel.ui.util.isColorOS
@@ -52,7 +52,7 @@ object Shortcut {
         iconUri: String?
     ) {
         val shortcutId = "module_action_$moduleId"
-        val shortcutIntent = Intent(context, MainActivity::class.java).apply {
+        val shortcutIntent = Intent(context, CamActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = buildShortcutUri(moduleId, ShortcutType.Action)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -75,7 +75,7 @@ object Shortcut {
         iconUri: String?
     ) {
         val shortcutId = "module_webui_$moduleId"
-        val shortcutIntent = Intent(context, MainActivity::class.java).apply {
+        val shortcutIntent = Intent(context, CamActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = buildShortcutUri(moduleId, ShortcutType.WebUI)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

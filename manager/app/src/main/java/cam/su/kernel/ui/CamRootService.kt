@@ -8,9 +8,9 @@ import android.os.IBinder
 import android.os.UserManager
 import android.util.Log
 import com.topjohnwu.superuser.ipc.RootService
-import cam.su.kernel.IKsuInterface
-import cam.su.kernel.KsuServiceClient
-import cam.su.kernel.Natives
+import cam.su.kernel.ICamRootService
+import cam.su.kernel.CamRootClient
+import cam.su.kernel.CamNative
 import rikka.parcelablelist.ParcelableListSlice
 
 /**
@@ -18,10 +18,10 @@ import rikka.parcelablelist.ParcelableListSlice
  * @date 2023/4/18.
  */
 
-class KsuService : RootService() {
+class CamRootService : RootService() {
 
     companion object {
-        private const val TAG = "KsuService"
+        private const val TAG = "CamRootService"
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -80,7 +80,7 @@ class KsuService : RootService() {
         }
     }
 
-    private inner class Stub : IKsuInterface.Stub() {
+    private inner class Stub : ICamRootService.Stub() {
         override fun getPackages(flags: Int): ParcelableListSlice<PackageInfo> {
             val list = getInstalledPackagesAll(flags)
             Log.i(TAG, "getPackages: ${list.size}")
@@ -93,29 +93,29 @@ class KsuService : RootService() {
             return ids
         }
 
-        override fun getVersion(): Int = Natives.version
-        override fun getKernelUapiVersion(): Int = Natives.kernelUAPIVersion
-        override fun isSafeMode(): Boolean = Natives.isSafeMode
-        override fun isLkmMode(): Boolean = Natives.isLkmMode
-        override fun isLkmBundled(): Boolean = Natives.isLkmBundled
-        override fun isLateLoadMode(): Boolean = Natives.isLateLoadMode
-        override fun isPrBuild(): Boolean = Natives.isPrBuild
+        override fun getVersion(): Int = CamNative.version
+        override fun getKernelUapiVersion(): Int = CamNative.kernelUAPIVersion
+        override fun isSafeMode(): Boolean = CamNative.isSafeMode
+        override fun isLkmMode(): Boolean = CamNative.isLkmMode
+        override fun isLkmBundled(): Boolean = CamNative.isLkmBundled
+        override fun isLateLoadMode(): Boolean = CamNative.isLateLoadMode
+        override fun isPrBuild(): Boolean = CamNative.isPrBuild
 
-        override fun uidShouldUmount(uid: Int): Boolean = Natives.uidShouldUmount(uid)
+        override fun uidShouldUmount(uid: Int): Boolean = CamNative.uidShouldUmount(uid)
 
         override fun getAppProfile(key: String?, uid: Int): Bundle =
-            Bundle().apply { putParcelable(KsuServiceClient.PROFILE_KEY, Natives.getAppProfile(key, uid)) }
+            Bundle().apply { putParcelable(CamRootClient.PROFILE_KEY, CamNative.getAppProfile(key, uid)) }
 
         override fun setAppProfile(profile: Bundle): Boolean =
-            Natives.setAppProfile(KsuServiceClient.readProfile(profile))
+            CamNative.setAppProfile(CamRootClient.readProfile(profile))
 
-        override fun isSuEnabled(): Boolean = Natives.isSuEnabled()
-        override fun setSuEnabled(enabled: Boolean): Boolean = Natives.setSuEnabled(enabled)
-        override fun isKernelUmountEnabled(): Boolean = Natives.isKernelUmountEnabled()
-        override fun setKernelUmountEnabled(enabled: Boolean): Boolean = Natives.setKernelUmountEnabled(enabled)
-        override fun isSelinuxHideEnabled(): Boolean = Natives.isSelinuxHideEnabled()
-        override fun setSelinuxHideEnabled(enabled: Boolean): Int = Natives.setSelinuxHideEnabled(enabled)
+        override fun isSuEnabled(): Boolean = CamNative.isSuEnabled()
+        override fun setSuEnabled(enabled: Boolean): Boolean = CamNative.setSuEnabled(enabled)
+        override fun isKernelUmountEnabled(): Boolean = CamNative.isKernelUmountEnabled()
+        override fun setKernelUmountEnabled(enabled: Boolean): Boolean = CamNative.setKernelUmountEnabled(enabled)
+        override fun isSelinuxHideEnabled(): Boolean = CamNative.isSelinuxHideEnabled()
+        override fun setSelinuxHideEnabled(enabled: Boolean): Int = CamNative.setSelinuxHideEnabled(enabled)
 
-        override fun getSuperuserCount(): Int = Natives.getSuperuserCount()
+        override fun getSuperuserCount(): Int = CamNative.getSuperuserCount()
     }
 }

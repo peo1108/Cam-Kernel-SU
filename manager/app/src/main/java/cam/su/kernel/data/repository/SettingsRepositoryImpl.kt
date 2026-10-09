@@ -8,11 +8,11 @@ import androidx.core.content.edit
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.topjohnwu.superuser.ShellUtils
-import cam.su.kernel.Ksu
-import cam.su.kernel.ksuApp
+import cam.su.kernel.Cam
+import cam.su.kernel.camApp
 import cam.su.kernel.magica.BootCompletedReceiver
 import cam.su.kernel.ui.screen.modulerepo.RepoSort
-import cam.su.kernel.ui.util.execKsud
+import cam.su.kernel.ui.util.execCamd
 import cam.su.kernel.ui.util.getFeaturePersistValue
 import cam.su.kernel.ui.util.getFeatureStatus
 import java.security.SecureRandom
@@ -22,7 +22,7 @@ private const val KEY_USE_SOFT_REBOOT = "soft_reboot"
 
 /** Prefer soft reboot: always in jailbreak mode, or when the setting is enabled. */
 fun isSoftRebootPreferred(): Boolean =
-    Ksu.isLateLoadMode || ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
+    Cam.isLateLoadMode || camApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
         .getBoolean(KEY_USE_SOFT_REBOOT, false)
 
 class SettingsRepositoryImpl : SettingsRepository {
@@ -33,7 +33,7 @@ class SettingsRepositoryImpl : SettingsRepository {
     }
 
     private val prefs by lazy {
-        ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
+        camApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
     }
 
     override var checkUpdate: Boolean
@@ -156,8 +156,8 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("auto_jailbreak", false)
         set(value) {
             runCatching {
-                ksuApp.packageManager.setComponentEnabledSetting(
-                    ComponentName(ksuApp, BootCompletedReceiver::class.java),
+                camApp.packageManager.setComponentEnabledSetting(
+                    ComponentName(camApp, BootCompletedReceiver::class.java),
                     if (value) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                     PackageManager.DONT_KILL_APP
                 )
@@ -212,9 +212,9 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     override suspend fun getSuCompatPersistValue(): Long? = getFeaturePersistValue("su_compat")
 
-    override fun isSuEnabled(): Boolean = Ksu.isSuEnabled()
+    override fun isSuEnabled(): Boolean = Cam.isSuEnabled()
 
-    override fun setSuEnabled(enabled: Boolean): Boolean = Ksu.setSuEnabled(enabled)
+    override fun setSuEnabled(enabled: Boolean): Boolean = Cam.setSuEnabled(enabled)
 
     override fun setSuCompatModePref(mode: Int) = prefs.edit { putInt("su_compat_mode", mode) }
 
@@ -222,41 +222,41 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     override suspend fun getKernelUmountStatus(): String = getFeatureStatus("kernel_umount")
 
-    override fun isKernelUmountEnabled(): Boolean = Ksu.isKernelUmountEnabled()
+    override fun isKernelUmountEnabled(): Boolean = Cam.isKernelUmountEnabled()
 
-    override fun setKernelUmountEnabled(enabled: Boolean): Boolean = Ksu.setKernelUmountEnabled(enabled)
+    override fun setKernelUmountEnabled(enabled: Boolean): Boolean = Cam.setKernelUmountEnabled(enabled)
 
     override suspend fun getSelinuxHideStatus(): String = getFeatureStatus("selinux_hide")
 
-    override fun isSelinuxHideEnabled(): Boolean = Ksu.isSelinuxHideEnabled()
+    override fun isSelinuxHideEnabled(): Boolean = Cam.isSelinuxHideEnabled()
 
-    override fun setSelinuxHideEnabled(enabled: Boolean): Int = Ksu.setSelinuxHideEnabled(enabled)
+    override fun setSelinuxHideEnabled(enabled: Boolean): Int = Cam.setSelinuxHideEnabled(enabled)
 
     override suspend fun getSulogStatus(): String = getFeatureStatus("sulog")
 
     override suspend fun getSulogPersistValue(): Long? = getFeaturePersistValue("sulog")
 
-    override fun setSulogEnabled(enabled: Boolean): Boolean = execKsud("feature set sulog ${if (enabled) 1 else 0}", true)
+    override fun setSulogEnabled(enabled: Boolean): Boolean = execCamd("feature set sulog ${if (enabled) 1 else 0}", true)
 
     override suspend fun getAdbRootStatus(): String = getFeatureStatus("adb_root")
 
     override suspend fun getAdbRootPersistValue(): Long? = getFeaturePersistValue("adb_root")
 
     override fun setAdbRootEnabled(enabled: Boolean): Boolean =
-        if (execKsud("feature set adb_root ${if (enabled) 1 else 0}", true)) {
+        if (execCamd("feature set adb_root ${if (enabled) 1 else 0}", true)) {
             ShellUtils.fastCmd("setprop ctl.restart adbd")
             true
         } else {
             false
         }
 
-    override fun isDefaultUmountModules(): Boolean = Ksu.isDefaultUmountModules()
+    override fun isDefaultUmountModules(): Boolean = Cam.isDefaultUmountModules()
 
-    override fun setDefaultUmountModules(enabled: Boolean): Boolean = Ksu.setDefaultUmountModules(enabled)
+    override fun setDefaultUmountModules(enabled: Boolean): Boolean = Cam.setDefaultUmountModules(enabled)
 
-    override fun isLkmMode(): Boolean = Ksu.isLkmMode
+    override fun isLkmMode(): Boolean = Cam.isLkmMode
 
-    override fun execKsudFeatureSave() {
-        execKsud("feature save", true)
+    override fun execCamdFeatureSave() {
+        execCamd("feature save", true)
     }
 }

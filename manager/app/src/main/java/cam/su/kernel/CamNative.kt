@@ -5,13 +5,13 @@ import androidx.annotation.Keep
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import cam.su.kernel.Natives.Profile.RootProfileFlag
+import cam.su.kernel.CamNative.Profile.RootProfileFlag
 
 /**
  * @author weishu
  * @date 2022/12/8.
  */
-object Natives {
+object CamNative {
     // minimal supported kernel version
     // 10915: allowlist breaking change, add app profile
     // 10931: app profile struct add 'version' field
@@ -25,13 +25,13 @@ object Natives {
     // 32513: add uapi version
     const val MINIMAL_SUPPORTED_KERNEL = 32513
 
-    const val KERNEL_SU_DOMAIN = "u:r:ksu:s0"
+    const val CAM_DOMAIN = "u:r:ksu:s0"
 
     const val ROOT_UID = 0
     const val ROOT_GID = 0
 
     init {
-        System.loadLibrary("kernelsu")
+        System.loadLibrary("camjni")
     }
 
     val version: Int
@@ -143,14 +143,14 @@ object Natives {
         val gid: Int = ROOT_GID,
         val groups: List<Int> = mutableListOf(),
         val capabilities: List<Int> = mutableListOf(),
-        val context: String = KERNEL_SU_DOMAIN,
+        val context: String = CAM_DOMAIN,
         val namespace: Int = Namespace.INHERITED.ordinal,
 
         val nonRootUseDefault: Boolean = true,
         val umountModules: Boolean = true,
         var rules: String = "", // this field is save in ksud!!
 
-        val flags: Long = FLAG_KSU_NO_NEW_PRIVS,
+        val flags: Long = FLAG_CAM_NO_NEW_PRIVS,
     ) : Parcelable {
         @Keep
         enum class RootProfileFlag(val display: String, val desc: Int) {
@@ -169,7 +169,7 @@ object Natives {
         constructor() : this("")
     }
 
-    const val FLAG_KSU_NO_NEW_PRIVS = 1L
+    const val FLAG_CAM_NO_NEW_PRIVS = 1L
 }
 
 fun List<RootProfileFlag>.toRawFlags(): Long =

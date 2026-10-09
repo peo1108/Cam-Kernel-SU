@@ -40,7 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.R
-import cam.su.kernel.ui.component.KsuIsValid
+import cam.su.kernel.ui.component.CamIsValid
 import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
@@ -124,7 +124,7 @@ fun SettingPagerMiuix(
                             checked = uiState.checkUpdate,
                             onCheckedChange = actions.onSetCheckUpdate
                         )
-                        KsuIsValid {
+                        CamIsValid {
                             SwitchPreference(
                                 title = stringResource(id = R.string.settings_module_check_update),
                                 summary = stringResource(id = R.string.settings_check_update_summary),
@@ -162,7 +162,7 @@ fun SettingPagerMiuix(
                         )
                     }
 
-                    KsuIsValid {
+                    CamIsValid {
                         GlassCard(
                             modifier = Modifier
                                 .padding(top = 12.dp)
@@ -185,7 +185,7 @@ fun SettingPagerMiuix(
                         }
                     }
 
-                    KsuIsValid {
+                    CamIsValid {
                         GlassCard(
                             modifier = Modifier
                                 .padding(top = 12.dp)

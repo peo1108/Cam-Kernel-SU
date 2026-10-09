@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
 import cam.su.kernel.ui.util.reboot
@@ -46,7 +46,7 @@ fun rememberRebootAction(): (String) -> Unit {
 
     return remember(title, message, confirmDialog) {
         { reason ->
-            if (Ksu.isLateLoadMode && reason.isEmpty()) {
+            if (Cam.isLateLoadMode && reason.isEmpty()) {
                 confirmDialog.showConfirm(title = title, content = message)
             } else {
                 reboot(reason)

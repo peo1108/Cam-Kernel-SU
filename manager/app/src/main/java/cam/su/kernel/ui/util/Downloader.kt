@@ -5,7 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.module.LatestVersionInfo
 import okhttp3.Request
 
@@ -23,7 +23,7 @@ suspend fun download(
     onDownloading()
 
     val downloadId = DownloadManager.enqueue(
-        context = ksuApp,
+        context = camApp,
         url = url,
         fileName = fileName,
         onCompleted = onDownloaded,
@@ -40,17 +40,17 @@ suspend fun download(
 
 internal suspend fun isDownloadAvailable(uri: Uri): Boolean = withContext(Dispatchers.IO) {
     runCatching {
-        ksuApp.contentResolver.openFileDescriptor(uri, "r").use { it != null }
+        camApp.contentResolver.openFileDescriptor(uri, "r").use { it != null }
     }.getOrDefault(false)
 }
 
 fun checkNewVersion(): LatestVersionInfo {
-    if (!isNetworkAvailable(ksuApp)) return LatestVersionInfo()
+    if (!isNetworkAvailable(camApp)) return LatestVersionInfo()
     val url = "https://api.github.com/repos/tiann/KernelSU/releases/latest"
     // default null value if failed
     val defaultValue = LatestVersionInfo()
     runCatching {
-        ksuApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute()
+        camApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute()
             .use { response ->
                 if (!response.isSuccessful) {
                     return defaultValue

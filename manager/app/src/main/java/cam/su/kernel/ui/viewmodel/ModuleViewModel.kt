@@ -21,7 +21,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.data.model.Module
 import cam.su.kernel.data.model.ModuleUpdateInfo
@@ -29,7 +29,7 @@ import cam.su.kernel.data.repository.ModuleRepository
 import cam.su.kernel.data.repository.ModuleRepositoryImpl
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.component.SearchStatus
 import cam.su.kernel.ui.screen.module.ModuleConfirmDialogState
 import cam.su.kernel.ui.screen.module.ModuleConfirmRequest
@@ -123,7 +123,7 @@ class ModuleViewModel(
     fun refreshEnvironmentState() {
         viewModelScope.launch {
             val magiskInstalled = withContext(Dispatchers.IO) { hasMagisk() }
-            val isSafeMode = Ksu.isSafeMode
+            val isSafeMode = Cam.isSafeMode
             _uiState.update {
                 it.copy(
                     magiskInstalled = magiskInstalled,
@@ -351,7 +351,7 @@ class ModuleViewModel(
     }
 
     fun requestUninstallConfirmation(module: Module) {
-        val res = ksuApp.resources
+        val res = camApp.resources
         _uiState.update {
             it.copy(
                 confirmDialogState = ModuleConfirmDialogState(
@@ -377,7 +377,7 @@ class ModuleViewModel(
 
     fun toggleModule(module: Module) {
         viewModelScope.launch {
-            val res = ksuApp.resources
+            val res = camApp.resources
             val success = withContext(Dispatchers.IO) {
                 toggleModuleUtil(module.id, !module.enabled)
             }
@@ -399,7 +399,7 @@ class ModuleViewModel(
 
     fun uninstallModule(module: Module) {
         viewModelScope.launch {
-            val res = ksuApp.resources
+            val res = camApp.resources
             val success = withContext(Dispatchers.IO) {
                 uninstallModuleUtil(module.id)
             }
@@ -419,7 +419,7 @@ class ModuleViewModel(
 
     fun restoreModule(module: Module) {
         viewModelScope.launch {
-            val res = ksuApp.resources
+            val res = camApp.resources
             val success = withContext(Dispatchers.IO) { restoreModuleUtil(module.id) }
             if (success) fetchModuleList(resort = false)
             emitEffect(
@@ -435,7 +435,7 @@ class ModuleViewModel(
 
     fun undoUninstallModule(module: Module) {
         viewModelScope.launch {
-            val res = ksuApp.resources
+            val res = camApp.resources
             val success = withContext(Dispatchers.IO) {
                 undoUninstallModuleUtil(module.id)
             }
@@ -456,7 +456,7 @@ class ModuleViewModel(
         module: Module,
         updateInfo: ModuleUpdateInfo,
     ): ModuleConfirmDialogState {
-        val res = ksuApp.resources
+        val res = camApp.resources
         val changelogUrl = updateInfo.changelog
 
         var changelog = ""
@@ -476,7 +476,7 @@ class ModuleViewModel(
 
                 if (changelog.isBlank()) {
                     changelog = runCatching {
-                        ksuApp.okhttpClient.newCall(
+                        camApp.okhttpClient.newCall(
                             Request.Builder().url(changelogUrl).build()
                         ).execute().body.string()
                     }.getOrDefault("")

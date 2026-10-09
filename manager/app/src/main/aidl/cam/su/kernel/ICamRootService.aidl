@@ -1,13 +1,13 @@
-// IKsuInterface.aidl
+// ICamRootService.aidl
 package cam.su.kernel;
 
 import android.content.pm.PackageInfo;
 import android.os.Bundle;
 import rikka.parcelablelist.ParcelableListSlice;
 
-// Served by KsuService (uid 0). Every privileged kernel call goes through here,
+// Served by CamRootService (uid 0). Every privileged kernel call goes through here,
 // because the kernel only accepts manager supercalls from uid 0.
-interface IKsuInterface {
+interface ICamRootService {
     ParcelableListSlice<PackageInfo> getPackages(int flags);
 
     int[] getUserIds();
@@ -22,7 +22,7 @@ interface IKsuInterface {
 
     boolean uidShouldUmount(int uid);
 
-    // Bundle key "profile" holds a Natives.Profile
+    // Bundle key "profile" holds a CamNative.Profile
     Bundle getAppProfile(String key, int uid);
     boolean setAppProfile(in Bundle profile);
 

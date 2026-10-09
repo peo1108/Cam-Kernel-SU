@@ -96,11 +96,11 @@ object ThemeController {
 }
 
 @Composable
-fun KernelSUTheme(
+fun CamTheme(
     appSettings: AppSettings = ThemeController.getAppSettings(),
     content: @Composable () -> Unit
 ) {
-    MiuixKernelSUTheme(
+    MiuixCamTheme(
         appSettings = appSettings,
         content = content
     )

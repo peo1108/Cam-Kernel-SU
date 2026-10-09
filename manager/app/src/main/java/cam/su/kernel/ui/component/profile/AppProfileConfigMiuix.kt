@@ -9,8 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import cam.su.kernel.Ksu
-import cam.su.kernel.Natives
+import cam.su.kernel.Cam
+import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.miuix.EditText
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -20,8 +20,8 @@ fun AppProfileConfigMiuix(
     modifier: Modifier = Modifier,
     fixedName: Boolean,
     enabled: Boolean,
-    profile: Natives.Profile,
-    onProfileChange: (Natives.Profile) -> Unit,
+    profile: CamNative.Profile,
+    onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     Column(modifier = modifier) {
         if (!fixedName) {
@@ -39,7 +39,7 @@ fun AppProfileConfigMiuix(
             checked = if (enabled) {
                 profile.umountModules
             } else {
-                Ksu.isDefaultUmountModules()
+                Cam.isDefaultUmountModules()
             },
             enabled = enabled,
             onCheckedChange = {
@@ -57,7 +57,7 @@ fun AppProfileConfigMiuix(
 @Preview
 @Composable
 private fun AppProfileConfigPreview() {
-    var profile by remember { mutableStateOf(Natives.Profile("")) }
+    var profile by remember { mutableStateOf(CamNative.Profile("")) }
     AppProfileConfigMiuix(fixedName = true, enabled = false, profile = profile) {
         profile = it
     }

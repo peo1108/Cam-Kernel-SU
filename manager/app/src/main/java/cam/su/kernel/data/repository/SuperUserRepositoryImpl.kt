@@ -7,14 +7,14 @@ import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import cam.su.kernel.IKsuInterface
-import cam.su.kernel.Ksu
-import cam.su.kernel.KsuServiceClient
+import cam.su.kernel.ICamRootService
+import cam.su.kernel.Cam
+import cam.su.kernel.CamRootClient
 import cam.su.kernel.data.model.AppInfo
 import cam.su.kernel.data.model.WEBVIEW_ZYGOTE_PROFILE_KEY
 import cam.su.kernel.data.model.WEBVIEW_ZYGOTE_UID
-import cam.su.kernel.ksuApp
-import cam.su.kernel.ui.util.KsuCli
+import cam.su.kernel.camApp
+import cam.su.kernel.ui.util.CamCli
 
 class SuperUserRepositoryImpl : SuperUserRepository {
 
@@ -24,14 +24,14 @@ class SuperUserRepositoryImpl : SuperUserRepository {
 
     override suspend fun getAppList(): Result<Pair<List<AppInfo>, List<Int>>> = withContext(Dispatchers.IO) {
         runCatching {
-            if (!KsuCli.SHELL.isRoot) {
+            if (!CamCli.SHELL.isRoot) {
                 return@withContext Result.failure(
                     IllegalStateException("Root access is required")
                 )
             }
 
             run {
-                val pm = ksuApp.packageManager
+                val pm = camApp.packageManager
                 val start = SystemClock.elapsedRealtime()
 
                 val idsArray = withService { it.userIds }
@@ -44,7 +44,7 @@ class SuperUserRepositoryImpl : SuperUserRepository {
                             (ai.flags and ApplicationInfo.FLAG_HAS_CODE) != 0
                 }.map {
                     val appInfo = it.applicationInfo!!
-                    val profile = Ksu.getAppProfile(it.packageName, appInfo.uid)
+                    val profile = Cam.getAppProfile(it.packageName, appInfo.uid)
                     AppInfo(
                         label = appInfo.loadLabel(pm).toString(),
                         packageInfo = it,
@@ -63,7 +63,7 @@ class SuperUserRepositoryImpl : SuperUserRepository {
                 newApps += AppInfo(
                     label = "WebView Zygote",
                     packageInfo = placeholder,
-                    profile = Ksu.getAppProfile(WEBVIEW_ZYGOTE_PROFILE_KEY, WEBVIEW_ZYGOTE_UID),
+                    profile = Cam.getAppProfile(WEBVIEW_ZYGOTE_PROFILE_KEY, WEBVIEW_ZYGOTE_UID),
                     profileKey = WEBVIEW_ZYGOTE_PROFILE_KEY,
                     special = true,
                 )
@@ -79,23 +79,23 @@ class SuperUserRepositoryImpl : SuperUserRepository {
             if (currentApps.isEmpty()) return@runCatching emptyList()
 
             currentApps.map {
-                val profile = Ksu.getAppProfile(it.profileKey, it.uid)
+                val profile = Cam.getAppProfile(it.profileKey, it.uid)
                 it.copy(profile = profile)
             }
         }
     }
 
-    private suspend fun <T> withService(block: (IKsuInterface) -> T): T {
+    private suspend fun <T> withService(block: (ICamRootService) -> T): T {
         repeat(2) { attempt ->
-            check(KsuServiceClient.connect()) { "KsuService unavailable" }
-            val service = KsuServiceClient.service ?: return@repeat
+            check(CamRootClient.connect()) { "CamRootService unavailable" }
+            val service = CamRootClient.service ?: return@repeat
             try {
                 return block(service)
             } catch (e: RemoteException) {
-                Log.w(TAG, "KsuService call failed, attempt $attempt", e)
+                Log.w(TAG, "CamRootService call failed, attempt $attempt", e)
                 if (attempt == 1) throw e
             }
         }
-        error("KsuService unavailable")
+        error("CamRootService unavailable")
     }
 }

@@ -9,17 +9,17 @@ import androidx.annotation.NonNull;
 import java.io.File;
 
 public class AppZygotePreload implements ZygotePreload {
-    public static final String TAG = "KernelSUMagica";
+    public static final String TAG = "CamMagica";
 
-    private static native void forkDontCareAndExecKsud(String ksudPath, String packageName);
+    private static native void forkDontCareAndExecCamd(String camdPath, String packageName);
 
     @Override
     public void doPreload(@NonNull ApplicationInfo appInfo) {
         File f = new File(appInfo.nativeLibraryDir, "libksucam.so");
         try {
-            System.loadLibrary("kernelsu");
+            System.loadLibrary("camjni");
             Log.d(TAG, "executing magica ...");
-            forkDontCareAndExecKsud(f.getAbsolutePath(), appInfo.packageName);
+            forkDontCareAndExecCamd(f.getAbsolutePath(), appInfo.packageName);
         } catch (Throwable t) {
             Log.e(TAG, "failed to late load", t);
         }

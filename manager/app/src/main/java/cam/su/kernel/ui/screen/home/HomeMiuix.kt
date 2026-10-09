@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.KernelVersion
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.WarningLevel
 import cam.su.kernel.ui.screen.home.arena.StatusArena
@@ -185,7 +185,7 @@ fun HomePagerMiuix(
                         )
                         Spacer(
                             Modifier.height(
-                                bottomInnerPadding + if (!Ksu.isFullFeatured())
+                                bottomInnerPadding + if (!Cam.isFullFeatured())
                                     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
                             )
                         )
@@ -258,7 +258,7 @@ private fun StatusCard(
 ) {
     Column {
         when {
-            state.ksuVersion != null -> {
+            state.camVersion != null -> {
                 val workingMode = when (state.lkmMode) {
                     null -> null
                     true -> "LKM"
@@ -267,7 +267,7 @@ private fun StatusCard(
                 StatusArena(
                     version = stringResource(
                         R.string.home_working_version,
-                        "${state.ksuVersion}-${state.kernelUAPIVersion}"
+                        "${state.camVersion}-${state.kernelUAPIVersion}"
                     ),
                     mode = workingMode,
                     tags = buildList {
@@ -491,7 +491,7 @@ private fun InfoCard(
 @Composable
 private fun StatusCardActivatedPreview() {
     StatusCard(
-        state = previewHomeScreenState(ksuVersion = 12345, lkmMode = true),
+        state = previewHomeScreenState(camVersion = 12345, lkmMode = true),
         actions = HomeActions({}, {})
     )
 }
@@ -499,14 +499,14 @@ private fun StatusCardActivatedPreview() {
 @Preview(name = "Not Activated")
 @Composable
 private fun StatusCardNotActivatedPreview() {
-    StatusCard(state = previewHomeScreenState(ksuVersion = null, lkmMode = null), actions = HomeActions({}, {}))
+    StatusCard(state = previewHomeScreenState(camVersion = null, lkmMode = null), actions = HomeActions({}, {}))
 }
 
 @Preview(name = "Permissive")
 @Composable
 private fun StatusCardPermissivePreview() {
     StatusCard(
-        state = previewHomeScreenState(ksuVersion = null, lkmMode = null, selinuxStatus = "Permissive"),
+        state = previewHomeScreenState(camVersion = null, lkmMode = null, selinuxStatus = "Permissive"),
         actions = HomeActions({}, {})
     )
 }
@@ -515,7 +515,7 @@ private fun StatusCardPermissivePreview() {
 @Composable
 private fun StatusCardJailbreakPreview() {
     StatusCard(
-        state = previewHomeScreenState(ksuVersion = 12345, lkmMode = true, isLateLoadMode = true),
+        state = previewHomeScreenState(camVersion = 12345, lkmMode = true, isLateLoadMode = true),
         actions = HomeActions({}, {})
     )
 }
@@ -535,7 +535,7 @@ private val previewUriHandler = object : UriHandler {
 
 @Composable
 private fun HomeScreenPreviewContent(
-    ksuVersion: Int?,
+    camVersion: Int?,
     lkmMode: Boolean?,
     isSafeMode: Boolean = false,
     isLateLoadMode: Boolean = false,
@@ -550,7 +550,7 @@ private fun HomeScreenPreviewContent(
             val actions = HomeActions({}, {})
             StatusCard(
                 state = previewHomeScreenState(
-                    ksuVersion = ksuVersion,
+                    camVersion = camVersion,
                     lkmMode = lkmMode,
                     isSafeMode = isSafeMode,
                     isLateLoadMode = isLateLoadMode,
@@ -573,36 +573,36 @@ private fun HomeScreenPreviewContent(
 @Preview(name = "Home Activated", showBackground = true)
 @Composable
 private fun HomeScreenActivatedPreview() {
-    HomeScreenPreviewContent(ksuVersion = 12345, lkmMode = true)
+    HomeScreenPreviewContent(camVersion = 12345, lkmMode = true)
 }
 
 @Preview(name = "Home Not Activated", showBackground = true)
 @Composable
 private fun HomeScreenNotActivatedPreview() {
-    HomeScreenPreviewContent(ksuVersion = null, lkmMode = null)
+    HomeScreenPreviewContent(camVersion = null, lkmMode = null)
 }
 
 @Preview(name = "Home Permissive", showBackground = true)
 @Composable
 private fun HomeScreenPermissivePreview() {
-    HomeScreenPreviewContent(ksuVersion = null, lkmMode = null, selinuxStatus = "Permissive")
+    HomeScreenPreviewContent(camVersion = null, lkmMode = null, selinuxStatus = "Permissive")
 }
 
 @Preview(name = "Home Jailbreak", showBackground = true)
 @Composable
 private fun HomeScreenJailbreakPreview() {
-    HomeScreenPreviewContent(ksuVersion = 12345, lkmMode = true, isLateLoadMode = true)
+    HomeScreenPreviewContent(camVersion = 12345, lkmMode = true, isLateLoadMode = true)
 }
 
 private fun previewHomeScreenState(
-    ksuVersion: Int?,
+    camVersion: Int?,
     lkmMode: Boolean?,
     isSafeMode: Boolean = false,
     isLateLoadMode: Boolean = false,
     selinuxStatus: String = "Enforcing",
 ) = HomeUiState(
     kernelVersion = KernelVersion(6, 1, 0),
-    ksuVersion = ksuVersion,
+    camVersion = camVersion,
     lkmMode = lkmMode,
     isLkmBundled = lkmMode == true,
     isManager = true,
@@ -610,7 +610,7 @@ private fun previewHomeScreenState(
     isKernelPrBuild = false,
     requiresNewKernel = false,
     requiresNewManager = false,
-    isRootAvailable = ksuVersion != null,
+    isRootAvailable = camVersion != null,
     isSafeMode = isSafeMode,
     isLateLoadMode = isLateLoadMode,
     checkUpdateEnabled = false,

@@ -7,7 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import cam.su.kernel.ui.util.KsuCliKt;
+import cam.su.kernel.ui.util.CamCliKt;
 
 public class BootCompletedReceiver extends BroadcastReceiver {
 
@@ -22,7 +22,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
                 && !"cam.su.kernel.magica.LAUNCH".equals(action)) {
             return;
         }
-        if (KsuCliKt.rootAvailable()) return;
+        if (CamCliKt.rootAvailable()) return;
         try {
             context.startService(new Intent(context, MagicaService.class));
             Log.i(TAG, "MagicaService started from boot action: " + action);

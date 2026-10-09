@@ -1,15 +1,15 @@
 package cam.su.kernel.ui.component
 
 import androidx.compose.runtime.Composable
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 
 @Composable
-fun KsuIsValid(
+fun CamIsValid(
     content: @Composable () -> Unit
 ) {
-    val ksuVersion = if (Ksu.isAvailable) Ksu.version else null
+    val camVersion = if (Cam.isAvailable) Cam.version else null
 
-    if (ksuVersion != null) {
+    if (camVersion != null) {
         content()
     }
 }

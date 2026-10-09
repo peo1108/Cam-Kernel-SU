@@ -12,11 +12,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Ksu
+import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ksuApp
+import cam.su.kernel.camApp
 import cam.su.kernel.ui.component.glass.GlassBackgroundType
 import cam.su.kernel.ui.component.glass.glassImageFile
 import cam.su.kernel.ui.component.glass.writeGlassImage
@@ -79,7 +79,7 @@ class SettingsViewModel(
             val roamingSlimes = repo.roamingSlimes
             val roamingSlimeCount = repo.roamingSlimeCount
             val slimeNightNap = repo.slimeNightNap
-            val isLateLoadMode = Ksu.isLateLoadMode
+            val isLateLoadMode = Cam.isLateLoadMode
 
             _uiState.update {
                 it.copy(
@@ -228,11 +228,11 @@ class SettingsViewModel(
     /** Copies the picked image into app storage (downscaled) and switches the background to it. */
     fun importGlassImage(uri: Uri) {
         viewModelScope.launch {
-            val metrics = ksuApp.resources.displayMetrics
+            val metrics = camApp.resources.displayMetrics
             val ok = withContext(Dispatchers.IO) {
                 writeGlassImage(
-                    open = { ksuApp.contentResolver.openInputStream(uri) },
-                    dest = glassImageFile(ksuApp),
+                    open = { camApp.contentResolver.openInputStream(uri) },
+                    dest = glassImageFile(camApp),
                     maxEdge = maxOf(metrics.widthPixels, metrics.heightPixels),
                 )
             }
@@ -240,7 +240,7 @@ class SettingsViewModel(
                 repo.glassImageVersion = System.currentTimeMillis()
                 setGlassBackgroundType(GlassBackgroundType.IMAGE)
             } else {
-                Toast.makeText(ksuApp, R.string.glass_background_import_failed, Toast.LENGTH_SHORT).show()
+                Toast.makeText(camApp, R.string.glass_background_import_failed, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -269,13 +269,13 @@ class SettingsViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             when (mode) {
                 0 -> if (repo.setSuEnabled(true)) {
-                    repo.execKsudFeatureSave()
+                    repo.execCamdFeatureSave()
                     repo.setSuCompatModePref(0)
                     _uiState.update { it.copy(suCompatMode = 0, isSuEnabled = true) }
                 }
 
                 1 -> if (repo.setSuEnabled(true)) {
-                    repo.execKsudFeatureSave()
+                    repo.execCamdFeatureSave()
                     if (repo.setSuEnabled(false)) {
                         // "Disable until reboot" implies it should be enabled on next boot.
                         // We set the preference to 0 (Enabled) to match the persistent state.
@@ -285,7 +285,7 @@ class SettingsViewModel(
                 }
 
                 2 -> if (repo.setSuEnabled(false)) {
-                    repo.execKsudFeatureSave()
+                    repo.execCamdFeatureSave()
                     repo.setSuCompatModePref(2)
                     _uiState.update { it.copy(suCompatMode = 2, isSuEnabled = false) }
                 }
@@ -296,7 +296,7 @@ class SettingsViewModel(
     fun setKernelUmountEnabled(enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             if (repo.setKernelUmountEnabled(enabled)) {
-                repo.execKsudFeatureSave()
+                repo.execCamdFeatureSave()
                 _uiState.update { it.copy(isKernelUmountEnabled = enabled) }
             }
         }
@@ -305,19 +305,19 @@ class SettingsViewModel(
     fun setSelinuxHideEnabled(enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             val status = repo.setSelinuxHideEnabled(enabled)
-            repo.execKsudFeatureSave()
+            repo.execCamdFeatureSave()
             _uiState.update { it.copy(isSelinuxHideEnabled = enabled) }
             when (status) {
                 0 -> {}
                 -OsConstants.EAGAIN -> {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(ksuApp, R.string.settings_selinux_hide_reboot_required,
+                        Toast.makeText(camApp, R.string.settings_selinux_hide_reboot_required,
                             Toast.LENGTH_LONG).show()
                     }
                 }
                 else -> {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(ksuApp, ksuApp.getString(R.string.settings_selinux_hide_failed, status),
+                        Toast.makeText(camApp, camApp.getString(R.string.settings_selinux_hide_failed, status),
                             Toast.LENGTH_LONG).show()
                     }
                 }
@@ -353,7 +353,7 @@ class SettingsViewModel(
     fun setSulogEnabled(enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             if (repo.setSulogEnabled(enabled)) {
-                repo.execKsudFeatureSave()
+                repo.execCamdFeatureSave()
                 _uiState.update { it.copy(isSulogEnabled = enabled) }
             }
         }
@@ -362,7 +362,7 @@ class SettingsViewModel(
     fun setAdbRootEnabled(enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             if (repo.setAdbRootEnabled(enabled)) {
-                repo.execKsudFeatureSave()
+                repo.execCamdFeatureSave()
                 _uiState.update { it.copy(isAdbRootEnabled = enabled) }
             }
         }

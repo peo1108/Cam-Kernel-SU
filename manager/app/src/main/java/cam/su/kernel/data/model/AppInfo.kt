@@ -3,7 +3,7 @@ package cam.su.kernel.data.model
 import android.content.pm.PackageInfo
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
-import cam.su.kernel.Natives
+import cam.su.kernel.CamNative
 
 const val WEBVIEW_ZYGOTE_UID = 1053
 const val WEBVIEW_ZYGOTE_PROFILE_KEY = "webview_zygote"
@@ -12,7 +12,7 @@ const val WEBVIEW_ZYGOTE_PROFILE_KEY = "webview_zygote"
 data class AppInfo(
     val label: String,
     val packageInfo: PackageInfo,
-    val profile: Natives.Profile?,
+    val profile: CamNative.Profile?,
     val profileKey: String = packageInfo.packageName,
     val special: Boolean = false,
 ) : Parcelable {

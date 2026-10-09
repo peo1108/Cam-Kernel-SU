@@ -33,7 +33,7 @@ fn exec_shell_commands(commands: &[(&str, &[&str])], log_prefix: &str) -> Result
 }
 
 fn enable_adb_root(port: u16) -> Result<()> {
-    // We are in limited root by magica
+    // We are in limited root by jailbreak
     anyhow::ensure!(
         rustix::process::getuid().as_raw() == 0,
         "must be run as root"
@@ -144,13 +144,13 @@ pub fn run(port: u16, package_name: &String, allow_shell: bool) -> Result<()> {
 
     let self_path = std::env::current_exe().context("Failed to get self exe path")?;
 
-    // Execute late-load with --post-magica via adb shell.
+    // Execute late-load with --post-jailbreak via adb shell.
     // The late-load process has full root + su domain and will:
     // 1. Load camsu.ko, enforce SELinux, run stage scripts
     // 2. Restore adb properties (disable adb root/tcp mode)
     let allow_shell_arg = if allow_shell { " --allow-shell" } else { "" };
     let cmd = format!(
-        "{} late-load --post-magica --package-name {}{}",
+        "{} late-load --post-jailbreak --package-name {}{}",
         self_path.display(),
         package_name,
         allow_shell_arg

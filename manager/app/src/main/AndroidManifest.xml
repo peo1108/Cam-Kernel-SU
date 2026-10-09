@@ -26,7 +26,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Cam"
-        android:zygotePreloadName="cam.su.kernel.magica.CamZygotePreload">
+        android:zygotePreloadName="cam.su.kernel.jailbreak.CamZygotePreload">
         <activity
             android:name=".ui.CamActivity"
             android:exported="true"
@@ -88,7 +88,7 @@
         </provider>
 
         <service
-            android:name=".magica.CamMagicaService"
+            android:name=".jailbreak.CamJailbreakService"
             android:directBootAware="true"
             android:exported="false"
             android:isolatedProcess="true"
@@ -100,17 +100,17 @@
             android:foregroundServiceType="dataSync" />
 
         <receiver
-            android:name=".magica.CamBootReceiver"
+            android:name=".jailbreak.CamBootReceiver"
             android:directBootAware="true"
             android:enabled="false"
             android:exported="false"
-            android:process=":magica_boot">
+            android:process=":jailbreak_boot">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <intent-filter>
-                <action android:name="cam.su.kernel.magica.LAUNCH" />
+                <action android:name="cam.su.kernel.jailbreak.LAUNCH" />
             </intent-filter>
         </receiver>
     </application>

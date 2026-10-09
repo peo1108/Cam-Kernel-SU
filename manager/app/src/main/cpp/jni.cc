@@ -381,7 +381,7 @@ int fork_dont_care_and_exec_camd(const char *path, const char *pkg) {
             return -1;
         }
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            LOGE("magica bootstrap child failed, status=%d", status);
+            LOGE("jailbreak bootstrap child failed, status=%d", status);
         }
         return pid;
     }
@@ -399,18 +399,18 @@ int fork_dont_care_and_exec_camd(const char *path, const char *pkg) {
         _exit(0);
     }
 
-    execl(path, "camd", "late-load", "--magica", "5555", "--package-name", pkg, nullptr);
-    PLOGE("exec magica");
+    execl(path, "camd", "late-load", "--jailbreak", "5555", "--package-name", pkg, nullptr);
+    PLOGE("exec jailbreak");
     _exit(1);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_cam_su_kernel_magica_CamZygotePreload_forkDontCareAndExecCamd(JNIEnv *env, jclass clazz,
+Java_cam_su_kernel_jailbreak_CamZygotePreload_forkDontCareAndExecCamd(JNIEnv *env, jclass clazz,
                                                                         jstring camd_path, jstring pkg_name) {
     auto path = env->GetStringUTFChars(camd_path, nullptr);
     auto pkg = env->GetStringUTFChars(pkg_name, nullptr);
-    LOGD("executing magica %s (pkg %s)", path, pkg);
+    LOGD("executing jailbreak %s (pkg %s)", path, pkg);
     fork_dont_care_and_exec_camd(path, pkg);
     env->ReleaseStringUTFChars(camd_path, path);
     env->ReleaseStringUTFChars(pkg_name, pkg);

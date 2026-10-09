@@ -1,4 +1,4 @@
-package cam.su.kernel.magica;
+package cam.su.kernel.jailbreak;
 
 import android.app.Service;
 import android.content.Intent;
@@ -7,7 +7,7 @@ import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 
-public class CamMagicaService extends Service {
+public class CamJailbreakService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

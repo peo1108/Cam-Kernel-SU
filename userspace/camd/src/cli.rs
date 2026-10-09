@@ -43,17 +43,17 @@ enum Commands {
 
     /// Load camsu.ko and execute late-load stage scripts
     LateLoad {
-        /// Use adb root to execute late-load for jailbreaking by Magica
+        /// Use adb root to execute late-load for jailbreaking
         #[arg(long, default_missing_value = "5555", num_args = 0..=1)]
-        magica: Option<u16>,
+        jailbreak: Option<u16>,
 
         /// Pass allow_shell=1 when loading camsu.ko
         #[arg(long)]
         allow_shell: bool,
 
-        /// Restore adb properties after magica late-load
+        /// Restore adb properties after jailbreak late-load
         #[arg(long)]
-        post_magica: bool,
+        post_jailbreak: bool,
 
         /// Specify kernel KMI version instead of auto-detection
         #[arg(long)]
@@ -734,22 +734,22 @@ pub fn run() -> Result<()> {
             Sepolicy::Check { sepolicy } => crate::sepolicy::check_rule(&sepolicy),
         },
         Commands::LateLoad {
-            magica,
+            jailbreak,
             allow_shell,
-            post_magica,
+            post_jailbreak,
             kmi,
             package_name,
         } => {
-            if let Some(port) = magica {
-                return crate::magica::run(port, &package_name, allow_shell).map_err(|e| {
-                    error!("Error running magica: {e}");
+            if let Some(port) = jailbreak {
+                return crate::jailbreak::run(port, &package_name, allow_shell).map_err(|e| {
+                    error!("Error running jailbreak: {e}");
                     e
                 });
             }
             let result = crate::late_load::run(&package_name, kmi, allow_shell);
-            if post_magica {
-                info!("Restoring adb properties (post-magica cleanup)...");
-                if let Err(e) = crate::magica::disable_adb_root() {
+            if post_jailbreak {
+                info!("Restoring adb properties (post-jailbreak cleanup)...");
+                if let Err(e) = crate::jailbreak::disable_adb_root() {
                     error!("disable adb root failed: {e}");
                 }
             }

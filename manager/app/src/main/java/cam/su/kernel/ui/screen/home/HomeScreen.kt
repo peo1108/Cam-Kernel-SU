@@ -21,7 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import cam.su.kernel.R
-import cam.su.kernel.magica.CamMagicaService
+import cam.su.kernel.jailbreak.CamJailbreakService
 import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
 import cam.su.kernel.ui.navigation3.Navigator
 import cam.su.kernel.ui.navigation3.Route
@@ -64,7 +64,7 @@ fun HomePager(
         onOpenUrl = uriHandler::openUri,
         onJailbreakClick = {
             loadingDialog.showLoading()
-            context.startService(Intent(context, CamMagicaService::class.java))
+            context.startService(Intent(context, CamJailbreakService::class.java))
             // Manager will be force-stopped and restarted by late-load on success.
             // If that doesn't happen within timeout, jailbreak likely failed.
             scope.launch(Dispatchers.IO) {

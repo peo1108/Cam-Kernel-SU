@@ -10,7 +10,7 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.topjohnwu.superuser.ShellUtils
 import cam.su.kernel.Cam
 import cam.su.kernel.camApp
-import cam.su.kernel.magica.CamBootReceiver
+import cam.su.kernel.jailbreak.CamBootReceiver
 import cam.su.kernel.ui.screen.modulerepo.RepoSort
 import cam.su.kernel.ui.util.execCamd
 import cam.su.kernel.ui.util.getFeaturePersistValue

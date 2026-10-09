@@ -1,6 +1,6 @@
-package cam.su.kernel.magica;
+package cam.su.kernel.jailbreak;
 
-import static cam.su.kernel.magica.CamZygotePreload.TAG;
+import static cam.su.kernel.jailbreak.CamZygotePreload.TAG;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -19,16 +19,16 @@ public class CamBootReceiver extends BroadcastReceiver {
         var action = intent.getAction();
         if (!Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(action)
                 && !Intent.ACTION_BOOT_COMPLETED.equals(action)
-                && !"cam.su.kernel.magica.LAUNCH".equals(action)) {
+                && !"cam.su.kernel.jailbreak.LAUNCH".equals(action)) {
             return;
         }
         if (CamCliKt.rootAvailable()) return;
         try {
-            context.startService(new Intent(context, CamMagicaService.class));
-            Log.i(TAG, "CamMagicaService started from boot action: " + action);
+            context.startService(new Intent(context, CamJailbreakService.class));
+            Log.i(TAG, "CamJailbreakService started from boot action: " + action);
         } catch (Throwable e) {
 
-            Log.e(TAG, "Failed to start CamMagicaService from boot action: " + action, e);
+            Log.e(TAG, "Failed to start CamJailbreakService from boot action: " + action, e);
         }
     }
 }

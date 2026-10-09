@@ -631,7 +631,9 @@ pub fn run() -> Result<()> {
                 Module::Config { internal, command } => {
                     let module_id = match internal {
                         Some(internal_name) => format!("internal.{internal_name}"),
-                        None => std::env::var("KSU_MODULE").map_err(|_| {
+                        None => std::env::var("CAM_MODULE")
+                            .or_else(|_| std::env::var("KSU_MODULE"))
+                            .map_err(|_| {
                             anyhow::anyhow!(
                                 "This command must be run in the context of a module or passed --internal <name>"
                             )

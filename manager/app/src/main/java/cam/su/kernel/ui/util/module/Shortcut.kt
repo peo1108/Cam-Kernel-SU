@@ -28,7 +28,7 @@ import cam.su.kernel.ui.util.isMiui
 object Shortcut {
 
     private const val TAG = "ModuleShortcut"
-    const val SCHEME_KSU = "ksu"
+    const val SCHEME_CAM = "cam"
     const val HOST_ACTION = "action"
     const val HOST_WEBUI = "webui"
 
@@ -38,7 +38,7 @@ object Shortcut {
             ShortcutType.WebUI -> HOST_WEBUI
         }
         return Uri.Builder()
-            .scheme(SCHEME_KSU)
+            .scheme(SCHEME_CAM)
             .authority(host)
             .appendQueryParameter("id", moduleId)
             .appendQueryParameter("token", SettingsRepositoryImpl().intentToken)

@@ -25,6 +25,9 @@ import cam.su.kernel.ui.util.DownloadService
 import cam.su.kernel.ui.util.getFileName
 import cam.su.kernel.ui.webui.WebUIActivity
 
+private const val SCHEME_CAM = "cam"
+
+// links made before the rename, e.g. pinned shortcuts
 private const val SCHEME_KSU = "ksu"
 private const val HOST_ACTION = "action"
 private const val HOST_WEBUI = "webui"
@@ -83,7 +86,7 @@ private sealed interface CamDeepLink {
 
 private fun buildInternalWebUiUri(moduleId: String): Uri {
     return Uri.Builder()
-        .scheme(SCHEME_KSU)
+        .scheme(SCHEME_CAM)
         .authority(HOST_WEBUI)
         .appendQueryParameter(PARAM_ID, moduleId)
         .build()
@@ -131,7 +134,7 @@ private fun resolveIntent(intent: Intent): PendingAction? {
 }
 
 private fun parseValidatedDeepLink(uri: Uri?): CamDeepLink? {
-    if (uri?.scheme != SCHEME_KSU) return null
+    if (uri?.scheme != SCHEME_CAM && uri?.scheme != SCHEME_KSU) return null
 
     val moduleId = uri.getQueryParameter(PARAM_ID)?.takeIf { it.isNotBlank() } ?: return null
     val token = uri.getQueryParameter(PARAM_TOKEN)?.takeIf { it.isNotBlank() } ?: return null

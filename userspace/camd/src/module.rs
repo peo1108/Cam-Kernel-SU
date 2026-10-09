@@ -91,8 +91,31 @@ pub fn get_common_script_envs(module_id: Option<&str>) -> Vec<(&'static str, Str
         envs.push(("KSU_LATE_LOAD", "1".to_string()));
     }
 
+    // our own names next to the KernelSU ones, which modules still check
+    let cam_envs: Vec<_> = envs
+        .iter()
+        .filter_map(|(key, value)| {
+            CAM_ENV_ALIASES
+                .iter()
+                .find(|(ksu, _)| ksu == key)
+                .map(|(_, cam)| (*cam, value.clone()))
+        })
+        .collect();
+    envs.extend(cam_envs);
+
     envs
 }
+
+const CAM_ENV_ALIASES: [(&str, &str); 8] = [
+    ("KSU", "CAM"),
+    ("KSU_KERNEL_VER_CODE", "CAM_KERNEL_VER_CODE"),
+    ("KSU_VER_CODE", "CAM_VER_CODE"),
+    ("KSU_VER", "CAM_VER"),
+    ("KSU_UAPI_VER", "CAM_UAPI_VER"),
+    ("KSU_RUNTIME_MODE", "CAM_RUNTIME_MODE"),
+    ("KSU_MODULE", "CAM_MODULE"),
+    ("KSU_LATE_LOAD", "CAM_LATE_LOAD"),
+];
 
 fn exec_install_script(module_file: &str, is_metamodule: bool, module_id: &str) -> Result<()> {
     let realpath = std::fs::canonicalize(module_file)

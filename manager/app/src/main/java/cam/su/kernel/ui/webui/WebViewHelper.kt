@@ -106,7 +106,7 @@ internal suspend fun prepareWebView(
             webView.webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                     val url = request.url
-                    if (url.scheme.equals("ksu", ignoreCase = true) && url.host.equals("icon", ignoreCase = true)) {
+                    if ((url.scheme.equals("ksu", ignoreCase = true) || url.scheme.equals("cam", ignoreCase = true)) && url.host.equals("icon", ignoreCase = true)) {
                         val packageName = url.path?.substring(1)
                         if (!packageName.isNullOrEmpty()) {
                             val appInfo = SuperUserViewModel.apps
@@ -190,6 +190,8 @@ internal suspend fun prepareWebView(
             val webviewInterface = WebViewInterface(webUIState)
             webUIState.webView = webView
             webView.addJavascriptInterface(webviewInterface, "ksu")
+            // same bridge under our own name; module WebUIs still call `ksu`
+            webView.addJavascriptInterface(webviewInterface, "cam")
             webUIState.uiEvent = WebUIEvent.WebViewReady
         }
     }

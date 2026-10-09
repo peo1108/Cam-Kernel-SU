@@ -1,3 +1,7 @@
 *.bat eol=crlf
 # Shell scripts run inside WSL/Android: keep LF even with core.autocrlf
 *.sh text eol=lf
+
+# signed byte for byte: git must not touch line endings
+manager/app/src/main/assets/hiding-rules.json -text
+manager/app/src/main/assets/hiding-rules.json.sig -text

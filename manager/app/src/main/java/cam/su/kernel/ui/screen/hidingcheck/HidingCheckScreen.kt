@@ -26,6 +26,7 @@ fun HidingCheckScreen() {
         onIgnore = viewModel::ignore,
         onRestore = viewModel::restore,
         onClearHistory = viewModel::clearHistory,
+        onCheckUpdates = viewModel::checkUpdates,
     )
 
     HidingCheckScreenMiuix(uiState, actions)

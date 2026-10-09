@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "updated": "2026-10-09",
+  "duckDetector": "b6c7c42a945788d5a43634f8cdf536ff38053218",
+  "mountSources": ["KSU", "APatch", "magisk", "worker"],
+  "mapMarkers": [
+    "/data/adb/", "/debug_ramdisk/", "/sbin/",
+    "zygisk", "lspd", "lsposed", "xposed", "edxp", "riru", "magisk", "frida", "substrate"
+  ],
+  "suPaths": [
+    "/system/bin/su", "/system/xbin/su", "/system/sbin/su", "/sbin/su", "/vendor/bin/su", "/su/bin/su",
+    "/system/xbin/busybox", "/system/bin/busybox"
+  ],
+  "safeProps": {
+    "ro.boot.verifiedbootstate": "green",
+    "ro.boot.flash.locked": "1",
+    "ro.boot.vbmeta.device_state": "locked",
+    "ro.boot.warranty_bit": "0",
+    "ro.warranty_bit": "0",
+    "ro.debuggable": "0",
+    "ro.secure": "1"
+  }
+}

@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import cam.su.kernel.camApp
 import cam.su.kernel.data.model.HidingAudit
 import cam.su.kernel.data.repository.HidingHistoryRepository
+import cam.su.kernel.data.repository.HidingRulesRepository
 import cam.su.kernel.data.repository.SavedHidingScan
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
@@ -27,11 +28,13 @@ import cam.su.kernel.ui.util.runHidingAudit
 import cam.su.kernel.ui.util.setHideBootloader
 
 /**
- * The root hiding check page. Nothing runs in the background: opening the page only reads
- * the saved scan and the switches; the audit runs when the user asks for it.
+ * The root hiding check page. Nothing runs in the background: opening the page reads the
+ * saved scan and the switches, and checks for newer rules at most every few hours; the
+ * audit runs when the user asks for it.
  */
 class HidingCheckViewModel(
     private val history: HidingHistoryRepository = HidingHistoryRepository(),
+    private val rulesRepo: HidingRulesRepository = HidingRulesRepository(),
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),
 ) : ViewModel() {
 
@@ -49,7 +52,22 @@ class HidingCheckViewModel(
             previous = before
             publish()
             refreshFixes()
+            checkRules(force = false)
         }
+    }
+
+    /** The user asked: check the repo now, whenever it was last asked. */
+    fun checkUpdates() {
+        viewModelScope.launch { checkRules(force = true) }
+    }
+
+    private suspend fun checkRules(force: Boolean) {
+        if (_uiState.value.checkingRules) return
+        // show what is at hand while the repo answers
+        val known = _uiState.value.rules ?: withContext(Dispatchers.IO) { rulesRepo.status() }
+        _uiState.update { it.copy(checkingRules = true, rules = known) }
+        val status = withContext(Dispatchers.IO) { rulesRepo.check(force) }
+        _uiState.update { it.copy(checkingRules = false, rules = status) }
     }
 
     fun scan() {
@@ -127,7 +145,7 @@ class HidingCheckViewModel(
     /** camd's audit (the root view) and the isolated probe's (the app view), side by side. */
     private suspend fun audit(): Pair<HidingAudit?, HidingAudit?> = coroutineScope {
         val root = async(Dispatchers.IO) { runHidingAudit() }
-        val app = async { HidingProbeService.scan(camApp) }
+        val app = async { HidingProbeService.scan(camApp, withContext(Dispatchers.IO) { rulesRepo.current() }) }
         root.await() to app.await()
     }
 

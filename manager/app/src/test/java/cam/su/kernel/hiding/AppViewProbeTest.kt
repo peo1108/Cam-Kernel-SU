@@ -2,8 +2,12 @@ package cam.su.kernel.hiding
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.io.File
 
 class AppViewProbeTest {
+
+    /** the rules the APK ships */
+    private val rules = HidingRules.parse(File("src/main/assets/hiding-rules.json").readText())!!
 
     @Test
     fun stockMountsAreClean() {
@@ -14,7 +18,7 @@ class AppViewProbeTest {
             50 25 0:30 / /apex rw,nosuid,nodev,noexec,relatime shared:7 - tmpfs tmpfs rw,seclabel
             60 25 254:5 / /data rw,nosuid,nodev,noatime shared:30 - f2fs /dev/block/dm-5 rw,seclabel
         """.trimIndent()
-        assertEquals(emptyList<String>(), AppViewProbe.mounts(mountinfo))
+        assertEquals(emptyList<String>(), AppViewProbe.mounts(mountinfo, rules))
     }
 
     @Test
@@ -31,7 +35,7 @@ class AppViewProbeTest {
                 "/product/overlay (tmpfs, tmpfs)",
                 "/data/adb/modules (f2fs, /dev/block/dm-5)",
             ),
-            AppViewProbe.mounts(mountinfo),
+            AppViewProbe.mounts(mountinfo, rules),
         )
     }
 
@@ -46,7 +50,7 @@ class AppViewProbeTest {
         """.trimIndent()
         assertEquals(
             listOf("/data/adb/modules/zygisk_lsposed/lib/liblspd.so", "/memfd:zygisk-loader (deleted)"),
-            AppViewProbe.maps(maps),
+            AppViewProbe.maps(maps, rules),
         )
     }
 
@@ -58,11 +62,12 @@ class AppViewProbeTest {
             "ro.boot.vbmeta.device_state" to "unlocked",
             "ro.build.tags" to "release-keys",
         )
+        // the JVM's org.json does not keep key order
         assertEquals(
-            listOf("ro.boot.verifiedbootstate=orange", "ro.boot.vbmeta.device_state=unlocked"),
-            AppViewProbe.props { props[it].orEmpty() },
+            setOf("ro.boot.verifiedbootstate=orange", "ro.boot.vbmeta.device_state=unlocked"),
+            AppViewProbe.props(rules) { props[it].orEmpty() }.toSet(),
         )
-        assertEquals(listOf("ro.build.tags=test-keys"), AppViewProbe.props { if (it == "ro.build.tags") "test-keys" else "" })
+        assertEquals(listOf("ro.build.tags=test-keys"), AppViewProbe.props(rules) { if (it == "ro.build.tags") "test-keys" else "" })
     }
 
     @Test

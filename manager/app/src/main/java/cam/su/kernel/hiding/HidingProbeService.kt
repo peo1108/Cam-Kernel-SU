@@ -23,7 +23,8 @@ import kotlin.coroutines.resume
 class HidingProbeService : Service() {
 
     private val binder = object : IHidingProbe.Stub() {
-        override fun scan(): String = AppViewProbe.run().toJson().toString()
+        override fun scan(rules: String): String? =
+            HidingRules.parse(rules)?.let { AppViewProbe.run(it).toJson().toString() }
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
@@ -33,7 +34,7 @@ class HidingProbeService : Service() {
         private const val TIMEOUT_MS = 15_000L
 
         /** Binds, scans once and unbinds; null when the probe could not run. */
-        suspend fun scan(context: Context): HidingAudit? = withTimeoutOrNull(TIMEOUT_MS) {
+        suspend fun scan(context: Context, rules: HidingRules): HidingAudit? = withTimeoutOrNull(TIMEOUT_MS) {
             suspendCancellableCoroutine { cont ->
                 val unbound = AtomicBoolean(false)
                 lateinit var connection: ServiceConnection
@@ -43,7 +44,7 @@ class HidingProbeService : Service() {
                 }
                 connection = object : ServiceConnection {
                     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                        val json = runCatching { IHidingProbe.Stub.asInterface(service).scan() }
+                        val json = runCatching { IHidingProbe.Stub.asInterface(service).scan(rules.toJson()) }
                             .onFailure { Log.w(TAG, "probe failed", it) }
                             .getOrNull()
                         finish(json?.let(HidingAudit::parse))

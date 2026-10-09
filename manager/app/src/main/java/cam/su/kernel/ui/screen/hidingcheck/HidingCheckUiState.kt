@@ -2,6 +2,7 @@ package cam.su.kernel.ui.screen.hidingcheck
 
 import androidx.compose.runtime.Immutable
 import cam.su.kernel.data.model.HidingAudit
+import cam.su.kernel.data.repository.HidingRulesStatus
 
 /** How a finding compares with the scan before it. */
 enum class FindingChange { NEW, SAME }
@@ -44,6 +45,9 @@ data class HidingCheckUiState(
     val hideBootloader: HidingFix = HidingFix(),
     /** some applied fixes take full effect after a reboot */
     val rebootNeeded: Boolean = false,
+    /** the rules the app view uses and how their last update check went; null until read */
+    val rules: HidingRulesStatus? = null,
+    val checkingRules: Boolean = false,
 ) {
     val leaks: Int
         get() = findings.count { it.finding.leak }
@@ -105,4 +109,5 @@ data class HidingCheckActions(
     val onIgnore: (id: String) -> Unit,
     val onRestore: (id: String) -> Unit,
     val onClearHistory: () -> Unit,
+    val onCheckUpdates: () -> Unit,
 )

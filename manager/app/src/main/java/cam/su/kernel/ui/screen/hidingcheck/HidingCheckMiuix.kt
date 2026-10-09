@@ -26,8 +26,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LayersClear
+import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Shield
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.data.model.HidingAudit
+import cam.su.kernel.data.repository.HidingRulesStatus
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassExpandableCard
 import cam.su.kernel.ui.component.glass.GlassIconButton
@@ -180,6 +184,13 @@ fun HidingCheckScreenMiuix(
                                 )
                             }
                         }
+                    }
+                }
+
+                state.rules?.let { rules ->
+                    item {
+                        SmallTitle(text = stringResource(R.string.hiding_section_detector))
+                        DetectorCard(rules, state.checkingRules, actions) { dates.format(Date(it)) }
                     }
                 }
 
@@ -407,6 +418,47 @@ private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, actions: Hiding
                 onClick = { actions.onIgnore(finding.id) },
             )
         }
+    }
+}
+
+@Composable
+private fun DetectorCard(
+    status: HidingRulesStatus,
+    checking: Boolean,
+    actions: HidingCheckActions,
+    format: (Long) -> String,
+) {
+    GlassCard(modifier = cardModifier) {
+        val rules = status.rules
+        BasicComponent(
+            title = stringResource(R.string.hiding_rules_title),
+            summary = buildList {
+                add(stringResource(R.string.hiding_rules_summary, rules.version, rules.updated))
+                status.checkedAt?.let { add(stringResource(R.string.hiding_rules_checked, format(it))) }
+                if (status.updated) add(stringResource(R.string.hiding_rules_updated, rules.version))
+                if (status.failed) add(stringResource(R.string.hiding_rules_failed))
+            }.joinToString(" · "),
+            startAction = { RowIcon(Icons.Rounded.Description, if (status.updated) colorScheme.primary else colorScheme.onBackground) },
+        )
+        BasicComponent(
+            title = stringResource(R.string.hiding_duck_title),
+            summary = buildList {
+                add(stringResource(R.string.hiding_duck_following, rules.duckDetector.take(7)))
+                when {
+                    status.duckAhead -> add(
+                        stringResource(R.string.hiding_duck_ahead, status.duckLatest.orEmpty().take(7), status.duckLatestAt.orEmpty().take(10))
+                    )
+                    status.duckLatest != null -> add(stringResource(R.string.hiding_duck_current))
+                }
+            }.joinToString(" · "),
+            startAction = { RowIcon(Icons.Rounded.NewReleases, if (status.duckAhead) colorScheme.primary else colorScheme.onBackground) },
+        )
+        BasicComponent(
+            title = stringResource(if (checking) R.string.hiding_checking else R.string.hiding_check_updates),
+            summary = stringResource(R.string.hiding_check_updates_summary),
+            startAction = { RowIcon(Icons.Rounded.Refresh, colorScheme.onBackground) },
+            onClick = { if (!checking) actions.onCheckUpdates() },
+        )
     }
 }
 

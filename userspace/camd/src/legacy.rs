@@ -1,7 +1,7 @@
 //! Moves data left by builds that still used the KernelSU names over to the
-//! Cam paths, then leaves links at the old names. Older kernels exec
-//! /data/adb/ksud and read /data/adb/ksu, and many third-party modules
-//! hardcode /data/adb/ksu/bin/busybox, so the old names have to keep working.
+//! Cam paths. While the running kernel is still a KernelSU one (it execs
+//! /data/adb/ksud and reads /data/adb/ksu), links are left at the old names;
+//! once a kernel with the cam domain runs, those links are removed again.
 
 use std::fs;
 use std::io::ErrorKind;
@@ -21,18 +21,19 @@ const LEGACY_PREINIT_DIRS: [(&str, &str); 2] = [
 const LEGACY_RC_NAME: &str = ".ksurc";
 const LEGACY_BACKUP_PREFIX: &str = "ksu_backup_";
 
-/// Safe to call on every start: it does nothing once the old names are links.
+/// Safe to call on every start: once the data is moved it only adds or drops the links.
 pub fn migrate() {
+    let keep_links = !restorecon::kernel_has_cam_domain();
     let working_dir = defs::WORKING_DIR.trim_end_matches('/');
-    move_and_link(LEGACY_WORKING_DIR, working_dir);
+    move_and_link(LEGACY_WORKING_DIR, working_dir, keep_links);
     rename_legacy_files(working_dir);
     for (old, new) in LEGACY_PREINIT_DIRS {
-        move_and_link(old, new);
+        move_and_link(old, new, keep_links);
     }
-    move_and_link(LEGACY_DAEMON_PATH, defs::DAEMON_PATH);
+    move_and_link(LEGACY_DAEMON_PATH, defs::DAEMON_PATH, keep_links);
 }
 
-fn move_and_link(old: &str, new: &str) {
+fn move_and_link(old: &str, new: &str, keep_link: bool) {
     let old_meta = match fs::symlink_metadata(old) {
         Ok(meta) => Some(meta),
         Err(e) if e.kind() == ErrorKind::NotFound => None,
@@ -42,8 +43,16 @@ fn move_and_link(old: &str, new: &str) {
         }
     };
 
+    let target = Path::new(new).file_name().unwrap_or_default();
     if let Some(meta) = old_meta {
         if meta.file_type().is_symlink() {
+            // only drop a link we made, never one the user pointed elsewhere
+            if !keep_link && fs::read_link(old).is_ok_and(|t| t.as_os_str() == target) {
+                match fs::remove_file(old) {
+                    Ok(()) => info!("legacy: removed link {old}"),
+                    Err(e) => warn!("legacy: remove link {old}: {e}"),
+                }
+            }
             return;
         }
         if let Err(e) = move_entry(old, new, meta.is_dir()) {
@@ -52,11 +61,9 @@ fn move_and_link(old: &str, new: &str) {
         }
     }
 
-    // link even on a fresh install: modules hardcode the old names
-    if !Path::new(new).exists() || fs::symlink_metadata(old).is_ok() {
+    if !keep_link || !Path::new(new).exists() || fs::symlink_metadata(old).is_ok() {
         return;
     }
-    let target = Path::new(new).file_name().unwrap_or_default();
     match symlink(target, old) {
         Ok(()) => {
             let _ = restorecon::set_su_file_con(old);

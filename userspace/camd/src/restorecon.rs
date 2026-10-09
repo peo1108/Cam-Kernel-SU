@@ -36,6 +36,11 @@ pub fn set_su_file_con<P: AsRef<Path>>(path: P) -> Result<()> {
     lsetfilecon(path, con)
 }
 
+/// Whether the running kernel is one with the cam domain, not a KernelSU one.
+pub fn kernel_has_cam_domain() -> bool {
+    is_context_valid(CAM_CON)
+}
+
 /// Same check as libselinux security_check_context: the write fails for a context the policy lacks.
 fn is_context_valid(con: &str) -> bool {
     let mut buf = con.as_bytes().to_vec();

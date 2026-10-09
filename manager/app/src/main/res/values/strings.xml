@@ -540,6 +540,15 @@
     <string name="hiding_gone_summary">Not seen in this check</string>
     <string name="hiding_clear_history">Clear check history</string>
     <string name="hiding_clear_history_summary">The next check starts fresh</string>
+    <string name="audit_app_mounts">Apps without root see module mounts</string>
+    <string name="audit_app_maps">Root or hook libraries are loaded into apps</string>
+    <string name="audit_app_su">Apps without root can find su</string>
+    <string name="audit_app_props">Apps without root read unlocked bootloader properties</string>
+    <string name="audit_app_selinux">Apps without root see SELinux permissive</string>
+    <string name="hiding_view_app">Seen by apps</string>
+    <string name="hiding_fix_on_still">Already on, still visible</string>
+    <string name="hiding_root_view_failed">Root view unavailable: camd did not run</string>
+    <string name="hiding_app_view_failed">App view did not answer</string>
     <string name="module_conflict_disable_hint">Disable one of them to end the conflict (applies after a reboot):</string>
     <string name="module_conflict_this">%1$s (this module)</string>
     <string name="module_conflict_disable">Disable</string>

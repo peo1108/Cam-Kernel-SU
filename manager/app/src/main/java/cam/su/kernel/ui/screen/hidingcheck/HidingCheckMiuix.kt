@@ -141,7 +141,10 @@ fun HidingCheckScreenMiuix(
 
                 if (state.findings.isNotEmpty()) {
                     item { SmallTitle(text = stringResource(R.string.hiding_section_findings)) }
-                    items(state.findings, key = { it.finding.id }) { FindingCard(it, actions) }
+                    items(state.findings, key = { it.finding.id }) { checked ->
+                        val fixOn = checked.finding.fix?.let { state.fix(it).enabled } == true
+                        FindingCard(checked, fixOn, actions)
+                    }
                 }
 
                 item {
@@ -254,8 +257,11 @@ private fun OverviewCard(state: HidingCheckUiState, actions: HidingCheckActions,
                         fontWeight = FontWeight.Medium,
                     )
                 }
-                if (state.scanFailed) {
-                    Text(text = stringResource(R.string.audit_failed), fontSize = 12.sp, color = colorScheme.error)
+                if (state.rootViewFailed) {
+                    Text(text = stringResource(R.string.hiding_root_view_failed), fontSize = 12.sp, color = colorScheme.error)
+                }
+                if (state.appViewFailed) {
+                    Text(text = stringResource(R.string.hiding_app_view_failed), fontSize = 12.sp, color = colorScheme.error)
                 }
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -323,13 +329,13 @@ private fun OverviewCard(state: HidingCheckUiState, actions: HidingCheckActions,
 }
 
 @Composable
-private fun FindingCard(checked: CheckedFinding, actions: HidingCheckActions) {
+private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, actions: HidingCheckActions) {
     var expanded by rememberSaveable(checked.finding.id) { mutableStateOf(false) }
     val finding = checked.finding
     val summary = buildList {
         add(stringResource(R.string.hiding_items, finding.items.size))
         if (checked.newItems.isNotEmpty()) add(stringResource(R.string.hiding_new_items, checked.newItems.size))
-        add(stringResource(fixLabel(finding.fix)))
+        add(stringResource(fixLabel(finding.fix, fixOn)))
     }.joinToString(" · ")
 
     GlassExpandableCard(
@@ -338,10 +344,10 @@ private fun FindingCard(checked: CheckedFinding, actions: HidingCheckActions) {
         summary = summary,
         expanded = expanded,
         onToggle = { expanded = !expanded },
-        header = checked.change?.let { change ->
+        header = if (checked.change == null && !finding.appView) null else {
             {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    when (change) {
+                    when (checked.change) {
                         FindingChange.NEW -> StatusTag(
                             label = stringResource(R.string.hiding_change_new),
                             backgroundColor = colorScheme.error,
@@ -351,6 +357,14 @@ private fun FindingCard(checked: CheckedFinding, actions: HidingCheckActions) {
                             label = stringResource(R.string.hiding_change_same),
                             backgroundColor = colorScheme.secondaryContainer,
                             contentColor = colorScheme.onSecondaryContainer,
+                        )
+                        null -> {}
+                    }
+                    if (finding.appView) {
+                        StatusTag(
+                            label = stringResource(R.string.hiding_view_app),
+                            backgroundColor = colorScheme.primary.copy(alpha = 0.8f),
+                            contentColor = colorScheme.onPrimary,
                         )
                     }
                 }
@@ -383,9 +397,9 @@ private fun FindingCard(checked: CheckedFinding, actions: HidingCheckActions) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "→ ${stringResource(fixLabel(finding.fix))}",
+                text = "→ ${stringResource(fixLabel(finding.fix, fixOn))}",
                 fontSize = 12.sp,
-                color = if (finding.fix != null) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
+                color = if (finding.fix != null && !fixOn) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.weight(1f),
             )
             TextButton(
@@ -467,9 +481,20 @@ private fun findingTitle(finding: HidingAudit.Finding): String {
         "files" -> R.string.audit_files
         "selinux" -> R.string.audit_selinux
         "adb" -> R.string.audit_adb
+        "appMounts" -> R.string.audit_app_mounts
+        "appMaps" -> R.string.audit_app_maps
+        "appSu" -> R.string.audit_app_su
+        "appProps" -> R.string.audit_app_props
+        "appSelinux" -> R.string.audit_app_selinux
         else -> null
     }
     return res?.let { stringResource(it) } ?: finding.id
+}
+
+/** [fixOn]: the fix is on and the finding is still there */
+private fun fixLabel(fix: String?, fixOn: Boolean): Int = when {
+    fix != null && fixOn -> R.string.hiding_fix_on_still
+    else -> fixLabel(fix)
 }
 
 private fun fixLabel(fix: String?): Int = when (fix) {

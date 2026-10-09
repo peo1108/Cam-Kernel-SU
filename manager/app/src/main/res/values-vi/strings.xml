@@ -529,6 +529,15 @@
     <string name="hiding_gone_summary">Lần này không còn thấy</string>
     <string name="hiding_clear_history">Xóa lịch sử kiểm tra</string>
     <string name="hiding_clear_history_summary">Lần kiểm tra sau sẽ như lần đầu</string>
+    <string name="audit_app_mounts">App thường thấy mount của module</string>
+    <string name="audit_app_maps">Thư viện root/hook nằm trong bộ nhớ app thường</string>
+    <string name="audit_app_su">App thường tìm thấy su</string>
+    <string name="audit_app_props">App thường đọc được prop bootloader mở khóa</string>
+    <string name="audit_app_selinux">App thường thấy SELinux permissive</string>
+    <string name="hiding_view_app">App thường thấy</string>
+    <string name="hiding_fix_on_still">Đã bật nhưng vẫn lộ</string>
+    <string name="hiding_root_view_failed">Không có góc nhìn root: camd không chạy được</string>
+    <string name="hiding_app_view_failed">Góc nhìn app thường không phản hồi</string>
     <string name="module_conflict_disable_hint">Tắt một trong các module để hết xung đột (có hiệu lực sau khi khởi động lại):</string>
     <string name="module_conflict_this">%1$s (module này)</string>
     <string name="module_conflict_disable">Tắt</string>

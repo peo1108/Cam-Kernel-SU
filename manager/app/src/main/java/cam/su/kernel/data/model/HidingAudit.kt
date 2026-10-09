@@ -22,6 +22,8 @@ data class HidingAudit(
         val items: List<String>,
         /** kernelUmount, selinuxHide, hideBootloader; null when camd cannot fix it */
         val fix: String?,
+        /** seen from inside an app without root (AppViewProbe), not by camd */
+        val appView: Boolean = false,
     )
 
     /** The same shape [parse] reads, so a saved audit can be read back. */
@@ -33,7 +35,14 @@ data class HidingAudit(
                 .put("level", if (f.leak) "leak" else "review")
                 .put("items", JSONArray(f.items))
                 .put("fix", f.fix ?: JSONObject.NULL)
+                .put("view", if (f.appView) "app" else "root")
         }))
+
+    /** This audit and [other] as one, e.g. camd's and the app view's. */
+    operator fun plus(other: HidingAudit): HidingAudit {
+        val all = findings + other.findings
+        return HidingAudit(findings = all, fixable = all.count { it.fix != null })
+    }
 
     companion object {
         fun parse(json: String): HidingAudit? = runCatching {
@@ -47,6 +56,7 @@ data class HidingAudit(
                     leak = f.optString("level") == "leak",
                     items = List(items?.length() ?: 0) { items!!.getString(it) },
                     fix = if (f.isNull("fix")) null else f.optString("fix").takeIf(String::isNotEmpty),
+                    appView = f.optString("view") == "app",
                 )
             }
             HidingAudit(

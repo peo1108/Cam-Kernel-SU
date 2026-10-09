@@ -26,8 +26,10 @@ data class HidingFix(
 @Immutable
 data class HidingCheckUiState(
     val scanning: Boolean = false,
-    /** the last scan could not run (camd missing, no root) */
-    val scanFailed: Boolean = false,
+    /** camd could not run the last audit (camd missing, no root) */
+    val rootViewFailed: Boolean = false,
+    /** the isolated probe did not answer */
+    val appViewFailed: Boolean = false,
     /** null when there was never a scan */
     val scanTime: Long? = null,
     /** the scan [findings] were compared with; null when there was none */

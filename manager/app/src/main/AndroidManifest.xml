@@ -94,6 +94,13 @@
             android:isolatedProcess="true"
             android:useAppZygote="true" />
 
+        <!-- checks root hiding the way an app without root sees it; no app zygote, its preload starts camd -->
+        <service
+            android:name=".hiding.HidingProbeService"
+            android:exported="false"
+            android:isolatedProcess="true"
+            android:process=":hiding_probe" />
+
         <service
             android:name=".ui.util.DownloadService"
             android:exported="false"

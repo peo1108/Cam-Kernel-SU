@@ -3,6 +3,7 @@ package cam.su.kernel
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.os.Build
+import android.os.Process
 import android.os.UserManager
 import android.system.Os
 import androidx.lifecycle.ViewModelProvider
@@ -41,7 +42,8 @@ class CamApplication : Application(), ViewModelStoreOwner {
         super.onCreate()
         camApp = this
 
-        if (!isUserUnlocked()) {
+        // isolated services (the hiding probe, jailbreak) have no app data and no root: set up nothing
+        if (Process.isIsolated() || !isUserUnlocked()) {
             return
         }
 

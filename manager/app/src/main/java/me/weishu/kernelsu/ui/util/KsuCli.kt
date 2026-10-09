@@ -25,6 +25,7 @@ import me.weishu.kernelsu.core.tasks.ProbeResult
 import me.weishu.kernelsu.core.utils.DataSourceChannel
 import me.weishu.kernelsu.data.model.BootGuardStatus
 import me.weishu.kernelsu.data.model.HideBootloaderStatus
+import me.weishu.kernelsu.data.model.HidingAudit
 import me.weishu.kernelsu.data.model.ModuleConflict
 import me.weishu.kernelsu.data.model.forModule
 import me.weishu.kernelsu.data.model.parseModuleConflicts
@@ -176,6 +177,12 @@ fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disable
     Log.i(TAG, "boot-guard set $args result: $result")
     return result
 }
+
+/** What non-root apps can still see; null when ksud could not run the audit. */
+fun runHidingAudit(): HidingAudit? = HidingAudit.parse(ksudStdout("hiding-audit"))
+
+/** Turns on every fix the audit offers; true when some of it needs a reboot. */
+fun applyHidingFixes(): Boolean = HidingAudit.rebootNeededAfterApply(ksudStdout("hiding-audit --apply"))
 
 fun getHideBootloaderStatus(): HideBootloaderStatus =
     HideBootloaderStatus.parse(ksudStdout("hide-bootloader status"))

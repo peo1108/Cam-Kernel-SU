@@ -45,6 +45,8 @@ fun FeaturesPager(
         onRescanConflicts = viewModel::rescanConflicts,
         onSetHideBootloader = viewModel::setHideBootloader,
         onCheckAttestation = viewModel::checkAttestation,
+        onRunAudit = viewModel::runAudit,
+        onApplyAuditFixes = viewModel::applyAuditFixes,
     )
 
     FeaturesPagerMiuix(uiState, actions, bottomInnerPadding)

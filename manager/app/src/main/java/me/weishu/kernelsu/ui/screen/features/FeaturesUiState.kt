@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import me.weishu.kernelsu.data.model.AttestationInfo
 import me.weishu.kernelsu.data.model.BootGuardStatus
 import me.weishu.kernelsu.data.model.HideBootloaderStatus
+import me.weishu.kernelsu.data.model.HidingAudit
 import me.weishu.kernelsu.data.model.ModuleConflict
 import me.weishu.kernelsu.data.model.RevokedCert
 import me.weishu.kernelsu.data.model.visible
@@ -25,6 +26,12 @@ data class FeaturesUiState(
     /** null when the revocation list could not be fetched */
     val revoked: List<RevokedCert>? = null,
     val checkingAttestation: Boolean = false,
+    /** null until the hiding audit has run (or when ksud could not run it) */
+    val audit: HidingAudit? = null,
+    val auditRun: Boolean = false,
+    val auditing: Boolean = false,
+    /** the last applied fixes take full effect only after a reboot */
+    val auditRebootNeeded: Boolean = false,
 ) {
     val conflicts: List<ModuleConflict>
         get() = allConflicts.visible(conflictDetection, conflictIncludeProps)
@@ -44,4 +51,6 @@ data class FeaturesActions(
     val onRescanConflicts: () -> Unit,
     val onSetHideBootloader: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
+    val onRunAudit: () -> Unit,
+    val onApplyAuditFixes: () -> Unit,
 )

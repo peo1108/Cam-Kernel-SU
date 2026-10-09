@@ -146,6 +146,12 @@ enum Commands {
         /// Turn on every suggested fix (kernel umount, SELinux hide, hide bootloader)
         #[arg(long, default_value = "false")]
         apply: bool,
+        /// Hiding rules JSON from the Manager (su paths, map markers, mount sources)
+        #[arg(long)]
+        rules: Option<PathBuf>,
+        /// Look through this app uid's running processes instead of the whole device
+        #[arg(long, conflicts_with = "apply")]
+        uid: Option<u32>,
     },
 
     /// Show boot information
@@ -596,7 +602,7 @@ pub fn run() -> Result<()> {
 
         Commands::SoftReboot => crate::soft_reboot::soft_reboot(),
 
-        Commands::HidingAudit { apply } => crate::hiding_audit::run(apply),
+        Commands::HidingAudit { apply, rules, uid } => crate::hiding_audit::run(apply, rules, uid),
 
         Commands::HideBootloader { command } => match command {
             HideBootloader::Status => crate::hide_bootloader::status(),

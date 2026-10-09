@@ -78,6 +78,12 @@ class HidingRulesRepository(private val context: Context = camApp) {
         return if (saved != null && saved.version > bundled.version) saved else bundled
     }
 
+    /** [current] written out for camd, which reads the rules from a file (`hiding-audit --rules`). */
+    fun currentFile(): File = File(context.filesDir, "hiding_check/rules-current.json").apply {
+        parentFile?.mkdirs()
+        writeText(current().toJson())
+    }
+
     /** What the page shows before (or without) a check. */
     fun status(): HidingRulesStatus = HidingRulesStatus(
         rules = current(),

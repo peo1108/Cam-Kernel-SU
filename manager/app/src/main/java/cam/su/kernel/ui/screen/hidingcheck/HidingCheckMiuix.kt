@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.data.model.HidingAudit
 import cam.su.kernel.data.repository.HidingRulesStatus
+import cam.su.kernel.ui.component.AttestationResult
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassExpandableCard
 import cam.su.kernel.ui.component.glass.GlassIconButton
@@ -86,6 +87,9 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 /** Items shown per finding; the rest are only counted. */
 private const val ITEMS_SHOWN = 6
+
+/** Modules a finding offers to turn off; more are only named. */
+private const val MODULE_BUTTONS = 3
 
 private val cardModifier = Modifier
     .fillMaxWidth()
@@ -147,13 +151,35 @@ fun HidingCheckScreenMiuix(
                     item { SmallTitle(text = stringResource(R.string.hiding_section_findings)) }
                     items(state.findings, key = { it.finding.id }) { checked ->
                         val fixOn = checked.finding.fix?.let { state.fix(it).enabled } == true
-                        FindingCard(checked, fixOn, actions)
+                        FindingCard(checked, fixOn, state, actions)
                     }
                 }
 
                 item {
                     SmallTitle(text = stringResource(R.string.hiding_section_fixes))
                     FixesCard(state, actions)
+                }
+
+                if (state.passed.isNotEmpty()) {
+                    item {
+                        SmallTitle(text = stringResource(R.string.hiding_section_passed))
+                        GlassCard(modifier = cardModifier) {
+                            state.passed.forEach { check ->
+                                BasicComponent(
+                                    title = stringResource(passedTitle(check.id)),
+                                    summary = check.rootCount?.takeIf { it > 0 }?.let { stringResource(R.string.hiding_ok_root_count, it) },
+                                    startAction = { RowIcon(Icons.Rounded.CheckCircle, colorScheme.primary) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (state.app == null) {
+                    item {
+                        SmallTitle(text = stringResource(R.string.hiding_section_attestation))
+                        AttestationCard(state, actions)
+                    }
                 }
 
                 if (state.gone.isNotEmpty()) {
@@ -242,6 +268,14 @@ private fun OverviewCard(state: HidingCheckUiState, actions: HidingCheckActions,
                     .padding(start = 12.dp, end = 8.dp)
                     .weight(1f),
             ) {
+                state.app?.let { app ->
+                    Text(
+                        text = app.label,
+                        fontSize = 12.sp,
+                        color = colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
                 Text(
                     text = when {
                         state.scanning -> stringResource(R.string.audit_running)
@@ -273,6 +307,9 @@ private fun OverviewCard(state: HidingCheckUiState, actions: HidingCheckActions,
                 }
                 if (state.appViewFailed) {
                     Text(text = stringResource(R.string.hiding_app_view_failed), fontSize = 12.sp, color = colorScheme.error)
+                }
+                if (state.app?.running == false) {
+                    Text(text = stringResource(R.string.hiding_app_not_running), fontSize = 12.sp, color = colorScheme.error)
                 }
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -316,6 +353,15 @@ private fun OverviewCard(state: HidingCheckUiState, actions: HidingCheckActions,
                 colors = if (state.pendingFixes.isEmpty()) ButtonDefaults.textButtonColorsPrimary() else ButtonDefaults.textButtonColors(),
                 modifier = Modifier.weight(1f),
             )
+            if (state.app?.running == false) {
+                Spacer(Modifier.width(12.dp))
+                TextButton(
+                    text = stringResource(R.string.hiding_launch_app),
+                    onClick = actions.onLaunchApp,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
             if (state.pendingFixes.isNotEmpty()) {
                 Spacer(Modifier.width(12.dp))
                 TextButton(
@@ -340,13 +386,15 @@ private fun OverviewCard(state: HidingCheckUiState, actions: HidingCheckActions,
 }
 
 @Composable
-private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, actions: HidingCheckActions) {
+private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, state: HidingCheckUiState, actions: HidingCheckActions) {
     var expanded by rememberSaveable(checked.finding.id) { mutableStateOf(false) }
     val finding = checked.finding
+    val modules = finding.modules.map(state::moduleName)
     val summary = buildList {
-        add(stringResource(R.string.hiding_items, finding.items.size))
+        if (modules.isNotEmpty()) add(stringResource(R.string.hiding_from_modules, modules.joinToString()))
+        if (finding.items.isNotEmpty()) add(stringResource(R.string.hiding_items, finding.items.size))
         if (checked.newItems.isNotEmpty()) add(stringResource(R.string.hiding_new_items, checked.newItems.size))
-        add(stringResource(fixLabel(finding.fix, fixOn)))
+        add(stringResource(fixLabel(finding, fixOn)))
     }.joinToString(" · ")
 
     GlassExpandableCard(
@@ -401,6 +449,29 @@ private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, actions: Hiding
                 modifier = Modifier.padding(start = 54.dp, end = 16.dp, top = 1.dp, bottom = 1.dp),
             )
         }
+        if (finding.modules.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.hiding_from_modules, modules.joinToString()),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            )
+            finding.modules.take(MODULE_BUTTONS).forEach { id ->
+                val off = id in state.disabledModules
+                TextButton(
+                    text = stringResource(
+                        if (off) R.string.hiding_module_disabled else R.string.hiding_disable_module,
+                        state.moduleName(id),
+                    ),
+                    enabled = !off,
+                    onClick = { actions.onDisableModule(id) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                )
+            }
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -408,7 +479,7 @@ private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, actions: Hiding
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "→ ${stringResource(fixLabel(finding.fix, fixOn))}",
+                text = "→ ${stringResource(fixLabel(finding, fixOn))}",
                 fontSize = 12.sp,
                 color = if (finding.fix != null && !fixOn) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.weight(1f),
@@ -458,6 +529,29 @@ private fun DetectorCard(
             summary = stringResource(R.string.hiding_check_updates_summary),
             startAction = { RowIcon(Icons.Rounded.Refresh, colorScheme.onBackground) },
             onClick = { if (!checking) actions.onCheckUpdates() },
+        )
+    }
+}
+
+@Composable
+private fun AttestationCard(state: HidingCheckUiState, actions: HidingCheckActions) {
+    GlassCard(modifier = cardModifier) {
+        Text(
+            text = stringResource(R.string.hiding_attestation_summary),
+            fontSize = 12.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+        )
+        state.attestation?.let { AttestationResult(it) }
+        TextButton(
+            text = stringResource(
+                if (state.checkingAttestation) R.string.features_attestation_checking else R.string.features_attestation_check
+            ),
+            enabled = !state.checkingAttestation,
+            onClick = actions.onCheckAttestation,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         )
     }
 }
@@ -538,15 +632,30 @@ private fun findingTitle(finding: HidingAudit.Finding): String {
         "appSu" -> R.string.audit_app_su
         "appProps" -> R.string.audit_app_props
         "appSelinux" -> R.string.audit_app_selinux
+        "appHooked" -> R.string.audit_app_hooked
+        "profileUmount" -> R.string.audit_profile_umount
+        "defaultProfileUmount" -> R.string.audit_default_profile_umount
         else -> null
     }
     return res?.let { stringResource(it) } ?: finding.id
 }
 
-/** [fixOn]: the fix is on and the finding is still there */
-private fun fixLabel(fix: String?, fixOn: Boolean): Int = when {
-    fix != null && fixOn -> R.string.hiding_fix_on_still
-    else -> fixLabel(fix)
+/** What to do about [finding]; [fixOn]: its fix is on and the finding is still there. */
+private fun fixLabel(finding: HidingAudit.Finding, fixOn: Boolean): Int = when {
+    finding.fix != null && fixOn -> R.string.hiding_fix_on_still
+    finding.id == "profileUmount" || finding.id == "defaultProfileUmount" -> R.string.hiding_fix_profile
+    finding.id == "appHooked" -> R.string.hiding_fix_hooked
+    else -> fixLabel(finding.fix)
+}
+
+private fun passedTitle(id: String): Int = when (id) {
+    "appMounts" -> R.string.hiding_ok_app_mounts
+    "appMaps" -> R.string.hiding_ok_app_maps
+    "appSu" -> R.string.hiding_ok_app_su
+    "appProps" -> R.string.hiding_ok_app_props
+    "appSelinux" -> R.string.hiding_ok_app_selinux
+    "appHooked" -> R.string.hiding_ok_app_hooked
+    else -> R.string.hiding_ok_profile_umount
 }
 
 private fun fixLabel(fix: String?): Int = when (fix) {

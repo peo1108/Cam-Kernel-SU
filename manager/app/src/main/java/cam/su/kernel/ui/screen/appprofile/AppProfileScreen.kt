@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.util.forceStopApp
 import cam.su.kernel.ui.util.launchApp
 import cam.su.kernel.ui.util.openSystemAppInfo
@@ -46,6 +47,7 @@ fun AppProfileScreen(uid: Int) {
         onViewTemplate = editor.onViewTemplate,
         onManageTemplate = editor.onManageTemplate,
         onProfileChange = editor.onProfileChange,
+        onCheckHiding = dropUnlessResumed { navigator.push(Route.HidingCheck(uid)) },
     )
 
     AppProfileScreenMiuix(

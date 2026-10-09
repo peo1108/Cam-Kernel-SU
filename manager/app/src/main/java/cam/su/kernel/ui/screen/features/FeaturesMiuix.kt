@@ -40,9 +40,11 @@ import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.data.model.ConflictKind
 import cam.su.kernel.data.model.PropCheck
+import cam.su.kernel.ui.component.AttestationResult
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.GlassExpandableCard
 import cam.su.kernel.ui.theme.LocalEnableBlur
+import cam.su.kernel.ui.util.AttestationReport
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -267,47 +269,7 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
 
         SectionTitle(stringResource(R.string.features_attestation))
         if (state.attestationChecked) {
-            val info = state.attestation
-            if (info == null) {
-                CheckLine(stringResource(R.string.features_attestation_unreadable), ok = false)
-            } else {
-                val level = when (info.securityLevel) {
-                    1 -> "TEE"
-                    2 -> "StrongBox"
-                    else -> stringResource(R.string.features_attestation_software)
-                }
-                val bootState = when (info.verifiedBootState) {
-                    0 -> "Verified"
-                    1 -> "SelfSigned"
-                    2 -> "Unverified"
-                    else -> "Failed"
-                }
-                CheckLine(stringResource(R.string.features_attestation_level, level), ok = info.securityLevel != 0)
-                CheckLine(
-                    stringResource(
-                        R.string.features_attestation_locked,
-                        stringResource(if (info.deviceLocked) R.string.features_attestation_yes else R.string.features_attestation_no),
-                    ),
-                    ok = info.deviceLocked,
-                )
-                CheckLine(stringResource(R.string.features_attestation_state, bootState), ok = info.verifiedBootState == 0)
-                val revoked = state.revoked
-                when {
-                    revoked == null -> CheckLine(stringResource(R.string.features_attestation_revocation_unknown), ok = false)
-                    revoked.isEmpty() -> CheckLine(stringResource(R.string.features_attestation_chain_ok, state.chainSize), ok = true)
-                    else -> revoked.forEach { cert ->
-                        CheckLine(stringResource(R.string.features_attestation_revoked, cert.index + 1, cert.reason), ok = false)
-                    }
-                }
-                if (!info.deviceLocked || info.verifiedBootState != 0) {
-                    Text(
-                        text = stringResource(R.string.features_attestation_layer2),
-                        fontSize = 12.sp,
-                        color = colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    )
-                }
-            }
+            AttestationResult(AttestationReport(state.attestation, state.chainSize, state.revoked))
         }
         TextButton(
             text = stringResource(

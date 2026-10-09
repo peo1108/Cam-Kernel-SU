@@ -1,5 +1,6 @@
 package cam.su.kernel.hiding
 
+import cam.su.kernel.data.model.HidingAudit
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.io.File
@@ -18,7 +19,7 @@ class AppViewProbeTest {
             50 25 0:30 / /apex rw,nosuid,nodev,noexec,relatime shared:7 - tmpfs tmpfs rw,seclabel
             60 25 254:5 / /data rw,nosuid,nodev,noatime shared:30 - f2fs /dev/block/dm-5 rw,seclabel
         """.trimIndent()
-        assertEquals(emptyList<String>(), AppViewProbe.mounts(mountinfo, rules))
+        assertEquals(emptyList<AppViewProbe.SeenMount>(), AppViewProbe.mounts(mountinfo, rules))
     }
 
     @Test
@@ -28,15 +29,20 @@ class AppViewProbeTest {
             70 25 0:40 / /system/bin rw,relatime shared:40 - overlay KSU ro,lowerdir=/data/adb/modules/a/system/bin:/system/bin
             71 25 0:41 / /product/overlay rw,relatime - tmpfs tmpfs rw
             72 60 254:5 /adb/modules /data/adb/modules rw,relatime - f2fs /dev/block/dm-5 rw
+            73 25 254:5 /adb/modules/hosts/system/etc/hosts /system/etc/hosts ro - f2fs /dev/block/dm-5 rw
         """.trimIndent()
+        val mounts = AppViewProbe.mounts(mountinfo, rules)
         assertEquals(
             listOf(
                 "/system/bin (overlay, KSU)",
                 "/product/overlay (tmpfs, tmpfs)",
                 "/data/adb/modules (f2fs, /dev/block/dm-5)",
+                "/system/etc/hosts (f2fs, /dev/block/dm-5)",
             ),
-            AppViewProbe.mounts(mountinfo, rules),
+            mounts.map { it.item },
         )
+        // a bind from the data partition only names /adb/... in its root
+        assertEquals(listOf("a", "hosts"), HidingAudit.moduleIds(mounts.map { it.origin }))
     }
 
     @Test
@@ -68,6 +74,14 @@ class AppViewProbeTest {
             AppViewProbe.props(rules) { props[it].orEmpty() }.toSet(),
         )
         assertEquals(listOf("ro.build.tags=test-keys"), AppViewProbe.props(rules) { if (it == "ro.build.tags") "test-keys" else "" })
+    }
+
+    @Test
+    fun libcHidingMountLinesIsFound() {
+        val raw = "1 0 0:1 / / ro - erofs /dev/dm-0 ro\n2 1 0:2 / /system/bin ro - overlay KSU ro\n"
+        val libc = "1 0 0:1 / / ro - erofs /dev/dm-0 ro\n"
+        assertEquals(listOf("/proc/self/mountinfo: 1 hidden from libc", "  overlay KSU ro"), AppViewProbe.hookedMounts(raw, libc))
+        assertEquals(emptyList<String>(), AppViewProbe.hookedMounts(raw, raw))
     }
 
     @Test

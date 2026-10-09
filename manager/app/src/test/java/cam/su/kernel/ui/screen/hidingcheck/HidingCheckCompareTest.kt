@@ -41,6 +41,27 @@ class HidingCheckCompareTest {
     @Test
     fun savedAuditReadsBack() {
         val original = audit(finding("maps", "a"), finding("appSu", "/system/bin/su", appView = true))
+            .copy(stats = mapOf("appView" to 1, "rootModuleMounts" to 4))
+            .let { it.copy(findings = it.findings.map { f -> f.copy(modules = listOf("zygisk")) }) }
         assertEquals(original, HidingAudit.parse(original.toJson().toString()))
+    }
+
+    @Test
+    fun passedChecksAreTheOnesThatRan() {
+        val scan = audit(finding("appMaps", "/data/adb/x.so", appView = true))
+            .copy(stats = mapOf("appView" to 1, "appNative" to 0, "rootModuleMounts" to 7, "profileChecked" to 1))
+        val passed = HidingCheckUiState.passed(scan, ignored = setOf("appSu"))
+        assertEquals(listOf("appMounts", "appProps", "appSelinux", "profileUmount"), passed.map { it.id })
+        assertEquals(7, passed.first().rootCount)
+        // nothing ran, nothing passed
+        assertEquals(emptyList<PassedCheck>(), HidingCheckUiState.passed(audit(), emptySet()))
+    }
+
+    @Test
+    fun mergedAuditsKeepEveryStat() {
+        val merged = audit(finding("maps", "a")).copy(stats = mapOf("rootModuleMounts" to 2)) +
+                audit().copy(stats = mapOf("appView" to 1))
+        assertEquals(mapOf("rootModuleMounts" to 2, "appView" to 1), merged.stats)
+        assertEquals(1, merged.fixable)
     }
 }

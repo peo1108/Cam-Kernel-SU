@@ -12,6 +12,8 @@ import org.json.JSONObject
 data class HidingAudit(
     val findings: List<Finding>,
     val fixable: Int,
+    /** counts next to the findings, by name: rootModuleMounts, modules, appView, appNative, appMounts, processes */
+    val stats: Map<String, Int> = emptyMap(),
 ) {
     @Immutable
     data class Finding(
@@ -22,13 +24,16 @@ data class HidingAudit(
         val items: List<String>,
         /** kernelUmount, selinuxHide, hideBootloader; null when camd cannot fix it */
         val fix: String?,
-        /** seen from inside an app without root (AppViewProbe), not by camd */
+        /** seen from inside an app without root (AppViewProbe, or camd --uid), not across the device */
         val appView: Boolean = false,
+        /** modules the items come from, when their paths name one */
+        val modules: List<String> = emptyList(),
     )
 
     /** The same shape [parse] reads, so a saved audit can be read back. */
     fun toJson(): JSONObject = JSONObject()
         .put("fixable", fixable)
+        .put("stats", JSONObject(stats))
         .put("findings", JSONArray(findings.map { f ->
             JSONObject()
                 .put("id", f.id)
@@ -36,12 +41,13 @@ data class HidingAudit(
                 .put("items", JSONArray(f.items))
                 .put("fix", f.fix ?: JSONObject.NULL)
                 .put("view", if (f.appView) "app" else "root")
+                .put("modules", JSONArray(f.modules))
         }))
 
     /** This audit and [other] as one, e.g. camd's and the app view's. */
     operator fun plus(other: HidingAudit): HidingAudit {
         val all = findings + other.findings
-        return HidingAudit(findings = all, fixable = all.count { it.fix != null })
+        return HidingAudit(findings = all, fixable = all.count { it.fix != null }, stats = stats + other.stats)
     }
 
     companion object {
@@ -57,13 +63,40 @@ data class HidingAudit(
                     items = List(items?.length() ?: 0) { items!!.getString(it) },
                     fix = if (f.isNull("fix")) null else f.optString("fix").takeIf(String::isNotEmpty),
                     appView = f.optString("view") == "app",
+                    modules = strings(f.optJSONArray("modules")),
                 )
             }
+            val stats = obj.optJSONObject("stats")
             HidingAudit(
                 findings = findings,
                 fixable = obj.optInt("fixable", findings.count { it.fix != null }),
+                stats = stats?.keys()?.asSequence()?.associateWith { stats.optInt(it) }.orEmpty(),
             )
         }.getOrNull()
+
+        private fun strings(array: JSONArray?): List<String> = List(array?.length() ?: 0) { array!!.getString(it) }
+
+        /**
+         * Module ids the texts name, as bind roots (`/adb/modules/<id>/...`) and overlay
+         * lowerdirs (`/data/adb/modules/<id>/...`) show them; each once, in order. camd's
+         * hiding_audit.rs does the same.
+         */
+        fun moduleIds(texts: Iterable<String>): List<String> {
+            val out = LinkedHashSet<String>()
+            for (text in texts) {
+                var rest = text
+                while (true) {
+                    val at = rest.indexOf(MODULES_DIR)
+                    if (at < 0) break
+                    rest = rest.substring(at + MODULES_DIR.length)
+                    val id = rest.split('/', ':', ',', ' ').first()
+                    if (id.isNotEmpty()) out += id
+                }
+            }
+            return out.toList()
+        }
+
+        private const val MODULES_DIR = "adb/modules/"
 
         /** Output of `camd hiding-audit --apply`: whether some of it only takes effect after a reboot. */
         fun rebootNeededAfterApply(json: String): Boolean = runCatching {

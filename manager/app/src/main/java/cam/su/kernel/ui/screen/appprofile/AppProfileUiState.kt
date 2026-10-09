@@ -27,4 +27,5 @@ data class AppProfileActions(
     val onViewTemplate: (String) -> Unit,
     val onManageTemplate: () -> Unit,
     val onProfileChange: (CamNative.Profile) -> Unit,
+    val onCheckHiding: () -> Unit,
 )

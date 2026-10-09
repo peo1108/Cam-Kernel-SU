@@ -12,12 +12,16 @@ data class SavedHidingScan(val time: Long, val audit: HidingAudit)
 
 /**
  * Keeps the last two hiding audits so the page can tell what is new and what got hidden,
- * and the findings the user chose to ignore.
+ * and the findings the user chose to ignore. [scope] keeps one app's checks (`uid_<uid>`)
+ * apart from the device's (empty).
  */
-class HidingHistoryRepository(private val context: Context = camApp) {
+class HidingHistoryRepository(
+    private val context: Context = camApp,
+    private val scope: String = "",
+) {
 
     private val dir: File
-        get() = File(context.filesDir, "hiding_check")
+        get() = File(context.filesDir, "hiding_check/history/${scope.ifEmpty { "device" }}")
 
     private val prefs
         get() = context.getSharedPreferences("hiding_check", Context.MODE_PRIVATE)

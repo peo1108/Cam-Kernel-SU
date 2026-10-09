@@ -24,3 +24,6 @@ target_link_libraries(camjni ${log-lib})
 
 add_library(adbroot SHARED adbroot.cc)
 target_link_libraries(adbroot ${log-lib})
+
+# raw syscalls for the isolated root hiding probe
+add_library(hidingprobe SHARED hiding_probe.cc)

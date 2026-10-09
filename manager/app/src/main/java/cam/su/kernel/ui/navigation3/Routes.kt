@@ -66,7 +66,12 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
-    data object HidingCheck : Route
+    data class HidingCheck(val uid: Int = DEVICE) : Route {
+        companion object {
+            /** the whole device, not one app */
+            const val DEVICE = -1
+        }
+    }
 
     @Parcelize
     @Serializable

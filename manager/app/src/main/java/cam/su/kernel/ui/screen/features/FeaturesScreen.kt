@@ -49,7 +49,7 @@ fun FeaturesPager(
         onRescanConflicts = viewModel::rescanConflicts,
         onSetHideBootloader = viewModel::setHideBootloader,
         onCheckAttestation = viewModel::checkAttestation,
-        onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck) },
+        onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck()) },
     )
 
     FeaturesPagerMiuix(uiState, actions, bottomInnerPadding)

@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,6 +86,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.MoreCircle
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -162,6 +164,9 @@ fun AppProfileScreenMiuix(
                         onManageTemplate = actions.onManageTemplate,
                         onProfileChange = actions.onProfileChange,
                     )
+                    if (!state.appGroup.primary.special) {
+                        HidingCheckEntry(allowSu = state.appGroup.anyAllowSu, onClick = actions.onCheckHiding)
+                    }
                     // What the app is, how much room it takes, and what can be done to it.
                     if (!state.isUidGroup && !state.appGroup.primary.special) {
                         AppManageCards(
@@ -355,6 +360,31 @@ private fun AppProfileInner(
                 Spacer(Modifier.height(3.dp))
             }
         }
+    }
+}
+
+/** Opens the root hiding check for this app: what its own running processes see. */
+@Composable
+private fun HidingCheckEntry(allowSu: Boolean, onClick: () -> Unit) {
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+    ) {
+        ArrowPreference(
+            title = stringResource(R.string.hiding_app_entry),
+            summary = stringResource(if (allowSu) R.string.hiding_app_entry_root else R.string.hiding_app_entry_summary),
+            startAction = {
+                Icon(
+                    Icons.Rounded.Shield,
+                    modifier = Modifier.padding(end = 6.dp),
+                    contentDescription = null,
+                    tint = colorScheme.onBackground,
+                )
+            },
+            onClick = onClick,
+        )
     }
 }
 

@@ -9,10 +9,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.ui.navigation3.LocalNavigator
 import cam.su.kernel.ui.viewmodel.HidingCheckViewModel
 
+/** The root hiding check, for the whole device or, with [uid], for that app. */
 @Composable
-fun HidingCheckScreen() {
+fun HidingCheckScreen(uid: Int? = null) {
     val navigator = LocalNavigator.current
-    val viewModel = viewModel<HidingCheckViewModel>()
+    val viewModel = viewModel(key = "hiding-check-${uid ?: "device"}") { HidingCheckViewModel(uid) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // only the saved scan and the switches; the audit itself waits for the user
@@ -27,6 +28,9 @@ fun HidingCheckScreen() {
         onRestore = viewModel::restore,
         onClearHistory = viewModel::clearHistory,
         onCheckUpdates = viewModel::checkUpdates,
+        onDisableModule = viewModel::disableModule,
+        onCheckAttestation = viewModel::checkAttestation,
+        onLaunchApp = viewModel::launchCheckedApp,
     )
 
     HidingCheckScreenMiuix(uiState, actions)

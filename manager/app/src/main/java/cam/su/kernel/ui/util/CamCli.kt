@@ -37,6 +37,7 @@ import cam.su.kernel.ui.screen.install.isValidSeedPackageName
 import cam.su.kernel.ui.util.module.readModuleIdFromZip
 import okhttp3.OkHttpClient
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -178,8 +179,21 @@ fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disable
     return result
 }
 
-/** What non-root apps can still see; null when camd could not run the audit. */
-fun runHidingAudit(): HidingAudit? = HidingAudit.parse(camdStdout("hiding-audit"))
+/** What non-root apps can still see; null when camd could not run the audit. [rules]: hiding rules JSON for camd. */
+fun runHidingAudit(rules: File? = null): HidingAudit? =
+    HidingAudit.parse(camdStdout("hiding-audit" + rulesArg(rules)))
+
+/**
+ * What the app with [uid] sees from its own running processes, and whether any runs;
+ * null when camd could not run the audit.
+ */
+fun runAppHidingAudit(uid: Int, rules: File? = null): Pair<HidingAudit, Boolean>? {
+    val out = camdStdout("hiding-audit --uid $uid" + rulesArg(rules))
+    val audit = HidingAudit.parse(out) ?: return null
+    return audit to runCatching { JSONObject(out).optBoolean("running") }.getOrDefault(false)
+}
+
+private fun rulesArg(rules: File?): String = rules?.let { " --rules '${it.absolutePath}'" }.orEmpty()
 
 /** Turns on every fix the audit offers; true when some of it needs a reboot. */
 fun applyHidingFixes(): Boolean = HidingAudit.rebootNeededAfterApply(camdStdout("hiding-audit --apply"))

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import cam.su.kernel.Cam
 import cam.su.kernel.camApp
 import cam.su.kernel.data.model.HidingAudit
 import cam.su.kernel.data.repository.HidingHistoryRepository
@@ -20,25 +21,33 @@ import cam.su.kernel.data.repository.SavedHidingScan
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.hiding.HidingProbeService
+import cam.su.kernel.ui.screen.hidingcheck.CheckedApp
 import cam.su.kernel.ui.screen.hidingcheck.HidingCheckUiState
 import cam.su.kernel.ui.screen.hidingcheck.HidingFix
 import cam.su.kernel.ui.util.applyHidingFixes
+import cam.su.kernel.ui.util.checkAttestationReport
 import cam.su.kernel.ui.util.getHideBootloaderStatus
+import cam.su.kernel.ui.util.launchApp
+import cam.su.kernel.ui.util.listModules
+import cam.su.kernel.ui.util.runAppHidingAudit
 import cam.su.kernel.ui.util.runHidingAudit
 import cam.su.kernel.ui.util.setHideBootloader
+import cam.su.kernel.ui.util.toggleModule
+import org.json.JSONArray
 
 /**
- * The root hiding check page. Nothing runs in the background: opening the page reads the
- * saved scan and the switches, and checks for newer rules at most every few hours; the
- * audit runs when the user asks for it.
+ * The root hiding check page, for the whole device or, with [uid], for one app. Nothing
+ * runs in the background: opening the page reads the saved scan and the switches, and
+ * checks for newer rules at most every few hours; the audit runs when the user asks for it.
  */
 class HidingCheckViewModel(
-    private val history: HidingHistoryRepository = HidingHistoryRepository(),
+    private val uid: Int? = null,
+    private val history: HidingHistoryRepository = HidingHistoryRepository(scope = uid?.let { "uid_$it" }.orEmpty()),
     private val rulesRepo: HidingRulesRepository = HidingRulesRepository(),
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HidingCheckUiState())
+    private val _uiState = MutableStateFlow(HidingCheckUiState(app = uid?.let(::checkedApp)))
     val uiState: StateFlow<HidingCheckUiState> = _uiState.asStateFlow()
 
     /** what [HidingCheckUiState.findings] shows, and what it was compared with */
@@ -52,6 +61,8 @@ class HidingCheckViewModel(
             previous = before
             publish()
             refreshFixes()
+            val names = withContext(Dispatchers.IO) { moduleNames() }
+            _uiState.update { it.copy(moduleNames = names) }
             checkRules(force = false)
         }
     }
@@ -87,7 +98,7 @@ class HidingCheckViewModel(
         viewModelScope.launch {
             val rebootNeeded = withContext(Dispatchers.IO) {
                 // camd covers its own findings; the app view can ask for one camd did not see
-                val camd = applyHidingFixes()
+                val camd = uid == null && applyHidingFixes()
                 val rest = pending.map { writeFix(it, true) }
                 camd || rest.any { it }
             }
@@ -123,6 +134,32 @@ class HidingCheckViewModel(
         else -> false
     }
 
+    /** Turns off a module a finding names; its mounts go away with the next boot. */
+    fun disableModule(id: String) {
+        viewModelScope.launch {
+            val done = withContext(Dispatchers.IO) { toggleModule(id, false) }
+            if (done) {
+                ModuleListSignal.invalidate()
+                _uiState.update { it.copy(disabledModules = it.disabledModules + id, rebootNeeded = true) }
+            }
+        }
+    }
+
+    fun checkAttestation() {
+        if (_uiState.value.checkingAttestation) return
+        _uiState.update { it.copy(checkingAttestation = true) }
+        viewModelScope.launch {
+            val report = withContext(Dispatchers.IO) { checkAttestationReport() }
+            _uiState.update { it.copy(attestation = report, checkingAttestation = false) }
+        }
+    }
+
+    /** Starts the checked app, so its processes are there to look at. */
+    fun launchCheckedApp() {
+        val app = _uiState.value.app ?: return
+        launchApp(app.packageName, app.uid / 100_000)
+    }
+
     fun ignore(id: String) {
         history.ignored = history.ignored + id
         publish()
@@ -142,21 +179,70 @@ class HidingCheckViewModel(
         }
     }
 
-    /** camd's audit (the root view) and the isolated probe's (the app view), side by side. */
-    private suspend fun audit(): Pair<HidingAudit?, HidingAudit?> = coroutineScope {
-        val root = async(Dispatchers.IO) { runHidingAudit() }
-        val app = async { HidingProbeService.scan(camApp, withContext(Dispatchers.IO) { rulesRepo.current() }) }
-        root.await() to app.await()
+    /** One scan's result: what it found, and which views could not run. */
+    private class AuditResult(val audit: HidingAudit?, val rootFailed: Boolean, val appFailed: Boolean, val running: Boolean? = null)
+
+    private suspend fun audit(): AuditResult = if (uid != null) appAudit(uid) else deviceAudit()
+
+    /**
+     * camd's audit (the root view), the isolated probe's (the app view) and the app
+     * profiles that keep module mounts, side by side.
+     */
+    private suspend fun deviceAudit(): AuditResult = coroutineScope {
+        val rules = withContext(Dispatchers.IO) { rulesRepo.current() }
+        val root = async(Dispatchers.IO) { runHidingAudit(rulesRepo.currentFile()) }
+        val app = async { HidingProbeService.scan(camApp, rules) }
+        val profiles = async(Dispatchers.IO) { profileAudit(null) }
+        val (r, a) = root.await() to app.await()
+        AuditResult(listOfNotNull(r, a, profiles.await()).reduceOrNull(HidingAudit::plus), r == null, a == null)
     }
 
-    private suspend fun record(result: Pair<HidingAudit?, HidingAudit?>) {
-        val (root, app) = result
-        val audit = when {
-            root != null && app != null -> root + app
-            else -> root ?: app
+    /** What the app's own processes see (through camd), and its profile's umount. */
+    private suspend fun appAudit(uid: Int): AuditResult = withContext(Dispatchers.IO) {
+        val result = runAppHidingAudit(uid, rulesRepo.currentFile())
+            ?: return@withContext AuditResult(null, rootFailed = true, appFailed = false)
+        val (audit, running) = result
+        if (!running) return@withContext AuditResult(null, rootFailed = false, appFailed = false, running = false)
+        AuditResult(listOfNotNull(audit, profileAudit(setOf(uid))).reduce(HidingAudit::plus), false, false, running = true)
+    }
+
+    /**
+     * Apps without root whose profile keeps module mounts: they see modules even with kernel
+     * umount on. When every such app does, the default profile is the cause. Only [uids]
+     * when given; null when the app list is not loaded or kernel umount is off.
+     */
+    private fun profileAudit(uids: Set<Int>?): HidingAudit? {
+        if (!settingsRepo.isKernelUmountEnabled()) return null
+        val groups = SuperUserViewModel.apps
+            .filter { uids == null || it.uid in uids }
+            .groupBy { it.uid }
+            .filterValues { apps -> apps.none { it.allowSu } }
+        if (groups.isEmpty()) return null
+        val keeping = groups.filterKeys { uid ->
+            !(SuperUserViewModel.getGroupedApp(uid)?.shouldUmount ?: Cam.uidShouldUmount(uid))
         }
+        val stats = mapOf("profileChecked" to 1)
+        if (keeping.isEmpty()) return HidingAudit(emptyList(), 0, stats)
+        val finding = if (uids == null && keeping.size == groups.size && groups.size > 1) {
+            HidingAudit.Finding(id = "defaultProfileUmount", leak = true, items = emptyList(), fix = null)
+        } else {
+            HidingAudit.Finding(
+                id = "profileUmount",
+                leak = true,
+                items = keeping.values.map { apps -> "${apps.first().label} (${apps.first().packageName})" }.sorted(),
+                fix = null,
+            )
+        }
+        return HidingAudit(listOf(finding), 0, stats)
+    }
+
+    private suspend fun record(result: AuditResult) {
+        if (result.running != null) {
+            _uiState.update { it.copy(app = it.app?.copy(running = result.running)) }
+        }
+        val audit = result.audit
         if (audit == null) {
-            _uiState.update { it.copy(scanning = false, rootViewFailed = true, appViewFailed = true) }
+            _uiState.update { it.copy(scanning = false, rootViewFailed = result.rootFailed, appViewFailed = result.appFailed) }
             return
         }
         val scan = SavedHidingScan(System.currentTimeMillis(), audit)
@@ -164,7 +250,7 @@ class HidingCheckViewModel(
         // the last scan, saved or from this visit, is the one to compare with
         previous = current
         current = scan
-        _uiState.update { it.copy(scanning = false, rootViewFailed = root == null, appViewFailed = app == null) }
+        _uiState.update { it.copy(scanning = false, rootViewFailed = result.rootFailed, appViewFailed = result.appFailed) }
         publish()
     }
 
@@ -172,11 +258,19 @@ class HidingCheckViewModel(
         val scan = current
         if (scan == null) {
             _uiState.update {
-                it.copy(scanTime = null, previousTime = null, findings = emptyList(), gone = emptyList(), ignored = emptyList())
+                it.copy(
+                    scanTime = null,
+                    previousTime = null,
+                    findings = emptyList(),
+                    gone = emptyList(),
+                    ignored = emptyList(),
+                    passed = emptyList(),
+                )
             }
             return
         }
-        val (findings, gone, ignored) = HidingCheckUiState.compare(scan.audit, previous?.audit, history.ignored)
+        val ignoredIds = history.ignored
+        val (findings, gone, ignored) = HidingCheckUiState.compare(scan.audit, previous?.audit, ignoredIds)
         _uiState.update {
             it.copy(
                 scanTime = scan.time,
@@ -184,6 +278,7 @@ class HidingCheckViewModel(
                 findings = findings,
                 gone = gone,
                 ignored = ignored,
+                passed = HidingCheckUiState.passed(scan.audit, ignoredIds),
             )
         }
     }
@@ -198,5 +293,20 @@ class HidingCheckViewModel(
             )
         }
         _uiState.update { it.copy(kernelUmount = umount, selinuxHide = selinux, hideBootloader = bootloader) }
+    }
+
+    private companion object {
+        fun checkedApp(uid: Int): CheckedApp {
+            val primary = SuperUserViewModel.getGroupedApp(uid)?.primary
+            return CheckedApp(uid = uid, label = primary?.label ?: uid.toString(), packageName = primary?.packageName.orEmpty())
+        }
+
+        /** Module id to name, from `camd module list`. */
+        fun moduleNames(): Map<String, String> = runCatching {
+            val array = JSONArray(listModules())
+            (0 until array.length()).associate { i ->
+                array.getJSONObject(i).let { it.getString("id") to it.optString("name") }
+            }
+        }.getOrDefault(emptyMap())
     }
 }

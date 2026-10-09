@@ -9,7 +9,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.viewmodel.FeaturesViewModel
 
 @Composable
@@ -17,6 +20,7 @@ fun FeaturesPager(
     bottomInnerPadding: Dp,
     isCurrentPage: Boolean = true,
 ) {
+    val navigator = LocalNavigator.current
     val viewModel = viewModel<FeaturesViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -45,8 +49,7 @@ fun FeaturesPager(
         onRescanConflicts = viewModel::rescanConflicts,
         onSetHideBootloader = viewModel::setHideBootloader,
         onCheckAttestation = viewModel::checkAttestation,
-        onRunAudit = viewModel::runAudit,
-        onApplyAuditFixes = viewModel::applyAuditFixes,
+        onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck) },
     )
 
     FeaturesPagerMiuix(uiState, actions, bottomInnerPadding)

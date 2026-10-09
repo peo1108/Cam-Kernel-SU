@@ -66,6 +66,10 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
+    data object HidingCheck : Route
+
+    @Parcelize
+    @Serializable
     data object Install : Route
 
     @Parcelize

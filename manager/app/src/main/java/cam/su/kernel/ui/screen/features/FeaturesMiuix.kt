@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.data.model.ConflictKind
-import cam.su.kernel.data.model.HidingAudit
 import cam.su.kernel.data.model.PropCheck
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.GlassExpandableCard
@@ -56,6 +56,8 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import java.text.DateFormat
+import java.util.Date
 
 @Composable
 fun FeaturesPagerMiuix(
@@ -96,7 +98,7 @@ fun FeaturesPagerMiuix(
                 item { BootGuardCard(state, actions) }
                 item { ConflictCard(state, actions) }
                 item { HideBootloaderCard(state, actions) }
-                item { HidingAuditCard(state, actions) }
+                item { HidingCheckEntry(state, actions) }
                 item { Spacer(Modifier.height(bottomInnerPadding)) }
             }
         }
@@ -332,113 +334,24 @@ private fun CheckSection(title: String, checks: List<PropCheck>) {
     if (fine > 0) CheckLine(stringResource(R.string.features_bootloader_fine, fine), ok = true)
 }
 
-/** Items shown per finding; the rest are only counted. */
-private const val AUDIT_ITEMS_SHOWN = 6
-
 @Composable
-private fun HidingAuditCard(state: FeaturesUiState, actions: FeaturesActions) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    val audit = state.audit
-    val leaks = audit?.findings?.count { it.leak } ?: 0
-
+private fun HidingCheckEntry(state: FeaturesUiState, actions: FeaturesActions) {
+    val dates = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
+    val time = state.hidingScanTime
+    val status = when {
+        time == null -> stringResource(R.string.audit_summary)
+        state.hidingLeaks > 0 -> stringResource(R.string.hiding_status_leaks, state.hidingLeaks)
+        state.hidingFindings > 0 -> stringResource(R.string.hiding_status_review, state.hidingFindings)
+        else -> stringResource(R.string.hiding_status_clean)
+    }
+    // the whole check lives on its own page; this card only opens it
     GlassExpandableCard(
         icon = Icons.Rounded.Shield,
         title = stringResource(R.string.audit_title),
-        summary = when {
-            state.auditing -> stringResource(R.string.audit_running)
-            !state.auditRun -> stringResource(R.string.audit_summary)
-            audit == null -> stringResource(R.string.audit_failed)
-            audit.findings.isEmpty() -> stringResource(R.string.audit_clean)
-            else -> stringResource(R.string.audit_count, leaks, audit.findings.size - leaks, audit.fixable)
-        },
-        expanded = expanded,
-        onToggle = { expanded = !expanded },
-    ) {
-        if (audit != null) {
-            if (audit.findings.isEmpty()) {
-                CheckLine(stringResource(R.string.audit_clean), ok = true)
-            }
-            audit.findings.forEach { finding -> AuditFinding(finding) }
-            if (state.auditRebootNeeded) {
-                Text(
-                    text = stringResource(R.string.audit_reboot),
-                    fontSize = 12.sp,
-                    color = colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                )
-            }
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            TextButton(
-                text = stringResource(if (state.auditRun) R.string.audit_rescan else R.string.audit_scan),
-                enabled = !state.auditing,
-                onClick = actions.onRunAudit,
-                modifier = Modifier.weight(1f),
-            )
-            if (audit != null && audit.fixable > 0) {
-                Spacer(Modifier.width(12.dp))
-                TextButton(
-                    text = stringResource(R.string.audit_apply, audit.fixable),
-                    enabled = !state.auditing,
-                    onClick = actions.onApplyAuditFixes,
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AuditFinding(finding: HidingAudit.Finding) {
-    val title = when (finding.id) {
-        "moduleMounts" -> R.string.audit_module_mounts
-        "camMounts" -> R.string.audit_cam_mounts
-        "selinuxRules" -> R.string.audit_selinux_rules
-        "maps" -> R.string.audit_maps
-        "props" -> R.string.audit_props
-        "bootArgs" -> R.string.audit_boot_args
-        "lsposed" -> R.string.audit_lsposed
-        "revanced" -> R.string.audit_revanced
-        "customRom" -> R.string.audit_custom_rom
-        "files" -> R.string.audit_files
-        "selinux" -> R.string.audit_selinux
-        "adb" -> R.string.audit_adb
-        else -> null
-    }
-    Text(
-        text = "${if (finding.leak) "⚠" else "•"}  ${title?.let { stringResource(it) } ?: finding.id}",
-        fontSize = 13.sp,
-        fontWeight = FontWeight(600),
-        color = if (finding.leak) colorScheme.error else colorScheme.onSurface,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
-    )
-    val shown = finding.items.take(AUDIT_ITEMS_SHOWN)
-    val more = finding.items.size - shown.size
-    (shown + if (more > 0) listOf(stringResource(R.string.audit_more, more)) else emptyList()).forEach { item ->
-        Text(
-            text = item,
-            fontSize = 12.sp,
-            color = colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 1.dp, bottom = 1.dp),
-        )
-    }
-    val fix = when (finding.fix) {
-        "kernelUmount" -> R.string.audit_fix_kernel_umount
-        "selinuxHide" -> R.string.audit_fix_selinux_hide
-        "hideBootloader" -> R.string.audit_fix_hide_bootloader
-        else -> R.string.audit_fix_none
-    }
-    Text(
-        text = "→ ${stringResource(fix)}",
-        fontSize = 12.sp,
-        color = if (finding.fix != null) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
-        modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
-    )
+        summary = if (time == null) status else "$status · ${dates.format(Date(time))}",
+        expanded = false,
+        onToggle = actions.onOpenHidingCheck,
+    ) { }
 }
 
 @Composable

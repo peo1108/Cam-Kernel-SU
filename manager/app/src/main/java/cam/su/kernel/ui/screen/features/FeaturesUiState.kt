@@ -4,7 +4,6 @@ import androidx.compose.runtime.Immutable
 import cam.su.kernel.data.model.AttestationInfo
 import cam.su.kernel.data.model.BootGuardStatus
 import cam.su.kernel.data.model.HideBootloaderStatus
-import cam.su.kernel.data.model.HidingAudit
 import cam.su.kernel.data.model.ModuleConflict
 import cam.su.kernel.data.model.RevokedCert
 import cam.su.kernel.data.model.visible
@@ -26,12 +25,11 @@ data class FeaturesUiState(
     /** null when the revocation list could not be fetched */
     val revoked: List<RevokedCert>? = null,
     val checkingAttestation: Boolean = false,
-    /** null until the hiding audit has run (or when camd could not run it) */
-    val audit: HidingAudit? = null,
-    val auditRun: Boolean = false,
-    val auditing: Boolean = false,
-    /** the last applied fixes take full effect only after a reboot */
-    val auditRebootNeeded: Boolean = false,
+    /** when the root hiding check last ran; null when it never did */
+    val hidingScanTime: Long? = null,
+    /** leaks and other findings of that check, ignored ones left out */
+    val hidingLeaks: Int = 0,
+    val hidingFindings: Int = 0,
 ) {
     val conflicts: List<ModuleConflict>
         get() = allConflicts.visible(conflictDetection, conflictIncludeProps)
@@ -51,6 +49,5 @@ data class FeaturesActions(
     val onRescanConflicts: () -> Unit,
     val onSetHideBootloader: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
-    val onRunAudit: () -> Unit,
-    val onApplyAuditFixes: () -> Unit,
+    val onOpenHidingCheck: () -> Unit,
 )

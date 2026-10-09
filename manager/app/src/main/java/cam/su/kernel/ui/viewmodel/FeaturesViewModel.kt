@@ -9,22 +9,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import cam.su.kernel.data.repository.HidingHistoryRepository
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.ui.screen.features.FeaturesUiState
-import cam.su.kernel.ui.util.applyHidingFixes
 import cam.su.kernel.ui.util.checkAttestationReport
 import cam.su.kernel.ui.util.clearBootGuard
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.getHideBootloaderStatus
 import cam.su.kernel.ui.util.listModuleConflicts
-import cam.su.kernel.ui.util.runHidingAudit
 import cam.su.kernel.ui.util.setBootGuardConfig
 import cam.su.kernel.ui.util.setHideBootloader as writeHideBootloader
 import cam.su.kernel.ui.util.toggleModule
 
 class FeaturesViewModel(
-    private val settingsRepo: SettingsRepository = SettingsRepositoryImpl()
+    private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),
+    private val hidingHistory: HidingHistoryRepository = HidingHistoryRepository(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -44,6 +44,11 @@ class FeaturesViewModel(
                 getBootGuardStatus() to if (detection) listModuleConflicts() else emptyList()
             }
             val hideBootloader = withContext(Dispatchers.IO) { getHideBootloaderStatus() }
+            // the saved result only: the check itself runs on its own page, when asked
+            val (hidingScan, ignored) = withContext(Dispatchers.IO) {
+                hidingHistory.load().first to hidingHistory.ignored
+            }
+            val hidingFindings = hidingScan?.audit?.findings.orEmpty().filter { it.id !in ignored }
             _uiState.update {
                 it.copy(
                     bootGuard = bootGuard,
@@ -52,6 +57,9 @@ class FeaturesViewModel(
                     conflictDetection = detection,
                     conflictWarnOnFlash = settingsRepo.conflictWarnOnFlash,
                     conflictIncludeProps = settingsRepo.conflictIncludeProps,
+                    hidingScanTime = hidingScan?.time,
+                    hidingLeaks = hidingFindings.count { f -> f.leak },
+                    hidingFindings = hidingFindings.size,
                     scanning = false,
                 )
             }
@@ -121,33 +129,6 @@ class FeaturesViewModel(
                     revoked = report.revoked,
                     attestationChecked = true,
                     checkingAttestation = false,
-                )
-            }
-        }
-    }
-
-    fun runAudit() {
-        _uiState.update { it.copy(auditing = true) }
-        viewModelScope.launch {
-            val audit = withContext(Dispatchers.IO) { runHidingAudit() }
-            _uiState.update { it.copy(audit = audit, auditRun = true, auditing = false) }
-        }
-    }
-
-    /** Turns on every suggested fix, then audits again so the card shows what is left. */
-    fun applyAuditFixes() {
-        _uiState.update { it.copy(auditing = true) }
-        viewModelScope.launch {
-            val (rebootNeeded, audit, hideBootloader) = withContext(Dispatchers.IO) {
-                Triple(applyHidingFixes(), runHidingAudit(), getHideBootloaderStatus())
-            }
-            _uiState.update {
-                it.copy(
-                    audit = audit,
-                    auditRun = true,
-                    auditing = false,
-                    auditRebootNeeded = rebootNeeded,
-                    hideBootloader = hideBootloader,
                 )
             }
         }

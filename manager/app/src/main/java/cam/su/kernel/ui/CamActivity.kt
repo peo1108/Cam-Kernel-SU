@@ -91,6 +91,7 @@ import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.navigation3.rememberNavigator
 import cam.su.kernel.ui.screen.about.AboutScreen
 import cam.su.kernel.ui.screen.appprofile.AppProfileScreen
+import cam.su.kernel.ui.screen.hidingcheck.HidingCheckScreen
 import cam.su.kernel.ui.screen.colorpalette.ColorPaletteScreen
 import cam.su.kernel.ui.screen.executemoduleaction.ExecuteModuleActionScreen
 import cam.su.kernel.ui.screen.flash.FlashScreen
@@ -263,6 +264,7 @@ class CamActivity : ComponentActivity() {
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPage { AppProfileTemplateScreen() } }
                             entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> GlassPage { TemplateEditorScreen(key.template, key.readOnly) } }
                             entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> GlassPage { AppProfileScreen(key.uid) } }
+                            entry<Route.HidingCheck>(swipeDismiss = swipeDismiss) { GlassPage { HidingCheckScreen() } }
                             entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage { ModuleRepoScreen() } }
                             entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }
                             entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage { InstallScreen() } }

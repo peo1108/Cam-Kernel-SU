@@ -1,6 +1,7 @@
 package cam.su.kernel.data.model
 
 import androidx.compose.runtime.Immutable
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -22,6 +23,17 @@ data class HidingAudit(
         /** kernelUmount, selinuxHide, hideBootloader; null when camd cannot fix it */
         val fix: String?,
     )
+
+    /** The same shape [parse] reads, so a saved audit can be read back. */
+    fun toJson(): JSONObject = JSONObject()
+        .put("fixable", fixable)
+        .put("findings", JSONArray(findings.map { f ->
+            JSONObject()
+                .put("id", f.id)
+                .put("level", if (f.leak) "leak" else "review")
+                .put("items", JSONArray(f.items))
+                .put("fix", f.fix ?: JSONObject.NULL)
+        }))
 
     companion object {
         fun parse(json: String): HidingAudit? = runCatching {

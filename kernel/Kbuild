@@ -33,7 +33,7 @@ kernelsu-objs += policy/pkg_observer.o
 kernelsu-objs += policy/pkg_tracker.o
 
 kernelsu-objs += runtime/boot_event.o
-kernelsu-objs += runtime/ksud_integration.o
+kernelsu-objs += runtime/camd_integration.o
 
 kernelsu-objs += selinux/selinux.o
 kernelsu-objs += selinux/rules.o

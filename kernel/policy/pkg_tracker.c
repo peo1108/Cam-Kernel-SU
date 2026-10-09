@@ -15,10 +15,10 @@
 
 #define SYSTEM_PACKAGES_LIST_PATH "/data/system/packages.list"
 
-// Patch-time root seed, written by `ksud boot-patch --seed` into ksu_config:
+// Patch-time root seed, written by `camd boot-patch --seed` into ksu_config:
 //   seed=<nonce>,<pkg>:<appid>[,<pkg>:<appid>...]
 // Each nonce is applied once; the applied nonce is kept in KSU_SEED_MARKER.
-#define KSU_SEED_MARKER "/data/adb/ksu/.seed"
+#define KSU_SEED_MARKER "/data/adb/cam/.seed"
 #define KSU_SEED_NONCE_LEN 16
 #define KSU_SEED_MAX_ENTRIES 32
 #define KSU_SEED_MIN_APPID 10000
@@ -193,7 +193,7 @@ static bool seed_package_installed(struct list_head *pkgs, const char *pkg, u32 
 }
 
 // Caller holds ksu_cred. Runs from post-fs-data on: the first boot after flashing has no
-// /data/adb/ksud yet, so boot-completed is never reported. packages.list from the previous
+// /data/adb/camd yet, so boot-completed is never reported. packages.list from the previous
 // boot is fine here because every entry must match both package and appid.
 static void ksu_seed_apply(struct list_head *pkgs)
 {

@@ -8,7 +8,7 @@ import org.json.JSONObject
 @Immutable
 data class PropCheck(val name: String, val value: String, val safe: String, val ok: Boolean)
 
-/** Output of `ksud hide-bootloader status`. */
+/** Output of `camd hide-bootloader status`. */
 @Immutable
 data class HideBootloaderStatus(
     val enabled: Boolean,

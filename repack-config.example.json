@@ -8,12 +8,12 @@
     },
     // APK build type to use, e.g. debug or release
     "app_build_type": "",
-    // ksud build type to use, e.g. debug or release
-    "ksud_build_type": "",
+    // camd build type to use, e.g. debug or release
+    "camd_build_type": "",
     // Native library architectures to keep in the APK
     "arch": [],
     // Base output APK filename (uses input APK stem if empty)
     "output_name": "",
-    // Whether to strip libksucam.so
+    // Whether to strip libcamd.so
     "strip": false
 }

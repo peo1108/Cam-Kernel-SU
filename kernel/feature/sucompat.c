@@ -19,7 +19,7 @@
 #include "policy/allowlist.h"
 #include "policy/feature.h"
 #include "klog.h" // IWYU pragma: keep
-#include "runtime/ksud.h"
+#include "runtime/camd.h"
 #include "feature/sucompat.h"
 #include "policy/app_profile.h"
 #include "hook/syscall_hook.h"
@@ -63,11 +63,11 @@ static void __user *userspace_stack_buffer(const void *d, size_t len)
     return copy_to_user(p, d, len) ? NULL : p;
 }
 
-static char __user *ksud_user_path(void)
+static char __user *camd_user_path(void)
 {
-    static const char ksud_path[] = KSUD_PATH;
+    static const char camd_path[] = CAMD_PATH;
 
-    return userspace_stack_buffer(ksud_path, sizeof(ksud_path));
+    return userspace_stack_buffer(camd_path, sizeof(camd_path));
 }
 
 static char __user *empty_user_path(void)
@@ -77,11 +77,11 @@ static char __user *empty_user_path(void)
 
 static const char su_path[] = SU_PATH;
 
-static bool is_ksud_exists()
+static bool is_camd_exists()
 {
     struct path path;
 
-    if (kern_path(KSUD_PATH, 0, &path) < 0) {
+    if (kern_path(CAMD_PATH, 0, &path) < 0) {
         return false;
     }
     path_put(&path);
@@ -106,10 +106,10 @@ long ksu_handle_faccessat_sucompat(int orig_nr, struct pt_regs *regs)
 
     if (unlikely(!memcmp(path, su_path, sizeof(su_path)))) {
         old_cred = override_creds(ksu_cred);
-        if (is_ksud_exists()) {
-            pr_info("faccessat su->ksud!\n");
+        if (is_camd_exists()) {
+            pr_info("faccessat su->camd!\n");
             orig_filename = *filename_user;
-            *filename_user = ksud_user_path();
+            *filename_user = camd_user_path();
             ret = ksu_syscall_table[orig_nr](regs);
             revert_creds(old_cred);
             *filename_user = orig_filename;
@@ -141,10 +141,10 @@ long ksu_handle_stat_sucompat(int orig_nr, struct pt_regs *regs)
 
     if (unlikely(!memcmp(path, su_path, sizeof(su_path)))) {
         old_cred = override_creds(ksu_cred);
-        if (is_ksud_exists()) {
-            pr_info("newfstatat su->ksud!\n");
+        if (is_camd_exists()) {
+            pr_info("newfstatat su->camd!\n");
             orig_filename = *filename_user;
-            *filename_user = ksud_user_path();
+            *filename_user = camd_user_path();
             ret = ksu_syscall_table[orig_nr](regs);
             revert_creds(old_cred);
             *filename_user = orig_filename;
@@ -169,7 +169,7 @@ static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
     unsigned long addr;
     int su_fd = -1;
     int tmp_fd;
-    struct file *ksud_file;
+    struct file *camd_file;
     const struct cred *old_cred;
 
     if (execveat && ((int)PT_REGS_SYSCALL_PARM1(regs) != AT_FDCWD || (int)PT_REGS_PARM5(regs) != 0))
@@ -204,15 +204,15 @@ static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
     }
 
     old_cred = override_creds(ksu_cred);
-    ksud_file = filp_open(KSUD_PATH, O_PATH, 0);
+    camd_file = filp_open(CAMD_PATH, O_PATH, 0);
     revert_creds(old_cred);
-    if (IS_ERR(ksud_file)) {
-        pr_err("open ksud err: %ld\n", PTR_ERR(ksud_file));
+    if (IS_ERR(camd_file)) {
+        pr_err("open camd err: %ld\n", PTR_ERR(camd_file));
         put_unused_fd(tmp_fd);
         goto do_orig_execve;
     }
 
-    fd_install(tmp_fd, ksud_file);
+    fd_install(tmp_fd, camd_file);
 
     pending_sucompat = ksu_sulog_capture_sucompat(*filename_user, argv_user, GFP_KERNEL);
     // execve(file, argv, environ)

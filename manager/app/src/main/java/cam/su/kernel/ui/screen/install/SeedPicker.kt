@@ -49,13 +49,13 @@ import androidx.compose.material3.TextButton as MaterialTextButton
 import top.yukonga.miuix.kmp.basic.Text as MiuixText
 import top.yukonga.miuix.kmp.basic.TextButton as MiuixTextButton
 
-/** An app granted root by the kernel on first boot (`ksud boot-patch --seed pkg:appid`). */
+/** An app granted root by the kernel on first boot (`camd boot-patch --seed pkg:appid`). */
 @Parcelize
 data class SeedApp(val packageName: String, val appId: Int, val label: String = packageName) : Parcelable {
     fun toSeedArg(): String = "$packageName:$appId"
 }
 
-// Must match ksud seed.rs and kernel/policy/pkg_tracker.c.
+// Must match camd seed.rs and kernel/policy/pkg_tracker.c.
 const val SEED_MAX_APPS = 32
 private const val PER_USER_RANGE = 100_000
 private val SEED_APPID_RANGE = 10_000..19_999

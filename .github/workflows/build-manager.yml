@@ -7,9 +7,9 @@ on:
       - '.github/workflows/build-manager.yml'
       - '.github/workflows/build-lkm.yml'
       - '.github/workflows/ddk-lkm.yml'
-      - '.github/workflows/ksud.yml'
-      - '.github/workflows/ksud-extra.yml'
-      - '.github/workflows/ksuinit.yml'
+      - '.github/workflows/camd.yml'
+      - '.github/workflows/camd-extra.yml'
+      - '.github/workflows/caminit.yml'
       - '.github/scripts/setup-rust-build.sh'
       - '.github/riscv64-cargo.toml'
       - 'repack_apk.py'
@@ -24,9 +24,9 @@ on:
       - '.github/workflows/build-manager.yml'
       - '.github/workflows/build-lkm.yml'
       - '.github/workflows/ddk-lkm.yml'
-      - '.github/workflows/ksud.yml'
-      - '.github/workflows/ksud-extra.yml'
-      - '.github/workflows/ksuinit.yml'
+      - '.github/workflows/camd.yml'
+      - '.github/workflows/camd-extra.yml'
+      - '.github/workflows/caminit.yml'
       - '.github/scripts/setup-rust-build.sh'
       - '.github/riscv64-cargo.toml'
       - 'repack_apk.py'
@@ -102,25 +102,25 @@ jobs:
       expected_hash: ${{ needs.generate-key.outputs.expected_hash || '' }}
     secrets: inherit
 
-  build-ksuinit:
-    uses: ./.github/workflows/ksuinit.yml
+  build-caminit:
+    uses: ./.github/workflows/caminit.yml
 
-  build-ksud:
-    needs: [build-lkm, build-ksuinit]
+  build-camd:
+    needs: [build-lkm, build-caminit]
     strategy:
       matrix:
         include:
           - target: aarch64-linux-android
           - target: x86_64-linux-android
           - target: riscv64-linux-android
-    uses: ./.github/workflows/ksud.yml
+    uses: ./.github/workflows/camd.yml
     with:
       target: ${{ matrix.target }}
       pack_lkm: true
-      pack_ksuinit: true
+      pack_caminit: true
   
-  build-ksud-extra:
-    needs: [build-lkm, build-ksuinit]
+  build-camd-extra:
+    needs: [build-lkm, build-caminit]
     strategy:
       matrix:
         include:
@@ -134,12 +134,12 @@ jobs:
             os: ubuntu-latest
           - target: x86_64-unknown-linux-musl # x86 Linux
             os: ubuntu-latest
-    uses: ./.github/workflows/ksud-extra.yml
+    uses: ./.github/workflows/camd-extra.yml
     with:
       target: ${{ matrix.target }}
       os: ${{ matrix.os }}
       pack_lkm: true
-      pack_ksuinit: true
+      pack_caminit: true
 
   build-manager:
     needs: [generate-key]
@@ -215,8 +215,8 @@ jobs:
           path: "manager/app/build/outputs/mapping/release/"
 
   repack-manager:
-    needs: [build-manager, build-ksud, generate-key]
-    if: always() && needs.build-manager.result == 'success' && needs.build-ksud.result == 'success' && needs.generate-key.result == 'success'
+    needs: [build-manager, build-camd, generate-key]
+    if: always() && needs.build-manager.result == 'success' && needs.build-camd.result == 'success' && needs.generate-key.result == 'success'
     runs-on: ubuntu-latest
 
     steps:
@@ -240,25 +240,25 @@ jobs:
           name: manager-gradle
           path: artifacts/manager-gradle
 
-      - name: Download arm64 ksud
+      - name: Download arm64 camd
         uses: actions/download-artifact@v8
         with:
-          name: ksud-aarch64-linux-android
-          path: artifacts/ksud-aarch64-linux-android
+          name: camd-aarch64-linux-android
+          path: artifacts/camd-aarch64-linux-android
 
-      - name: Download x86_64 ksud
+      - name: Download x86_64 camd
         uses: actions/download-artifact@v8
         with:
-          name: ksud-x86_64-linux-android
-          path: artifacts/ksud-x86_64-linux-android
+          name: camd-x86_64-linux-android
+          path: artifacts/camd-x86_64-linux-android
 
-      - name: Download RISC-V ksud
+      - name: Download RISC-V camd
         uses: actions/download-artifact@v8
         with:
-          name: ksud-riscv64-linux-android
-          path: artifacts/ksud-riscv64-linux-android
+          name: camd-riscv64-linux-android
+          path: artifacts/camd-riscv64-linux-android
 
-      - name: Place manager apk and ksud artifacts
+      - name: Place manager apk and camd artifacts
         run: |
           mkdir -p manager/app/build/outputs/apk/release
           APK=$(find artifacts/manager-gradle -type f -name "*.apk" | head -n 1)
@@ -268,15 +268,15 @@ jobs:
           mkdir -p target/aarch64-linux-android/release
           mkdir -p target/x86_64-linux-android/release
           mkdir -p target/riscv64-linux-android/release
-          ARM64_KSUD=$(find artifacts/ksud-aarch64-linux-android -type f -name ksud | head -n 1)
-          X86_64_KSUD=$(find artifacts/ksud-x86_64-linux-android -type f -name ksud | head -n 1)
-          RISCV64_KSUD=$(find artifacts/ksud-riscv64-linux-android -type f -name ksud | head -n 1)
-          test -n "$ARM64_KSUD"
-          test -n "$X86_64_KSUD"
-          test -n "$RISCV64_KSUD"
-          cp -f "$ARM64_KSUD" target/aarch64-linux-android/release/ksud
-          cp -f "$X86_64_KSUD" target/x86_64-linux-android/release/ksud
-          cp -f "$RISCV64_KSUD" target/riscv64-linux-android/release/ksud
+          ARM64_CAMD=$(find artifacts/camd-aarch64-linux-android -type f -name camd | head -n 1)
+          X86_64_CAMD=$(find artifacts/camd-x86_64-linux-android -type f -name camd | head -n 1)
+          RISCV64_CAMD=$(find artifacts/camd-riscv64-linux-android -type f -name camd | head -n 1)
+          test -n "$ARM64_CAMD"
+          test -n "$X86_64_CAMD"
+          test -n "$RISCV64_CAMD"
+          cp -f "$ARM64_CAMD" target/aarch64-linux-android/release/camd
+          cp -f "$X86_64_CAMD" target/x86_64-linux-android/release/camd
+          cp -f "$RISCV64_CAMD" target/riscv64-linux-android/release/camd
 
       - name: Prepare signing inputs
         if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}

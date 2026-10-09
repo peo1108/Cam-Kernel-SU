@@ -148,7 +148,7 @@ object CamNative {
 
         val nonRootUseDefault: Boolean = true,
         val umountModules: Boolean = true,
-        var rules: String = "", // this field is save in ksud!!
+        var rules: String = "", // this field is save in camd!!
 
         val flags: Long = FLAG_CAM_NO_NEW_PRIVS,
     ) : Parcelable {

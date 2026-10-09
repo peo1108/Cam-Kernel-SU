@@ -13,7 +13,7 @@
 #include "feature/sucompat.h"
 #include "hook/setuid_hook.h"
 #include "policy/app_profile.h"
-#include "runtime/ksud.h"
+#include "runtime/camd.h"
 #include "sulog/event.h"
 #include "hook/syscall_hook.h"
 #include "hook/syscall_event_bridge.h"
@@ -36,8 +36,8 @@ static int ksu_handle_init_mark_tracker(const char __user **filename_user)
         return 0;
 
     path[sizeof(path) - 1] = '\0';
-    if (unlikely(strcmp(path, KSUD_PATH) == 0)) {
-        pr_info("hook_manager: escape to root for init executing ksud: %d\n", current->pid);
+    if (unlikely(strcmp(path, CAMD_PATH) == 0)) {
+        pr_info("hook_manager: escape to root for init executing camd: %d\n", current->pid);
         escape_to_root_for_init();
     } else if (likely(strstr(path, "/app_process") == NULL && strstr(path, "/adbd") == NULL &&
                       strstr(path, "/stub_zygote") == NULL)) {
@@ -64,11 +64,11 @@ long __nocfi ksu_hook_faccessat(int orig_nr, const struct pt_regs *regs)
     return ksu_handle_faccessat_sucompat(orig_nr, (struct pt_regs *)regs);
 }
 
-DEFINE_STATIC_KEY_TRUE(ksud_execve_key);
+DEFINE_STATIC_KEY_TRUE(camd_execve_key);
 
-void ksu_stop_ksud_execve_hook()
+void ksu_stop_camd_execve_hook()
 {
-    static_branch_disable(&ksud_execve_key);
+    static_branch_disable(&camd_execve_key);
 }
 
 static long __nocfi ksu_hook_execve_common(int orig_nr, const struct pt_regs *regs, bool execveat)
@@ -81,11 +81,11 @@ static long __nocfi ksu_hook_execve_common(int orig_nr, const struct pt_regs *re
     struct ksu_sulog_pending_event *pending_root_execve = NULL;
     long ret;
 
-    if (static_branch_unlikely(&ksud_execve_key)) {
+    if (static_branch_unlikely(&camd_execve_key)) {
         if (execveat) {
-            ksu_execveat_hook_ksud(regs);
+            ksu_execveat_hook_camd(regs);
         } else {
-            ksu_execve_hook_ksud(regs);
+            ksu_execve_hook_camd(regs);
         }
     }
 

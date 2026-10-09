@@ -106,7 +106,7 @@ void apply_kernelsu_rules()
         ksu_allowxperm(db, KERNEL_SU_DOMAIN, ALL, "file", ALL);
     }
 
-    // our ksud triggered by init
+    // our camd triggered by init
     ksu_allow(db, "init", KERNEL_SU_DOMAIN, ALL, ALL);
 
     // copied from Magisk rules

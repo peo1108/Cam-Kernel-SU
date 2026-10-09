@@ -17,7 +17,7 @@ import java.nio.file.StandardOpenOption
 import java.util.zip.GZIPInputStream
 
 /**
- * Mirrors ksud's parse_kmi_from_boot: touches only the boot header plus the
+ * Mirrors camd's parse_kmi_from_boot: touches only the boot header plus the
  * kernel block to find the KMI (e.g. "android15-6.6").
  */
 object BootKernelVersion {

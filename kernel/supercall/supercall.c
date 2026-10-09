@@ -88,7 +88,7 @@ int ksu_install_fd(void)
 
 int ksu_install_su_fd(void)
 {
-    // This descriptor must be installed after the exec into ksud.
+    // This descriptor must be installed after the exec into camd.
     return ksu_install_fd_with_permissions(O_CLOEXEC, KSU_DRIVER_PERMISSION_SU_SESSION);
 }
 

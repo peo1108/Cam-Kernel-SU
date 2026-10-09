@@ -499,7 +499,7 @@
     <string name="audit_apply">Apply %1$d fixes</string>
     <string name="audit_more">and %1$d more</string>
     <string name="audit_module_mounts">Mounts modules made themselves (KernelSU does not unmount them)</string>
-    <string name="audit_ksu_mounts">Module mounts stay visible: kernel umount is off</string>
+    <string name="audit_cam_mounts">Module mounts stay visible: kernel umount is off</string>
     <string name="audit_selinux_rules">KernelSU\'s SELinux rules are visible: SELinux hide is off</string>
     <string name="audit_maps">Apps have root files mapped in memory</string>
     <string name="audit_props">Properties show an unlocked bootloader</string>

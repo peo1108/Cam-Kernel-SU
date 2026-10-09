@@ -63,7 +63,7 @@ class FeaturesViewModel(
         applyBootGuard { setBootGuardConfig(enabled = enabled) }
     }
 
-    /** [failures] is the number of failed boots tolerated (1..4); ksud stores the attempt that triggers. */
+    /** [failures] is the number of failed boots tolerated (1..4); camd stores the attempt that triggers. */
     fun setBootGuardFailures(failures: Int) {
         val threshold = failures.coerceIn(1, 4) + 1
         _uiState.update { it.copy(bootGuard = it.bootGuard.copy(threshold = threshold)) }
@@ -153,7 +153,7 @@ class FeaturesViewModel(
         }
     }
 
-    /** Run a ksud command, then read the boot guard back so the page shows what ksud stored. */
+    /** Run a camd command, then read the boot guard back so the page shows what camd stored. */
     private fun applyBootGuard(command: () -> Boolean) {
         viewModelScope.launch {
             val status = withContext(Dispatchers.IO) {

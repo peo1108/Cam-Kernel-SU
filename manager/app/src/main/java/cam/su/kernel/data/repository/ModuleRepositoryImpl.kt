@@ -26,7 +26,7 @@ class ModuleRepositoryImpl : ModuleRepository {
         runCatching {
             val result = listModules()
             val array = JSONArray(result)
-            // one ksud call each for the whole list, not one per module
+            // one camd call each for the whole list, not one per module
             val autoDisabled = getBootGuardStatus().autoDisabled.toSet()
             val settings = SettingsRepositoryImpl()
             val conflicts = if (settings.conflictDetection) {

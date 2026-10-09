@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "userspace/ksud",
-    "userspace/ksuinit",
+    "userspace/camd",
+    "userspace/caminit",
 ]
 default-members = [
-    "userspace/ksud",
-    "userspace/ksuinit",
+    "userspace/camd",
+    "userspace/caminit",
 ]
 resolver = "3"
 
@@ -25,5 +25,5 @@ lto = true
 opt-level = "z"
 panic = "abort"
 
-[profile.release.package.ksud]
+[profile.release.package.camd]
 codegen-units = 1

@@ -57,7 +57,7 @@ class Payload(private val channel: DataSourceChannel) {
     /**
      * Extracts the KMI from the payload's boot partition with minimal reads.
      * A miss means "unknown": the install page asks for a KMI manually and
-     * remote downloads pass an explicit --kmi to ksud.
+     * remote downloads pass an explicit --kmi to camd.
      */
     fun kernelKmi(onProgress: ((String) -> Unit)? = null): String? {
         for (name in BOOT_PARTITION_NAMES) {

@@ -15,7 +15,7 @@ public class AppZygotePreload implements ZygotePreload {
 
     @Override
     public void doPreload(@NonNull ApplicationInfo appInfo) {
-        File f = new File(appInfo.nativeLibraryDir, "libksucam.so");
+        File f = new File(appInfo.nativeLibraryDir, "libcamd.so");
         try {
             System.loadLibrary("camjni");
             Log.d(TAG, "executing magica ...");

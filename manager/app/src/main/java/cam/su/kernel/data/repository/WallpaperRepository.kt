@@ -30,7 +30,7 @@ interface RootFiles {
 }
 
 object LibsuRootFiles : RootFiles {
-    // The app's ksud-backed root shell; libsu's default shell would run plain `su`, which fails
+    // The app's camd-backed root shell; libsu's default shell would run plain `su`, which fails
     // when su compatibility is turned off.
     private fun file(path: String) = SuFile(path).apply { shell = getRootShell() }
 

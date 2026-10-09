@@ -15,7 +15,7 @@
 #include "policy/allowlist.h"
 #include "selinux/selinux.h"
 #include "policy/feature.h"
-#include "runtime/ksud_boot.h"
+#include "runtime/camd_boot.h"
 #include "ksu.h"
 
 static bool ksu_kernel_umount_enabled = true;

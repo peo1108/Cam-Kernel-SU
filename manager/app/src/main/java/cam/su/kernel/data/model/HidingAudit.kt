@@ -4,8 +4,8 @@ import androidx.compose.runtime.Immutable
 import org.json.JSONObject
 
 /**
- * Output of `ksud hiding-audit`: what a non-root app can still see, each finding with the
- * setting that hides it ([Finding.fix]), when ksud can turn one on.
+ * Output of `camd hiding-audit`: what a non-root app can still see, each finding with the
+ * setting that hides it ([Finding.fix]), when camd can turn one on.
  */
 @Immutable
 data class HidingAudit(
@@ -14,12 +14,12 @@ data class HidingAudit(
 ) {
     @Immutable
     data class Finding(
-        /** moduleMounts, ksuMounts, selinuxRules, maps, props, bootArgs, lsposed, revanced, customRom, files, selinux, adb */
+        /** moduleMounts, camMounts, selinuxRules, maps, props, bootArgs, lsposed, revanced, customRom, files, selinux, adb */
         val id: String,
         /** an app can see it now; otherwise only worth a look */
         val leak: Boolean,
         val items: List<String>,
-        /** kernelUmount, selinuxHide, hideBootloader; null when ksud cannot fix it */
+        /** kernelUmount, selinuxHide, hideBootloader; null when camd cannot fix it */
         val fix: String?,
     )
 
@@ -43,7 +43,7 @@ data class HidingAudit(
             )
         }.getOrNull()
 
-        /** Output of `ksud hiding-audit --apply`: whether some of it only takes effect after a reboot. */
+        /** Output of `camd hiding-audit --apply`: whether some of it only takes effect after a reboot. */
         fun rebootNeededAfterApply(json: String): Boolean = runCatching {
             JSONObject(json).optBoolean("rebootNeeded")
         }.getOrDefault(false)

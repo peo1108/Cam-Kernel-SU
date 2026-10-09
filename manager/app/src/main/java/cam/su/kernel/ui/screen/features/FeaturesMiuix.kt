@@ -397,7 +397,7 @@ private fun HidingAuditCard(state: FeaturesUiState, actions: FeaturesActions) {
 private fun AuditFinding(finding: HidingAudit.Finding) {
     val title = when (finding.id) {
         "moduleMounts" -> R.string.audit_module_mounts
-        "ksuMounts" -> R.string.audit_ksu_mounts
+        "camMounts" -> R.string.audit_cam_mounts
         "selinuxRules" -> R.string.audit_selinux_rules
         "maps" -> R.string.audit_maps
         "props" -> R.string.audit_props

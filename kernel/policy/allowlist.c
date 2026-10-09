@@ -19,7 +19,7 @@
 
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
-#include "runtime/ksud_boot.h"
+#include "runtime/camd_boot.h"
 #include "selinux/selinux.h"
 #include "policy/allowlist.h"
 #include "infra/su_mount_ns.h"
@@ -67,7 +67,7 @@ struct perm_data {
 static DEFINE_HASHTABLE(allow_list, ALLOW_LIST_BITS);
 static u16 allow_list_count = 0;
 
-#define KERNEL_SU_ALLOWLIST "/data/adb/ksu/.allowlist"
+#define KERNEL_SU_ALLOWLIST "/data/adb/cam/.allowlist"
 
 void ksu_persistent_allow_list(void);
 

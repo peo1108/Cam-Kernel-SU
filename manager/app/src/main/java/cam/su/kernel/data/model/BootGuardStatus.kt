@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import org.json.JSONObject
 
 /**
- * Output of `ksud boot-guard status`. [autoDisabled] only lists modules that are still disabled.
+ * Output of `camd boot-guard status`. [autoDisabled] only lists modules that are still disabled.
  * `lastTrigger` is left out: post-fs-data runs before the clock is synced.
  */
 @Immutable

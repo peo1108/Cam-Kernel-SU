@@ -15,8 +15,8 @@
 #include "policy/pkg_tracker.h"
 #include "hook/syscall_hook_manager.h"
 #include "hook/lsm_hook.h"
-#include "runtime/ksud.h"
-#include "runtime/ksud_boot.h"
+#include "runtime/camd.h"
+#include "runtime/camd_boot.h"
 #include "feature/sulog.h"
 #include "supercall/supercall.h"
 #include "ksu.h"
@@ -150,7 +150,7 @@ int __init kernelsu_init(void)
         cache_sid();
         setup_ksu_cred();
 
-        // Grant current process (ksud late-load) root
+        // Grant current process (camd late-load) root
         // with KSU SELinux domain before enforcing SELinux, so it
         // can continue to access /data/app etc. after enforcement.
         escape_to_root_for_init();
@@ -176,7 +176,7 @@ int __init kernelsu_init(void)
 
         ksu_allowlist_init();
 
-        ksu_ksud_init();
+        ksu_camd_init();
 
         ksu_file_wrapper_init();
     }
@@ -197,7 +197,7 @@ void __exit kernelsu_exit(void)
     ksu_supercalls_exit();
 
     if (!ksu_late_loaded)
-        ksu_ksud_exit();
+        ksu_camd_exit();
 
     // Wait for any in-flight RCU readers (e.g. handler traversing allow_list)
     synchronize_rcu();

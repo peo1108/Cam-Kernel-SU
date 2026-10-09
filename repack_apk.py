@@ -39,7 +39,7 @@ def merge_config(file_cfg: dict, args: argparse.Namespace) -> dict:
             "key_pass": "",
         },
         "app_build_type": "debug",
-        "ksud_build_type": "debug",
+        "camd_build_type": "debug",
         "arch": [],
         "output_name": "",
         "strip": False,
@@ -52,8 +52,8 @@ def merge_config(file_cfg: dict, args: argparse.Namespace) -> dict:
 
     if args.app_build_type:
         cfg["app_build_type"] = args.app_build_type
-    if args.ksud_build_type:
-        cfg["ksud_build_type"] = args.ksud_build_type
+    if args.camd_build_type:
+        cfg["camd_build_type"] = args.camd_build_type
     if args.arch:
         cfg["arch"] = normalize_arch_values(args.arch)
     if args.output_name:
@@ -183,7 +183,7 @@ ARCH_TO_TRIPLE = {
 }
 
 
-def find_ksud_binaries_by_arch(ksud_build_type: str, arch_filters: List[str]) -> Dict[str, Path]:
+def find_camd_binaries_by_arch(camd_build_type: str, arch_filters: List[str]) -> Dict[str, Path]:
     result: Dict[str, Path] = {}
     target_root = workspace_root() / "target"
     for arch in arch_filters:
@@ -191,12 +191,12 @@ def find_ksud_binaries_by_arch(ksud_build_type: str, arch_filters: List[str]) ->
         if not triple:
             print(f"[WARN] Unknown arch '{arch}', cannot map to target triple.", file=sys.stderr)
             continue
-        candidate = target_root / triple / ksud_build_type / "ksud"
+        candidate = target_root / triple / camd_build_type / "camd"
         if candidate.exists():
             result[arch] = candidate
         else:
             print(
-                f"[WARN] ksud not found for {arch}: {candidate}",
+                f"[WARN] camd not found for {arch}: {candidate}",
                 file=sys.stderr,
             )
     return result
@@ -216,12 +216,12 @@ def collect_existing_arches(apk_path: Path) -> List[str]:
     return arches
 
 
-def collect_existing_ksud_arches(apk_path: Path) -> List[str]:
+def collect_existing_camd_arches(apk_path: Path) -> List[str]:
     arches = []
     seen = set()
     with ZipFile(apk_path, "r") as zin:
         for name in zin.namelist():
-            if not (name.startswith("lib/") and name.endswith("/libksucam.so")):
+            if not (name.startswith("lib/") and name.endswith("/libcamd.so")):
                 continue
             parts = name.split("/")
             if len(parts) >= 3 and parts[1] and parts[1] not in seen:
@@ -241,16 +241,16 @@ def repack_apk(
     apk_path: Path,
     out_unsigned_path: Path,
     arch_filters: List[str],
-    ksud_by_arch: Dict[str, Path],
+    camd_by_arch: Dict[str, Path],
     strip_tool: Optional[Path] = None,
 ) -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
-        ksud_bytes_by_arch: Dict[str, bytes] = {}
-        for arch, ksud_path in ksud_by_arch.items():
+        camd_bytes_by_arch: Dict[str, bytes] = {}
+        for arch, camd_path in camd_by_arch.items():
             if strip_tool is not None:
-                ksud_bytes_by_arch[arch] = strip_binary(ksud_path, strip_tool, Path(tmp_dir))
+                camd_bytes_by_arch[arch] = strip_binary(camd_path, strip_tool, Path(tmp_dir))
             else:
-                ksud_bytes_by_arch[arch] = ksud_path.read_bytes()
+                camd_bytes_by_arch[arch] = camd_path.read_bytes()
 
         with ZipFile(apk_path, "r") as zin, ZipFile(out_unsigned_path, "w") as zout:
             for info in zin.infolist():
@@ -261,10 +261,10 @@ def repack_apk(
                     if len(parts) >= 3 and parts[1] not in arch_filters:
                         continue
 
-                # Drop original libksucam.so only for arches that have a replacement binary.
-                if name.startswith("lib/") and name.endswith("/libksucam.so"):
+                # Drop original libcamd.so only for arches that have a replacement binary.
+                if name.startswith("lib/") and name.endswith("/libcamd.so"):
                     parts = name.split("/")
-                    if len(parts) >= 3 and parts[1] in ksud_bytes_by_arch:
+                    if len(parts) >= 3 and parts[1] in camd_bytes_by_arch:
                         continue
 
                 data = zin.read(name)
@@ -280,22 +280,22 @@ def repack_apk(
                     zout.writestr(new_info, data)
 
             for arch in arch_filters:
-                ksud_bytes = ksud_bytes_by_arch.get(arch)
-                if ksud_bytes is None:
+                camd_bytes = camd_bytes_by_arch.get(arch)
+                if camd_bytes is None:
                     continue
-                lib_path = f"lib/{arch}/libksucam.so"
+                lib_path = f"lib/{arch}/libcamd.so"
                 entry = ZipInfo(filename=lib_path)
                 entry.compress_type = ZIP_DEFLATED
-                zout.writestr(entry, ksud_bytes)
+                zout.writestr(entry, camd_bytes)
 
 
 def assert_required_libs(apk_path: Path, arch_filters: List[str]) -> None:
     with ZipFile(apk_path, "r") as zf:
         names = set(zf.namelist())
-    missing = [arch for arch in arch_filters if f"lib/{arch}/libksucam.so" not in names]
+    missing = [arch for arch in arch_filters if f"lib/{arch}/libcamd.so" not in names]
     if missing:
         raise RuntimeError(
-            "Missing libksucam.so in APK for architecture(s): " + ", ".join(missing)
+            "Missing libcamd.so in APK for architecture(s): " + ", ".join(missing)
         )
 
 
@@ -330,20 +330,20 @@ def do_repack(args: argparse.Namespace) -> int:
             arch_filters = ["arm64-v8a"]
         print(f"[INFO] No arch configured, using: {', '.join(arch_filters)}")
 
-    ksud_by_arch = find_ksud_binaries_by_arch(cfg["ksud_build_type"], arch_filters)
-    missing_ksud_arches = [arch for arch in arch_filters if arch not in ksud_by_arch]
-    if missing_ksud_arches:
-        existing_ksud_arches = set(collect_existing_ksud_arches(apk))
-        missing_in_apk = [arch for arch in missing_ksud_arches if arch not in existing_ksud_arches]
+    camd_by_arch = find_camd_binaries_by_arch(cfg["camd_build_type"], arch_filters)
+    missing_camd_arches = [arch for arch in arch_filters if arch not in camd_by_arch]
+    if missing_camd_arches:
+        existing_camd_arches = set(collect_existing_camd_arches(apk))
+        missing_in_apk = [arch for arch in missing_camd_arches if arch not in existing_camd_arches]
         if missing_in_apk:
             raise RuntimeError(
-                "ksud binary not found and APK has no existing libksucam.so for architecture(s): "
+                "camd binary not found and APK has no existing libcamd.so for architecture(s): "
                 + ", ".join(missing_in_apk)
             )
         print(
-            "[WARN] ksud binary not found for architecture(s): "
-            + ", ".join(missing_ksud_arches)
-            + ". Using existing libksucam.so from input APK.",
+            "[WARN] camd binary not found for architecture(s): "
+            + ", ".join(missing_camd_arches)
+            + ". Using existing libcamd.so from input APK.",
             file=sys.stderr,
         )
 
@@ -371,7 +371,7 @@ def do_repack(args: argparse.Namespace) -> int:
             print(f"[INFO] Strip tool: {strip_tool}")
 
     try:
-        repack_apk(apk, unsigned_path, arch_filters, ksud_by_arch, strip_tool)
+        repack_apk(apk, unsigned_path, arch_filters, camd_by_arch, strip_tool)
         assert_required_libs(unsigned_path, arch_filters)
 
         zipalign = find_android_tool("zipalign")
@@ -422,11 +422,11 @@ def do_repack(args: argparse.Namespace) -> int:
                 tmp.unlink()
 
     print(f"Input APK : {apk}")
-    if ksud_by_arch:
-        ksud_desc = ", ".join(f"{arch}={path}" for arch, path in ksud_by_arch.items())
+    if camd_by_arch:
+        camd_desc = ", ".join(f"{arch}={path}" for arch, path in camd_by_arch.items())
     else:
-        ksud_desc = "NOT FOUND"
-    print(f"ksud      : {ksud_desc}")
+        camd_desc = "NOT FOUND"
+    print(f"camd      : {camd_desc}")
     print(f"Strip     : {'yes (' + str(strip_tool) + ')' if strip_tool else ('requested but unavailable' if do_strip else 'no')}")
     print(f"Arch      : {', '.join(arch_filters)}")
     print(f"Output    : {signed_path}")
@@ -435,14 +435,14 @@ def do_repack(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Repack manager APK with ksud injection, zipalign(16KB), and resign."
+        description="Repack manager APK with camd injection, zipalign(16KB), and resign."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     repack = subparsers.add_parser("repack", help="Repack and resign APK")
     repack.add_argument("-c", "--config", help="Path to jsonc config file")
     repack.add_argument("-b", "--app-build-type", help="APK build type override, e.g. debug/release")
-    repack.add_argument("-t", "--ksud-build-type", help="ksud build type override, e.g. debug/release")
+    repack.add_argument("-t", "--camd-build-type", help="camd build type override, e.g. debug/release")
     repack.add_argument(
         "-a",
         "--arch",
@@ -460,7 +460,7 @@ def build_parser() -> argparse.ArgumentParser:
         dest="strip",
         action="store_true",
         default=None,
-        help="Strip libksucam.so before packing (uses NDK llvm-strip)",
+        help="Strip libcamd.so before packing (uses NDK llvm-strip)",
     )
     strip_group.add_argument(
         "--no-strip",

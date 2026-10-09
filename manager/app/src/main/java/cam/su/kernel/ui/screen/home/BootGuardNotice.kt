@@ -27,7 +27,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 
-/** Card plus dialog for the modules ksud's boot guard disabled after failed boots. */
+/** Card plus dialog for the modules camd's boot guard disabled after failed boots. */
 @Composable
 fun BootGuardNotice(state: HomeUiState, actions: HomeActions) {
     val ids = state.bootGuard.autoDisabled

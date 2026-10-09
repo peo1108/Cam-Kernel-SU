@@ -488,7 +488,7 @@
     <string name="audit_apply">Áp dụng %1$d cách sửa</string>
     <string name="audit_more">và %1$d mục nữa</string>
     <string name="audit_module_mounts">Mount do module tự tạo (KernelSU không gỡ chúng)</string>
-    <string name="audit_ksu_mounts">Mount của module vẫn hiện: kernel umount đang tắt</string>
+    <string name="audit_cam_mounts">Mount của module vẫn hiện: kernel umount đang tắt</string>
     <string name="audit_selinux_rules">Rule SELinux của KernelSU vẫn lộ: ẩn SELinux đang tắt</string>
     <string name="audit_maps">App đang nạp file root trong bộ nhớ</string>
     <string name="audit_props">Prop cho thấy bootloader đã mở khóa</string>

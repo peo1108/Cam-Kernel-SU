@@ -369,7 +369,7 @@ Java_cam_su_kernel_CamNative_getUserName(JNIEnv *env, jobject thiz, jint uid) {
     return nullptr;
 }
 
-int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
+int fork_dont_care_and_exec_camd(const char *path, const char *pkg) {
     int pid = fork();
     if (pid < 0) {
         PLOGE("fork");
@@ -399,7 +399,7 @@ int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
         _exit(0);
     }
 
-    execl(path, "ksud", "late-load", "--magica", "5555", "--package-name", pkg, nullptr);
+    execl(path, "camd", "late-load", "--magica", "5555", "--package-name", pkg, nullptr);
     PLOGE("exec magica");
     _exit(1);
 }
@@ -407,11 +407,11 @@ int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_cam_su_kernel_magica_AppZygotePreload_forkDontCareAndExecCamd(JNIEnv *env, jclass clazz,
-                                                                        jstring ksud_path, jstring pkg_name) {
-    auto path = env->GetStringUTFChars(ksud_path, nullptr);
+                                                                        jstring camd_path, jstring pkg_name) {
+    auto path = env->GetStringUTFChars(camd_path, nullptr);
     auto pkg = env->GetStringUTFChars(pkg_name, nullptr);
     LOGD("executing magica %s (pkg %s)", path, pkg);
-    fork_dont_care_and_exec_ksud(path, pkg);
-    env->ReleaseStringUTFChars(ksud_path, path);
+    fork_dont_care_and_exec_camd(path, pkg);
+    env->ReleaseStringUTFChars(camd_path, path);
     env->ReleaseStringUTFChars(pkg_name, pkg);
 }

@@ -5,7 +5,7 @@ import org.json.JSONArray
 
 enum class ConflictKind { File, Replace, Prop }
 
-/** One entry of `ksud module conflicts`: [path] is a target path, or a prop key for [ConflictKind.Prop]. */
+/** One entry of `camd module conflicts`: [path] is a target path, or a prop key for [ConflictKind.Prop]. */
 @Immutable
 data class ModuleConflict(
     val kind: ConflictKind,

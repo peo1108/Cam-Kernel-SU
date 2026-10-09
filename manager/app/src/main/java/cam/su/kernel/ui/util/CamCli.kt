@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit
 private const val TAG = "CamCli"
 
 private fun getCamDaemonPath(): String {
-    return camApp.applicationInfo.nativeLibraryDir + File.separator + "libksucam.so"
+    return camApp.applicationInfo.nativeLibraryDir + File.separator + "libcamd.so"
 }
 
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {
@@ -178,7 +178,7 @@ fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disable
     return result
 }
 
-/** What non-root apps can still see; null when ksud could not run the audit. */
+/** What non-root apps can still see; null when camd could not run the audit. */
 fun runHidingAudit(): HidingAudit? = HidingAudit.parse(camdStdout("hiding-audit"))
 
 /** Turns on every fix the audit offers; true when some of it needs a reboot. */
@@ -276,7 +276,7 @@ fun flashModule(
         val result = flashWithIO("${getCamDaemonPath()} $cmd", onStdout, onStderr)
         Log.i("Cam", "install module $uri result: $result")
 
-        // ksud checks the pending update in place of the installed copy
+        // camd checks the pending update in place of the installed copy
         val moduleId = readModuleIdFromZip(file)
         val settings = SettingsRepositoryImpl()
         if (result.isSuccess && moduleId != null && settings.conflictDetection && settings.conflictWarnOnFlash) {
@@ -435,8 +435,8 @@ fun installBoot(
 
     // if boot uri is empty, it is direct install, when success, we should show reboot button
     val showReboot = bootUri == null && result.isSuccess // we create a temporary val here, to avoid calc showReboot double
-    if (showReboot) { // because we decide do not update ksud when startActivity
-        install() // install ksud here
+    if (showReboot) { // because we decide do not update camd when startActivity
+        install() // install camd here
     }
     return FlashResult(result, showReboot)
 }
@@ -491,7 +491,7 @@ fun downloadBoot(
 
     // init_boot/vendor_boot carry no kernel, so their KMI comes from the
     // payload's boot probe and must be passed explicitly. A remote download
-    // is unrelated to this device, so ksud must not use the local kernel.
+    // is unrelated to this device, so camd must not use the local kernel.
     val autoKmi = if (lkm is LkmSelection.KmiNone) {
         (probedKmi ?: BootKernelVersion.parseKmiFromBoot(bootFile))?.also {
             onStdout("- Auto detected KMI: $it")
@@ -515,7 +515,7 @@ fun downloadBoot(
     }
     if (autoKmi != null) cmd += " --kmi $autoKmi"
     cmd += " --partition $partition"
-    // ksud defaults to cwd, which is read-only in the su session; use Downloads.
+    // camd defaults to cwd, which is read-only in the su session; use Downloads.
     val downloadsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     cmd += " -o $downloadsDir"

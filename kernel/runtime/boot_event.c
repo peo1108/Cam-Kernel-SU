@@ -6,8 +6,8 @@
 
 #include "policy/allowlist.h"
 #include "klog.h" // IWYU pragma: keep
-#include "runtime/ksud_boot.h"
-#include "runtime/ksud.h"
+#include "runtime/camd_boot.h"
+#include "runtime/camd.h"
 #include "policy/pkg_observer.h"
 #include "policy/pkg_tracker.h"
 

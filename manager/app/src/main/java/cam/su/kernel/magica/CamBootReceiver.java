@@ -1,6 +1,6 @@
 package cam.su.kernel.magica;
 
-import static cam.su.kernel.magica.AppZygotePreload.TAG;
+import static cam.su.kernel.magica.CamZygotePreload.TAG;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,7 +9,7 @@ import android.util.Log;
 
 import cam.su.kernel.ui.util.CamCliKt;
 
-public class BootCompletedReceiver extends BroadcastReceiver {
+public class CamBootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -24,11 +24,11 @@ public class BootCompletedReceiver extends BroadcastReceiver {
         }
         if (CamCliKt.rootAvailable()) return;
         try {
-            context.startService(new Intent(context, MagicaService.class));
-            Log.i(TAG, "MagicaService started from boot action: " + action);
+            context.startService(new Intent(context, CamMagicaService.class));
+            Log.i(TAG, "CamMagicaService started from boot action: " + action);
         } catch (Throwable e) {
 
-            Log.e(TAG, "Failed to start MagicaService from boot action: " + action, e);
+            Log.e(TAG, "Failed to start CamMagicaService from boot action: " + action, e);
         }
     }
 }

@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 
 import java.io.File;
 
-public class AppZygotePreload implements ZygotePreload {
+public class CamZygotePreload implements ZygotePreload {
     public static final String TAG = "CamMagica";
 
     private static native void forkDontCareAndExecCamd(String camdPath, String packageName);

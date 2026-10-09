@@ -45,6 +45,9 @@ class CamApplication : Application(), ViewModelStoreOwner {
             return
         }
 
+        // the boot receiver was renamed, so its enabled state starts over; restore it from the setting
+        SettingsRepositoryImpl().run { if (autoJailbreak) autoJailbreak = true }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             val enable = SettingsRepositoryImpl().enablePredictiveBack
             HiddenApiBypass.addHiddenApiExemptions("Landroid/content/pm/ApplicationInfo;->setEnableOnBackInvokedCallback")

@@ -7,7 +7,7 @@ import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 
-public class MagicaService extends Service {
+public class CamMagicaService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

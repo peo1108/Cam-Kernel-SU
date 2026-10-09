@@ -406,7 +406,7 @@ int fork_dont_care_and_exec_camd(const char *path, const char *pkg) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_cam_su_kernel_magica_AppZygotePreload_forkDontCareAndExecCamd(JNIEnv *env, jclass clazz,
+Java_cam_su_kernel_magica_CamZygotePreload_forkDontCareAndExecCamd(JNIEnv *env, jclass clazz,
                                                                         jstring camd_path, jstring pkg_name) {
     auto path = env->GetStringUTFChars(camd_path, nullptr);
     auto pkg = env->GetStringUTFChars(pkg_name, nullptr);

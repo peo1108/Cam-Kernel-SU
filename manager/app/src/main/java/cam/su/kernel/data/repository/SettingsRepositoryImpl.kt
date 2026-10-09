@@ -10,7 +10,7 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.topjohnwu.superuser.ShellUtils
 import cam.su.kernel.Cam
 import cam.su.kernel.camApp
-import cam.su.kernel.magica.BootCompletedReceiver
+import cam.su.kernel.magica.CamBootReceiver
 import cam.su.kernel.ui.screen.modulerepo.RepoSort
 import cam.su.kernel.ui.util.execCamd
 import cam.su.kernel.ui.util.getFeaturePersistValue
@@ -157,7 +157,7 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) {
             runCatching {
                 camApp.packageManager.setComponentEnabledSetting(
-                    ComponentName(camApp, BootCompletedReceiver::class.java),
+                    ComponentName(camApp, CamBootReceiver::class.java),
                     if (value) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                     PackageManager.DONT_KILL_APP
                 )

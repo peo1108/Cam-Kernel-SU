@@ -8,7 +8,7 @@
 #
 # Results are copied back into the Windows repo:
 #   userspace/ksud/bin/aarch64/<kmi>_kernelsu.ko
-#   manager/app/src/main/jniLibs/arm64-v8a/libksud.so
+#   manager/app/src/main/jniLibs/arm64-v8a/libksucam.so
 #
 # Environment (defaults match Cam's machine):
 #   SRC    Windows repo seen from WSL     KW   kernel trees + toolchains (scune-kmod-work)
@@ -73,7 +73,7 @@ cargo build --release --target aarch64-linux-android > /root/ksud-build.log 2>&1
 # ksud is a workspace member: the binary lands in the workspace root target/.
 KSUD="$WORK/target/aarch64-linux-android/release/ksud"
 
-cp "$KSUD" "$SRC/manager/app/src/main/jniLibs/arm64-v8a/libksud.so"
+cp "$KSUD" "$SRC/manager/app/src/main/jniLibs/arm64-v8a/libksucam.so"
 cp "$WORK/userspace/ksud/bin/aarch64/"*_kernelsu.ko "$SRC/userspace/ksud/bin/aarch64/"
 echo "== ksud $(strings "$KSUD" | grep -m1 -oE '3\.[0-9]+\.[0-9]+-[0-9]+-g[0-9a-f]+ \(uapi: [0-9]+\)')"
-echo "== copied libksud.so and kernelsu.ko back; now build the Manager from the same commit"
+echo "== copied libksucam.so and kernelsu.ko back; now build the Manager from the same commit"

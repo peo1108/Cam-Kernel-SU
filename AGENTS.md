@@ -56,7 +56,7 @@ For Rust projects in `userspace/ksud` and `userspace/meta-overlayfs`, ALWAYS run
 cd manager
 # Must have ksud binaries first!
 mkdir -p app/src/main/jniLibs/arm64-v8a
-cp ../userspace/ksud/target/aarch64-linux-android/release/ksud app/src/main/jniLibs/arm64-v8a/libksud.so
+cp ../userspace/ksud/target/aarch64-linux-android/release/ksud app/src/main/jniLibs/arm64-v8a/libksucam.so
 
 # Then build
 ./gradlew clean assembleRelease
@@ -82,7 +82,7 @@ bun run docs:build  # Production build
 - Only one metamodule can be active; keep meta hooks in sync with ksud expectations.
 - Manager JNI mirrors every supercall; kernel or ksud API changes must be reflected there to avoid runtime drift.
 - Do not skip the `cargo ndk` steps; plain `cargo check` will not validate Android targets.
-- Manager builds fail if `libksud.so` is missing; create it before any Gradle command.
+- Manager builds fail if `libksucam.so` is missing; create it before any Gradle command.
 
 ## Git Commit
 

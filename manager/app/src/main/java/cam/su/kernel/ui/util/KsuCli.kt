@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit
 private const val TAG = "KsuCli"
 
 private fun getKsuDaemonPath(): String {
-    return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksud.so"
+    return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksucam.so"
 }
 
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {

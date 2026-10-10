@@ -208,6 +208,13 @@ androidComponents {
     }
 }
 
+// Unit tests read the shipped assets and CHANGELOG.md straight from disk (HidingRulesRepositoryTest,
+// ChangelogParserTest); declare them so editing either re-runs the tests instead of "up-to-date".
+tasks.withType<Test>().configureEach {
+    inputs.dir("src/main/assets").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.file("../CHANGELOG.md")).withPathSensitivity(PathSensitivity.NONE)
+}
+
 base {
     archivesName.set(
         "${managerName.replace(" ", "_")}_${managerVersionName}_${managerVersionCode}"

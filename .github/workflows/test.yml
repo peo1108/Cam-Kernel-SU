@@ -1,0 +1,85 @@
+name: Test
+
+# Unit tests the build workflows do not run: camd on the Linux host, and the Manager's JVM
+# tests (among them HidingRulesRepositoryTest, which fails when hiding-rules.json was edited
+# without re-signing it).
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+    paths:
+      - '.github/workflows/test.yml'
+      - 'userspace/**'
+      - 'uapi/**'
+      - 'manager/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - '.github/workflows/test.yml'
+      - 'userspace/**'
+      - 'uapi/**'
+      - 'manager/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  camd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup rustup
+        run: rustup update stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: userspace/camd
+
+      # Two tests are skipped on purpose:
+      # - embedded_module_uses_release_asset_layout reads bin/aarch64/android12-5.10_camsu.ko,
+      #   which only the Build Manager workflow builds.
+      # - rejects_conflicting_loading_module_values is stale upstream: KernelSU 243f0dd1
+      #   removed the LOADING_MODULE check but kept its test (it fails on upstream too).
+      - name: cargo test
+        working-directory: userspace/camd
+        run: |
+          cargo test --target x86_64-unknown-linux-gnu -- \
+            --skip embedded_module_uses_release_asset_layout \
+            --skip rejects_conflicting_loading_module_values
+
+  manager:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./manager
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: manager-test-reports
+          path: manager/app/build/reports/tests/

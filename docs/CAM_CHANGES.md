@@ -4,8 +4,9 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 
 - Upstream gốc lúc tách nhánh: commit `08a3b087` (`refactor(ksud): update waitsys and refactor logic (#3755)`)
 - Remote: `origin` = `peo1108/Cam-Kernel-SU`, `upstream` = `tiann/KernelSU`
-- Nhánh làm việc: `main`. Đợt UI/UX gần nhất nằm trong commit `47a57e48` (bỏ Material, thẻ 3D, slime, quản lý app). Tài liệu cập nhật lần cuối 2026-10-09.
-- Mục 3 liệt kê file, mục 4 là quy trình kéo upstream, mục 9 là bản đồ phần slime/3D để sửa cho đúng chỗ, mục 10 là cách tạo lại file vật liệu `roam_jelly.filamat`, **mục 11 là đợt đổi tên sang Cam** (đọc trước khi merge upstream).
+- Nhánh làm việc: `main`. Đợt UI/UX gần nhất nằm trong commit `47a57e48` (bỏ Material, thẻ 3D, slime, quản lý app). Tài liệu cập nhật lần cuối 2026-10-10, đối chiếu với `dcbf0ae4` (đã merge upstream tới `6a2f6324`, merge commit `3c26f412`; trước đó là `99e000ef`, `v3.3.0-174`, 2775 commit, lúc ấy upstream không có commit nào mới hơn).
+- Đánh giá tổng thể, điểm số và việc nên làm tiếp: [PROJECT_REVIEW.md](PROJECT_REVIEW.md).
+- Mục 3 liệt kê file, mục 4 là quy trình kéo upstream, mục 9 là bản đồ phần slime/3D để sửa cho đúng chỗ, mục 10 là cách tạo lại file vật liệu `roam_jelly.filamat`, **mục 11 là đợt đổi tên sang Cam** (đọc trước khi merge upstream), **mục 12 là trang Kiểm tra ẩn root** (cách nó chạy, cách cập nhật rule có chữ ký).
 - **Từ 2026-10-09 mọi tên đã đổi** (mục 11): `me.weishu.kernelsu` → `cam.su.kernel`, `Ksu`/`Natives`/`KsuService`/`MainActivity` → `Cam`/`CamNative`/`CamRootService`/`CamActivity`, `ksud` → `camd` (`userspace/camd`), `/data/adb/ksu` → `/data/adb/cam`, `kernelsu.ko` → `camsu.ko`. Mục 1-3 viết trước đó nên còn ghi tên cũ; tra bảng đối chiếu ở mục 11.
 
 ## 1. Tóm tắt thay đổi
@@ -19,7 +20,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 5 | Manager gọi kernel qua `KsuService` (root service, uid 0) | Kernel chỉ nhận lệnh quản trị từ uid 0 |
 | 6 | Màn Install có dialog chọn app được root (seed) | |
 | 7 | Tên app `SU Kernel` (trước là `Cam Kernel SU`), gói `cam.su.kernel`, icon và splash là hình tam giác | |
-| 8 | `KERNEL_SU_UAPI_VERSION` 4 → 5 | Chặn Manager/ksud bản cũ dùng với kernel mới |
+| 8 | `KERNEL_SU_UAPI_VERSION` = **upstream + 1** (lúc tách nhánh upstream là 4, Cam 5; upstream lên 5 thì Cam lên **6**, hiện tại) | Chặn Manager/camd bản cũ dùng với kernel mới, và bản Cam không bao giờ trùng số của upstream |
 | 9 | Giao diện Miuix thành kính lỏng (Liquid Glass) kiểu iOS, nền là hình nền máy đọc qua root | Spec: `docs/superpowers/specs/2026-10-02-miuix-liquid-glass-design.md` |
 | 10 | Kernel luôn cấp root cho gói Manager `cam.su.kernel` theo tên gói, dò lại UID mỗi khi `packages.list` đổi (`ksu_manager_pin_apply` trong `kernel/policy/pkg_tracker.c`) | Gỡ rồi cài lại Manager không mất root; chỉ áp dụng cho đúng gói này |
 | 11 | CI: chạy tay được "Build Manager", Release theo tag có quyền ghi và ghi chú tự sinh, khóa ký riêng `su-kernel` | Build bản đầy đủ (8 KMI) và phát hành trên GitHub |
@@ -35,6 +36,11 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 16 | Font Baloo 2; bỏ thẻ "Tìm hiểu KernelSU" và "Ủng hộ" ở Home; mặc định cài đặt lấy theo máy của Cam (cử chỉ quay lại dự đoán bật, mô tả module 5 dòng) | Thương hiệu riêng, không còn dấu vết KernelSU trong giao diện |
 | 22 | **Đổi tên toàn bộ sang Cam** (mục 11): gói nguồn, class Manager, thư viện JNI (`libcamjni.so`), ksud → `camd` (`libcamd.so`), `/data/adb/ksu` → `/data/adb/cam`, `kernelsu.ko` → `camsu.ko`, SELinux domain `ksu` → `cam`, Magica → jailbreak | Dự án dùng riêng, không còn tên KernelSU ở tầng người dùng/userspace |
 | 23 | **Lớp tương thích khi đổi tên**: camd tự chuyển dữ liệu cũ; kernel vẫn khai báo `ksu`/`ksu_file` cùng quyền và chạy profile `u:r:ksu:s0` trong `cam`; camd/caminit nhận `kernelsu.ko` cũ; module được thêm biến `CAM_*` cạnh `KSU_*`, WebUI có bridge `cam` cạnh `ksu`, deep link `cam://` (vẫn nhận `ksu://`) | Cập nhật từ bản cũ không mất root, không mất allowlist/module |
+| 24 | **Trang Kiểm tra ẩn root** riêng (mở từ tab Tính năng, khung giống trang Hồ sơ ứng dụng): chỉ quét khi người dùng ấn, so với lần quét trước (Mới / Như cũ / Đã ẩn), bỏ qua từng mục, công tắc Sửa nhanh (kernel umount, ẩn SELinux, ẩn bootloader) | Thay cho thẻ audit nhét trong tab Tính năng; không chạy nền |
+| 25 | **Góc nhìn app thường**: quét thêm trong một isolated process (`:hiding_probe`, không dùng app zygote) mà kernel luôn umount module cho nó; đọc file bằng syscall thô (`libhidingprobe.so`) và so với libc để bắt module hook libc | Thấy đúng cái app ngân hàng/game thấy, thay vì camd (root) đoán; theo hướng Duck Detector |
+| 26 | **Rule phát hiện có chữ ký** (`assets/hiding-rules.json`, ECDSA P-256): mở trang thì tải bản mới từ repo tối đa 6 giờ một lần, chỉ nhận khi đúng chữ ký và `version` mới hơn; báo commit Duck Detector đang theo so với bản nightly mới nhất | Cập nhật danh sách dấu hiệu mà không cần ra bản app; chỉ là dữ liệu, không tải code |
+| 27 | **camd `hiding-audit`**: ghi module gây ra từng mục lộ, `--uid` xem process của một app đang chạy, `--rules` nhận rule của Manager, thêm số liệu cho mục "Đã ẩn tốt" | Trang chỉ ra module nào làm lộ (có nút tắt), kiểm tra từng app từ Hồ sơ ứng dụng |
+| 28 | **Kiểm tra hồ sơ tắt umount** (app không root mà kernel vẫn không umount, hoặc hồ sơ mặc định tắt), mục **Đã ẩn tốt**, **chứng thực TEE** ngay trong trang | Bắt chỗ lộ hay gặp mà các check khác bỏ sót; giải thích vì sao app vẫn từ chối khi không còn gì lộ |
 
 ## 2. Lịch sử commit
 
@@ -53,6 +59,8 @@ Các nhóm chính (theo thứ tự thời gian):
 - `47a57e48 manager: Go glass-only and add the slime arena and app manager`: một commit lớn (178 file) gom toàn bộ đợt UI/UX: bỏ Material, thẻ 3D + slime, quản lý app, cài đặt/mặc định, font.
 - `1cfdc6d1` … `0566d61d`: boot guard và phát hiện xung đột module (kế hoạch: `docs/superpowers/plans/2026-10-04-bootguard-and-module-conflicts.md`), kèm `6789fb7b scripts: Keep every shell script LF on Windows checkouts`.
 - `43847238` … (sau): tab "Tính năng" (kế hoạch: `docs/superpowers/plans/2026-10-04-features-tab.md`).
+- `188fecb8` … `99e000ef`: trang Kiểm tra ẩn root (mục 12): trang riêng + lịch sử (`188fecb8`), góc nhìn app trong isolated process (`67d2e1ef`), rule có chữ ký (`9e83256f`), camd `--uid`/`--rules`/module (`8fcdc924`), module gây lộ, kiểm tra từng app, hook libc, Đã ẩn tốt, TEE (`99e000ef`).
+- `6a2f6324` … `dcbf0ae4` (2026-10-10): merge upstream `fix(manager): Block back navigation while flashing` (2 conflict: `CamActivity.kt`, `FlashScreen.kt`; giữ `GlassPage`, bỏ `uiMode`/`snackbarHost` đã xoá từ trước), ghim Duck Detector lên `b77fef8d`, `hiding-rules.json` lên `version` 2. Compile và 68 test Manager xanh; chưa kiểm bằng mắt trên máy.
 - `1b9b0673 kernel: trust the Cam Kernel SU manager signing key`: **đã lỗi thời** (kernel không còn kiểm tra chữ ký).
 
 ## 3. File bị đổi, theo khu vực
@@ -71,7 +79,7 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 - [sửa] `Kbuild`, `Kconfig`: bỏ `CONFIG_KSU_DISABLE_MANAGER`, `KSU_EXPECTED_SIZE/HASH*`, `KSU_MANAGER_PACKAGE`
 
 ### UAPI (`uapi/`)
-- [sửa] `supercall.h`: `KERNEL_SU_UAPI_VERSION = 5`
+- [sửa] `supercall.h`: `KERNEL_SU_UAPI_VERSION = 6` (upstream đang là 5; commit `1dc68cc9` đặt lại 6 sau khi upstream thêm `EVENT_SERVICES`)
 
 ### ksud (`userspace/ksud/`)
 - [mới] `src/seed.rs` (định dạng seed, có unit test), `src/allow.rs` (lệnh `allow`, có unit test)
@@ -154,11 +162,11 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 - [sửa] `ui/util/KsuCli.kt` (`getBootGuardStatus`, `clearBootGuard`, `listModuleConflicts`, cảnh báo xung đột trong `flashModule`), `data/model/Module.kt` (`autoDisabled`, `conflicts`), `data/repository/ModuleRepositoryImpl.kt`, `HomeUiState.kt`, `HomeViewModel.kt`, `HomeScreen.kt`, **một dòng** trong `HomeMiuix.kt` (`BootGuardNotice`) và **một dòng** trong `ModuleMiuix.kt` (`ModuleStatusBadges`). Merge upstream mà hai file Miuix này conflict thì chỉ cần giữ lại hai lời gọi đó.
 - [sửa] `build.gradle.kts`, `gradle/libs.versions.toml`: `testImplementation(libs.json.org)` (`org.json` của android.jar chỉ là stub trong unit test).
 - Chuỗi mới `boot_guard_*`, `module_badge_*`, `module_conflict_*`, `flash_conflict_warning` (Anh + Việt).
-- Điểm dễ vỡ: `lastTrigger` trong `bootguard.json` **không** dùng làm ngày giờ được (lúc `post-fs-data` đồng hồ máy chưa đồng bộ, máy thật ghi `12320886`). Mở Manager là nó cài lại `libksucam.so` của chính nó vào `/data/adb/ksud`: muốn thử ksud mới thì phải thay cả `lib/arm64/libksucam.so` trong thư mục app, hoặc build lại Manager.
+- Điểm dễ vỡ: `lastTrigger` trong `bootguard.json` **không** dùng làm ngày giờ được (lúc `post-fs-data` đồng hồ máy chưa đồng bộ, máy thật ghi `12320886`). Mở Manager là nó cài lại `libcamd.so` của chính nó vào `/data/adb/camd`: muốn thử camd mới thì phải thay cả `lib/arm64/libcamd.so` trong thư mục app, hoặc build lại Manager (nhớ chép camd mới vào `jniLibs` trước, mục 5).
 
 ### Manager: tab "Tính năng"
 - [mới] `ui/screen/features/FeaturesScreen.kt`, `FeaturesMiuix.kt`, `FeaturesUiState.kt`, `ui/viewmodel/FeaturesViewModel.kt`, `ui/viewmodel/ModuleListSignal.kt` (báo trang Module tải lại khi trang khác đổi tuỳ chọn xung đột hoặc bật lại module), `ui/component/glass/GlassExpandableCard.kt` (thẻ mở rộng, chuyển ra từ `AppManageCards.kt` để dùng chung, thêm tham số `enabled`).
-- [sửa] `ui/component/bottombar/BottomBarMiuix.kt` (enum `BottomBarDestination` thêm `Features` trước `Setting`), `ui/viewmodel/MainActivityViewModel.kt` (`PAGE_COUNT = 5`), `ui/MainActivity.kt` (`when (page)`: 3 = Tính năng, 4 = Cài đặt; `beyondViewportPageCount = LAST_PAGE_INDEX`), `ui/screen/module/ModuleScreen.kt` (nghe `ModuleListSignal`).
+- [sửa] `ui/component/bottombar/BottomBarMiuix.kt` (enum `BottomBarDestination` thêm `Features` trước `Setting`), `ui/viewmodel/CamActivityViewModel.kt` (`PAGE_COUNT = 5`), `ui/CamActivity.kt` (`when (page)`: 3 = Tính năng, 4 = Cài đặt; `beyondViewportPageCount = LAST_PAGE_INDEX`), `ui/screen/module/ModuleScreen.kt` (nghe `ModuleListSignal`).
 - [sửa] `data/repository/SettingsRepository*.kt`: khoá `conflict_detection`, `conflict_warn_on_flash`, `conflict_include_props` (đều mặc định bật). `ModuleRepositoryImpl` và `flashModule` áp các khoá này qua `List<ModuleConflict>.visible()`.
 - Merge upstream: **upstream chỉ có 4 tab**. Code upstream nào ghi cứng chỉ số trang (3 = Cài đặt) phải đổi thành 4. Tìm bằng `rg "PAGE_COUNT|when \(page\)|BottomBarDestination" manager/`.
 - Chuỗi mới `features_*` (Anh + Việt).
@@ -167,6 +175,15 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 - ksud: [mới] `src/hide_bootloader.rs` (bảng quy tắc prop → giá trị an toàn, thuần, có unit test; phần Android `apply_if_enabled`/`status`/`set_enabled`); [sửa] `src/resetprop.rs` (`list_props`, `set_prop`), `src/init_event.rs` (gọi sau `load_system_prop` và trong `on_boot_completed`), `src/cli.rs` (`hide-bootloader status|enable|disable`), `src/defs.rs` (cờ `/data/adb/ksu/.hide_bootloader`). Chỉ sửa prop **có sẵn**, không thêm prop mới; không đụng `ro.oem_unlock_supported`; `/proc/bootconfig` và `/proc/cmdline` chỉ báo.
 - Manager: [mới] `data/model/HideBootloaderStatus.kt`, `data/model/KeyAttestation.kt` (bộ đọc DER viết tay cho KeyDescription/RootOfTrust, có unit test), `data/model/Revocation.kt` (đối chiếu serial cả chuỗi chứng chỉ với danh sách thu hồi công khai `https://android.googleapis.com/attestation/status`, có unit test), `ui/util/AttestationCheck.kt`; [sửa] thẻ thứ ba trong `ui/screen/features/FeaturesMiuix.kt`, `FeaturesViewModel.kt`, `KsuCli.kt`; chuỗi `features_bootloader_*`, `features_attestation_*`.
 - Giới hạn: **không** đổi được chứng chỉ attestation (cần tầng keystore2, chưa làm). Máy của Cam root bằng EFISP nên bootloader luôn khoá: thử trên máy bằng cách tạm đặt `ro.boot.verifiedbootstate=orange` qua resetprop; attestation thật báo TEE / khoá / Verified.
+
+### Kiểm tra ẩn root (mục 12)
+- camd: [mới] `src/hiding_audit.rs` (của Cam, upstream không có): phần thuần có unit test (`Snapshot` → `audit`, `Rules`, `module_ids`, `app_view_mounts`, `app_findings`, `stats`, `report_json`), phần Android trong `mod device` (`snapshot`, `run_uid`, `run`). [sửa] `src/cli.rs`: `hiding-audit [--apply] [--rules <json>] [--uid <uid>]` (`--uid` không đi cùng `--apply`).
+- Manager, trang: [mới] `ui/screen/hidingcheck/` (`HidingCheckScreen.kt`, `HidingCheckMiuix.kt`, `HidingCheckUiState.kt`), `ui/viewmodel/HidingCheckViewModel.kt` (một ViewModel cho mỗi phạm vi: máy hoặc từng uid), `data/repository/HidingHistoryRepository.kt` (2 lần quét gần nhất trong `files/hiding_check/history/<device|uid_N>/`, mục bỏ qua trong prefs `hiding_check`), `ui/component/AttestationResult.kt` (dùng chung với thẻ Ẩn bootloader).
+- Manager, góc nhìn app: [mới] `hiding/AppViewProbe.kt`, `hiding/HidingProbeService.kt`, `hiding/NativeProbe.kt`, `hiding/HidingRules.kt`, `aidl/cam/su/kernel/hiding/IHidingProbe.aidl`, `cpp/hiding_probe.cc` (thư viện riêng `hidingprobe` trong `cpp/CMakeLists.txt`, không gộp vào `camjni`).
+- Manager, rule: [mới] `assets/hiding-rules.json` + `.sig`, `data/repository/HidingRulesRepository.kt` (khóa công khai nằm trong file này).
+- Manager, sửa: `AndroidManifest.xml` (service `.hiding.HidingProbeService`, `isolatedProcess`, `process=":hiding_probe"`), `CamApplication.kt` (**dừng sớm khi `Process.isIsolated()`**: isolated process không có dữ liệu app, chạy tiếp sẽ crash; áp cả cho service jailbreak), `data/model/HidingAudit.kt` (`toJson`, `plus`, `appView`, `modules`, `stats`, `moduleIds`), `ui/util/CamCli.kt` (`runHidingAudit(rules)`, `runAppHidingAudit`), `navigation3/Routes.kt` (`Route.HidingCheck(uid = DEVICE)`), `ui/CamActivity.kt` (entry), `ui/screen/features/*` (thẻ audit cũ thành thẻ lối vào, bỏ state/hàm audit), `ui/screen/appprofile/*` (dòng "Kiểm tra ẩn root cho app này", action `onCheckHiding`).
+- Chuỗi mới `hiding_*`, `audit_app_*`, `audit_profile_umount`, `audit_default_profile_umount` (Anh + Việt).
+- Test: `test/.../hiding/AppViewProbeTest.kt`, `test/.../ui/screen/hidingcheck/HidingCheckCompareTest.kt`, `test/.../data/repository/HidingRulesRepositoryTest.kt` (kiểm chữ ký trên chính file trong `assets/`).
 
 ### Manager: cài đặt, mặc định, font
 - [sửa] `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt`: thêm 3 khoá `roaming_slimes` (mặc định bật), `roaming_slime_count` (0 = ngẫu nhiên 1-4; hoặc 1..4), `slime_night_nap` (bật). **Đổi mặc định**: `enable_predictive_back` = `true`, `module_description_max_lines` = `5`. Kèm `SettingsUiState.kt`, `MainActivityUiState.kt`, `MainActivityViewModel.kt` (có danh sách `observedKeys`, thêm khoá mới vào đó), `SettingsViewModel.kt`.
@@ -179,6 +196,7 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 - [sửa] `.github/workflows/ddk-lkm.yml`: `safe.directory "$GITHUB_WORKSPACE"` (thay cho tên repo gốc ghi cứng) và checkout `fetch-depth: 0`. Thiếu hai dòng này module CI báo phiên bản **16**
 - [sửa] `.gitattributes`: **mọi** `*.sh` luôn LF (trước chỉ `scripts/*.sh`; `installer.sh` CRLF bị nhúng vào ksud làm mọi lệnh cài module lỗi `umask: illegal mode: 022\r`)
 - [mới] `scripts/build_lkm_camd.sh` (trước là `build_lkm_ksud.sh`; build LKM + camd từ một commit trong WSL)
+- [mới] `scripts/sign_hiding_rules.py`: tạo khóa (`--gen-key`) và ký `hiding-rules.json` (`--key`); [sửa] `.gitattributes`: `hiding-rules.json` và `.sig` là `-text` (git không được đổi xuống dòng, chữ ký tính trên từng byte)
 - [mới] `scripts/cam_rename.sed` + `scripts/cam_rename.skip` (đổi tên KernelSU → Cam cho code upstream mới merge vào; danh sách file tương thích không được chạy qua; mục 11)
 
 ## 4. Kéo bản cập nhật upstream (làm theo thứ tự)
@@ -288,7 +306,10 @@ rg -n "LocalUiMode|UiMode\b" manager/app/src/main/java
 rg -n "filament" manager/gradle/libs.versions.toml manager/app/build.gradle.kts manager/app/proguard-rules.pro
 ls manager/app/src/main/assets/roam_jelly.filamat
 
-# 8. Test và build (Windows: chạy từ ổ K:, xem mục 5)
+# 8. Rule ẩn root còn khớp chữ ký (mục 12). Fail = ai đó sửa rule mà không ký lại
+cd manager && ./gradlew :app:testDebugUnitTest --tests "cam.su.kernel.data.repository.HidingRulesRepositoryTest" && cd ..
+
+# 9. Test và build (Windows: chạy từ ổ K:, xem mục 5)
 cd manager && ./gradlew :app:testDebugUnitTest :app:assembleRelease
 # camd/caminit (WSL): cargo ndk -t arm64-v8a check && cargo ndk -t arm64-v8a clippy && cargo fmt --check
 ```
@@ -342,6 +363,8 @@ Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã d
 | `gradlew.bat` chạy trong thư mục có dấu (`dự án đã done`) | `Unable to access jarfile ...gradle-wrapper.jar` (cả `./gradlew` trong Git Bash) | Ổ `K:` là `subst` của repo: PowerShell `Push-Location K:\manager; & K:\manager\gradlew.bat :app:assembleDebug` |
 | `adb pull/push /data/...` trong Git Bash | Git Bash đổi `/data/...` thành `C:/Program Files/Git/data/...` | `MSYS_NO_PATHCONV=1 adb ...` |
 | `git mv` thư mục báo `Permission denied` | Shell (hoặc IDE) đang đứng trong thư mục đó, Windows khoá nó | `cd` ra ngoài rồi chạy lại |
+| Build Manager trên máy sau khi sửa camd | APK vẫn mang camd **cũ**: Gradle chỉ đóng gói `jniLibs/arm64-v8a/libcamd.so` có sẵn (thư mục bị gitignore), không build lại. Lệnh mới của camd (vd. `hiding-audit --uid`) báo lỗi | Chép camd vừa build vào `jniLibs` trước (lệnh ở dưới), hoặc lấy APK từ CI (CI build camd và Manager cùng một commit) |
+| `gh run list` / `gh run watch` trong repo này | `gh` chọn nhầm repo `tiann/KernelSU` (remote `upstream`) | Luôn thêm `-R peo1108/Cam-Kernel-SU` |
 | `cargo test` của camd | 2 test `lkm_image` / `lkm_image_btf` fail | Đã fail từ trước đợt đổi tên (thiếu `.ko` android12 cục bộ, BTF), không phải lỗi mới |
 | Mở bản release xong thấy slime ngoài hộp biến mất, chỉ còn vẽ 2D phẳng | `Roam3D.createOrNull()` trả `null` (Filament không khởi tạo được, hoặc thiếu `roam_jelly.filamat`) | Xem `logcat` có dòng `Filament`; kiểm tra file `.filamat` còn trong `assets/` |
 
@@ -374,9 +397,15 @@ Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `
 
 - **Kernel (logic seed):** harness chạy trên host với header giả, gồm 11 test, chạy dưới ASan. Harness đang nằm ngoài repo (thư mục scratchpad), chưa đưa vào repo.
 - **Trên máy thật (Y700 Gen5, 2026-10-09), đợt đổi tên:** cài Manager mới khi máy còn LKM cũ → camd chuyển `/data/adb/ksu` → `/data/adb/cam`, `ksud` → `camd`, `/metadata/watchdog/ksu` → `cam`, allowlist giữ nguyên, nhãn file vẫn `ksu_file`; reboot với LKM cũ (chạy qua symlink) → root OK, giai đoạn services chạy. Flash LKM `camsu.ko` → `su` ra `u:r:cam:s0`, module tên `camsu`, `camd` được gắn nhãn `cam_file`, `u:r:ksu:s0`/`ksu_file` vẫn hợp lệ trong policy; camd mới xoá symlink cũ, reboot lại vẫn root. **Chưa thử:** app uid ≥ 10000 dò domain `ksu` khi bật SELinux hide; tính năng jailbreak.
-- **camd (ksud):** `cargo test seed:: allow:: boot_guard module_conflicts` (trong `userspace/camd`) (chạy trên Linux/WSL; build Android trong WSL cần `LIBCLANG_PATH` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android26 --sysroot=<NDK>/toolchains/llvm/prebuilt/windows-x86_64/sysroot"`). Hai test `lkm_image` / `lkm_image_btf` vốn đã fail sẵn trên upstream khi thiếu asset CI, không liên quan.
+- **camd (ksud):** `cargo test seed:: allow:: boot_guard module_conflicts` (trong `userspace/camd`) (chạy trên Linux/WSL; build Android trong WSL cần `LIBCLANG_PATH` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android26 --sysroot=<NDK>/toolchains/llvm/prebuilt/windows-x86_64/sysroot"`). Hai test vốn đã fail sẵn khi chạy cục bộ, không liên quan tới thay đổi của Cam: `lkm_image::tests::embedded_module_uses_release_asset_layout` (thiếu `aarch64/android12-5.10_camsu.ko`, chỉ CI mới có) và `lkm_image_btf::tests::rejects_conflicting_loading_module_values`.
+- **Chạy toàn bộ test (đã chạy 2026-10-09 trên `99e000ef`):**
+  - camd, trong WSL: `cd userspace/camd && CARGO_TARGET_DIR=$HOME/camd-target cargo test --target x86_64-unknown-linux-gnu` → 79 test, **77 đạt, 2 fail** (hai test trên).
+  - Manager, trên Windows (ổ `K:`, mục 5): `Push-Location K:\manager; & K:\manager\gradlew.bat :app:testDebugUnitTest` → 14 lớp test, **68 test đạt**.
+  - Kernel (C): chưa có test nào trong repo.
+  - **CI không chạy test nào** (`build-manager.yml` chỉ `assembleRelease`; không có `cargo test` hay `testDebugUnitTest`), nên test chỉ có tác dụng khi tự chạy trước khi push. Đặc biệt `HidingRulesRepositoryTest` (chữ ký rule) không được CI giữ cho.
 - **Trên máy thật (Y700 Gen5, 2026-10-03/04), phần UI mới:** đã thấy chạy đúng: phá kính khi vuốt khỏi Home, cửa + vá kính khi về, slime 3D chạy trên mép thẻ, đập tay / cưỡi Bơ / chơi khăm / rượt / đánh nhau, laser bằng ngón tay giữ yên, ngủ ban đêm, bật/tắt slime trong Chủ đề, 3 thẻ Hồ sơ ứng dụng (Thông tin, đường dẫn, Dung lượng) trên Chrome. Khung hình trung bình khoảng 9 ms, GPU khoảng 6 ms. **Chưa thử trên máy:** lắc máy, tự ẩn khi Flash / cài module, các nút Quản lý (sao lưu, xoá cache/dữ liệu, đóng băng, gỡ), nút copy đường dẫn.
 - **Trên máy thật (Y700 Gen5, 2026-10-04), boot guard và xung đột:** module thử `bg-test` reboot trong `service.sh` (tự dừng sau 5 lần) → 2 lần reboot, lần boot thứ 3 ksud tắt `bg-test`, máy lên bình thường; reboot thường thì `failCount` về 0; module `scune-support` đang tắt không bị đụng. Hai module `cf-a`/`cf-b` (cùng file `/system/etc`, file vendor đã bị installer chuyển ra `<module>/vendor`, prop khác giá trị) → báo đúng 3 xung đột, prop cùng giá trị không báo. Manager: thẻ Home, hộp thoại Bật lại / Bỏ qua, chip trên thẻ module, hộp thoại xung đột, dòng cảnh báo khi flash.
+- **Kiểm tra ẩn root:** camd `cargo test --target x86_64-unknown-linux-gnu hiding_audit` (14 test, WSL); Manager `./gradlew :app:testDebugUnitTest --tests "cam.su.kernel.hiding.*" --tests "cam.su.kernel.ui.screen.hidingcheck.*" --tests "cam.su.kernel.data.repository.HidingRulesRepositoryTest"` (16 test). **Trên máy (TB323FU, 2026-10-09)** mới chỉ cài bản CI `v3.3.0-172` và mở app không crash; **chưa thử** quét thật, góc nhìn app, kiểm tra từng app, tắt module, rule tải về.
 - **Trên máy thật (Y700 Gen5, 2026-10-02):** boot OK; seed cấp root cho Manager; seed không áp lại khi nonce giữ nguyên; prune xoá quyền khi gỡ app; cài module + WebUI OK; dialog chọn app OK; `ksud allow` OK.
 
 ## 7. Giới hạn đã biết
@@ -393,6 +422,11 @@ Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `
 - **Gỡ systemless** cần khởi động lại mới có hiệu lực; chỉ hiện khi app có đường dẫn gốc trong ROM.
 - Chuỗi mới (`settings_slime*`, `app_*`) chỉ có tiếng Anh và tiếng Việt.
 - **Boot guard không cứu được** máy loop *trước* `post-fs-data` (kernel, `init`, hoặc metamodule mount sớm qua `modules.rc`): bộ đếm không tăng. Khi đó vẫn dùng safe mode (phím âm lượng). Ngưỡng cố định 3; người dùng reboot giữa chừng lúc đang boot 2 lần liên tiếp cũng tính là boot lỗi.
+- **Kiểm tra ẩn root** (mục 12): kiểm tra từng app chỉ chạy khi app đang mở (cần process để đọc); probe native chỉ so mountinfo và đường dẫn su (maps tự đổi giữa hai lần đọc); kiểm tra hồ sơ cần danh sách app đã nạp và kernel umount đang bật; rule tải về chỉ đổi những gì nằm trong rule (danh sách khác trong camd vẫn viết cứng); không làm GitHub Action tự sinh rule từ Duck Detector. Isolated process **luôn** được kernel umount (`kernel/feature/kernel_umount.c`), nên nó đại diện cho app không root, không phải cho app đã được cấp root.
+- **Tài liệu và thương hiệu chưa đổi, có chủ đích hoặc chưa tới:** `docs/README*.md` (15 bản dịch), `website/` (VitePress, 157 file, vẫn là trang kernelsu.org), `SECURITY.md` (liên hệ weishu), `strings.xml` (11 chỗ còn "KernelSU"). `deploy-website.yml` vẫn chạy khi push `website/**`. Mục "Module repo" của Manager vẫn trỏ về repo của upstream.
+- **Dây chuyền chữ ký APK cũ còn trong CI:** `build-manager.yml` / `build-lkm.yml` vẫn tính `expected_size` / `expected_hash` và truyền xuống, nhưng kernel của Cam không còn đọc chúng (mục 1, dòng 1). Vô hại, chỉ là mã chết; bỏ đi sẽ làm merge `build-*.yml` khó hơn, nên để nguyên.
+- **`scripts/build_lkm_camd.sh`** mặc định build nhánh `feat/managerless-seed`, không phải `main`; luôn truyền tên nhánh (`... build_lkm_camd.sh main`).
+- **Thư mục `sfs/` (207 MB: zip kernel SUSFS, ảnh boot, log), `IMG_7454.PNG`, `logo mẫu/` nằm ngoài git nhưng chưa vào `.gitignore`:** `git add .` sẽ kéo cả 207 MB lên. Luôn add từng file (như mục 4). SUSFS đang tạm dừng.
 - **Phát hiện xung đột** chỉ đọc file `.replace`, không đọc xattr `trusted.overlay.opaque`; không biết module nào "thắng" (tuỳ thứ tự mount của metamodule).
 
 ## 8. Phát hành bản mới (GitHub Actions)
@@ -581,3 +615,48 @@ Các file này nằm trong `scripts/cam_rename.skip` (script đổi tên không 
 ### Nếu muốn bỏ hẳn tên `ksu` trong SELinux (chưa làm)
 
 SELinux hide đã giấu domain `ksu` khỏi app (trả lời theo policy gốc chụp trước khi thêm rule), nên giữ `ksu` song song không làm lộ thêm. Muốn bỏ hẳn: (1) kernel đổi chữ `u:r:ksu:s0` → `u:r:cam:s0` trong allowlist khi đọc (rồi `KSU_DEFAULT_SELINUX_DOMAIN` = `KERNEL_SU_CONTEXT`, `CAM_DOMAIN` = `u:r:cam:s0`); (2) đợi máy đã chạy kernel đó ít nhất một lần để camd gắn lại nhãn `cam_file`; (3) bỏ dòng `add_su_domain(db, KSU_LEGACY_DOMAIN, …)`. Sau đó không quay về kernel cũ được nữa (allowlist ghi `cam`), và `sepolicy.rule` của module nhắc `ksu` sẽ báo lỗi.
+
+## 12. Kiểm tra ẩn root (2026-10-09)
+
+Trang xem app không có root còn nhận ra máy đã root không, theo hướng của [Duck Detector](https://github.com/eltavine/Duck-Detector-Refactoring) nhưng viết lại gọn (không nhúng SDK của họ).
+
+### Cách chạy
+
+**Không có gì chạy nền.** Mở trang chỉ đọc kết quả đã lưu, đọc trạng thái công tắc và kiểm tra rule (tối đa 6 giờ một lần). Quét chỉ khi ấn **Kiểm tra**; ba nguồn chạy song song rồi gộp lại (`HidingAudit.plus`):
+
+| Nguồn | Chạy ở đâu | Thấy gì |
+|---|---|---|
+| Góc nhìn root | `camd hiding-audit --rules <file>` qua root shell | mount module tự tạo, mount KSU khi tắt kernel umount, rule SELinux, maps của mọi app, prop/bootconfig, LSPosed/ReVanced, su, SELinux, adb |
+| Góc nhìn app | `HidingProbeService` trong isolated process `:hiding_probe` | mountinfo/maps của chính nó, su, prop bootloader, SELinux, libc khác kernel (`appHooked`) |
+| Hồ sơ app | Manager, `SuperUserViewModel.apps` + `uidShouldUmount` | app không root mà kernel không umount; hồ sơ mặc định tắt umount |
+
+Từ **Hồ sơ ứng dụng** → "Kiểm tra ẩn root cho app này" mở cùng trang với `uid`: camd chạy `hiding-audit --uid <uid>` đọc `/proc/<pid>/mountinfo` và `maps` của chính app đó (app phải đang chạy, trang có nút **Mở app**). Mỗi phạm vi có lịch sử riêng.
+
+Kết quả mỗi lần quét được lưu (2 lần gần nhất), nên trang gắn tag **Mới / Như cũ** và liệt kê **Đã ẩn so với lần trước**; mục **Đã ẩn tốt** lấy từ `stats` (check nào đã chạy mà không thấy gì). Mục lộ có `modules` thì hiện "Do <tên module>" và nút **Tắt** (`camd module disable`, cần khởi động lại).
+
+### Những chỗ dễ làm hỏng
+
+- Service probe **không được** dùng `useAppZygote`: `CamZygotePreload` của app zygote chạy camd (jailbreak).
+- `CamApplication.onCreate` dừng sớm trong isolated process. Bỏ dòng `Process.isIsolated()` là probe crash.
+- Probe không đọc được file của app: rule đi qua AIDL (`IHidingProbe.scan(rules)`); camd cũng không đọc `assets/`, nên Manager ghi rule ra `files/hiding_check/rules-current.json` rồi truyền `--rules`.
+- JSON giữa camd và Manager: `findings[].{id, level, items, fix, modules, view}`, `fixable`, `stats`, thêm `running` khi `--uid`. Đổi một bên thì đổi bên kia (`hiding_audit.rs` ↔ `HidingAudit.kt`); camd và Kotlin cùng có hàm `module_ids`/`moduleIds` và cùng quy tắc mount (`app_view_mounts` ↔ `AppViewProbe.mounts`).
+- `libhidingprobe.so` gọi syscall bằng `svc`/`syscall`/`ecall`; ABI khác thì rơi về `syscall()` của libc (hook vẫn với tới được).
+
+### Cập nhật rule
+
+Rule nằm ở `manager/app/src/main/assets/hiding-rules.json` (`version`, `updated`, `duckDetector`, `mountSources`, `mapMarkers`, `suPaths`, `safeProps`). App đóng gói sẵn bản này và tải bản trên `main` của repo (`raw.githubusercontent.com/peo1108/Cam-Kernel-SU/main/...`), chỉ nhận khi chữ ký đúng và `version` lớn hơn.
+
+1. Sửa `hiding-rules.json`, **tăng `version`**, đổi `updated` (và `duckDetector` nếu theo commit mới của họ: `gh api repos/eltavine/Duck-Detector-Refactoring/commits/nightly --jq .sha`).
+2. Ký: `python scripts/sign_hiding_rules.py --key ~/.cam/hiding-rules-key.pem` (ghi `hiding-rules.json.sig`).
+3. Chạy `HidingRulesRepositoryTest`, commit cả hai file, push lên `main`. Máy đang cài app nhận rule mới lần sau mở trang (hoặc ấn **Kiểm tra cập nhật**).
+
+### Đang theo Duck Detector tới đâu (2026-10-10)
+
+Ghim `duckDetector` = `b77fef8d` (nightly), `version` 2. **Ghim nghĩa là đã xem tới commit đó, không phải đã có đủ tính năng.** Bốn commit từ `b6c7c42a` lên `b77fef8d` không đổi dữ liệu mount/map/su/prop nên rule không đổi, nhưng thêm hai probe **chưa port**:
+
+| Probe | Làm gì | Tình trạng |
+|---|---|---|
+| SELinux `attr/current` timing (`attr_timing_probe.cpp`) | App thường ghi cùng một độ dài vào `/proc/thread-self/attr/current`: lần 1 là context của chính nó, lần 2 là chuỗi bắt đầu bằng ký tự xuống dòng; cả hai đều `-EACCES`, so thời gian trung vị của 256 cặp (`CANDIDATE` khi chênh > 400 ns, ổn định ở cả hai nửa và ≥ 90% cặp cùng chiều) | Duck ghi "experimental, not conclusive", quan sát trên KernelSU gốc `df03912f`. **Trên kernel Cam đã thấy lộ** (2026-10-10). Chưa tìm nguyên nhân; sẽ sửa ở SELinux hide, sau đó cân nhắc port probe này vào trang Kiểm tra làm test hồi quy |
+| Heap residue (`feature/heapresidue`) | Đọc heap dump của isolated process để tìm dấu vết process name | Hướng nghiên cứu, Duck chưa bật rule nào (chỉ thêm khóa `me.weishu.kernelsu.pr` vào bảng tên process) |
+
+**Khóa ký:** khóa riêng ở `C:\Users\cam\.cam\hiding-rules-key.pem`, **không** nằm trong repo, phải sao lưu. Khóa công khai nằm trong `HidingRulesRepository.PUBLIC_KEY`. Đổi khóa (`--gen-key`) thì phải đổi `PUBLIC_KEY` và ra bản app mới; các bản app cũ sẽ không nhận rule ký bằng khóa mới nữa. Dùng ECDSA P-256 vì Android chỉ có Ed25519 từ API 33 (app hỗ trợ từ API 31).

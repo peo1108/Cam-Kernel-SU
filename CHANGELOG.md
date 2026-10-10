@@ -2,6 +2,16 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.4 - 2026-10-10
+### Tính năng mới
+- Tự kiểm tra ẩn root sau khi cài module: lần khởi động đầu sau khi cài, cập nhật hay bật lại module, app quét một lần và báo nếu module đó làm lộ root
+- Chạm thông báo để mở trang Kiểm tra ẩn root, trang tự quét lại và có nút tắt module gây lộ
+- Bật/tắt ở mục Tự động trong trang Kiểm tra ẩn root (mặc định bật)
+### Thư viện Module
+- Thay NeoZygisk bằng Zygisk Next
+### Lưu ý
+- Android 13 trở lên cần cho phép thông báo thì mới thấy cảnh báo
+
 ## 3.0.3 - 2026-10-10
 ### Sửa lỗi
 - Thư viện Module mở lại được: chuyển sang thư viện riêng của Cam, vì kho module của KernelSU đã ngừng hoạt động

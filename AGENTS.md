@@ -85,6 +85,10 @@ bun run docs:build  # Production build
 
 - JS packages back module WebUI pieces; follow existing package manager lockfile and run the relevant lint/test scripts before publishing changes.
 
+## Releasing
+
+- Releases are OTA updates for every installed Manager: tag `cam-vX.Y.Z` (never `v*`, those are upstream tags) after adding a `## X.Y.Z - YYYY-MM-DD` entry to `CHANGELOG.md`; the Release workflow stops when the entry is missing. Details: section 8 of `docs/CAM_CHANGES.md`.
+
 ## Common Pitfalls
 
 - Only one metamodule can be active; keep meta hooks in sync with camd expectations.

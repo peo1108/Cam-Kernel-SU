@@ -34,9 +34,16 @@ jobs:
           name: release-notes
           path: release-notes.md
 
+  # Every release is an OTA update pushed to installed Managers: publish only when all tests pass.
+  tests:
+    needs:
+      - changelog
+    uses: ./.github/workflows/test.yml
+
   build-manager:
     needs:
       - changelog
+      - tests
     uses: ./.github/workflows/build-manager.yml
     secrets: inherit
   release:

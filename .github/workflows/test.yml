@@ -35,6 +35,8 @@ on:
       - 'scripts/changelog_section.py'
       - 'scripts/test_changelog_section.py'
   workflow_dispatch:
+  # release.yml runs every test before it publishes an OTA update
+  workflow_call:
 
 permissions:
   contents: read

@@ -24,7 +24,8 @@ data class UpdateInfo(
 }
 
 private const val TAG_PREFIX = "cam-v"
-private val APK_NAME = Regex("""^Cam_Kernel_SU_.+_(\d+)-release\.apk$""")
+// <app name>_<version name>_<version code>-release.apk (archivesName + repack_apk.py); a release has one APK
+private val APK_NAME = Regex("""_(\d+)-release\.apk$""")
 
 /**
  * The newest published cam-v* release whose APK is newer than [currentVersionCode], or null.

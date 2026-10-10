@@ -16,7 +16,7 @@ class UpdateParserTest {
     }
 
     private fun apk(version: String, code: Long, digest: String? = null) =
-        asset("Cam_Kernel_SU_${version}_$code-release.apk", digest = digest)
+        asset("SU_Kernel_${version}_$code-release.apk", digest = digest)
 
     private fun release(
         tag: String,
@@ -43,7 +43,14 @@ class UpdateParserTest {
         val info = parseReleases(json, 32800)!!
         assertEquals("3.0.2", info.versionName)
         assertEquals(32950L, info.versionCode)
-        assertEquals("https://example.com/Cam_Kernel_SU_3.0.2_32950-release.apk", info.apkUrl)
+        assertEquals("https://example.com/SU_Kernel_3.0.2_32950-release.apk", info.apkUrl)
+    }
+
+    @Test
+    fun readsTheCiApkName() {
+        // the name Build Manager really produces: <app name>_<version name>_<version code>-release.apk
+        val json = list(release("cam-v3.0.1", asset("SU_Kernel_v3.3.0-187-g21536a17_32788-release.apk")))
+        assertEquals(32788L, parseReleases(json, 32700)!!.versionCode)
     }
 
     @Test

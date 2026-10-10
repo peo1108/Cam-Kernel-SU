@@ -181,6 +181,33 @@ androidComponents {
     }
 }
 
+// CHANGELOG.md (repo root) is packed for the "What's new" dialog (ChangelogParser.ASSET_PATH).
+abstract class CopyChangelog : DefaultTask() {
+    @get:InputFile
+    abstract val changelog: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val dir = outputDir.get().asFile.resolve("changelog")
+        dir.deleteRecursively()
+        dir.mkdirs()
+        changelog.get().asFile.copyTo(dir.resolve("CHANGELOG.md"), overwrite = true)
+    }
+}
+
+val copyChangelog = tasks.register<CopyChangelog>("copyChangelog") {
+    changelog.set(rootProject.file("../CHANGELOG.md"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(copyChangelog, CopyChangelog::outputDir)
+    }
+}
+
 base {
     archivesName.set(
         "${managerName.replace(" ", "_")}_${managerVersionName}_${managerVersionCode}"

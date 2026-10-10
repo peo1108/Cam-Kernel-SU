@@ -1,6 +1,7 @@
 name: Test
 
-# Unit tests the build workflows do not run: camd on the Linux host, and the Manager's JVM
+# Unit tests the build workflows do not run: the kernel's seed and Manager pin logic
+# (kernel/tests, on the host under ASan/UBSan), camd on the Linux host, and the Manager's JVM
 # tests (among them HidingRulesRepositoryTest, which fails when hiding-rules.json was edited
 # without re-signing it).
 
@@ -9,6 +10,8 @@ on:
     branches: [ "main", "dev" ]
     paths:
       - '.github/workflows/test.yml'
+      - 'kernel/policy/**'
+      - 'kernel/tests/**'
       - 'userspace/**'
       - 'uapi/**'
       - 'manager/**'
@@ -18,6 +21,8 @@ on:
     branches: [ "main", "dev" ]
     paths:
       - '.github/workflows/test.yml'
+      - 'kernel/policy/**'
+      - 'kernel/tests/**'
       - 'userspace/**'
       - 'uapi/**'
       - 'manager/**'
@@ -29,6 +34,14 @@ permissions:
   contents: read
 
 jobs:
+  kernel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Host tests
+        run: make -C kernel/tests
+
   camd:
     runs-on: ubuntu-latest
     steps:

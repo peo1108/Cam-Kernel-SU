@@ -2,6 +2,11 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.2 - 2026-10-10
+### Tính năng mới
+- Bấm Cập nhật giờ mở hộp thoại tiến trình: Tải về → Kiểm tra → Cài đặt, có thanh chạy theo % và số MB đã tải
+- Lỗi khi cập nhật hiện ngay trong hộp thoại, kèm nút Thử lại hoặc Cài bằng trình cài đặt Android
+
 ## 3.0.1 - 2026-10-10
 ### Kiểm tra ẩn root
 - Cập nhật rule theo Duck Detector mới nhất (3aa2749c, rule version 4): đã xem hai probe SELinux mới của họ (đếm lượt tra AVC, ghi context có kiểm soát); theo mã nguồn, ẩn SELinux của SU Kernel không bị hai probe này phát hiện (chưa đo trên máy)

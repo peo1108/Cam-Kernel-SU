@@ -9,3 +9,9 @@ __pycache__
 /dist
 /repack-config.json
 /userspace/camd/.lkm_image_bootstrap.o
+
+# local files kept next to the repo (Cam)
+/sfs/
+/IMG_*.PNG
+/logo mẫu/
+/note.txt

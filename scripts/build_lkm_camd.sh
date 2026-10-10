@@ -16,7 +16,7 @@
 #   KMIS   "kmi:clang ..." pairs to build
 set -euo pipefail
 
-BRANCH="${1:-feat/managerless-seed}"
+BRANCH="${1:-main}"
 SRC="${SRC:-/mnt/c/Users/cam/Desktop/Cam Kernel SU}"
 WORK="${WORK:-/root/ksu-git}"
 KW="${KW:-/root/scune-kmod-work}"

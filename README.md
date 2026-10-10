@@ -19,7 +19,7 @@ Cam Kernel SU là một bản fork độc lập của KernelSU. Dự án bổ su
   - **Tự ẩn bootloader** ở tầng prop.
   - **Kiểm tra ẩn root:** quét từ góc nhìn root, từ một app không root (isolated process) và theo từng app; chỉ ra module gây lộ; rule phát hiện có chữ ký, tự cập nhật.
 
-Mọi tính năng còn lại giống bản gốc. Hiện trạng, kết quả test và việc nên làm tiếp: [docs/PROJECT_REVIEW.md](docs/PROJECT_REVIEW.md). Danh sách thay đổi đầy đủ, cách build trên Windows và cách kéo cập nhật từ bản gốc nằm trong [docs/CAM_CHANGES.md](docs/CAM_CHANGES.md). Xem tài liệu tại [kernelsu.org](https://kernelsu.org/vi_VN/) và [docs/README_VI.md](docs/README_VI.md).
+Mọi tính năng còn lại giống bản gốc. Hiện trạng, kết quả test và việc nên làm tiếp: [docs/PROJECT_REVIEW.md](docs/PROJECT_REVIEW.md). Danh sách thay đổi đầy đủ, cách build trên Windows và cách kéo cập nhật từ bản gốc nằm trong [docs/CAM_CHANGES.md](docs/CAM_CHANGES.md). Hướng dẫn dùng chung (cài đặt, module, hồ sơ ứng dụng) vẫn là của KernelSU: [kernelsu.org](https://kernelsu.org/vi_VN/).
 
 ## Build
 

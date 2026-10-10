@@ -1,13 +1,8 @@
 name: Deploy Website
 
+# Cam: manual only. website/ is still KernelSU's documentation, kept for easier merges;
+# deploying it would publish KernelSU's site under this repo.
 on:
-  push:
-    branches:
-      - main
-      - website
-    paths:
-      - '.github/workflows/deploy-website.yml'
-      - 'website/**'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

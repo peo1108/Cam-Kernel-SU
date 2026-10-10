@@ -27,7 +27,7 @@ const LEGACY_LKM_NAME: &str = "kernelsu.ko";
 mod android {
     use super::Result;
     pub(super) use crate::defs::{BACKUP_FILENAME, KSU_BACKUP_DIR, KSU_BACKUP_FILE_PREFIX};
-    use crate::defs::{DEFAULT_PACKAGE_NAME, KSU_TEMP_BACKUP_DIR_NAME};
+    use crate::defs::{DEFAULT_PACKAGE_NAME, KSU_TEMP_BACKUP_DIR_NAME, PREVIOUS_IMAGE_DIR};
     use android_bootimg::cpio::{Cpio, CpioEntry};
     use anyhow::{Context, anyhow, bail, ensure};
     use regex_lite::Regex;
@@ -204,7 +204,34 @@ mod android {
         Ok(())
     }
 
+    /// Copies what `partition` holds now to PREVIOUS_IMAGE_DIR, replacing the copy from the
+    /// flash before. The stock backup only undoes the first install; this undoes the last
+    /// flash (an LKM update that does not boot) with `fastboot flash`.
+    fn save_previous_image(partition: &str) -> Result<PathBuf> {
+        let name = Path::new(partition)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .with_context(|| format!("no partition name in {partition}"))?;
+        std::fs::create_dir_all(PREVIOUS_IMAGE_DIR)?;
+        let target = Path::new(PREVIOUS_IMAGE_DIR).join(format!("{name}.img"));
+        let partial = Path::new(PREVIOUS_IMAGE_DIR).join(format!(".{name}.img.partial"));
+        let mut source = File::open(partition).with_context(|| format!("open {partition}"))?;
+        let mut copy = File::create(&partial)?;
+        std::io::copy(&mut source, &mut copy)?;
+        copy.sync_all()?;
+        std::fs::rename(&partial, &target)?;
+        Ok(target)
+    }
+
     pub(super) fn flash_partition(partition: &str, data: &[u8]) -> Result<()> {
+        match save_previous_image(partition) {
+            Ok(path) => {
+                println!("- Previous image saved to");
+                println!("- {}", path.display());
+            }
+            // the stock backup is still there; not worth refusing the flash for
+            Err(e) => println!("- Saving the previous image failed: {e:#}"),
+        }
         let mut blk = std::fs::OpenOptions::new()
             .write(true)
             .truncate(false)

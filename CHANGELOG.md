@@ -2,6 +2,12 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.6 - 2026-10-10
+### Tính năng mới
+- Ủng hộ dự án ngay trong app: chạm thẻ "Ủng hộ tại:" ở Trang chủ để mở mã QR chuyển khoản
+- Mã VietQR quét được bằng mọi app ngân hàng và MoMo, tự điền sẵn tài khoản nhận và nội dung
+- Nút "Mở kênh" trong cùng cửa sổ để vào kênh Telegram như trước
+
 ## 3.0.5 - 2026-10-10
 ### Tính năng mới
 - ADB không dây ngay trong tab Tính năng: bật một công tắc là máy tính kết nối được qua Wi-Fi, không cần cắm dây hay ghép đôi

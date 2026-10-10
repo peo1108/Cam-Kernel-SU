@@ -1,7 +1,7 @@
 {
-  "version": 1,
-  "updated": "2026-10-09",
-  "duckDetector": "b6c7c42a945788d5a43634f8cdf536ff38053218",
+  "version": 2,
+  "updated": "2026-10-10",
+  "duckDetector": "b77fef8d8892589fc8ed2d53e7e54fccaad7af70",
   "mountSources": ["KSU", "APatch", "magisk", "worker"],
   "mapMarkers": [
     "/data/adb/", "/debug_ramdisk/", "/sbin/",

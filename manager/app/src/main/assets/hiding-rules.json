@@ -1,8 +1,8 @@
 {
-  "version": 3,
+  "version": 4,
   "updated": "2026-10-10",
-  "duckDetector": "b77fef8d8892589fc8ed2d53e7e54fccaad7af70",
-  "duckPending": ["heap residue"],
+  "duckDetector": "3aa2749c8ccf4916ac15d0bf2602ec7cb415c6b4",
+  "duckPending": ["heap residue", "AVC lookup counters"],
   "mountSources": ["KSU", "APatch", "magisk", "worker"],
   "mapMarkers": [
     "/data/adb/", "/debug_ramdisk/", "/sbin/",

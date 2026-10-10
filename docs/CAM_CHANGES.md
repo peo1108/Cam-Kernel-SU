@@ -683,12 +683,14 @@ Rule nằm ở `manager/app/src/main/assets/hiding-rules.json` (`version`, `upda
 
 ### Đang theo Duck Detector tới đâu (2026-10-10)
 
-Ghim `duckDetector` = `b77fef8d` (nightly), `version` 3. **Ghim nghĩa là đã xem tới commit đó, không phải đã có đủ tính năng**; những gì chưa có ghi trong `duckPending` (trang hiện "app này chưa có: …"). Bốn commit từ `b6c7c42a` lên `b77fef8d` không đổi dữ liệu mount/map/su/prop, nhưng thêm hai probe:
+Ghim `duckDetector` = `3aa2749c` (nightly), `version` 4. **Ghim nghĩa là đã xem tới commit đó, không phải đã có đủ tính năng**; những gì chưa có ghi trong `duckPending` (trang hiện "app này chưa có: …"). Bốn commit từ `b6c7c42a` lên `b77fef8d` không đổi dữ liệu mount/map/su/prop, nhưng thêm hai probe; hai commit từ `b77fef8d` lên `3aa2749c` thêm probe AVC và viết lại probe ghi context bằng native (bảng dưới):
 
 | Probe | Làm gì | Tình trạng |
 |---|---|---|
 | SELinux `attr/current` timing (`attr_timing_probe.cpp`) | App thường ghi cùng một độ dài vào `/proc/thread-self/attr/current`: lần 1 là context của chính nó, lần 2 là chuỗi bắt đầu bằng ký tự xuống dòng; cả hai đều `-EACCES`, so thời gian trung vị của 256 cặp (`CANDIDATE` khi chênh > 400 ns, ổn định ở cả hai nửa và ≥ 90% cặp cùng chiều) | **Đã sửa và đã port.** Nguyên nhân: `my_setprocattr` parse context A trước khi để SELinux từ chối, B (bắt đầu bằng `\n`) thì bỏ qua bước đó. Sửa ở `a3803700` (kiểm quyền trước), Duck hết lộ trên máy. Trang Kiểm tra đo y như Duck từ `015c8496` |
 | Heap residue (`feature/heapresidue`) | Đọc heap dump của isolated process để tìm dấu vết process name | Chưa port (`duckPending`). Hướng nghiên cứu, Duck chưa bật rule nào (chỉ thêm khóa `me.weishu.kernelsu.pr` vào bảng tên process) |
+| AVC lookup counters (`avc_lookup_probe.cpp`, thử nghiệm) | Trong con của app_zygote ghim một CPU, đếm `lookups` của AVC (`/sys/fs/selinux/avc/cache_stats`) qua 4096 lần ghi `attr/current` bị từ chối cho A (context không hợp lệ) và B (A với ký tự đầu là xuống dòng). Kernel gốc 1/1; hook kiểm quyền thêm một lần ra 1/2 hoặc 2/2. Chỉ thông tin, không đổi kết luận | **Không lộ, chưa port** (`duckPending`). Hook của Cam: A kiểm `setcurrent` một lần rồi parse trên policy dự phòng, lỗi thì trả luôn (1); B bỏ qua khối của Cam (1). Theo bảng của Duck, KernelSU `3f388ef`→`ab23091` ra 1/2 vì kiểm cả B. Chưa đo trên máy |
+| Ghi context có kiểm soát (`proc_attr_probe.cpp`) | Con của app_zygote ghi chín context ứng viên, có control trước và sau; chỉ coi là nhận ra khi cả hai lần ghi ra `EACCES` | **Không lộ** khi bật ẩn SELinux: `u:object_r:ksu_file:s0` và các kiểu của Cam parse trên policy dự phòng, ra `EINVAL` (không nhận ra). Tắt ẩn SELinux thì kiểu root có thể bị nhận ra |
 
 **Theo dõi tự động:** `.github/workflows/duck-watch.yml` chạy mỗi ngày (và chạy tay được), so `duckDetector` với nightly; có commit đổi `feature/*/data/src/main/` thì mở hoặc cập nhật issue nhãn `duck-detector` liệt kê commit và file. Action không tự sửa rule: cập nhật vẫn làm tay theo "Cập nhật rule" ở trên, rồi đóng issue.
 

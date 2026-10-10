@@ -2,6 +2,12 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.1 - 2026-10-10
+### Kiểm tra ẩn root
+- Cập nhật rule theo Duck Detector mới nhất (3aa2749c, rule version 4): đã xem hai probe SELinux mới của họ (đếm lượt tra AVC, ghi context có kiểm soát); theo mã nguồn, ẩn SELinux của SU Kernel không bị hai probe này phát hiện (chưa đo trên máy)
+### Lưu ý
+- Bản đầu tiên cập nhật qua OTA: nếu bạn đang ở 3.0.0, app tự báo và cài bản này.
+
 ## 3.0.0 - 2026-10-10
 ### Tính năng mới
 - Tự báo và cài bản cập nhật ngay trong app (OTA)

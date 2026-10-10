@@ -2,6 +2,10 @@
 
 Chấm ngày 2026-10-09 trên commit `99e000ef` (`v3.3.0-174`, 2775 commit). Số liệu bên dưới đo trực tiếp từ repo; điểm là nhận định, thang 10, chấm theo hiện trạng chứ không theo kế hoạch.
 
+## Cập nhật 2026-10-10 (sau khi chấm)
+
+Phần dưới giữ nguyên như lúc chấm. Từ đó đã xong: rủi ro **1** (CI chạy test, `test.yml`), **2** (test kernel trong repo, `kernel/tests`, 17 test dưới ASan + UBSan), **7** (bỏ README của KernelSU, `SECURITY.md` mới, website chỉ deploy tay; chuỗi Anh/Việt ghi "SU Kernel"), **8** (`.gitignore`), **11** (lộ timing `attr/current`: sửa kernel ở `a3803700`, Duck hết lộ, trang Kiểm tra có probe riêng). Mục **9**: `build_lkm_camd.sh` mặc định `main`; hai TODO còn lại là code upstream không hiện ra giao diện (Toast "TODO" chỉ có ở lựa chọn gỡ tạm thời mà upstream đã ẩn), để nguyên. Mục **5** đã thử một phần trên máy (quét, góc nhìn app, probe timing). Còn mở: **3** (ghim root theo tên gói), **4** (sao lưu khóa ký), **6**, **10**. Chưa chấm lại điểm.
+
 ## Điểm tổng: 7,1 / 10
 
 | Hạng mục | Điểm | Lý do ngắn |
@@ -65,7 +69,7 @@ Chưa chạy: `cargo ndk check/clippy`, build Gradle release, build LKM. Hai tes
 | 8 | **Repo bẩn** | Thấp | `sfs/` 207 MB, `IMG_7454.PNG`, `logo mẫu/` chưa vào `.gitignore`; `AGENTS.md` nằm trong `.gitignore` nhưng đang được theo dõi |
 | 9 | **TODO và mã dở** | Thấp | `UninstallDialogMiuix.kt:47` hiện Toast "TODO"; `BaseFieldFilter.kt:19`; kernel còn 5 TODO (phần lớn của upstream). `build_lkm_camd.sh` mặc định build nhánh `feat/managerless-seed` đã cũ |
 | 10 | **Mã chết trong CI** | Thấp | `expected_size` / `expected_hash` vẫn được tính và truyền xuống dù kernel không đọc nữa |
-| 11 | **Kernel Cam lộ qua timing `attr/current`** | Cao | Probe thử nghiệm của Duck Detector (`b77fef8d`) thấy chênh lệch thời gian khi ghi vào `/proc/thread-self/attr/current` trên máy chạy kernel Cam. Nhắm đúng phần SELinux hide. Chưa rõ nguyên nhân; chi tiết ở mục 12 của `CAM_CHANGES.md` |
+| 11 | **Kernel Cam lộ qua timing `attr/current`** (đã sửa 2026-10-10) | Cao | Probe thử nghiệm của Duck Detector (`b77fef8d`) thấy chênh lệch thời gian khi ghi vào `/proc/thread-self/attr/current` trên máy chạy kernel Cam. Nhắm đúng phần SELinux hide. Chưa rõ nguyên nhân; chi tiết ở mục 12 của `CAM_CHANGES.md` |
 
 ## Việc nên làm tiếp, theo thứ tự
 

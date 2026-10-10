@@ -43,6 +43,8 @@ Cam Kernel SU is a fork of KernelSU: a kernel-based root solution for Android wi
 
 - Kernel changes are C-only; keep interfaces aligned with supercall and allowlist expectations in userspace/Manager.
 - If you alter IOCTLs or profiles, update the corresponding wrappers in camd (`ksucalls.rs`) and Manager JNI (`manager/app/src/main/cpp/ksu.cc`).
+- Host tests for Cam's own kernel logic (`policy/pkg_tracker.c`: seed, Manager pin): `make -C kernel/tests` on Linux/WSL (ASan + UBSan). `make check-format` covers `kernel/tests` too.
+- `feature/selinux_hide.c` hooks must refuse before doing extra work (permission check first): apps time these paths (Duck Detector's `attr/current` probe; section 12 of `docs/CAM_CHANGES.md`).
 
 ### Userspace Rust (`userspace/camd`, `userspace/caminit`)
 
@@ -52,7 +54,7 @@ For Rust projects in `userspace/camd` and `userspace/caminit`, ALWAYS run these 
 2. `cargo ndk -t arm64-v8a clippy` (lints and warnings)
 3. `cargo fmt` (format)
 4. Fix any errors or warnings before considering the task complete.
-5. Host tests (WSL): `cd userspace/camd && cargo test --target x86_64-unknown-linux-gnu`. Two `lkm_image*` tests fail before any change of yours (missing CI-only `.ko`); anything else failing is yours. CI does not run tests, so run them yourself.
+5. Host tests (WSL): `cd userspace/camd && cargo test --target x86_64-unknown-linux-gnu`. Two tests fail before any change of yours (`embedded_module_uses_release_asset_layout`: missing CI-only `.ko`; `rejects_conflicting_loading_module_values`: stale upstream test); anything else failing is yours. CI runs the same tests (`.github/workflows/test.yml`, skipping those two).
 
 ### Android Manager App (`manager/`)
 
@@ -66,9 +68,9 @@ cp ../userspace/camd/target/aarch64-linux-android/release/camd app/src/main/jniL
 ./gradlew clean assembleRelease
 ```
 
-Unit tests: `./gradlew :app:testDebugUnitTest` (14 classes, 68 tests, all pass on `dcbf0ae4`). See `docs/PROJECT_REVIEW.md` for status and open risks.
+Unit tests: `./gradlew :app:testDebugUnitTest` (15 classes, 73 tests, all pass on `76fdc061`; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks.
 
-Important: Manager build REQUIRES camd binaries to be present in `jniLibs` before building. Gradle packs whatever `libcamd.so` is there and never rebuilds it: after changing camd, copy a fresh build in, or the APK ships the old daemon (CI builds both from the same commit). On Windows, run Gradle from the `K:` drive (`docs/CAM_CHANGES.md` section 5).
+Important: Manager build REQUIRES camd binaries to be present in `jniLibs` before building. Gradle packs whatever `libcamd.so` is there and never rebuilds it: after changing camd, copy a fresh build in, or the APK ships the old daemon (CI builds both from the same commit). From CI, install the `manager` artifact, never `manager-gradle` (no `libcamd.so` in it). On Windows, run Gradle from the `K:` drive (`docs/CAM_CHANGES.md` section 5).
 
 ### Website (`website/`)
 

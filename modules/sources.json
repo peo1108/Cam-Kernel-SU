@@ -21,17 +21,17 @@
     },
     {
       "id": "zygisksu",
-      "name": "NeoZygisk",
-      "authors": [{"name": "JingMatrix", "link": "https://github.com/JingMatrix"}],
-      "summary": "Zygisk for KernelSU (Zygote injection with ptrace). Needed by Zygisk modules such as Vector and Play Integrity Fork.",
-      "repo": "JingMatrix/NeoZygisk",
+      "name": "Zygisk Next",
+      "authors": [{"name": "5ec1cff", "link": "https://github.com/5ec1cff"}, {"name": "Nullptr", "link": "https://github.com/LSPosed"}, {"name": "aviraxp", "link": "https://github.com/aviraxp"}],
+      "summary": "Standalone implementation of Zygisk. Needed by Zygisk modules such as Vector and Play Integrity Fork. Pick either Zygisk Next or ReZygisk, not both.",
+      "repo": "LSPosed/ZygiskNext",
       "asset": "-release\\.zip$"
     },
     {
       "id": "rezygisk",
       "name": "ReZygisk",
       "authors": [{"name": "The PerformanC Organization", "link": "https://github.com/PerformanC"}],
-      "summary": "Standalone implementation of Zygisk. Pick either ReZygisk or NeoZygisk, not both.",
+      "summary": "Standalone implementation of Zygisk. Pick either ReZygisk or Zygisk Next, not both.",
       "repo": "PerformanC/ReZygisk",
       "asset": "-release\\.zip$"
     },

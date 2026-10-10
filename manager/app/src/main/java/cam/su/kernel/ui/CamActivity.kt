@@ -272,7 +272,7 @@ class CamActivity : ComponentActivity() {
                             entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> GlassPage { TemplateEditorScreen(key.template, key.readOnly) } }
                             entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> GlassPage { AppProfileScreen(key.uid) } }
                             entry<Route.HidingCheck>(swipeDismiss = swipeDismiss) { key ->
-                                GlassPage { HidingCheckScreen(key.uid.takeIf { it != Route.HidingCheck.DEVICE }) }
+                                GlassPage { HidingCheckScreen(key.uid.takeIf { it != Route.HidingCheck.DEVICE }, key.scanNow) }
                             }
                             entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage { ModuleRepoScreen() } }
                             entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }

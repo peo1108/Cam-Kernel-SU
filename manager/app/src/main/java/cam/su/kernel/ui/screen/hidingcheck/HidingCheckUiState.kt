@@ -74,6 +74,8 @@ data class HidingCheckUiState(
     /** the key attestation, once the user asked for it */
     val attestation: AttestationReport? = null,
     val checkingAttestation: Boolean = false,
+    /** check once after a boot that brings in a module ([cam.su.kernel.hiding.ModuleScanWorker]) */
+    val moduleScan: Boolean = false,
 ) {
     val leaks: Int
         get() = findings.count { it.finding.leak }
@@ -160,4 +162,5 @@ data class HidingCheckActions(
     val onDisableModule: (id: String) -> Unit,
     val onCheckAttestation: () -> Unit,
     val onLaunchApp: () -> Unit,
+    val onSetModuleScan: (Boolean) -> Unit,
 )

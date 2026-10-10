@@ -44,6 +44,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 29 | **Sửa lộ SELinux theo timing** (`feature/selinux_hide.c`): hook `setprocattr` kiểm quyền `setcurrent` trước rồi mới parse context, như SELinux gốc. Trang Kiểm tra có thêm probe đo thời gian ghi `attr/current` giống Duck Detector | Trước đó app thường đo được ghi context hợp lệ chậm hơn khoảng 780 ns (Duck báo Danger). Lỗi có cả ở KernelSU gốc |
 | 30 | **CI chạy test** (`test.yml`: test kernel trên host, camd, Manager) và **theo dõi Duck Detector** mỗi ngày (`duck-watch.yml` mở issue khi Duck đổi probe) | Sửa rule quên ký lại, hay Duck có cách phát hiện mới, đều lộ ra trước khi tới máy |
 | 31 | **camd giữ ảnh cũ trước mỗi lần flash** (`/data/adb/cam/previous/<phân vùng>.img`) | Ảnh gốc chỉ cứu được lần cài đầu; ảnh này cứu được lần cập nhật LKM gần nhất |
+| 33 | **Kiểm tra sau khi đổi module** (2026-10-10, mục 12): lần khởi động đầu sau khi cài / cập nhật / bật lại module, Manager tự quét một lần (góc nhìn root + góc nhìn app) và báo module nào làm lộ gì; chạm thông báo mở trang Kiểm tra và quét lại. Công tắc ở mục "Tự động" của trang, mặc định bật | Module chỉ mount từ lần boot sau, nên trước đây phải tự nhớ vào quét mới biết module mới có làm lộ root không |
 | 32 | **OTA cập nhật Manager + nhật ký** (2026-10-10): release theo tag `cam-v*`, nội dung lấy từ `CHANGELOG.md` (thiếu mục thì CI dừng); app kiểm tra GitHub Releases mỗi 12 giờ (WorkManager), báo thông báo, tải vào `cacheDir/ota/`, kiểm SHA-256 + gói + chứng chỉ ký, cài bằng root (`pm install` trong shell tách cgroup) hoặc trình cài đặt Android; màn "Có gì mới" một lần sau khi cập nhật. Tên phiên bản lấy từ tag `cam-v*` (bỏ tiền tố) | Không phải gửi APK tay cho từng người. Trước đó thẻ cập nhật ở Home vẫn hỏi `tiann/KernelSU`. Spec: `docs/superpowers/specs/2026-10-10-ota-update-design.md` |
 
 ## 2. Lịch sử commit
@@ -190,8 +191,9 @@ Cam tự viết toàn bộ phần này, upstream không có file nào tương �
 - Manager, rule: [mới] `assets/hiding-rules.json` + `.sig`, `data/repository/HidingRulesRepository.kt` (khóa công khai nằm trong file này).
 - Manager, sửa: `AndroidManifest.xml` (service `.hiding.HidingProbeService`, `isolatedProcess`, `process=":hiding_probe"`), `CamApplication.kt` (**dừng sớm khi `Process.isIsolated()`**: isolated process không có dữ liệu app, chạy tiếp sẽ crash; áp cả cho service jailbreak), `data/model/HidingAudit.kt` (`toJson`, `plus`, `appView`, `modules`, `stats`, `moduleIds`), `ui/util/CamCli.kt` (`runHidingAudit(rules)`, `runAppHidingAudit`), `navigation3/Routes.kt` (`Route.HidingCheck(uid = DEVICE)`), `ui/CamActivity.kt` (entry), `ui/screen/features/*` (thẻ audit cũ thành thẻ lối vào, bỏ state/hàm audit), `ui/screen/appprofile/*` (dòng "Kiểm tra ẩn root cho app này", action `onCheckHiding`).
 - Probe timing (2026-10-10): [mới] `hiding/AttrTiming.kt` (kết luận theo ngưỡng của Duck); [sửa] `cpp/hiding_probe.cc` (`attrTiming0`: đo trong isolated process bằng syscall thô), `NativeProbe.kt`, `AppViewProbe.kt` (mục `appAttrTiming`, stats `appAttrTiming` / `appAttrGapNs`), `HidingCheckUiState.kt`, `HidingCheckMiuix.kt`; `HidingRules.duckPending` (probe của Duck mà Cam chưa có, hiện ở mục Duck Detector).
+- Kiểm tra sau khi đổi module (2026-10-10): [mới] `hiding/ModuleScan.kt` (phần thuần: đọc danh sách module, module nào đổi, mục lộ theo module), `hiding/ModuleScanWorker.kt` (`ModuleBaseline`, `ModuleScanReceiver`, `ModuleScanWorker`, `ModuleScanNotifier`); [sửa] `AndroidManifest.xml` (receiver `.hiding.ModuleScanReceiver`), `SettingsRepository*.kt` (`module_hiding_scan`, mặc định bật), `ModuleRepositoryImpl.kt` (tạo danh sách gốc), `Routes.kt` (`HidingCheck.scanNow`), `CamActivity.kt`, `IntentDispatcher.kt` (`EXTRA_OPEN_HIDING_CHECK`), `HidingCheckScreen.kt`, `HidingCheckViewModel.kt` (`load(scanNow)`, `setModuleScan`), `HidingCheckUiState.kt`, `HidingCheckMiuix.kt` (mục "Tự động"; `findingTitleRes` dùng chung với thông báo); chuỗi `module_scan_*`, `hiding_section_auto`, `hiding_on_demand_module_scan`.
 - Chuỗi mới `hiding_*`, `audit_app_*`, `audit_profile_umount`, `audit_default_profile_umount` (Anh + Việt).
-- Test: `test/.../hiding/AppViewProbeTest.kt`, `test/.../hiding/AttrTimingTest.kt`, `test/.../ui/screen/hidingcheck/HidingCheckCompareTest.kt`, `test/.../data/repository/HidingRulesRepositoryTest.kt` (kiểm chữ ký trên chính file trong `assets/`).
+- Test: `test/.../hiding/AppViewProbeTest.kt`, `test/.../hiding/AttrTimingTest.kt`, `test/.../hiding/ModuleScanTest.kt`, `test/.../ui/screen/hidingcheck/HidingCheckCompareTest.kt`, `test/.../data/repository/HidingRulesRepositoryTest.kt` (kiểm chữ ký trên chính file trong `assets/`).
 
 ### Manager: cài đặt, mặc định, font
 - [sửa] `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt`: thêm 3 khoá `roaming_slimes` (mặc định bật), `roaming_slime_count` (0 = ngẫu nhiên 1-4; hoặc 1..4), `slime_night_nap` (bật). **Đổi mặc định**: `enable_predictive_back` = `true`, `module_description_max_lines` = `5`. Kèm `SettingsUiState.kt`, `MainActivityUiState.kt`, `MainActivityViewModel.kt` (có danh sách `observedKeys`, thêm khoá mới vào đó), `SettingsViewModel.kt`.
@@ -424,7 +426,7 @@ Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `
 - **camd (ksud):** `cargo test seed:: allow:: boot_guard module_conflicts` (trong `userspace/camd`) (chạy trên Linux/WSL; build Android trong WSL cần `LIBCLANG_PATH` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android26 --sysroot=<NDK>/toolchains/llvm/prebuilt/windows-x86_64/sysroot"`). Hai test vốn đã fail sẵn khi chạy cục bộ, không liên quan tới thay đổi của Cam: `lkm_image::tests::embedded_module_uses_release_asset_layout` (thiếu `aarch64/android12-5.10_camsu.ko`, chỉ CI mới có) và `lkm_image_btf::tests::rejects_conflicting_loading_module_values`.
 - **Chạy toàn bộ test (đã chạy 2026-10-09 trên `99e000ef`):**
   - camd, trong WSL: `cd userspace/camd && CARGO_TARGET_DIR=$HOME/camd-target cargo test --target x86_64-unknown-linux-gnu` → 79 test, **77 đạt, 2 fail** (hai test trên).
-  - Manager, trên Windows (ổ `K:`, mục 5): `Push-Location K:\manager; & K:\manager\gradlew.bat :app:testDebugUnitTest` → 15 lớp test, **73 test đạt** (2026-10-10).
+  - Manager, trên Windows (ổ `K:`, mục 5): `Push-Location K:\manager; & K:\manager\gradlew.bat :app:testDebugUnitTest` → 21 lớp test, **109 test đạt** (2026-10-10, sau khi thêm `ModuleScanTest`).
   - Kernel (C): 17 test, xem dòng đầu mục này.
   - **CI chạy test từ 2026-10-10** (`.github/workflows/test.yml`, khi đổi `kernel/policy`, `kernel/tests`, `userspace`, `uapi`, `manager`). Job camd bỏ qua đúng hai test fail sẵn: `embedded_module_uses_release_asset_layout` (cần `.ko` mà chỉ Build Manager tạo) và `rejects_conflicting_loading_module_values` (lỗi thời từ upstream: commit `243f0dd1` của KernelSU bỏ kiểm tra `LOADING_MODULE` nhưng quên xoá test; upstream cũng fail).
 - **Trên máy thật (Y700 Gen5, 2026-10-03/04), phần UI mới:** đã thấy chạy đúng: phá kính khi vuốt khỏi Home, cửa + vá kính khi về, slime 3D chạy trên mép thẻ, đập tay / cưỡi Bơ / chơi khăm / rượt / đánh nhau, laser bằng ngón tay giữ yên, ngủ ban đêm, bật/tắt slime trong Chủ đề, 3 thẻ Hồ sơ ứng dụng (Thông tin, đường dẫn, Dung lượng) trên Chrome. Khung hình trung bình khoảng 9 ms, GPU khoảng 6 ms. **Chưa thử trên máy:** lắc máy, tự ẩn khi Flash / cài module, các nút Quản lý (sao lưu, xoá cache/dữ liệu, đóng băng, gỡ), nút copy đường dẫn.
@@ -654,7 +656,7 @@ Trang xem app không có root còn nhận ra máy đã root không, theo hướn
 
 ### Cách chạy
 
-**Không có gì chạy nền.** Mở trang chỉ đọc kết quả đã lưu, đọc trạng thái công tắc và kiểm tra rule (tối đa 6 giờ một lần). Quét chỉ khi ấn **Kiểm tra**; ba nguồn chạy song song rồi gộp lại (`HidingAudit.plus`):
+**Trang không chạy gì nền.** Mở trang chỉ đọc kết quả đã lưu, đọc trạng thái công tắc và kiểm tra rule (tối đa 6 giờ một lần). Quét khi ấn **Kiểm tra** (ngoại lệ duy nhất: "Kiểm tra sau khi đổi module", bên dưới); ba nguồn chạy song song rồi gộp lại (`HidingAudit.plus`):
 
 | Nguồn | Chạy ở đâu | Thấy gì |
 |---|---|---|
@@ -665,6 +667,19 @@ Trang xem app không có root còn nhận ra máy đã root không, theo hướn
 Từ **Hồ sơ ứng dụng** → "Kiểm tra ẩn root cho app này" mở cùng trang với `uid`: camd chạy `hiding-audit --uid <uid>` đọc `/proc/<pid>/mountinfo` và `maps` của chính app đó (app phải đang chạy, trang có nút **Mở app**). Mỗi phạm vi có lịch sử riêng.
 
 Kết quả mỗi lần quét được lưu (2 lần gần nhất), nên trang gắn tag **Mới / Như cũ** và liệt kê **Đã ẩn so với lần trước**; mục **Đã ẩn tốt** lấy từ `stats` (check nào đã chạy mà không thấy gì). Mục lộ có `modules` thì hiện "Do <tên module>" và nút **Tắt** (`camd module disable`, cần khởi động lại).
+
+### Kiểm tra sau khi đổi module
+
+Module chỉ mount từ lần khởi động sau khi cài, nên kiểm tra phải chạy sau boot đó. Chỉ có ở Manager, không đổi camd hay kernel:
+
+1. `ModuleScanReceiver` (`BOOT_COMPLETED`) xếp `ModuleScanWorker` chạy sau **2 phút**, để app (và thư viện module nạp vào app) đã lên.
+2. Worker so `camd module list` với danh sách lần trước (`files/hiding_check/modules.json`, `id` → `versionCode:version`). Module **đang chạy** (bật, không chờ cập nhật, không chờ gỡ) mà mới, khác phiên bản hoặc lần trước đang tắt thì coi là **đổi**. Module còn cờ `update` (chờ boot sau) giữ giá trị cũ, nên boot mount nó vẫn thấy đổi; camd xoá cờ này khi thay thư mục module lúc `post-fs-data`.
+3. Có module đổi thì quét góc nhìn root + góc nhìn app (không có hồ sơ app vì cần danh sách app), lấy mục **lộ** có `modules` chứa module đổi, bỏ mục người dùng đã bỏ qua. Có thì đăng thông báo kênh `hiding_check` (mỗi dòng `tên module: các mục lộ`); không lộ gì thì im lặng.
+4. Lưu danh sách mới. Hai view đều không chạy được thì **không** lưu, để boot sau thử lại.
+
+Kết quả của worker **không** ghi vào lịch sử của trang (thiếu hồ sơ app thì trang sẽ báo nhầm "Đã ẩn"). Chạm thông báo mở `Route.HidingCheck(scanNow = true)`, trang tự quét một lần và so với lần quét tay trước. Danh sách gốc được tạo khi chưa có: lúc mở tab Module (`ModuleRepositoryImpl`), lúc bật công tắc, hoặc ở boot đầu (boot đó chỉ ghi, không quét). Tắt công tắc thì xoá danh sách. Không có root thì không tạo (danh sách đọc ra rỗng sẽ làm mọi module thành "mới").
+
+**Giới hạn:** chỉ bắt được mục lộ có đường dẫn chỉ ra module (mount, thư viện trong maps). Module đổi prop qua `system.prop` hay xoá file không bị quy cho module nào. Module bật lại rồi tắt trước khi khởi động lại thì không tính.
 
 ### Những chỗ dễ làm hỏng
 

@@ -66,7 +66,11 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
-    data class HidingCheck(val uid: Int = DEVICE) : Route {
+    data class HidingCheck(
+        val uid: Int = DEVICE,
+        /** start a check on opening (from the module scan notification) */
+        val scanNow: Boolean = false,
+    ) : Route {
         companion object {
             /** the whole device, not one app */
             const val DEVICE = -1

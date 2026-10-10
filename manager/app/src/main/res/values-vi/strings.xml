@@ -512,6 +512,12 @@
     <string name="hiding_compared_with">So với lần %1$s</string>
     <string name="hiding_first_scan">Lần kiểm tra đầu, chưa có gì để so</string>
     <string name="hiding_on_demand">Chỉ chạy khi bạn ấn Kiểm tra, không chạy nền</string>
+    <string name="hiding_on_demand_module_scan">Chạy khi bạn ấn Kiểm tra, và một lần sau khi khởi động có module mới</string>
+    <string name="hiding_section_auto">Tự động</string>
+    <string name="module_scan_switch">Kiểm tra sau khi đổi module</string>
+    <string name="module_scan_switch_summary">Lần khởi động đầu tiên sau khi cài, cập nhật hay bật lại module: kiểm tra một lần và báo nếu module đó làm lộ root</string>
+    <string name="module_scan_channel">Kiểm tra ẩn root</string>
+    <string name="module_scan_title">Module mới làm lộ root (%1$d)</string>
     <string name="hiding_tag_new">MỚI %1$d</string>
     <string name="hiding_tag_gone">ĐÃ ẨN %1$d</string>
     <string name="hiding_tag_leaks">LỘ %1$d</string>

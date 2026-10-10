@@ -19,6 +19,7 @@ import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.camApp
+import cam.su.kernel.hiding.ModuleScanNotifier
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
 import cam.su.kernel.ui.screen.flash.FlashIt
 import cam.su.kernel.ui.util.DownloadService
@@ -77,6 +78,9 @@ private sealed interface PendingAction {
 
     /** Open a module's WebUI — triggered by shortcut. */
     data class OpenWebUI(val moduleId: String) : PendingAction
+
+    /** Open the root hiding check and run it — triggered by the module scan notification. */
+    data object OpenHidingCheck : PendingAction
 }
 
 private sealed interface CamDeepLink {
@@ -113,6 +117,11 @@ private fun resolveIntent(intent: Intent): PendingAction? {
             displayName = getDisplayName(uri),
             requiresConfirmation = false,
         )
+    }
+
+    // ModuleScanNotifier: a new module leaks root
+    if (intent.getBooleanExtra(ModuleScanNotifier.EXTRA_OPEN_HIDING_CHECK, false)) {
+        return PendingAction.OpenHidingCheck
     }
 
     // File manager: open ZIP
@@ -203,6 +212,10 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
                 val webIntent = Intent(context, WebUIActivity::class.java)
                     .setData(buildInternalWebUiUri(action.moduleId))
                 context.startActivity(webIntent)
+            }
+
+            PendingAction.OpenHidingCheck -> {
+                navigator.push(Route.HidingCheck(scanNow = true))
             }
         }
     }

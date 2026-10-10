@@ -523,6 +523,13 @@
     <string name="hiding_compared_with">Compared with %1$s</string>
     <string name="hiding_first_scan">First check, nothing to compare with yet</string>
     <string name="hiding_on_demand">Runs only when you tap Check, never in the background</string>
+    <string name="hiding_on_demand_module_scan">Runs when you tap Check, and once after a boot that brings in a module</string>
+    <string name="hiding_section_auto">Automatic</string>
+    <string name="module_scan_switch">Check after module changes</string>
+    <string name="module_scan_switch_summary">After the first boot with a module installed, updated or enabled again: check once and notify if that module leaks root</string>
+    <string name="module_scan_channel">Root hiding check</string>
+    <string name="module_scan_title">New modules leak root (%1$d)</string>
+    <string name="module_scan_line" translatable="false">%1$s: %2$s</string>
     <string name="hiding_tag_new">NEW %1$d</string>
     <string name="hiding_tag_gone">HIDDEN %1$d</string>
     <string name="hiding_tag_leaks">LEAKS %1$d</string>

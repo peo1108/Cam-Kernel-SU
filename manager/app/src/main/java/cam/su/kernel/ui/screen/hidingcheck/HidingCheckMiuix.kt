@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LayersClear
 import androidx.compose.material.icons.rounded.NewReleases
@@ -220,6 +221,21 @@ fun HidingCheckScreenMiuix(
                     }
                 }
 
+                if (state.app == null) {
+                    item {
+                        SmallTitle(text = stringResource(R.string.hiding_section_auto))
+                        GlassCard(modifier = cardModifier) {
+                            SwitchPreference(
+                                title = stringResource(R.string.module_scan_switch),
+                                summary = stringResource(R.string.module_scan_switch_summary),
+                                startAction = { RowIcon(Icons.Rounded.Extension, colorScheme.onBackground) },
+                                checked = state.moduleScan,
+                                onCheckedChange = actions.onSetModuleScan,
+                            )
+                        }
+                    }
+                }
+
                 if (state.scanTime != null) {
                     item {
                         SmallTitle(text = stringResource(R.string.hiding_section_history))
@@ -374,7 +390,9 @@ private fun OverviewCard(state: HidingCheckUiState, actions: HidingCheckActions,
             }
         }
         Text(
-            text = stringResource(R.string.hiding_on_demand),
+            text = stringResource(
+                if (state.app == null && state.moduleScan) R.string.hiding_on_demand_module_scan else R.string.hiding_on_demand
+            ),
             fontSize = 11.sp,
             color = colorScheme.onSurfaceVariantSummary,
             modifier = Modifier
@@ -614,32 +632,33 @@ private fun RowIcon(icon: ImageVector, tint: Color) {
 }
 
 @Composable
-private fun findingTitle(finding: HidingAudit.Finding): String {
-    val res = when (finding.id) {
-        "moduleMounts" -> R.string.audit_module_mounts
-        "camMounts" -> R.string.audit_cam_mounts
-        "selinuxRules" -> R.string.audit_selinux_rules
-        "maps" -> R.string.audit_maps
-        "props" -> R.string.audit_props
-        "bootArgs" -> R.string.audit_boot_args
-        "lsposed" -> R.string.audit_lsposed
-        "revanced" -> R.string.audit_revanced
-        "customRom" -> R.string.audit_custom_rom
-        "files" -> R.string.audit_files
-        "selinux" -> R.string.audit_selinux
-        "adb" -> R.string.audit_adb
-        "appMounts" -> R.string.audit_app_mounts
-        "appMaps" -> R.string.audit_app_maps
-        "appSu" -> R.string.audit_app_su
-        "appProps" -> R.string.audit_app_props
-        "appSelinux" -> R.string.audit_app_selinux
-        "appHooked" -> R.string.audit_app_hooked
-        "appAttrTiming" -> R.string.audit_app_attr_timing
-        "profileUmount" -> R.string.audit_profile_umount
-        "defaultProfileUmount" -> R.string.audit_default_profile_umount
-        else -> null
-    }
-    return res?.let { stringResource(it) } ?: finding.id
+private fun findingTitle(finding: HidingAudit.Finding): String =
+    findingTitleRes(finding.id)?.let { stringResource(it) } ?: finding.id
+
+/** The title of a finding by id; null for one this app does not know. The module scan notification uses it too. */
+fun findingTitleRes(id: String): Int? = when (id) {
+    "moduleMounts" -> R.string.audit_module_mounts
+    "camMounts" -> R.string.audit_cam_mounts
+    "selinuxRules" -> R.string.audit_selinux_rules
+    "maps" -> R.string.audit_maps
+    "props" -> R.string.audit_props
+    "bootArgs" -> R.string.audit_boot_args
+    "lsposed" -> R.string.audit_lsposed
+    "revanced" -> R.string.audit_revanced
+    "customRom" -> R.string.audit_custom_rom
+    "files" -> R.string.audit_files
+    "selinux" -> R.string.audit_selinux
+    "adb" -> R.string.audit_adb
+    "appMounts" -> R.string.audit_app_mounts
+    "appMaps" -> R.string.audit_app_maps
+    "appSu" -> R.string.audit_app_su
+    "appProps" -> R.string.audit_app_props
+    "appSelinux" -> R.string.audit_app_selinux
+    "appHooked" -> R.string.audit_app_hooked
+    "appAttrTiming" -> R.string.audit_app_attr_timing
+    "profileUmount" -> R.string.audit_profile_umount
+    "defaultProfileUmount" -> R.string.audit_default_profile_umount
+    else -> null
 }
 
 /** What to do about [finding]; [fixOn]: its fix is on and the finding is still there. */

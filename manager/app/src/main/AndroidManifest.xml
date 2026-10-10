@@ -123,6 +123,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- after boot, checks root hiding once if a module came in (ModuleScanWorker) -->
+        <receiver
+            android:name=".hiding.ModuleScanReceiver"
+            android:directBootAware="false"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".update.UpdatedReceiver"
             android:exported="false">

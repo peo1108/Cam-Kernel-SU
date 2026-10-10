@@ -7,6 +7,7 @@ import cam.su.kernel.data.model.ModuleUpdateInfo
 import cam.su.kernel.data.model.forModule
 import cam.su.kernel.data.model.visible
 import cam.su.kernel.camApp
+import cam.su.kernel.hiding.ModuleBaseline
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.isNetworkAvailable
 import cam.su.kernel.ui.util.listModuleConflicts
@@ -29,6 +30,8 @@ class ModuleRepositoryImpl : ModuleRepository {
             // one camd call each for the whole list, not one per module
             val autoDisabled = getBootGuardStatus().autoDisabled.toSet()
             val settings = SettingsRepositoryImpl()
+            // the modules before the user installs one, for the check after the next boot
+            if (settings.moduleHidingScan) ModuleBaseline(camApp).seedIfMissing(result)
             val conflicts = if (settings.conflictDetection) {
                 listModuleConflicts().visible(detection = true, includeProps = settings.conflictIncludeProps)
             } else {

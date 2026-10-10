@@ -21,6 +21,7 @@ import cam.su.kernel.data.repository.SavedHidingScan
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.hiding.HidingProbeService
+import cam.su.kernel.hiding.ModuleBaseline
 import cam.su.kernel.ui.screen.hidingcheck.CheckedApp
 import cam.su.kernel.ui.screen.hidingcheck.HidingCheckUiState
 import cam.su.kernel.ui.screen.hidingcheck.HidingFix
@@ -54,12 +55,21 @@ class HidingCheckViewModel(
     private var current: SavedHidingScan? = null
     private var previous: SavedHidingScan? = null
 
-    fun load() {
+    /** the scan [load] was asked to start already ran: a recreated page must not start it again */
+    private var autoScanned = false
+
+    /** [scanNow]: opened from the module scan notification, so check right away. */
+    fun load(scanNow: Boolean = false) {
         viewModelScope.launch {
             val (last, before) = withContext(Dispatchers.IO) { history.load() }
             current = last
             previous = before
+            _uiState.update { it.copy(moduleScan = settingsRepo.moduleHidingScan) }
             publish()
+            if (scanNow && !autoScanned) {
+                autoScanned = true
+                scan()
+            }
             refreshFixes()
             val names = withContext(Dispatchers.IO) { moduleNames() }
             _uiState.update { it.copy(moduleNames = names) }
@@ -132,6 +142,18 @@ class HidingCheckViewModel(
             false
         }
         else -> false
+    }
+
+    /**
+     * The check after a boot that brings in a module. Off forgets the modules seen, so turning
+     * it on again starts from the modules there then, not from an old list.
+     */
+    fun setModuleScan(enabled: Boolean) {
+        settingsRepo.moduleHidingScan = enabled
+        viewModelScope.launch(Dispatchers.IO) {
+            ModuleBaseline(camApp).run { if (enabled) seedIfMissing(listModules()) else clear() }
+        }
+        _uiState.update { it.copy(moduleScan = enabled) }
     }
 
     /** Turns off a module a finding names; its mounts go away with the next boot. */

@@ -212,6 +212,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("conflict_include_props", true)
         set(value) = prefs.edit { putBoolean("conflict_include_props", value) }
 
+    override var moduleHidingScan: Boolean
+        get() = prefs.getBoolean("module_hiding_scan", true)
+        set(value) = prefs.edit { putBoolean("module_hiding_scan", value) }
+
     override val intentToken: String
         get() {
         val existing = prefs.getString(INTENT_TOKEN_KEY, null)

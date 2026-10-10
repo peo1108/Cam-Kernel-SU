@@ -1,0 +1,68 @@
+name: Duck Detector Watch
+
+# Once a day, compare the Duck Detector commit the hiding rules follow ("duckDetector" in
+# hiding-rules.json) with Duck Detector's nightly. When nightly has commits that touch its
+# probes, open an issue (or update the open one) listing them, so a new detection is seen
+# before it shows up as a leak on a device. Nothing here changes the rules: updating them
+# stays a signed, manual step (docs/CAM_CHANGES.md section 12).
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare with Duck Detector nightly
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DUCK: eltavine/Duck-Detector-Refactoring
+          LABEL: duck-detector
+        run: |
+          set -euo pipefail
+          pinned=$(jq -r .duckDetector manager/app/src/main/assets/hiding-rules.json)
+          compare=$(gh api "repos/$DUCK/compare/$pinned...nightly")
+          ahead=$(jq -r .ahead_by <<<"$compare")
+          echo "pinned $pinned, nightly is $ahead commit(s) ahead"
+          [ "$ahead" -gt 0 ] || exit 0
+
+          # probes live in feature/<name>/data (Kotlin probes, native code); presentation,
+          # docs and research changes do not change what Duck detects
+          probes=$(jq -r '[.files[].filename | select(test("^feature/[^/]+/data/src/main/"))] | unique | .[]' <<<"$compare")
+          if [ -z "$probes" ]; then
+            echo "no probe changes"
+            exit 0
+          fi
+          features=$(sed -E 's#^feature/([^/]+)/.*#\1#' <<<"$probes" | sort -u | paste -sd, - | sed 's/,/, /g')
+          nightly=$(jq -r '.commits[-1].sha' <<<"$compare")
+
+          {
+            echo "Duck Detector nightly is **$ahead** commit(s) past the hiding rules (\`${pinned:0:8}\` → \`${nightly:0:8}\`) and changes probes in: **$features**."
+            echo
+            echo "### Commits"
+            jq -r '.commits[] | "- [`\(.sha[0:8])`](\(.html_url)) \(.commit.message | split("\n")[0])"' <<<"$compare"
+            echo
+            echo "### Probe files"
+            sed 's/^/- `/; s/$/`/' <<<"$probes"
+            echo
+            echo "### What to do"
+            echo "1. Read the changed probes and test the device with Duck Detector."
+            echo "2. Port what Cam lacks to the hiding check (\`AppViewProbe\` / \`hiding_probe.cc\`) or fix the kernel, or list it in \`duckPending\`."
+            echo "3. Set \`duckDetector\` to \`$nightly\`, bump \`version\`, re-sign (\`scripts/sign_hiding_rules.py\`). This issue is updated, not closed, by the next run; close it by hand."
+          } > body.md
+
+          gh label create "$LABEL" --color FBCA04 --description "Duck Detector changed its probes" 2>/dev/null || true
+          title="Duck Detector: new probes in $features"
+          open=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue edit "$open" --title "$title" --body-file body.md
+          else
+            gh issue create --title "$title" --label "$LABEL" --body-file body.md
+          fi

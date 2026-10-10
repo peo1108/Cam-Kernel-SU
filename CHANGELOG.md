@@ -2,6 +2,12 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.3 - 2026-10-10
+### Sửa lỗi
+- Thư viện Module mở lại được: chuyển sang thư viện riêng của Cam, vì kho module của KernelSU đã ngừng hoạt động
+- Có 7 module cơ bản: Magic Mount-rs, Hybrid Mount, NeoZygisk, ReZygisk, Vector (LSPosed), Play Integrity Fork, bindhosts; tự cập nhật hằng ngày theo bản mới của từng module
+- Khi không tải được thư viện, app báo đúng lý do thay vì luôn báo "Không có kết nối Internet"
+
 ## 3.0.2 - 2026-10-10
 ### Tính năng mới
 - Bấm Cập nhật giờ mở hộp thoại tiến trình: Tải về → Kiểm tra → Cài đặt, có thanh chạy theo % và số MB đã tải

@@ -467,12 +467,13 @@ git tag cam-v3.0.1
 git push origin main cam-v3.0.1
 ```
 
-  3. Workflow "Release" tách mục `3.0.1` làm nội dung release (**không có mục thì dừng, không tạo release**), build, rồi tạo GitHub Release `SU Kernel 3.0.1` kèm APK, `lkm-*_camsu.ko`, camd, caminit.
+  3. Workflow "Release" tách mục `3.0.1` làm nội dung release (**không có mục thì dừng, không tạo release**), chạy toàn bộ `test.yml` (test đỏ thì dừng trước khi build), build, rồi tạo GitHub Release `Cam Kernel SU 3.0.1` kèm APK, `lkm-*_camsu.ko`, camd, caminit.
 
   Tên phiên bản trong app lấy từ `git describe --tags --match cam-v*` bỏ `cam-v` (đúng commit có tag ra `3.0.1`, giữa hai tag ra `3.0.1-5-gabc1234`, chưa có tag `cam-v` nào thì chỉ là mã commit); mã phiên bản vẫn là `30000 + số commit` và là thứ app so để biết bản nào mới hơn. **Không dùng tag `v*`**: đó là tag của upstream, Release không chạy với chúng. Release bản nháp hay pre-release không được gửi OTA.
   - Bản `cam-v3.0.0` là bản đầu có OTA: máy đang dùng bản cũ phải cài tay bản này một lần (bản cũ hỏi `tiann/KernelSU`).
   - App cài bằng root qua `pm install` (APK đẩy qua stdin) trong một shell tách khỏi cgroup của app, rồi tự mở lại; không mở lại được thì thông báo "Đã cập nhật" (receiver `MY_PACKAGE_REPLACED`) vẫn hiện. Không có root thì mở trình cài đặt Android.
   - Sau khi cập nhật, LKM đang chạy luôn khác số phiên bản app, nên màn "Có gì mới" có nút **Cài lại LKM** (gần như mọi bản đều hiện).
+- **Bảo vệ tag** (ruleset trên GitHub, tạo 2026-10-10): "Release tags are immutable" chặn xoá và dời tag `cam-v*` (không ai được bỏ qua, kể cả admin; muốn sửa thì tắt ruleset trong Settings → Rules); "Only admins create release tags" chỉ cho admin tạo tag `cam-v*`, nên token của Actions không tạo được bản phát hành. Mỗi release là một OTA có quyền root tới mọi máy: giữ 2FA cho tài khoản GitHub.
 - **Khóa ký**: 4 secret `KEYSTORE` (file `.jks` dạng base64), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Bản gốc của khóa nằm ở `C:\Users\cam\.android-keys\su-kernel-release.jks` (mật khẩu trong `C:\Users\cam\.gradle\gradle.properties`); khóa cũ "Cam Kernel SU" ở `Documents\Cam-Kernel-SU-keys\cam-kernel-su.p12`. **Mất khóa thì người dùng không cập nhật đè được nữa**: luôn giữ bản sao lưu.
 - Vì `~/.gradle/gradle.properties` có khóa release, build trên máy (kể cả debug) cũng ký bằng khóa release. Cần bản ký khóa debug để cài đè bản debug cũ thì thêm `-PKEYSTORE_FILE=C:/Users/cam/.android/debug.keystore -PKEYSTORE_PASSWORD=android -PKEY_ALIAS=androiddebugkey -PKEY_PASSWORD=android`.
 

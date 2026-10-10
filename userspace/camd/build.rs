@@ -24,12 +24,17 @@ fn get_git_version() -> Result<(u32, String), std::io::Error> {
 
     let version_name = String::from_utf8(
         Command::new("git")
-            .args(["describe", "--tags", "--always"])
+            .args(["describe", "--tags", "--always", "--match", "cam-v*"])
             .output()?
             .stdout,
     )
     .map_err(|_| std::io::Error::other("Failed to read git describe stdout"))?;
-    let version_name = version_name.trim_start_matches('v').to_string();
+    // Cam tags only (cam-v3.0.1 -> 3.0.1), the same name the Manager shows.
+    let version_name = version_name.trim();
+    let version_name = version_name
+        .strip_prefix("cam-v")
+        .unwrap_or(version_name)
+        .to_string();
     Ok((version_code, version_name))
 }
 

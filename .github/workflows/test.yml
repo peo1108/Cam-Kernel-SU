@@ -3,7 +3,7 @@ name: Test
 # Unit tests the build workflows do not run: the kernel's seed and Manager pin logic
 # (kernel/tests, on the host under ASan/UBSan), camd on the Linux host, and the Manager's JVM
 # tests (among them HidingRulesRepositoryTest, which fails when hiding-rules.json was edited
-# without re-signing it).
+# without re-signing it), and the CHANGELOG.md extractor the Release workflow relies on.
 
 on:
   push:
@@ -17,6 +17,9 @@ on:
       - 'manager/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'CHANGELOG.md'
+      - 'scripts/changelog_section.py'
+      - 'scripts/test_changelog_section.py'
   pull_request:
     branches: [ "main", "dev" ]
     paths:
@@ -28,12 +31,23 @@ on:
       - 'manager/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
+      - 'CHANGELOG.md'
+      - 'scripts/changelog_section.py'
+      - 'scripts/test_changelog_section.py'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Changelog extractor tests
+        run: python3 -m unittest scripts/test_changelog_section.py -v
+
   kernel:
     runs-on: ubuntu-latest
     steps:

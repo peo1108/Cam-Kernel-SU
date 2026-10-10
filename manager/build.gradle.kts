@@ -21,7 +21,7 @@ fun getGitCommitCount(): Int {
 }
 
 fun getGitDescribe(): String {
-    val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always"))
+    val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always", "--match", "cam-v*"))
     return process.inputStream.bufferedReader().use { it.readText().trim() }
 }
 
@@ -30,6 +30,7 @@ fun getVersionCode(): Int {
     return 30000 + commitCount
 }
 
+// Cam tags only (cam-v3.0.1 -> 3.0.1); upstream v* tags would name builds after KernelSU.
 fun getVersionName(): String {
-    return getGitDescribe()
+    return getGitDescribe().removePrefix("cam-v")
 }

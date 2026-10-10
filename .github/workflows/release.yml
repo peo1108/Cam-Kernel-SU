@@ -1,16 +1,47 @@
 name: Release
+# Cam releases only: tags look like cam-v3.0.1. Upstream KernelSU tags (v*) must never
+# publish anything, because every release here is an OTA update for installed Managers.
 on:
   push:
     tags:
-      - "v*"
+      - "cam-v*"
   workflow_dispatch:
 
 jobs:
+  # Runs first so a tag without a CHANGELOG.md entry stops before the long build.
+  changelog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check tag
+        id: version
+        run: |
+          case "$GITHUB_REF_NAME" in
+            cam-v*) echo "version=${GITHUB_REF_NAME#cam-v}" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::Run Release from a cam-v* tag, not '$GITHUB_REF_NAME'"; exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v7
+
+      - name: Extract release notes
+        run: python3 scripts/changelog_section.py "${{ steps.version.outputs.version }}" > release-notes.md
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release-notes.md
+
   build-manager:
+    needs:
+      - changelog
     uses: ./.github/workflows/build-manager.yml
     secrets: inherit
   release:
     needs:
+      - changelog
       - build-manager
     runs-on: ubuntu-latest
     # Creating the release needs write access; the default token can be read-only on forks.
@@ -67,7 +98,8 @@ jobs:
       - name: release
         uses: softprops/action-gh-release@v3
         with:
-          generate_release_notes: true
+          name: Cam Kernel SU ${{ needs.changelog.outputs.version }}
+          body_path: release-notes/release-notes.md
           files: |
             manager/*.apk
             lkm/lkm-*_camsu.ko

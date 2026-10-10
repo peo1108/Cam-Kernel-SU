@@ -68,7 +68,6 @@ import cam.su.kernel.ui.component.statustag.StatusTag
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.theme.isInDarkTheme
 import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.module.LatestVersionInfo
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -201,30 +200,27 @@ private fun UpdateCard(
     state: HomeUiState,
     actions: HomeActions,
 ) {
-    val newVersion = state.latestVersionInfo
+    val update = state.update
     val title = stringResource(id = R.string.module_changelog)
     val updateText = stringResource(id = R.string.module_update)
-    val updateDialog = rememberConfirmDialog(onConfirm = { actions.onOpenUrl(newVersion.downloadUrl) })
+    val updateDialog = rememberConfirmDialog(onConfirm = { actions.onUpdateClick() })
 
     AnimatedVisibility(
-        visible = state.hasUpdate,
+        visible = update != null,
         enter = fadeIn() + expandVertically(),
         exit = shrinkVertically() + fadeOut()
     ) {
+        if (update == null) return@AnimatedVisibility
         WarningCard(
-            message = stringResource(id = R.string.new_version_available, newVersion.versionCode),
+            message = stringResource(id = R.string.new_version_available, update.versionName),
             level = WarningLevel.Notice,
             onClick = {
-                if (newVersion.changelog.isEmpty()) {
-                    actions.onOpenUrl(newVersion.downloadUrl)
-                } else {
-                    updateDialog.showConfirm(
-                        title = title,
-                        content = newVersion.changelog,
-                        markdown = true,
-                        confirm = updateText
-                    )
-                }
+                updateDialog.showConfirm(
+                    title = title,
+                    content = update.changelog.ifBlank { null },
+                    markdown = true,
+                    confirm = updateText
+                )
             }
         )
     }
@@ -614,7 +610,6 @@ private fun previewHomeScreenState(
     isSafeMode = isSafeMode,
     isLateLoadMode = isLateLoadMode,
     checkUpdateEnabled = false,
-    latestVersionInfo = LatestVersionInfo(),
     currentManagerVersionCode = 10000,
     systemInfo = previewSystemInfo.copy(selinuxStatus = selinuxStatus),
     kernelUAPIVersion = 1,

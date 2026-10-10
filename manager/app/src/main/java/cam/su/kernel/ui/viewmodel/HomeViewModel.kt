@@ -16,22 +16,23 @@ import cam.su.kernel.Cam
 import cam.su.kernel.CamNative
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
+import cam.su.kernel.data.repository.UpdateRepository
+import cam.su.kernel.data.repository.UpdateRepositoryImpl
 import cam.su.kernel.getKernelVersion
 import cam.su.kernel.camApp
 import cam.su.kernel.ui.screen.home.HomeUiState
 import cam.su.kernel.ui.screen.home.SystemInfo
 import cam.su.kernel.ui.screen.home.getManagerVersion
-import cam.su.kernel.ui.util.checkNewVersion
 import cam.su.kernel.ui.util.clearBootGuard
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.getSELinuxStatusRaw
-import cam.su.kernel.ui.util.module.LatestVersionInfo
 import cam.su.kernel.ui.util.resolveDeviceName
 import cam.su.kernel.ui.util.rootAvailable
 import cam.su.kernel.ui.util.toggleModule
 
 class HomeViewModel(
-    private val settingsRepo: SettingsRepository = SettingsRepositoryImpl()
+    private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),
+    private val updateRepo: UpdateRepository = UpdateRepositoryImpl(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(buildState())
@@ -45,8 +46,8 @@ class HomeViewModel(
             }
             _uiState.update { baseState }
             if (baseState.checkUpdateEnabled) {
-                val latestVersionInfo = withContext(Dispatchers.IO) { checkNewVersion() }
-                _uiState.update { it.copy(latestVersionInfo = latestVersionInfo) }
+                val update = updateRepo.fetchLatest().getOrNull()
+                _uiState.update { it.copy(update = update) }
             }
         }
     }
@@ -92,7 +93,6 @@ class HomeViewModel(
             isSafeMode = Cam.isSafeMode,
             isLateLoadMode = Cam.isLateLoadMode,
             checkUpdateEnabled = settingsRepo.checkUpdate,
-            latestVersionInfo = LatestVersionInfo(),
             currentManagerVersionCode = managerVersion.versionCode,
             systemInfo = SystemInfo(
                 kernelVersion = Os.uname().release,

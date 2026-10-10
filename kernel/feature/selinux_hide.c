@@ -242,6 +242,18 @@ static int __nocfi my_setprocattr(const char *name, void *value, size_t size)
         goto call_orig;
     }
     if (size && str[0] && str[0] != '\n') {
+        // Check setcurrent before parsing, like selinux_setprocattr does. Parsing
+        // first made a denied write of a valid context slower than any other
+        // denied write, which apps can time (Duck Detector attr/current probe).
+        mysid = current_sid();
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+        perm_error = avc_has_perm(mysid, mysid, SECCLASS_PROCESS, PROCESS__SETCURRENT, NULL);
+#else
+        perm_error = avc_has_perm(&selinux_state, mysid, mysid, SECCLASS_PROCESS, PROCESS__SETCURRENT, NULL);
+#endif
+        if (perm_error)
+            return perm_error;
+
         if (str[size - 1] == '\n') {
             str[size - 1] = 0;
             size--;
@@ -251,15 +263,8 @@ static int __nocfi my_setprocattr(const char *name, void *value, size_t size)
 #else
         error = security_context_to_sid(&fake_state, str, size, &sid, GFP_KERNEL);
 #endif
-        if (error) {
-            mysid = current_sid();
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
-            perm_error = avc_has_perm(mysid, mysid, SECCLASS_PROCESS, PROCESS__SETCURRENT, NULL);
-#else
-            perm_error = avc_has_perm(&selinux_state, mysid, mysid, SECCLASS_PROCESS, PROCESS__SETCURRENT, NULL);
-#endif
-            return perm_error ?: error;
-        }
+        if (error)
+            return error;
     }
 
 call_orig:

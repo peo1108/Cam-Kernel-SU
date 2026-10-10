@@ -29,6 +29,7 @@ import cam.su.kernel.ui.util.getSELinuxStatusRaw
 import cam.su.kernel.ui.util.resolveDeviceName
 import cam.su.kernel.ui.util.rootAvailable
 import cam.su.kernel.ui.util.toggleModule
+import cam.su.kernel.update.UpdateInstaller
 
 class HomeViewModel(
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),
@@ -38,13 +39,28 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow(buildState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            UpdateInstaller.state.collect { state -> _uiState.update { it.copy(installState = state) } }
+        }
+    }
+
+    fun startUpdate() {
+        val update = _uiState.value.update ?: return
+        UpdateInstaller.start(camApp, update)
+    }
+
+    fun installWithSystemInstaller() {
+        UpdateInstaller.installWithSystemInstaller(camApp)
+    }
+
     fun refresh() {
         viewModelScope.launch {
             val baseState = withContext(Dispatchers.IO) {
                 val state = buildState()
                 if (state.isManager && state.isRootAvailable) state.copy(bootGuard = getBootGuardStatus()) else state
             }
-            _uiState.update { baseState }
+            _uiState.update { baseState.copy(update = it.update, installState = it.installState) }
             if (baseState.checkUpdateEnabled) {
                 val update = updateRepo.fetchLatest().getOrNull()
                 _uiState.update { it.copy(update = update) }

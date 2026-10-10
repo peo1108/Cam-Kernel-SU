@@ -75,6 +75,8 @@ fun HomePager(
                 }
             }
         },
+        onUpdateClick = viewModel::startUpdate,
+        onSystemInstallClick = viewModel::installWithSystemInstaller,
         onReenableModule = viewModel::reenableModule,
         onDismissBootGuard = viewModel::dismissBootGuard,
     )

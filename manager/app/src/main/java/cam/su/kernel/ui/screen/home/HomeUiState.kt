@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import cam.su.kernel.KernelVersion
 import cam.su.kernel.data.model.BootGuardStatus
 import cam.su.kernel.update.UpdateInfo
+import cam.su.kernel.update.UpdateState
 
 @Immutable
 data class HomeUiState(
@@ -23,6 +24,7 @@ data class HomeUiState(
     val isLateLoadMode: Boolean,
     val checkUpdateEnabled: Boolean,
     val update: UpdateInfo? = null,
+    val installState: UpdateState = UpdateState.Idle,
     val currentManagerVersionCode: Long,
     val systemInfo: SystemInfo,
     val bootGuard: BootGuardStatus = BootGuardStatus.Empty,
@@ -69,6 +71,7 @@ data class HomeActions(
     val onInstallClick: () -> Unit,
     val onOpenUrl: (String) -> Unit,
     val onUpdateClick: () -> Unit = {},
+    val onSystemInstallClick: () -> Unit = {},
     val onJailbreakClick: () -> Unit = {},
     val onReenableModule: (String) -> Unit = {},
     val onDismissBootGuard: () -> Unit = {},

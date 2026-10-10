@@ -593,4 +593,17 @@
     <string name="module_conflict_disable_hint">Disable one of them to end the conflict (applies after a reboot):</string>
     <string name="module_conflict_this">%1$s (this module)</string>
     <string name="module_conflict_disable">Disable</string>
+    <string name="update_channel_name">App updates</string>
+    <string name="update_downloading">Downloading update… %d%%</string>
+    <string name="update_installing">Installing update…</string>
+    <string name="update_failed_download">Download failed, tap to retry</string>
+    <string name="update_failed_checksum">The download was corrupted, tap to retry</string>
+    <string name="update_failed_package">The file is not an update for this app</string>
+    <string name="update_failed_signature">The update is signed with a different key</string>
+    <string name="update_failed_version">The file\'s version does not match the release</string>
+    <string name="update_failed_install">Install failed: %s</string>
+    <string name="update_use_system_installer">Install with the Android installer</string>
+    <string name="update_available_title">%1$s %2$s is available</string>
+    <string name="update_done_title">Updated to %1$s %2$s</string>
+    <string name="update_done_text">Tap to see what\'s new</string>
 </resources>

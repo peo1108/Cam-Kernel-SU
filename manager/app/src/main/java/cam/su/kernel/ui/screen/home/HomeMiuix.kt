@@ -1,5 +1,7 @@
 package cam.su.kernel.ui.screen.home
 
+import cam.su.kernel.update.UpdateFailure
+import cam.su.kernel.update.UpdateState
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassCard
 import androidx.compose.animation.AnimatedVisibility
@@ -201,26 +203,46 @@ private fun UpdateCard(
     actions: HomeActions,
 ) {
     val update = state.update
+    val install = state.installState
     val title = stringResource(id = R.string.module_changelog)
     val updateText = stringResource(id = R.string.module_update)
     val updateDialog = rememberConfirmDialog(onConfirm = { actions.onUpdateClick() })
+    val systemInstallText = stringResource(id = R.string.update_use_system_installer)
+    val systemInstallDialog = rememberConfirmDialog(onConfirm = { actions.onSystemInstallClick() })
 
     AnimatedVisibility(
-        visible = update != null,
+        visible = update != null || install !is UpdateState.Idle,
         enter = fadeIn() + expandVertically(),
         exit = shrinkVertically() + fadeOut()
     ) {
-        if (update == null) return@AnimatedVisibility
+        val message = when (install) {
+            is UpdateState.Downloading -> stringResource(R.string.update_downloading, install.percent)
+            UpdateState.Verifying, UpdateState.Installing -> stringResource(R.string.update_installing)
+            is UpdateState.Failed -> when (install.reason) {
+                UpdateFailure.DOWNLOAD -> stringResource(R.string.update_failed_download)
+                UpdateFailure.CHECKSUM -> stringResource(R.string.update_failed_checksum)
+                UpdateFailure.PACKAGE -> stringResource(R.string.update_failed_package)
+                UpdateFailure.SIGNATURE -> stringResource(R.string.update_failed_signature)
+                UpdateFailure.VERSION -> stringResource(R.string.update_failed_version)
+                UpdateFailure.INSTALL -> stringResource(R.string.update_failed_install, install.detail.orEmpty())
+            }
+            UpdateState.Idle -> update?.let { stringResource(R.string.new_version_available, it.versionName) }
+        } ?: return@AnimatedVisibility
         WarningCard(
-            message = stringResource(id = R.string.new_version_available, update.versionName),
+            message = message,
             level = WarningLevel.Notice,
             onClick = {
-                updateDialog.showConfirm(
-                    title = title,
-                    content = update.changelog.ifBlank { null },
-                    markdown = true,
-                    confirm = updateText
-                )
+                when {
+                    install is UpdateState.Failed && install.reason == UpdateFailure.INSTALL ->
+                        systemInstallDialog.showConfirm(title = systemInstallText, content = install.detail)
+                    install is UpdateState.Failed -> actions.onUpdateClick()
+                    install is UpdateState.Idle && update != null -> updateDialog.showConfirm(
+                        title = title,
+                        content = update.changelog.ifBlank { null },
+                        markdown = true,
+                        confirm = updateText
+                    )
+                }
             }
         )
     }

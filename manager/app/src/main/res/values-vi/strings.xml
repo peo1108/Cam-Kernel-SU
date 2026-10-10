@@ -582,4 +582,17 @@
     <string name="module_conflict_disable_hint">Tắt một trong các module để hết xung đột (có hiệu lực sau khi khởi động lại):</string>
     <string name="module_conflict_this">%1$s (module này)</string>
     <string name="module_conflict_disable">Tắt</string>
+    <string name="update_channel_name">Cập nhật ứng dụng</string>
+    <string name="update_downloading">Đang tải bản cập nhật… %d%%</string>
+    <string name="update_installing">Đang cài bản cập nhật…</string>
+    <string name="update_failed_download">Tải thất bại, bấm để thử lại</string>
+    <string name="update_failed_checksum">Tải về bị lỗi, bấm để thử lại</string>
+    <string name="update_failed_package">File tải về không phải bản cập nhật của app này</string>
+    <string name="update_failed_signature">Bản cập nhật ký bằng khóa khác</string>
+    <string name="update_failed_version">Phiên bản trong file không khớp với bản phát hành</string>
+    <string name="update_failed_install">Cài thất bại: %s</string>
+    <string name="update_use_system_installer">Cài bằng trình cài đặt Android</string>
+    <string name="update_available_title">%1$s %2$s đã có</string>
+    <string name="update_done_title">Đã cập nhật lên %1$s %2$s</string>
+    <string name="update_done_text">Chạm để xem có gì mới</string>
 </resources>

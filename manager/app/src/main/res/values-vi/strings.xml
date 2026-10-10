@@ -598,4 +598,12 @@
     <string name="whats_new_title">Có gì mới</string>
     <string name="whats_new_lkm">Bản này đi kèm LKM mới.</string>
     <string name="whats_new_reinstall_lkm">Cài lại LKM</string>
+    <string name="update_progress_title">Cập nhật lên %s</string>
+    <string name="update_step_download">Tải về</string>
+    <string name="update_step_verify">Kiểm tra</string>
+    <string name="update_step_install">Cài đặt</string>
+    <string name="update_verifying">Đang kiểm tra file…</string>
+    <string name="update_installing_hint">App sẽ tự đóng và mở lại khi xong</string>
+    <string name="update_retry">Thử lại</string>
+    <string name="update_hide">Ẩn</string>
 </resources>

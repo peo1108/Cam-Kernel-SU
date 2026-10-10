@@ -20,16 +20,39 @@ import okhttp3.Request
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import java.util.Locale
 
 sealed interface UpdateState {
     data object Idle : UpdateState
-    data class Downloading(val percent: Int) : UpdateState
+    data class Downloading(val percent: Int, val downloaded: Long = 0, val total: Long = 0) : UpdateState
     data object Verifying : UpdateState
     data object Installing : UpdateState
     data class Failed(val reason: UpdateFailure, val detail: String? = null) : UpdateState
 }
 
 enum class UpdateFailure { DOWNLOAD, CHECKSUM, PACKAGE, SIGNATURE, VERSION, INSTALL }
+
+/** The three steps the progress dialog shows; null while idle. */
+enum class UpdateStep { DOWNLOAD, VERIFY, INSTALL }
+
+val UpdateState.step: UpdateStep?
+    get() = when (this) {
+        UpdateState.Idle -> null
+        is UpdateState.Downloading -> UpdateStep.DOWNLOAD
+        UpdateState.Verifying -> UpdateStep.VERIFY
+        UpdateState.Installing -> UpdateStep.INSTALL
+        is UpdateState.Failed -> when (reason) {
+            UpdateFailure.DOWNLOAD -> UpdateStep.DOWNLOAD
+            UpdateFailure.CHECKSUM, UpdateFailure.PACKAGE, UpdateFailure.SIGNATURE, UpdateFailure.VERSION -> UpdateStep.VERIFY
+            UpdateFailure.INSTALL -> UpdateStep.INSTALL
+        }
+    }
+
+/** "8,2 / 21,4 MB" (or "8.2 / 21.4 MB"); only the downloaded part when the size is unknown. */
+fun formatMegabytes(downloaded: Long, total: Long, locale: Locale = Locale.getDefault()): String {
+    fun mb(bytes: Long) = String.format(locale, "%.1f", bytes / 1_048_576.0)
+    return if (total > 0) "${mb(downloaded)} / ${mb(total)} MB" else "${mb(downloaded)} MB"
+}
 
 private const val TAG = "UpdateInstaller"
 private const val OTA_DIR = "ota"
@@ -124,7 +147,7 @@ object UpdateInstaller {
                         out.write(buf, 0, read)
                         soFar += read
                         if (total > 0) {
-                            _state.value = UpdateState.Downloading(((soFar * 100) / total).toInt().coerceIn(0, 100))
+                            _state.value = UpdateState.Downloading(((soFar * 100) / total).toInt().coerceIn(0, 100), soFar, total)
                         }
                     }
                 }

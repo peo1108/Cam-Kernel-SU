@@ -1,5 +1,8 @@
 package cam.su.kernel.ui.screen.home
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -243,9 +246,11 @@ private fun UpdateCard(
     val install = state.installState
     val title = stringResource(id = R.string.module_changelog)
     val updateText = stringResource(id = R.string.module_update)
-    val updateDialog = rememberConfirmDialog(onConfirm = { actions.onUpdateClick() })
-    val systemInstallText = stringResource(id = R.string.update_use_system_installer)
-    val systemInstallDialog = rememberConfirmDialog(onConfirm = { actions.onSystemInstallClick() })
+    var showProgress by rememberSaveable { mutableStateOf(false) }
+    val updateDialog = rememberConfirmDialog(onConfirm = {
+        showProgress = true
+        actions.onUpdateClick()
+    })
     val showFromNotification by UpdateSignal.showUpdateDialog.collectAsState()
     LaunchedEffect(showFromNotification, update) {
         // wait for Home's own check to find the update before consuming the request
@@ -280,10 +285,9 @@ private fun UpdateCard(
             level = WarningLevel.Notice,
             onClick = {
                 when {
-                    install is UpdateState.Failed && install.reason == UpdateFailure.INSTALL ->
-                        systemInstallDialog.showConfirm(title = systemInstallText, content = install.detail)
-                    install is UpdateState.Failed -> actions.onUpdateClick()
-                    install is UpdateState.Idle && update != null -> updateDialog.showConfirm(
+                    // downloading, installing or failed: bring the progress dialog back
+                    install !is UpdateState.Idle -> showProgress = true
+                    update != null -> updateDialog.showConfirm(
                         title = title,
                         content = update.changelog.ifBlank { null },
                         markdown = true,
@@ -293,6 +297,15 @@ private fun UpdateCard(
             }
         )
     }
+
+    UpdateProgressDialog(
+        show = showProgress && install !is UpdateState.Idle,
+        versionName = update?.versionName.orEmpty(),
+        state = install,
+        onRetry = actions.onUpdateClick,
+        onSystemInstall = actions.onSystemInstallClick,
+        onDismiss = { showProgress = false },
+    )
 }
 
 @Composable

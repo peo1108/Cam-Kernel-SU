@@ -609,4 +609,12 @@
     <string name="whats_new_title">What\'s new</string>
     <string name="whats_new_lkm">This version ships a new LKM.</string>
     <string name="whats_new_reinstall_lkm">Reinstall LKM</string>
+    <string name="update_progress_title">Updating to %s</string>
+    <string name="update_step_download">Download</string>
+    <string name="update_step_verify">Verify</string>
+    <string name="update_step_install">Install</string>
+    <string name="update_verifying">Checking the file…</string>
+    <string name="update_installing_hint">The app closes and reopens when done</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_hide">Hide</string>
 </resources>

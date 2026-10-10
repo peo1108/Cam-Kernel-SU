@@ -330,6 +330,10 @@
     <string name="glass_background_import_failed">Could not load this image</string>
     <string name="home_donate_title">Support at:</string>
     <string name="home_donate_summary">t.me/MDM_Cam</string>
+    <string name="donate_dialog_title">Support Cam Kernel SU</string>
+    <string name="donate_dialog_summary">Scan the QR code with your banking or MoMo app. Thank you for helping cover the development costs!</string>
+    <string name="donate_qr_description">Donation QR code</string>
+    <string name="donate_open_channel">Open the channel</string>
     <string name="home_contact_title">Contact</string>
     <string name="home_contact_summary">Telegram: @milk_1108</string>
     <string name="app_profile_open_full">Open full profile</string>

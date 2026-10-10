@@ -321,6 +321,10 @@
     <string name="glass_background_import_failed">Không đọc được ảnh này</string>
     <string name="home_donate_title">Ủng hộ tại:</string>
     <string name="home_donate_summary">t.me/MDM_Cam</string>
+    <string name="donate_dialog_title">Ủng hộ Cam Kernel SU</string>
+    <string name="donate_dialog_summary">Quét mã QR bằng app ngân hàng hoặc MoMo. Cảm ơn bạn đã góp phần chi phí phát triển!</string>
+    <string name="donate_qr_description">Mã QR ủng hộ</string>
+    <string name="donate_open_channel">Mở kênh</string>
     <string name="home_contact_title">Liên hệ</string>
     <string name="home_contact_summary">Telegram: @milk_1108</string>
     <string name="app_profile_open_full">Mở hồ sơ đầy đủ</string>

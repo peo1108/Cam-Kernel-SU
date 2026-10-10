@@ -431,6 +431,12 @@ private fun SupportLinks(
     onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showDonate by rememberSaveable { mutableStateOf(false) }
+    DonateDialog(
+        show = showDonate,
+        onDismissRequest = { showDonate = false },
+        onOpenChannel = { onOpenUrl(DONATE_URL) },
+    )
     GlassCard(modifier = modifier) {
         ArrowPreference(
             title = stringResource(R.string.home_donate_title),
@@ -443,7 +449,7 @@ private fun SupportLinks(
                     tint = colorScheme.onBackground,
                 )
             },
-            onClick = { onOpenUrl(DONATE_URL) },
+            onClick = { showDonate = true },
         )
         ArrowPreference(
             title = stringResource(R.string.home_contact_title),

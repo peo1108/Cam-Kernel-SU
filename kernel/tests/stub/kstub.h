@@ -30,7 +30,8 @@ typedef uint32_t u32;
 
 #define ERR_PTR(err) ((void *)(intptr_t)(err))
 #define PTR_ERR(p) ((long)(intptr_t)(p))
-#define IS_ERR(p) ((uintptr_t)(p) >= (uintptr_t)-4095)
+#define MAX_ERRNO 4095
+#define IS_ERR(p) ((uintptr_t)(p) >= UINTPTR_MAX - MAX_ERRNO + 1)
 
 struct cred {
     int unused;

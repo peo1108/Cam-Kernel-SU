@@ -149,10 +149,13 @@ class ModuleRepoViewModel(
                     _uiState.update { it.copy(isRefreshing = false) }
                 }.onFailure { e ->
                     Log.e(TAG, "fetch modules failed", e)
-                    Toast.makeText(
-                        camApp,
-                        camApp.getString(R.string.network_offline), Toast.LENGTH_SHORT
-                    ).show()
+                    // Only blame the network when it is down: a dead library is not the user's connection
+                    val message = if (isNetworkAvailable(camApp)) {
+                        camApp.getString(R.string.module_repos_fetch_failed, e.message ?: e.javaClass.simpleName)
+                    } else {
+                        camApp.getString(R.string.network_offline)
+                    }
+                    Toast.makeText(camApp, message, Toast.LENGTH_SHORT).show()
                     _uiState.update {
                         it.copy(
                             isRefreshing = false,

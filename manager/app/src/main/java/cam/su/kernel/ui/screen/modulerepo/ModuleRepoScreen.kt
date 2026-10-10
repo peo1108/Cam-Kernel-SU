@@ -66,8 +66,8 @@ fun ModuleRepoDetailScreen(module: RepoModuleArg) {
     var readmeHtml by remember(module.moduleId) { mutableStateOf<String?>(null) }
     var readmeLoaded by remember(module.moduleId) { mutableStateOf(false) }
     var detailReleases by remember(module.moduleId) { mutableStateOf<List<ReleaseArg>>(emptyList()) }
-    var webUrl by remember(module.moduleId) { mutableStateOf("https://modules.kernelsu.org/module/${module.moduleId}") }
-    var sourceUrl by remember(module.moduleId) { mutableStateOf("https://github.com/KernelSU-Modules-Repo/${module.moduleId}") }
+    var webUrl by remember(module.moduleId) { mutableStateOf("") }
+    var sourceUrl by remember(module.moduleId) { mutableStateOf("") }
 
     LaunchedEffect(module.moduleId) {
         if (module.moduleId.isNotEmpty()) {

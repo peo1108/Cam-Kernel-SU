@@ -49,6 +49,7 @@
     <string name="module_repos_sort_name">Name</string>
     <string name="module_repos_sort_stars">Stars</string>
     <string name="module_repos_source_code">Source code</string>
+    <string name="module_repos_fetch_failed">Could not load the module library: %1$s</string>
     <string name="confirm">Confirm</string>
     <string name="uninstall">Uninstall</string>
     <string name="module_install">Install</string>

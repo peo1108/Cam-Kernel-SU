@@ -1,0 +1,53 @@
+name: Module Repo
+
+# Builds Cam's module library (the Manager's "Module repo" page) from modules/sources.json
+# and publishes it to the module-repo branch, which the Manager reads through
+# raw.githubusercontent.com. Runs daily to pick up new module releases, and whenever the
+# source list or the generator changes. The branch holds one commit with the current data
+# (force-pushed, only when the data changed), so it never grows and main stays free of bot
+# commits. Docs: docs/CAM_CHANGES.md section 13.
+
+on:
+  schedule:
+    - cron: '41 3 * * *'
+  push:
+    branches: [main]
+    paths:
+      - modules/sources.json
+      - scripts/gen_module_repo.py
+      - .github/workflows/module-repo.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: module-repo
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the library
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/gen_module_repo.py out
+      - name: Publish to the module-repo branch
+        run: |
+          set -euo pipefail
+          if git fetch --depth=1 origin module-repo 2>/dev/null; then
+            mkdir old && git archive FETCH_HEAD | tar -x -C old
+            if diff -r old out >/dev/null; then
+              echo "library unchanged"
+              exit 0
+            fi
+          fi
+          cd out
+          git init -q -b module-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Module library from ${GITHUB_SHA::8}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" module-repo

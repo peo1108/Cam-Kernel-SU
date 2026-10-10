@@ -20,6 +20,7 @@ Cam Kernel SU is a fork of KernelSU: a kernel-based root solution for Android wi
 /userspace/camd/              # Userspace daemon - Rust binary for userspace-kernel communication
 /userspace/caminit/           # Early init helper that loads the LKM - Rust binary
 /manager/                     # Android manager app - Kotlin/Jetpack Compose UI (Miuix glass only)
+/modules/                     # Cam module library source list (published to the module-repo branch)
 /docs/                        # CAM_CHANGES.md (fork notes, merge guide), translated READMEs, plans
 /website/                     # Documentation website - VitePress
 /js/                          # JavaScript library for module WebUI

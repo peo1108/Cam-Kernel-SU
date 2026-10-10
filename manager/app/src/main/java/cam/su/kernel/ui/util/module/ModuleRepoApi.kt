@@ -6,6 +6,10 @@ import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 
+// Cam's own module library (modules.kernelsu.org went down with its GitHub org, 2026-09):
+// built from modules/sources.json by the Module Repo workflow, same JSON layout.
+const val MODULE_REPO_URL = "https://raw.githubusercontent.com/peo1108/Cam-Kernel-SU/module-repo"
+
 data class ModuleDetail(
     val readme: String,
     val readmeHtml: String,
@@ -45,7 +49,7 @@ fun stripTicks(s: String): String {
 
 fun fetchReleaseDescriptionHtml(moduleId: String, latestTag: String): String? {
     if (!isNetworkAvailable(camApp)) return null
-    val url = "https://modules.kernelsu.org/module/$moduleId.json"
+    val url = "$MODULE_REPO_URL/module/$moduleId.json"
     return runCatching {
         camApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { resp ->
             if (!resp.isSuccessful) null else {
@@ -73,7 +77,7 @@ fun fetchReleaseDescriptionHtml(moduleId: String, latestTag: String): String? {
 
 fun fetchModuleDetail(moduleId: String): ModuleDetail? {
     if (!isNetworkAvailable(camApp)) return null
-    val url = "https://modules.kernelsu.org/module/$moduleId.json"
+    val url = "$MODULE_REPO_URL/module/$moduleId.json"
     return runCatching {
         camApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { resp ->
             if (!resp.isSuccessful) return@use null

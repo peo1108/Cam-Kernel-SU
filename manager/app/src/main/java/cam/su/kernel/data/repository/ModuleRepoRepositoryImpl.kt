@@ -6,6 +6,7 @@ import cam.su.kernel.data.model.Author
 import cam.su.kernel.data.model.ReleaseAsset
 import cam.su.kernel.data.model.RepoModule
 import cam.su.kernel.camApp
+import cam.su.kernel.ui.util.module.MODULE_REPO_URL
 import cam.su.kernel.ui.util.isNetworkAvailable
 import okhttp3.Request
 import org.json.JSONArray
@@ -14,7 +15,7 @@ import org.json.JSONObject
 class ModuleRepoRepositoryImpl : ModuleRepoRepository {
 
     companion object {
-        private const val MODULES_URL = "https://modules.kernelsu.org/modules.json"
+        private const val MODULES_URL = "$MODULE_REPO_URL/modules.json"
     }
 
     override suspend fun fetchModules(): Result<List<RepoModule>> = withContext(Dispatchers.IO) {

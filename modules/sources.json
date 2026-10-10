@@ -1,0 +1,63 @@
+{
+  "_comment": "Cam module library. id must equal the id= in the module's module.prop (the Manager matches installed modules by it); name, authors and summary follow module.prop too. repo is the GitHub repo whose releases carry the zip, asset a regex picking the zip from a release. scripts/gen_module_repo.py builds modules.json + module/<id>.json from this; .github/workflows/module-repo.yml publishes them to the module-repo branch (docs/CAM_CHANGES.md section 13).",
+  "modules": [
+    {
+      "id": "magic_mount_rs",
+      "name": "Magic Mount-rs",
+      "authors": [{"name": "mmrs developers", "link": "https://github.com/Tools-cx-app"}],
+      "summary": "Metamodule that mounts modules with Magic Mount. Install one metamodule so module files show up in /system.",
+      "repo": "Tools-cx-app/meta-magic_mount-rs",
+      "asset": "-universal\\.zip$",
+      "metamodule": true
+    },
+    {
+      "id": "hybrid_mount",
+      "name": "Hybrid Mount",
+      "authors": [{"name": "Hybrid Mount Developers", "link": "https://github.com/Hybrid-Mount"}],
+      "summary": "Metamodule mixing OverlayFS, Magic Mount and VFS to mount modules. Use it instead of Magic Mount-rs, not with it.",
+      "repo": "Hybrid-Mount/meta-hybrid_mount",
+      "asset": "^Hybrid-Mount-.*\\.zip$",
+      "metamodule": true
+    },
+    {
+      "id": "zygisksu",
+      "name": "NeoZygisk",
+      "authors": [{"name": "JingMatrix", "link": "https://github.com/JingMatrix"}],
+      "summary": "Zygisk for KernelSU (Zygote injection with ptrace). Needed by Zygisk modules such as Vector and Play Integrity Fork.",
+      "repo": "JingMatrix/NeoZygisk",
+      "asset": "-release\\.zip$"
+    },
+    {
+      "id": "rezygisk",
+      "name": "ReZygisk",
+      "authors": [{"name": "The PerformanC Organization", "link": "https://github.com/PerformanC"}],
+      "summary": "Standalone implementation of Zygisk. Pick either ReZygisk or NeoZygisk, not both.",
+      "repo": "PerformanC/ReZygisk",
+      "asset": "-release\\.zip$"
+    },
+    {
+      "id": "zygisk_vector",
+      "name": "Vector",
+      "authors": [{"name": "JingMatrix", "link": "https://github.com/JingMatrix"}],
+      "summary": "Modern Xposed-compatible framework (successor of LSPosed), Android 8.1 to 17. Needs Zygisk.",
+      "repo": "JingMatrix/Vector",
+      "asset": "-Release\\.zip$"
+    },
+    {
+      "id": "playintegrityfix",
+      "name": "Play Integrity Fork",
+      "authors": [{"name": "osm0sis", "link": "https://github.com/osm0sis"}, {"name": "chiteroman", "link": "https://github.com/chiteroman"}],
+      "summary": "Fixes Play Integrity verdicts below Android 13 and Google Wallet/RCS on Android 7+. Needs Zygisk.",
+      "repo": "osm0sis/PlayIntegrityFork",
+      "asset": "^PlayIntegrityFork-.*\\.zip$"
+    },
+    {
+      "id": "bindhosts",
+      "name": "bindhosts",
+      "authors": [{"name": "xx", "link": "https://github.com/backslashxx"}, {"name": "KOWX712", "link": "https://github.com/KOWX712"}],
+      "summary": "Systemless hosts file for ad blocking, with a WebUI to manage sources.",
+      "repo": "bindhosts/bindhosts",
+      "asset": "^bindhosts\\.zip$"
+    }
+  ]
+}

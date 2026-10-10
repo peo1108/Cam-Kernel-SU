@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import cam.su.kernel.adb.WirelessAdb
+import cam.su.kernel.camApp
 import cam.su.kernel.data.repository.HidingHistoryRepository
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
@@ -49,6 +51,7 @@ class FeaturesViewModel(
                 hidingHistory.load().first to hidingHistory.ignored
             }
             val hidingFindings = hidingScan?.audit?.findings.orEmpty().filter { it.id !in ignored }
+            val adb = withContext(Dispatchers.IO) { WirelessAdb.status() }
             _uiState.update {
                 it.copy(
                     bootGuard = bootGuard,
@@ -60,6 +63,9 @@ class FeaturesViewModel(
                     hidingScanTime = hidingScan?.time,
                     hidingLeaks = hidingFindings.count { f -> f.leak },
                     hidingFindings = hidingFindings.size,
+                    wirelessAdb = adb,
+                    wifiAddress = WirelessAdb.wifiAddress(camApp),
+                    adbTimeout = WirelessAdb.timeoutMinutes(camApp),
                     scanning = false,
                 )
             }
@@ -132,6 +138,22 @@ class FeaturesViewModel(
                 )
             }
         }
+    }
+
+    fun setWirelessAdb(enabled: Boolean) {
+        if (_uiState.value.adbBusy) return
+        _uiState.update { it.copy(adbBusy = true) }
+        viewModelScope.launch {
+            val status = withContext(Dispatchers.IO) {
+                if (enabled) WirelessAdb.enable(camApp) else WirelessAdb.disable(camApp)
+            }
+            _uiState.update { it.copy(wirelessAdb = status, wifiAddress = WirelessAdb.wifiAddress(camApp), adbBusy = false) }
+        }
+    }
+
+    fun setAdbTimeout(minutes: Int) {
+        WirelessAdb.setTimeout(camApp, minutes, on = _uiState.value.wirelessAdb.on)
+        _uiState.update { it.copy(adbTimeout = minutes) }
     }
 
     /** Run a camd command, then read the boot guard back so the page shows what camd stored. */

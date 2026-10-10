@@ -133,6 +133,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- puts USB debugging back off after a reboot when wireless ADB turned it on -->
+        <receiver
+            android:name=".adb.WirelessAdbBootReceiver"
+            android:directBootAware="false"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".update.UpdatedReceiver"
             android:exported="false">

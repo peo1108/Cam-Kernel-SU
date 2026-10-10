@@ -18,10 +18,12 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.HealthAndSafety
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,13 +33,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.widget.Toast
 import cam.su.kernel.R
+import cam.su.kernel.adb.WirelessAdb
 import cam.su.kernel.data.model.ConflictKind
 import cam.su.kernel.data.model.PropCheck
 import cam.su.kernel.ui.component.AttestationResult
@@ -47,7 +54,9 @@ import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.AttestationReport
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -101,6 +110,7 @@ fun FeaturesPagerMiuix(
                 item { ConflictCard(state, actions) }
                 item { HideBootloaderCard(state, actions) }
                 item { HidingCheckEntry(state, actions) }
+                item { WirelessAdbCard(state, actions) }
                 item { Spacer(Modifier.height(bottomInnerPadding)) }
             }
         }
@@ -314,6 +324,68 @@ private fun HidingCheckEntry(state: FeaturesUiState, actions: FeaturesActions) {
         expanded = false,
         onToggle = actions.onOpenHidingCheck,
     ) { }
+}
+
+@Composable
+private fun WirelessAdbCard(state: FeaturesUiState, actions: FeaturesActions) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val adb = state.wirelessAdb
+    val address = state.wifiAddress?.let { "$it:${adb.port ?: WirelessAdb.PORT}" }
+    val timeouts = WirelessAdb.TIMEOUTS
+
+    GlassExpandableCard(
+        icon = Icons.Rounded.Wifi,
+        title = stringResource(R.string.features_wireless_adb),
+        summary = when {
+            !adb.on -> stringResource(R.string.features_off)
+            address == null -> stringResource(R.string.features_wireless_adb_no_wifi)
+            else -> stringResource(R.string.features_wireless_adb_on, address)
+        },
+        expanded = expanded,
+        onToggle = { expanded = !expanded },
+    ) {
+        SwitchPreference(
+            title = stringResource(R.string.features_wireless_adb_enable),
+            summary = stringResource(R.string.features_wireless_adb_enable_summary, WirelessAdb.PORT),
+            checked = adb.on,
+            enabled = !state.adbBusy,
+            onCheckedChange = actions.onSetWirelessAdb,
+        )
+        if (adb.on && address != null) {
+            val command = "adb connect $address"
+            BasicComponent(
+                title = command,
+                summary = stringResource(R.string.features_wireless_adb_copy),
+                endActions = {
+                    Icon(Icons.Rounded.ContentCopy, contentDescription = null, tint = colorScheme.onSurfaceVariantActions)
+                },
+                onClick = {
+                    context.getSystemService(ClipboardManager::class.java)
+                        ?.setPrimaryClip(ClipData.newPlainText("adb", command))
+                    Toast.makeText(context, R.string.features_wireless_adb_copied, Toast.LENGTH_SHORT).show()
+                },
+            )
+        }
+        GlassDropdownPreference(
+            title = stringResource(R.string.features_wireless_adb_timeout),
+            items = timeouts.map { minutes ->
+                if (minutes == 0) {
+                    stringResource(R.string.features_wireless_adb_timeout_never)
+                } else {
+                    stringResource(R.string.features_wireless_adb_timeout_minutes, minutes)
+                }
+            },
+            selectedIndex = timeouts.indexOf(state.adbTimeout).coerceAtLeast(0),
+            onSelectedIndexChange = { actions.onSetAdbTimeout(timeouts[it]) },
+        )
+        Text(
+            text = stringResource(R.string.features_wireless_adb_note),
+            fontSize = 13.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
 }
 
 @Composable

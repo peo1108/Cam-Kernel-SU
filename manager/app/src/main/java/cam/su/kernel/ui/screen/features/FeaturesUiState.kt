@@ -1,6 +1,7 @@
 package cam.su.kernel.ui.screen.features
 
 import androidx.compose.runtime.Immutable
+import cam.su.kernel.adb.WirelessAdbStatus
 import cam.su.kernel.data.model.AttestationInfo
 import cam.su.kernel.data.model.BootGuardStatus
 import cam.su.kernel.data.model.HideBootloaderStatus
@@ -30,6 +31,13 @@ data class FeaturesUiState(
     /** leaks and other findings of that check, ignored ones left out */
     val hidingLeaks: Int = 0,
     val hidingFindings: Int = 0,
+    val wirelessAdb: WirelessAdbStatus = WirelessAdbStatus.Off,
+    /** the phone's address on Wi-Fi; null when not on Wi-Fi */
+    val wifiAddress: String? = null,
+    /** auto off, in minutes; 0 = never */
+    val adbTimeout: Int = 30,
+    /** adbd is being restarted */
+    val adbBusy: Boolean = false,
 ) {
     val conflicts: List<ModuleConflict>
         get() = allConflicts.visible(conflictDetection, conflictIncludeProps)
@@ -50,4 +58,7 @@ data class FeaturesActions(
     val onSetHideBootloader: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
     val onOpenHidingCheck: () -> Unit,
+    val onSetWirelessAdb: (Boolean) -> Unit,
+    /** minutes, one of [cam.su.kernel.adb.WirelessAdb.TIMEOUTS] */
+    val onSetAdbTimeout: (Int) -> Unit,
 )

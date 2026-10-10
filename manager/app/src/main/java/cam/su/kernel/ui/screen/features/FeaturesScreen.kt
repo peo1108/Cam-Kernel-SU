@@ -50,6 +50,8 @@ fun FeaturesPager(
         onSetHideBootloader = viewModel::setHideBootloader,
         onCheckAttestation = viewModel::checkAttestation,
         onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck()) },
+        onSetWirelessAdb = viewModel::setWirelessAdb,
+        onSetAdbTimeout = viewModel::setAdbTimeout,
     )
 
     FeaturesPagerMiuix(uiState, actions, bottomInnerPadding)

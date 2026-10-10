@@ -518,6 +518,17 @@
     <string name="module_scan_switch_summary">Lần khởi động đầu tiên sau khi cài, cập nhật hay bật lại module: kiểm tra một lần và báo nếu module đó làm lộ root</string>
     <string name="module_scan_channel">Kiểm tra ẩn root</string>
     <string name="module_scan_title">Module mới làm lộ root (%1$d)</string>
+    <string name="features_wireless_adb">ADB không dây</string>
+    <string name="features_wireless_adb_on">Đang mở · %1$s</string>
+    <string name="features_wireless_adb_no_wifi">Đang mở · chưa kết nối Wi-Fi</string>
+    <string name="features_wireless_adb_enable">ADB qua Wi-Fi</string>
+    <string name="features_wireless_adb_enable_summary">Mở cổng %1$d bằng root, không cần ghép đôi; tự bật Gỡ lỗi USB nếu đang tắt</string>
+    <string name="features_wireless_adb_copy">Chạm để sao chép, rồi chạy trên máy tính</string>
+    <string name="features_wireless_adb_copied">Đã sao chép</string>
+    <string name="features_wireless_adb_timeout">Tự tắt sau</string>
+    <string name="features_wireless_adb_timeout_never">Không bao giờ</string>
+    <string name="features_wireless_adb_timeout_minutes">%1$d phút</string>
+    <string name="features_wireless_adb_note">Tự tắt mỗi khi khởi động lại; Gỡ lỗi USB cũng tắt lại nếu do mục này bật. Lần đầu kết nối, chấp nhận máy tính trên điện thoại. App ngân hàng có thể thấy ADB đang bật.</string>
     <string name="hiding_tag_new">MỚI %1$d</string>
     <string name="hiding_tag_gone">ĐÃ ẨN %1$d</string>
     <string name="hiding_tag_leaks">LỘ %1$d</string>

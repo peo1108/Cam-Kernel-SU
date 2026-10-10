@@ -530,6 +530,17 @@
     <string name="module_scan_channel">Root hiding check</string>
     <string name="module_scan_title">New modules leak root (%1$d)</string>
     <string name="module_scan_line" translatable="false">%1$s: %2$s</string>
+    <string name="features_wireless_adb">Wireless ADB</string>
+    <string name="features_wireless_adb_on">On · %1$s</string>
+    <string name="features_wireless_adb_no_wifi">On · not on Wi-Fi</string>
+    <string name="features_wireless_adb_enable">ADB over Wi-Fi</string>
+    <string name="features_wireless_adb_enable_summary">Listens on port %1$d with root, no pairing; turns USB debugging on if needed</string>
+    <string name="features_wireless_adb_copy">Tap to copy, then run it on your computer</string>
+    <string name="features_wireless_adb_copied">Copied</string>
+    <string name="features_wireless_adb_timeout">Turn off after</string>
+    <string name="features_wireless_adb_timeout_never">Never</string>
+    <string name="features_wireless_adb_timeout_minutes">%1$d min</string>
+    <string name="features_wireless_adb_note">Turns off with every reboot, and USB debugging goes back off if this turned it on. The first time, allow the computer on the phone. Banking apps can see that ADB is on.</string>
     <string name="hiding_tag_new">NEW %1$d</string>
     <string name="hiding_tag_gone">HIDDEN %1$d</string>
     <string name="hiding_tag_leaks">LEAKS %1$d</string>

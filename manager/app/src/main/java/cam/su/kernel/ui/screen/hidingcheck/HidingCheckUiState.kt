@@ -137,6 +137,7 @@ data class HidingCheckUiState(
                 if (stats["appView"] == 1) addAll(APP_CHECKS)
                 if ((stats["processes"] ?: 0) > 0) addAll(listOf("appMounts", "appMaps"))
                 if (stats["appNative"] == 1) add("appHooked")
+                if (stats["appAttrTiming"] == 1) add("appAttrTiming")
                 if (stats["profileChecked"] == 1 && "defaultProfileUmount" !in found) add("profileUmount")
             }.distinct()
             return ran.filter { it !in found }.map { id ->

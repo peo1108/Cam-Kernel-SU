@@ -8,10 +8,13 @@
 #include <jni.h>
 
 #include <cerrno>
+#include <cstdint>
+#include <ctime>
 #include <fcntl.h>
 #include <string>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <vector>
 
 namespace {
 
@@ -67,7 +70,84 @@ bool raw_read(const char *path, std::string &out) {
     return true;
 }
 
+// --- attr/current timing (Duck Detector's SELinux hide probe) ---
+//
+// An app may not change its own SELinux context, so writing to attr/current fails with
+// EACCES whatever it writes. A hook that parses the context before that permission check
+// makes a valid context (A) slower to refuse than one starting with a newline (B), which
+// stock SELinux never parses. /proc/thread-self is needed: attr/current of another thread
+// refuses writes before any SELinux code runs.
+
+constexpr char kAttrCurrent[] = "/proc/thread-self/attr/current";
+constexpr int kWarmupPairs = 32;
+constexpr int kTimedPairs = 256;
+
+// Failure codes returned instead of samples; keep in step with AttrTiming.kt.
+constexpr jlong kNoAttr = -1;       // attr/current cannot be opened or read
+constexpr jlong kNotAppDomain = -2; // not an app SELinux context
+constexpr jlong kNotRefused = -3;   // a write was not refused with EACCES: stop, never retry
+
+int64_t now_ns() {
+    timespec t{};
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+    return static_cast<int64_t>(t.tv_sec) * 1000000000LL + t.tv_nsec;
+}
+
+// Nanoseconds the refused write took, or -1 when it was not refused with EACCES.
+int64_t timed_write(const std::string &payload) {
+    long fd = raw_syscall(__NR_openat, AT_FDCWD, reinterpret_cast<long>(kAttrCurrent), O_WRONLY | O_CLOEXEC, 0);
+    if (fd < 0) return -1;
+    int64_t before = now_ns();
+    long ret = raw_syscall(__NR_write, fd, reinterpret_cast<long>(payload.data()), static_cast<long>(payload.size()), 0);
+    int64_t after = now_ns();
+    raw_syscall(__NR_close, fd, 0, 0, 0);
+    return ret == -EACCES ? after - before : -1;
+}
+
+// A and B times, interleaved, or one failure code.
+std::vector<jlong> attr_timing() {
+    std::string a;
+    if (!raw_read(kAttrCurrent, a)) return {kNoAttr};
+    while (!a.empty() && (a.back() == '\n' || a.back() == '\0')) a.pop_back();
+    if (a.size() < 5 || a.find('\0') != std::string::npos || a.rfind("u:r:", 0) != 0) return {kNotAppDomain};
+    // same length, only the first byte differs
+    std::string b = a;
+    b[0] = '\n';
+
+    // both must be refused before timing anything: never keep writing a context the
+    // kernel might accept
+    if (timed_write(b) < 0 || timed_write(a) < 0) return {kNotRefused};
+
+    std::vector<jlong> out;
+    out.reserve(kTimedPairs * 2);
+    for (int i = -kWarmupPairs; i < kTimedPairs; ++i) {
+        // alternate the order so neither side always runs with a warmer cache
+        int64_t ta, tb;
+        if ((i & 1) == 0) {
+            ta = timed_write(a);
+            tb = timed_write(b);
+        } else {
+            tb = timed_write(b);
+            ta = timed_write(a);
+        }
+        if (ta < 0 || tb < 0) return {kNotRefused};
+        if (i < 0) continue;
+        out.push_back(ta);
+        out.push_back(tb);
+    }
+    return out;
+}
+
 }  // namespace
+
+extern "C" JNIEXPORT jlongArray JNICALL
+Java_cam_su_kernel_hiding_NativeProbe_attrTiming0(JNIEnv *env, jclass) {
+    // never from a process that could hold setcurrent
+    std::vector<jlong> samples = getuid() < 10000 ? std::vector<jlong>{kNotAppDomain} : attr_timing();
+    jlongArray out = env->NewLongArray(static_cast<jsize>(samples.size()));
+    if (out != nullptr) env->SetLongArrayRegion(out, 0, static_cast<jsize>(samples.size()), samples.data());
+    return out;
+}
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_cam_su_kernel_hiding_NativeProbe_read0(JNIEnv *env, jclass, jstring jpath) {

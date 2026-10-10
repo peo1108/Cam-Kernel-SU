@@ -559,14 +559,17 @@
     <string name="hiding_duck_following">Following %1$s</string>
     <string name="hiding_duck_ahead">new nightly %1$s (%2$s)</string>
     <string name="hiding_duck_current">up to date</string>
+    <string name="hiding_duck_pending">not in this app yet: %1$s</string>
     <string name="hiding_check_updates">Check for updates</string>
     <string name="hiding_checking">Checking…</string>
     <string name="hiding_check_updates_summary">Rules are data signed by Cam, never code. Checked when this page opens, at most every 6 hours</string>
     <string name="audit_app_hooked">libc answers differ from the kernel (something hooks it)</string>
+    <string name="audit_app_attr_timing">SELinux refuses a valid context more slowly (attr/current timing)</string>
     <string name="audit_profile_umount">Apps without root whose profile keeps modules mounted</string>
     <string name="audit_default_profile_umount">The default profile keeps modules mounted for every app</string>
     <string name="hiding_fix_profile">Turn on umount modules in the App Profile</string>
     <string name="hiding_fix_hooked">Turn off the module hooking libc: apps can notice the hook itself</string>
+    <string name="hiding_fix_attr_timing">The kernel parses the context before refusing it. Update the LKM (fixed from version 32780); turning off SELinux hide also stops this one but shows the SELinux changes</string>
     <string name="hiding_from_modules">From %1$s</string>
     <string name="hiding_disable_module">Turn off %1$s</string>
     <string name="hiding_module_disabled">%1$s is off, reboot to apply</string>
@@ -578,6 +581,7 @@
     <string name="hiding_ok_app_props">Apps read locked bootloader properties</string>
     <string name="hiding_ok_app_selinux">Apps see SELinux enforcing</string>
     <string name="hiding_ok_app_hooked">libc answers match the kernel</string>
+    <string name="hiding_ok_app_attr_timing">SELinux refuses every attr/current write in the same time</string>
     <string name="hiding_ok_profile_umount">Every app without root gets modules unmounted</string>
     <string name="hiding_section_attestation">Hardware attestation</string>
     <string name="hiding_attestation_summary">Signed by the chip, so Cam cannot hide it. It explains apps that refuse to run even when nothing above leaks.</string>

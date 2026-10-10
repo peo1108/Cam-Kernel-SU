@@ -32,6 +32,7 @@ object AppViewProbe {
         val props = props(rules, ::getSystemProperty)
         val selinux = selinux(rawOrLibc("/sys/fs/selinux/enforce"))
         val hooked = if (native) hooked(rules) else emptyList()
+        val timed = AttrTiming.evaluate(NativeProbe.attrTiming()) as? AttrTiming.Measured
 
         val findings = listOfNotNull(
             finding("appMounts", mounts.map { it.item }, "kernelUmount", HidingAudit.moduleIds(mounts.map { it.origin })),
@@ -40,11 +41,17 @@ object AppViewProbe {
             finding("appProps", props, "hideBootloader"),
             finding("appSelinux", selinux, null),
             finding("appHooked", hooked, null),
+            finding("appAttrTiming", if (timed?.leaks == true) listOf(timed.describe()) else emptyList(), null),
         )
         return HidingAudit(
             findings = findings,
             fixable = findings.count { it.fix != null },
-            stats = mapOf("appView" to 1, "appNative" to if (native) 1 else 0, "appMounts" to mounts.size),
+            stats = mapOf(
+                "appView" to 1,
+                "appNative" to if (native) 1 else 0,
+                "appMounts" to mounts.size,
+                "appAttrTiming" to if (timed != null) 1 else 0,
+            ) + listOfNotNull(timed?.let { "appAttrGapNs" to it.gapMedianNs.toInt() }),
         )
     }
 

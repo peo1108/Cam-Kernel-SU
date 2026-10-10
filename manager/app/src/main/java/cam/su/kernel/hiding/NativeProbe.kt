@@ -15,6 +15,12 @@ object NativeProbe {
     /** 0 when faccessat finds the path, else its errno; -1 without the library. */
     fun access(path: String): Int = if (available) nativeAccess(path) else -1
 
+    /** attr/current write times, A and B interleaved ([AttrTiming]); null without the library. */
+    fun attrTiming(): LongArray? = if (available) runCatching { attrTiming0() }.getOrNull() else null
+
+    @JvmStatic
+    private external fun attrTiming0(): LongArray?
+
     @JvmStatic
     private external fun read0(path: String): String?
 

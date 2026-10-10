@@ -232,6 +232,8 @@ class CamActivity : ComponentActivity() {
                     } else {
                         NavSwipeDirection.None
                     }
+                    val flashRoute = navigator.current() as? Route.Flash
+                    var flashBackEnabled by remember(flashRoute) { mutableStateOf(false) }
                     val mainScreenEntry = @Composable {
                         MainScreen(
                             initialPage = selectedMainPage,
@@ -270,7 +272,16 @@ class CamActivity : ComponentActivity() {
                             entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage { ModuleRepoScreen() } }
                             entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }
                             entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage { InstallScreen() } }
-                            entry<Route.Flash>(swipeDismiss = swipeDismiss) { key -> GlassPage { FlashScreen(key.flashIt) } }
+                            entry<Route.Flash>(swipeDismiss = if (flashBackEnabled) swipeDismiss else NavSwipeDirection.None) { key ->
+                                GlassPage {
+                                    FlashScreen(
+                                        key.flashIt,
+                                        onBackEnabledChange = { enabled ->
+                                            if (navigator.current() == key) flashBackEnabled = enabled
+                                        },
+                                    )
+                                }
+                            }
                             entry<Route.ExecuteModuleAction>(swipeDismiss = swipeDismiss) { key ->
                                 GlassPage {
                                     ExecuteModuleActionScreen(

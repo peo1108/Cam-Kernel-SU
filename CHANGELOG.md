@@ -2,6 +2,16 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.5 - 2026-10-10
+### Tính năng mới
+- ADB không dây ngay trong tab Tính năng: bật một công tắc là máy tính kết nối được qua Wi-Fi, không cần cắm dây hay ghép đôi
+- Hiện sẵn lệnh `adb connect <IP>:5555`, chạm để sao chép
+- Tự tắt sau 15, 30, 60 hoặc 120 phút (mặc định 30), và luôn tắt khi khởi động lại
+- Chạy được cả khi Tùy chọn nhà phát triển đang tắt: app tự bật Gỡ lỗi USB khi cần và tắt lại khi xong
+### Lưu ý
+- Lần đầu kết nối, chấp nhận máy tính trên điện thoại như khi cắm USB
+- Khi ADB đang bật, app ngân hàng có thể phát hiện
+
 ## 3.0.4 - 2026-10-10
 ### Tính năng mới
 - Tự kiểm tra ẩn root sau khi cài module: lần khởi động đầu sau khi cài, cập nhật hay bật lại module, app quét một lần và báo nếu module đó làm lộ root

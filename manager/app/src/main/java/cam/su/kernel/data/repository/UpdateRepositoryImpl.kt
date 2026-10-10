@@ -24,8 +24,9 @@ class UpdateRepositoryImpl : UpdateRepository {
             val request = Request.Builder()
                 .url(RELEASES_URL)
                 .header("Accept", "application/vnd.github+json")
-                // a cached list could hide a release that was just published
-                .cacheControl(CacheControl.FORCE_NETWORK)
+                // revalidate every time (ETag): a new release still shows at once, and GitHub's
+                // 304 answers do not count against the 60 requests/hour limit
+                .cacheControl(CacheControl.Builder().noCache().build())
                 .build()
             camApp.okhttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("HTTP ${response.code}")

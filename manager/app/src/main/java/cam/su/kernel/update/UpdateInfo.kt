@@ -59,3 +59,6 @@ fun parseReleases(json: String, currentVersionCode: Long): UpdateInfo? = runCatc
     }
     best?.takeIf { it.versionCode > currentVersionCode }
 }.getOrNull()
+
+/** A failed check (rate limit, no network) keeps what Home already knew; only a real answer replaces it. */
+fun keepKnownUpdate(previous: UpdateInfo?, result: Result<UpdateInfo?>): UpdateInfo? = result.getOrElse { previous }

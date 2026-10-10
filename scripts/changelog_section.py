@@ -9,18 +9,19 @@ import re
 import sys
 from pathlib import Path
 
-HEADING = re.compile(r"^## (\d+\.\d+\.\d+)(\s|$)")
+# Same grammar as the app's ChangelogParser: an entry it cannot read must not ship.
+HEADING = re.compile(r"^## (\d+\.\d+\.\d+)\s+-\s+\S+")
 
 
 def section(text: str, version: str) -> str | None:
     """Body of the `## <version> - <date>` entry, without its heading, or None."""
     body = None
     for line in text.replace("\r\n", "\n").split("\n"):
-        match = HEADING.match(line)
-        if match:
+        if line.startswith("## "):
             if body is not None:
                 break
-            if match.group(1) == version:
+            match = HEADING.match(line)
+            if match and match.group(1) == version:
                 body = []
             continue
         if body is not None:

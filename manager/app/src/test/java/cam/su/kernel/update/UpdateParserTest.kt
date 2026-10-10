@@ -105,6 +105,15 @@ class UpdateParserTest {
     }
 
     @Test
+    fun failedCheckKeepsTheKnownUpdate() {
+        val known = parseReleases(list(release("cam-v3.0.1", apk("3.0.1", 32900))), 32800)
+        // rate limited: the card must not disappear
+        assertEquals(known, keepKnownUpdate(known, Result.failure(java.io.IOException("HTTP 403"))))
+        // a successful "nothing newer" answer does clear it
+        assertNull(keepKnownUpdate(known, Result.success(null)))
+    }
+
+    @Test
     fun summaryIsFirstBullet() {
         val info = parseReleases(
             list(release("cam-v3.0.1", apk("3.0.1", 32900), body = "### Tính năng mới\r\n- Thêm OTA\n- Khác")),

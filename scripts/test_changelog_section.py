@@ -47,6 +47,15 @@ class SectionTest(unittest.TestCase):
         text = "## 3.0.10 - 2026-11-01\n- Mười\n"
         self.assertIsNone(section(text, "3.0.1"))
 
+    def test_heading_without_date_is_rejected(self):
+        # the app's ChangelogParser needs "## X.Y.Z - date"; CI must not pass what the app drops
+        self.assertIsNone(section("## 3.0.1\n- A\n", "3.0.1"))
+        self.assertIsNone(section("## 3.0.1 (2026-10-20)\n- A\n", "3.0.1"))
+
+    def test_any_heading_ends_the_entry(self):
+        text = "## 3.0.1 - 2026-10-20\n- A\n\n## Ghi chú khác\n- B\n"
+        self.assertEqual(section(text, "3.0.1"), "- A")
+
     def test_cli_exit_codes(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "CHANGELOG.md"

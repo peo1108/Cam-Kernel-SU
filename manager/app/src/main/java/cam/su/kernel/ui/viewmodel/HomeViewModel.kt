@@ -32,6 +32,7 @@ import cam.su.kernel.ui.util.toggleModule
 import cam.su.kernel.update.ChangelogParser
 import cam.su.kernel.update.UpdateInstaller
 import cam.su.kernel.update.decideWhatsNew
+import cam.su.kernel.update.keepKnownUpdate
 
 class HomeViewModel(
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),
@@ -90,8 +91,8 @@ class HomeViewModel(
             _uiState.update { baseState.copy(update = it.update, installState = it.installState, whatsNew = it.whatsNew) }
             withContext(Dispatchers.IO) { checkWhatsNew() }
             if (baseState.checkUpdateEnabled) {
-                val update = updateRepo.fetchLatest().getOrNull()
-                _uiState.update { it.copy(update = update) }
+                val result = updateRepo.fetchLatest()
+                _uiState.update { it.copy(update = keepKnownUpdate(it.update, result)) }
             }
         }
     }

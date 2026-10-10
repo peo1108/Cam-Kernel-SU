@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.update.UpdateInstaller
 import cam.su.kernel.update.UpdateNotifier
+import cam.su.kernel.update.UpdateScheduler
 import cam.su.kernel.ui.viewmodel.SuperUserViewModel
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -71,6 +72,7 @@ class CamApplication : Application(), ViewModelStoreOwner {
         if (getProcessName() == packageName) {
             UpdateInstaller.cleanup(this)
             UpdateNotifier.createChannel(this)
+            UpdateScheduler.apply(this, SettingsRepositoryImpl().checkUpdate)
         }
 
         // Provide working env for rust's temp_dir()

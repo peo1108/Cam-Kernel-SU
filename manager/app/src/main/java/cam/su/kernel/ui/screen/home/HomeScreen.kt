@@ -1,5 +1,11 @@
 package cam.su.kernel.ui.screen.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -43,11 +49,22 @@ fun HomePager(
     val latestIsCurrentPage by rememberUpdatedState(isCurrentPage)
     val initialResumeHandled = rememberSaveable { mutableStateOf(false) }
 
+    // background update checks notify; ask once (Android 13+), the Home card works either way
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { }
+
     var hasActivated by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(isCurrentPage) {
         if (isCurrentPage && !hasActivated) {
             hasActivated = true
             viewModel.refresh()
+            if (Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED &&
+                viewModel.shouldAskNotificationPermission()
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
     }
 
@@ -77,6 +94,7 @@ fun HomePager(
         },
         onUpdateClick = viewModel::startUpdate,
         onSystemInstallClick = viewModel::installWithSystemInstaller,
+        onDismissWhatsNew = viewModel::dismissWhatsNew,
         onReenableModule = viewModel::reenableModule,
         onDismissBootGuard = viewModel::dismissBootGuard,
     )

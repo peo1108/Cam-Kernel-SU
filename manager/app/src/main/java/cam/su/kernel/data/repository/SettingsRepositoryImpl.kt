@@ -44,6 +44,20 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("module_check_update", true)
         set(value) = prefs.edit { putBoolean("module_check_update", value) }
 
+    // newest Manager versionCode already announced by a notification
+    override var notifiedVersionCode: Long
+        get() = prefs.getLong("notified_version_code", 0L)
+        set(value) = prefs.edit { putLong("notified_version_code", value) }
+
+    // version whose "What's new" was shown (or skipped, on a fresh install)
+    override var lastSeenVersion: String?
+        get() = prefs.getString("last_seen_version", null)
+        set(value) = prefs.edit { putString("last_seen_version", value) }
+
+    override var askedNotificationPermission: Boolean
+        get() = prefs.getBoolean("asked_notification_permission", false)
+        set(value) = prefs.edit { putBoolean("asked_notification_permission", value) }
+
     override var themeMode: Int
         get() = prefs.getInt("color_mode", 0)
         set(value) = prefs.edit { putInt("color_mode", value) }

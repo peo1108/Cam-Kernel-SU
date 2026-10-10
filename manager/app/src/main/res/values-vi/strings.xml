@@ -595,4 +595,7 @@
     <string name="update_available_title">%1$s %2$s đã có</string>
     <string name="update_done_title">Đã cập nhật lên %1$s %2$s</string>
     <string name="update_done_text">Chạm để xem có gì mới</string>
+    <string name="whats_new_title">Có gì mới</string>
+    <string name="whats_new_lkm">Bản này đi kèm LKM mới.</string>
+    <string name="whats_new_reinstall_lkm">Cài lại LKM</string>
 </resources>

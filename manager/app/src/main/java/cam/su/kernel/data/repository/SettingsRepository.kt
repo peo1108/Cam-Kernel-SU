@@ -3,6 +3,9 @@ package cam.su.kernel.data.repository
 interface SettingsRepository {
     var checkUpdate: Boolean
     var checkModuleUpdate: Boolean
+    var notifiedVersionCode: Long
+    var lastSeenVersion: String?
+    var askedNotificationPermission: Boolean
     var themeMode: Int
     var miuixMonet: Boolean
     var keyColor: Int

@@ -29,7 +29,9 @@ import cam.su.kernel.ui.util.getSELinuxStatusRaw
 import cam.su.kernel.ui.util.resolveDeviceName
 import cam.su.kernel.ui.util.rootAvailable
 import cam.su.kernel.ui.util.toggleModule
+import cam.su.kernel.update.ChangelogParser
 import cam.su.kernel.update.UpdateInstaller
+import cam.su.kernel.update.decideWhatsNew
 
 class HomeViewModel(
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),
@@ -43,6 +45,31 @@ class HomeViewModel(
         viewModelScope.launch {
             UpdateInstaller.state.collect { state -> _uiState.update { it.copy(installState = state) } }
         }
+    }
+
+    private var whatsNewChecked = false
+
+    /** Shows the packed changelog once after an update (spec 6.2). */
+    private fun checkWhatsNew() {
+        if (whatsNewChecked) return
+        whatsNewChecked = true
+        val markdown = runCatching {
+            camApp.assets.open(ChangelogParser.ASSET_PATH).bufferedReader().use { it.readText() }
+        }.getOrNull() ?: return
+        val decision = decideWhatsNew(settingsRepo.lastSeenVersion, BuildConfig.VERSION_NAME, ChangelogParser.parse(markdown))
+        decision.saveLastSeen?.let { settingsRepo.lastSeenVersion = it }
+        if (decision.show.isNotEmpty()) _uiState.update { it.copy(whatsNew = decision.show) }
+    }
+
+    fun dismissWhatsNew() {
+        _uiState.update { it.copy(whatsNew = emptyList()) }
+    }
+
+    /** Asks for the notification permission once, so background update checks can notify. */
+    fun shouldAskNotificationPermission(): Boolean {
+        if (!settingsRepo.checkUpdate || settingsRepo.askedNotificationPermission) return false
+        settingsRepo.askedNotificationPermission = true
+        return true
     }
 
     fun startUpdate() {
@@ -60,7 +87,8 @@ class HomeViewModel(
                 val state = buildState()
                 if (state.isManager && state.isRootAvailable) state.copy(bootGuard = getBootGuardStatus()) else state
             }
-            _uiState.update { baseState.copy(update = it.update, installState = it.installState) }
+            _uiState.update { baseState.copy(update = it.update, installState = it.installState, whatsNew = it.whatsNew) }
+            withContext(Dispatchers.IO) { checkWhatsNew() }
             if (baseState.checkUpdateEnabled) {
                 val update = updateRepo.fetchLatest().getOrNull()
                 _uiState.update { it.copy(update = update) }

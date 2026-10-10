@@ -1,5 +1,7 @@
 package cam.su.kernel.ui
 
+import cam.su.kernel.update.UpdateNotifier
+import cam.su.kernel.update.UpdateSignal
 import androidx.activity.compose.BackHandler
 import cam.su.kernel.ui.component.glass.rememberGradientStandIn
 import cam.su.kernel.ui.component.glass.GlassSource
@@ -175,7 +177,10 @@ class CamActivity : ComponentActivity() {
             camInitDone.value = true
         }
 
-        if (savedInstanceState == null) intent?.let { intentChannel.trySend(it) }
+        if (savedInstanceState == null) intent?.let {
+            if (it.getBooleanExtra(UpdateNotifier.EXTRA_SHOW_UPDATE, false)) UpdateSignal.request()
+            intentChannel.trySend(it)
+        }
 
         setContent {
             val camReady by camInitDone.collectAsStateWithLifecycle()
@@ -332,6 +337,7 @@ class CamActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (intent.getBooleanExtra(UpdateNotifier.EXTRA_SHOW_UPDATE, false)) UpdateSignal.request()
         intentChannel.trySend(intent)
     }
 }

@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.viewmodel
 
+import cam.su.kernel.update.UpdateScheduler
 import android.net.Uri
 import android.system.OsConstants
 import android.widget.Toast
@@ -129,6 +130,7 @@ class SettingsViewModel(
 
     fun setCheckUpdate(enabled: Boolean) {
         repo.checkUpdate = enabled
+        UpdateScheduler.apply(camApp, enabled)
         _uiState.update { it.copy(checkUpdate = enabled) }
     }
 

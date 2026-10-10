@@ -1,5 +1,9 @@
 package cam.su.kernel.ui.screen.home
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import cam.su.kernel.update.UpdateSignal
 import cam.su.kernel.update.UpdateFailure
 import cam.su.kernel.update.UpdateState
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
@@ -132,6 +136,7 @@ fun HomePagerMiuix(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        WhatsNewDialog(state = state, actions = actions)
                         if (state.checkUpdateEnabled) {
                             UpdateCard(state = state, actions = actions)
                         }
@@ -198,6 +203,38 @@ fun HomePagerMiuix(
 }
 
 @Composable
+private fun WhatsNewDialog(
+    state: HomeUiState,
+    actions: HomeActions,
+) {
+    val entries = state.whatsNew
+    val withLkm = state.showLkmUpdate
+    val title = stringResource(R.string.whats_new_title)
+    val lkmNote = stringResource(R.string.whats_new_lkm)
+    val reinstall = stringResource(R.string.whats_new_reinstall_lkm)
+    val close = stringResource(R.string.close)
+    val dialog = rememberConfirmDialog(
+        onConfirm = {
+            actions.onDismissWhatsNew()
+            if (withLkm) actions.onInstallClick()
+        },
+        onDismiss = { actions.onDismissWhatsNew() },
+    )
+    LaunchedEffect(entries) {
+        if (entries.isEmpty()) return@LaunchedEffect
+        val body = entries.joinToString("\n\n") { "### ${it.version}\n\n${it.body}" } +
+            if (withLkm) "\n\n**$lkmNote**" else ""
+        dialog.showConfirm(
+            title = title,
+            content = body,
+            markdown = true,
+            confirm = if (withLkm) reinstall else close,
+            dismiss = if (withLkm) close else null,
+        )
+    }
+}
+
+@Composable
 private fun UpdateCard(
     state: HomeUiState,
     actions: HomeActions,
@@ -209,6 +246,16 @@ private fun UpdateCard(
     val updateDialog = rememberConfirmDialog(onConfirm = { actions.onUpdateClick() })
     val systemInstallText = stringResource(id = R.string.update_use_system_installer)
     val systemInstallDialog = rememberConfirmDialog(onConfirm = { actions.onSystemInstallClick() })
+    val showFromNotification by UpdateSignal.showUpdateDialog.collectAsState()
+    LaunchedEffect(showFromNotification, update) {
+        // wait for Home's own check to find the update before consuming the request
+        if (showFromNotification && update != null) {
+            UpdateSignal.consume()
+            if (install is UpdateState.Idle) {
+                updateDialog.showConfirm(title = title, content = update.changelog.ifBlank { null }, markdown = true, confirm = updateText)
+            }
+        }
+    }
 
     AnimatedVisibility(
         visible = update != null || install !is UpdateState.Idle,

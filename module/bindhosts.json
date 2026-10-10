@@ -1,0 +1,72 @@
+{
+ "moduleId": "bindhosts",
+ "moduleName": "bindhosts",
+ "url": "https://github.com/bindhosts/bindhosts",
+ "authors": [
+  {
+   "name": "xx",
+   "link": "https://github.com/backslashxx"
+  },
+  {
+   "name": "KOWX712",
+   "link": "https://github.com/KOWX712"
+  }
+ ],
+ "summary": "Systemless hosts file for ad blocking, with a WebUI to manage sources.",
+ "metamodule": false,
+ "stargazerCount": 1474,
+ "updatedAt": "2026-08-24T01:43:48Z",
+ "createdAt": "2024-02-02T15:49:45Z",
+ "latestRelease": {
+  "name": "Release v2.1.5",
+  "time": "2026-08-24T01:43:48Z",
+  "downloadUrl": "https://github.com/bindhosts/bindhosts/releases/download/v2.1.5/bindhosts.zip"
+ },
+ "homepageUrl": "",
+ "sourceUrl": "https://github.com/bindhosts/bindhosts",
+ "readmeHTML": "<div id=\"readme\" class=\"md\" data-path=\"README.md\"><article class=\"markdown-body entry-content container-lg\" itemprop=\"text\"><p dir=\"auto\"><a href=\"README.md\">English</a> | <a href=\"README_de.md\">Deutsch</a> | <a href=\"README_es-ES.md\">Español</a> | <a href=\"README_fr.md\">Français</a> | <a href=\"README_id.md\">Bahasa Indonesia</a> | <a href=\"README_it.md\">Italiano</a> | <a href=\"README_ru.md\">Русский</a> | <a href=\"README_tr.md\">Türkçe</a> | <a href=\"README_zh-CN.md\">简体中文</a></p>\n<div class=\"markdown-heading\" dir=\"auto\"><h1 class=\"heading-element\" dir=\"auto\">bindhosts</h1><a id=\"user-content-bindhosts\" class=\"anchor\" aria-label=\"Permalink: bindhosts\" href=\"#bindhosts\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<p dir=\"auto\">Systemless hosts for APatch, KernelSU and Magisk</p>\n<p dir=\"auto\">Fully standalone, self-updating.</p>\n<div class=\"markdown-heading\" dir=\"auto\"><h2 class=\"heading-element\" dir=\"auto\">Features</h2><a id=\"user-content-features\" class=\"anchor\" aria-label=\"Permalink: Features\" href=\"#features\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<ul dir=\"auto\">\n<li>WebUI and action button control</li>\n<li>Adaway coexistence</li>\n<li>Systemless hosts via manager mount, bind mount, and OverlayFS</li>\n<li>Redirect methods: ZN-hostsredirect, hosts_file_redirect, open_redirect</li>\n</ul>\n<div class=\"markdown-heading\" dir=\"auto\"><h2 class=\"heading-element\" dir=\"auto\">Supported Root Managers</h2><a id=\"user-content-supported-root-managers\" class=\"anchor\" aria-label=\"Permalink: Supported Root Managers\" href=\"#supported-root-managers\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<ul dir=\"auto\">\n<li><a href=\"https://github.com/bmax121/APatch\">APatch</a></li>\n<li><a href=\"https://github.com/tiann/KernelSU\">KernelSU</a></li>\n<li><a href=\"https://github.com/topjohnwu/Magisk\">Magisk</a>  <sup>(<a href=\"https://github.com/topjohnwu/Magisk/issues/8609#event-15568590949\" data-hovercard-type=\"issue\" data-hovercard-url=\"/topjohnwu/Magisk/issues/8609/hovercard\">no WebUI</a>👀)</sup></li>\n</ul>\n<div class=\"markdown-heading\" dir=\"auto\"><h3 class=\"heading-element\" dir=\"auto\">Also Supported on</h3><a id=\"user-content-also-supported-on\" class=\"anchor\" aria-label=\"Permalink: Also Supported on\" href=\"#also-supported-on\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<ul dir=\"auto\">\n<li><a href=\"https://github.com/5ec1cff/KsuWebUIStandalone\">KsuWebUI</a>   <sup>🌐</sup></li>\n<li><a href=\"https://github.com/MMRLApp/WebUI-X-Portable\">WebUI-X</a>   <sup>🌐</sup></li>\n<li><a href=\"https://github.com/MMRLApp/MMRL\">MMRL</a></li>\n</ul>\n<div class=\"markdown-heading\" dir=\"auto\"><h2 class=\"heading-element\" dir=\"auto\">Resources</h2><a id=\"user-content-resources\" class=\"anchor\" aria-label=\"Permalink: Resources\" href=\"#resources\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<ul dir=\"auto\">\n<li><a href=\"Documentation/faq.md\">FAQ</a></li>\n<li><a href=\"Documentation/usage.md\">Usage</a></li>\n<li><a href=\"Documentation/hiding.md\">Hiding</a></li>\n<li><a href=\"Documentation/modes.md\">Operating Modes</a></li>\n</ul>\n<div class=\"markdown-heading\" dir=\"auto\"><h2 class=\"heading-element\" dir=\"auto\">Links</h2><a id=\"user-content-links\" class=\"anchor\" aria-label=\"Permalink: Links\" href=\"#links\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<ul dir=\"auto\">\n<li>Download <a href=\"https://github.com/bindhosts/bindhosts/releases\">here</a></li>\n<li>Looking for more sources? <a href=\"Documentation/sources.md\">here</a></li>\n<li>Localization <a href=\"Documentation/localize.md\">guide</a></li>\n</ul>\n<div class=\"markdown-heading\" dir=\"auto\"><h2 class=\"heading-element\" dir=\"auto\">Help and Support</h2><a id=\"user-content-help-and-support\" class=\"anchor\" aria-label=\"Permalink: Help and Support\" href=\"#help-and-support\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<p dir=\"auto\">Report <a href=\"https://github.com/bindhosts/bindhosts/issues\">here</a> if you encounter any issues.</p>\n<p dir=\"auto\"><a href=\"https://github.com/bindhosts/bindhosts/pulls\">Pull requests</a> are always welcome.</p>\n</article></div>",
+ "releases": [
+  {
+   "name": "Release v2.1.5",
+   "tagName": "v2.1.5",
+   "publishedAt": "2026-08-24T01:43:48Z",
+   "descriptionHTML": "<h2>bindhosts</h2>\n<p>Systemless hosts for APatch, KernelSU and Magisk.</p>\n<hr>\n<h1>Changelog:</h1>\n<h3>2.1.5</h3>\n<ul>\n<li>webui: use codemirror editor</li>\n<li>scripts: support KSU late load</li>\n<li>scripts/post-fs-data: add nomount metamodule support</li>\n</ul>",
+   "releaseAssets": [
+    {
+     "name": "bindhosts.zip",
+     "downloadUrl": "https://github.com/bindhosts/bindhosts/releases/download/v2.1.5/bindhosts.zip",
+     "size": 258303,
+     "downloadCount": 9478
+    }
+   ]
+  },
+  {
+   "name": "Release v2.1.4",
+   "tagName": "v2.1.4",
+   "publishedAt": "2026-06-25T03:14:03Z",
+   "descriptionHTML": "<h2>bindhosts</h2>\n<p>Systemless hosts for APatch, KernelSU and Magisk.</p>\n<hr>\n<h1>Changelog:</h1>\n<h3>2.1.4</h3>\n<ul>\n<li>scripts/service: fix module.prop edit</li>\n<li>scripts/bindhosts: handle bad curl env</li>\n<li>webui: multiple host render on show (<a class=\"issue-link js-issue-link\" data-error-text=\"Failed to load title\" data-id=\"4610251034\" data-permission-text=\"Title is private\" data-url=\"https://github.com/bindhosts/bindhosts/issues/206\" data-hovercard-type=\"pull_request\" data-hovercard-url=\"/bindhosts/bindhosts/pull/206/hovercard\" href=\"https://github.com/bindhosts/bindhosts/pull/206\">#206</a>)</li>\n<li>scripts/bindhosts: drop curl -Z usage</li>\n<li>webui/locales: updates</li>\n</ul>",
+   "releaseAssets": [
+    {
+     "name": "bindhosts.zip",
+     "downloadUrl": "https://github.com/bindhosts/bindhosts/releases/download/v2.1.4/bindhosts.zip",
+     "size": 169325,
+     "downloadCount": 19628
+    }
+   ]
+  },
+  {
+   "name": "Release v2.1.3",
+   "tagName": "v2.1.3",
+   "publishedAt": "2026-05-04T06:25:53Z",
+   "descriptionHTML": "<h2>bindhosts</h2>\n<p>Systemless hosts for APatch, KernelSU and Magisk.</p>\n<hr>\n<h1>Changelog:</h1>\n<h3>2.1.3</h3>\n<ul>\n<li>scripts/post-fs-data: update ksu_susfs_open_redirect routine</li>\n<li>webui: add scroll into view on input focus</li>\n<li>scripts/service: rework module.prop description update</li>\n<li>scripts: actually use boot-completed.sh</li>\n</ul>",
+   "releaseAssets": [
+    {
+     "name": "bindhosts.zip",
+     "downloadUrl": "https://github.com/bindhosts/bindhosts/releases/download/v2.1.3/bindhosts.zip",
+     "size": 169336,
+     "downloadCount": 441
+    }
+   ]
+  }
+ ]
+}

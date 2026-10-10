@@ -1,0 +1,165 @@
+[
+ {
+  "moduleId": "magic_mount_rs",
+  "moduleName": "Magic Mount-rs",
+  "url": "https://github.com/Tools-cx-app/meta-magic_mount-rs",
+  "authors": [
+   {
+    "name": "mmrs developers",
+    "link": "https://github.com/Tools-cx-app"
+   }
+  ],
+  "summary": "Metamodule that mounts modules with Magic Mount. Install one metamodule so module files show up in /system.",
+  "metamodule": true,
+  "stargazerCount": 545,
+  "updatedAt": "2026-10-02T23:27:44Z",
+  "createdAt": "2026-02-10T01:00:45Z",
+  "latestRelease": {
+   "name": "v4.0.11",
+   "time": "2026-10-02T23:27:44Z",
+   "downloadUrl": "https://github.com/Tools-cx-app/meta-magic_mount-rs/releases/download/v4.0.11/magic_mount_rs-4.0.11-930-universal.zip"
+  }
+ },
+ {
+  "moduleId": "hybrid_mount",
+  "moduleName": "Hybrid Mount",
+  "url": "https://github.com/Hybrid-Mount/meta-hybrid_mount",
+  "authors": [
+   {
+    "name": "Hybrid Mount Developers",
+    "link": "https://github.com/Hybrid-Mount"
+   }
+  ],
+  "summary": "Metamodule mixing OverlayFS, Magic Mount and VFS to mount modules. Use it instead of Magic Mount-rs, not with it.",
+  "metamodule": true,
+  "stargazerCount": 1697,
+  "updatedAt": "2026-09-29T16:01:37Z",
+  "createdAt": "2025-11-24T10:42:17Z",
+  "latestRelease": {
+   "name": "v6.2.2",
+   "time": "2026-09-29T16:01:37Z",
+   "downloadUrl": "https://github.com/Hybrid-Mount/meta-hybrid_mount/releases/download/v6.2.2/Hybrid-Mount-6.2.2-2053.zip"
+  }
+ },
+ {
+  "moduleId": "zygisksu",
+  "moduleName": "Zygisk Next",
+  "url": "https://github.com/LSPosed/ZygiskNext",
+  "authors": [
+   {
+    "name": "5ec1cff",
+    "link": "https://github.com/5ec1cff"
+   },
+   {
+    "name": "Nullptr",
+    "link": "https://github.com/LSPosed"
+   },
+   {
+    "name": "aviraxp",
+    "link": "https://github.com/aviraxp"
+   }
+  ],
+  "summary": "Standalone implementation of Zygisk. Needed by Zygisk modules such as Vector and Play Integrity Fork. Pick either Zygisk Next or ReZygisk, not both.",
+  "metamodule": false,
+  "stargazerCount": 735,
+  "updatedAt": "2026-09-20T04:19:50Z",
+  "createdAt": "2026-09-19T10:48:59Z",
+  "latestRelease": {
+   "name": "v1.5.0",
+   "time": "2026-09-20T04:19:50Z",
+   "downloadUrl": "https://github.com/LSPosed/ZygiskNext/releases/download/v1.5.0/Zygisk-Next-1.5.0-843-5217106-release.zip"
+  }
+ },
+ {
+  "moduleId": "rezygisk",
+  "moduleName": "ReZygisk",
+  "url": "https://github.com/PerformanC/ReZygisk",
+  "authors": [
+   {
+    "name": "The PerformanC Organization",
+    "link": "https://github.com/PerformanC"
+   }
+  ],
+  "summary": "Standalone implementation of Zygisk. Pick either ReZygisk or Zygisk Next, not both.",
+  "metamodule": false,
+  "stargazerCount": 4042,
+  "updatedAt": "2026-05-10T23:08:58Z",
+  "createdAt": "2024-06-15T14:56:39Z",
+  "latestRelease": {
+   "name": "v1.0.0",
+   "time": "2026-05-10T23:08:58Z",
+   "downloadUrl": "https://github.com/PerformanC/ReZygisk/releases/download/v1.0.0/ReZygisk-v1.0.0-release.zip"
+  }
+ },
+ {
+  "moduleId": "zygisk_vector",
+  "moduleName": "Vector",
+  "url": "https://github.com/JingMatrix/Vector",
+  "authors": [
+   {
+    "name": "JingMatrix",
+    "link": "https://github.com/JingMatrix"
+   }
+  ],
+  "summary": "Modern Xposed-compatible framework (successor of LSPosed), Android 8.1 to 17. Needs Zygisk.",
+  "metamodule": false,
+  "stargazerCount": 12719,
+  "updatedAt": "2026-08-04T09:38:29Z",
+  "createdAt": "2023-07-20T18:03:30Z",
+  "latestRelease": {
+   "name": "Vector v2.2",
+   "time": "2026-08-04T09:38:29Z",
+   "downloadUrl": "https://github.com/JingMatrix/Vector/releases/download/v2.2/Vector-v2.2-3080-Release.zip"
+  }
+ },
+ {
+  "moduleId": "playintegrityfix",
+  "moduleName": "Play Integrity Fork",
+  "url": "https://github.com/osm0sis/PlayIntegrityFork",
+  "authors": [
+   {
+    "name": "osm0sis",
+    "link": "https://github.com/osm0sis"
+   },
+   {
+    "name": "chiteroman",
+    "link": "https://github.com/chiteroman"
+   }
+  ],
+  "summary": "Fixes Play Integrity verdicts below Android 13 and Google Wallet/RCS on Android 7+. Needs Zygisk.",
+  "metamodule": false,
+  "stargazerCount": 4565,
+  "updatedAt": "2026-08-29T17:33:56Z",
+  "createdAt": "2023-11-24T13:09:21Z",
+  "latestRelease": {
+   "name": "Play Integrity Fork v18",
+   "time": "2026-08-29T17:33:56Z",
+   "downloadUrl": "https://github.com/osm0sis/PlayIntegrityFork/releases/download/v18/PlayIntegrityFork-v18.zip"
+  }
+ },
+ {
+  "moduleId": "bindhosts",
+  "moduleName": "bindhosts",
+  "url": "https://github.com/bindhosts/bindhosts",
+  "authors": [
+   {
+    "name": "xx",
+    "link": "https://github.com/backslashxx"
+   },
+   {
+    "name": "KOWX712",
+    "link": "https://github.com/KOWX712"
+   }
+  ],
+  "summary": "Systemless hosts file for ad blocking, with a WebUI to manage sources.",
+  "metamodule": false,
+  "stargazerCount": 1474,
+  "updatedAt": "2026-08-24T01:43:48Z",
+  "createdAt": "2024-02-02T15:49:45Z",
+  "latestRelease": {
+   "name": "Release v2.1.5",
+   "time": "2026-08-24T01:43:48Z",
+   "downloadUrl": "https://github.com/bindhosts/bindhosts/releases/download/v2.1.5/bindhosts.zip"
+  }
+ }
+]

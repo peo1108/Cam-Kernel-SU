@@ -26,6 +26,7 @@
 - Never offer a versionCode `<=` the running one.
 - UI strings: add to `values/strings.xml` (English) and `values-vi/strings.xml`; other locales fall back to English.
 - No kernel, supercall or uapi changes. Never `git commit -a`; stage paths explicitly (the `manager/app/src/main/cpp/uapi` junction shows as deleted and must not be committed).
+- Python on this Windows machine: `python3` is the Store stub; use `py` (3.12) or WSL `python3`. CI uses `python3`.
 - Checks per `AGENTS.md`: Manager `cd manager && ./gradlew :app:testDebugUnitTest` (Windows: from the `K:` drive, `docs/CAM_CHANGES.md` section 5); camd `cargo ndk -t arm64-v8a check`, `cargo ndk -t arm64-v8a clippy`, `cargo fmt` in WSL.
 
 ## Review Focus

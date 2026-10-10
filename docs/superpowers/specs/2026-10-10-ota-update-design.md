@@ -132,7 +132,7 @@ Code đặt trong `manager/app/src/main/java/cam/su/kernel/update/` (`UpdateInst
 
 ### 5.1 Tải
 
-- Dùng `DownloadManager.enqueue`/`DownloadService` hiện có, thêm tham số đích `Destination.PublicDownloads` (mặc định, giữ hành vi cũ cho module) / `Destination.Cache(dir)`. OTA dùng `cacheDir/ota/`, tên file như asset.
+- `UpdateInstaller` tự tải bằng okhttp vào `cacheDir/ota/<tên asset>`, tiến độ hiện trên thẻ Home. Không dùng lại `DownloadService`: service đó gắn với MediaStore (thư mục Downloads công khai) và thông báo "cài module", tách nhánh cho OTA tốn hơn tự tải.
 - Trước khi tải: xóa mọi file trong `cacheDir/ota/`.
 
 ### 5.2 Kiểm tra file
@@ -142,10 +142,12 @@ Code đặt trong `manager/app/src/main/java/cam/su/kernel/update/` (`UpdateInst
 
 ### 5.3 Cài bằng root (cách chính)
 
-- Qua `getRootShell()` (libsu): `cat '<apk>' | pm install -r -S <size> && am start -n cam.su.kernel/.ui.CamActivity`.
-  - Đẩy qua stdin để `system_server` không phải đọc file trong thư mục riêng của app (tránh SELinux).
-  - Shell chạy dưới su của camd chứ không thuộc tiến trình app, nên vẫn chạy tiếp khi Android tắt app để thay bản; `am start` mở lại app, app hiện "Có gì mới".
-- `pm` trả lỗi (không có `Success`): hiện dòng lỗi đầu tiên và nút "Cài bằng trình cài đặt Android" (5.4).
+- Trên KernelSU, shell `su` của app vẫn là tiến trình con nằm trong cgroup của app; khi Android tắt app để thay bản, cả cgroup bị giết. Vì vậy lệnh cài chạy trong một shell tách riêng:
+  - Ghi script vào `cacheDir/ota/install.sh`, chạy `setsid sh '<install.sh>' &` qua `getRootShell()` (libsu).
+  - Script tự chuyển sang cgroup gốc (`echo $$ > /sys/fs/cgroup/cgroup.procs`, `/acct/cgroup.procs`), rồi `cat '<apk>' | pm install -r -S <size> > '<result>'`, rồi nếu có `Success` thì `am start -n cam.su.kernel/.ui.CamActivity`.
+  - Đẩy APK qua stdin để `system_server` không phải đọc file trong thư mục riêng của app (tránh SELinux).
+- App đọc `result` mỗi 500 ms, tối đa 120 giây: `Success` thì chờ bị tắt; nội dung khác thì hiện dòng lỗi đầu tiên và nút "Cài bằng trình cài đặt Android" (5.4); hết giờ thì báo lỗi cài.
+- Mở lại app chỉ là cố gắng (chuyển cgroup không được thì `am start` không chạy). Đường chắc chắn: receiver `MY_PACKAGE_REPLACED` đăng thông báo "Đã cập nhật lên Cam Kernel SU {versionName}, chạm để xem có gì mới".
 
 ### 5.4 Cài bằng trình cài đặt Android (dự phòng)
 

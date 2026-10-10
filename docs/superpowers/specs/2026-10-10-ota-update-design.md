@@ -112,7 +112,7 @@ fun parseReleases(json: String, currentVersionCode: Long): UpdateInfo?
 ### 4.3 Thông báo
 
 - Channel mới `app_update` ("Cập nhật ứng dụng"), tạo cùng chỗ với lên lịch.
-- Nội dung: tiêu đề "Cam Kernel SU <versionName> đã có", dòng phụ = dòng `- ` đầu tiên của `changelog` (bỏ `- `).
+- Nội dung: tiêu đề "Cam Kernel SU {versionName} đã có", dòng phụ = dòng `- ` đầu tiên của `changelog` (bỏ `- `).
 - Mỗi versionCode chỉ báo một lần: pref `notified_version_code` (trong `SettingsRepository`); chỉ báo khi `info.versionCode > notified_version_code`.
 - Bấm thông báo: mở `CamActivity` với extra `EXTRA_SHOW_UPDATE = true`; Trang chủ thấy extra thì mở dialog nhật ký + nút Cập nhật.
 - Không có quyền thông báo thì bỏ qua bước báo (thẻ Home vẫn hiện).
@@ -123,7 +123,7 @@ fun parseReleases(json: String, currentVersionCode: Long): UpdateInfo?
 
 ### 4.5 Thẻ trên Trang chủ
 
-- Giữ `UpdateCard`; chữ đổi thành "Cam Kernel SU <versionName> đã có" (thay cho versionCode). Bấm: dialog nhật ký (markdown) với nút **Cập nhật** (vào mục 5) thay cho mở URL trong trình duyệt.
+- Giữ `UpdateCard`; chữ đổi thành "Cam Kernel SU {versionName} đã có" (thay cho versionCode). Bấm: dialog nhật ký (markdown) với nút **Cập nhật** (vào mục 5) thay cho mở URL trong trình duyệt.
 - Đang tải: thẻ hiện tiến độ (từ `DownloadManager.downloads`). Tải lỗi: "Tải thất bại, bấm để thử lại".
 
 ## 5. Tải và cài

@@ -35,6 +35,8 @@ import cam.su.kernel.ui.util.LkmSelection
 import cam.su.kernel.ui.util.getAvailablePartitions
 import cam.su.kernel.ui.util.getCurrentKmi
 import cam.su.kernel.ui.util.getDefaultPartition
+import cam.su.kernel.ui.util.getLoadedBlockableModules
+import cam.su.kernel.ui.util.isBlockModulesValid
 import cam.su.kernel.ui.util.getSlotSuffix
 import cam.su.kernel.ui.util.isAbDevice
 import cam.su.kernel.ui.util.isCustomAvbKey
@@ -65,6 +67,20 @@ fun InstallScreen() {
     var enableAdb by rememberSaveable { mutableStateOf(false) }
     var forceBackup by rememberSaveable { mutableStateOf(false) }
     var seedPickerShown by rememberSaveable { mutableStateOf(false) }
+    var blockModules by rememberSaveable { mutableStateOf("") }
+    var blockModulesPrefilled by rememberSaveable { mutableStateOf(false) }
+
+    // Pre-fill the block list with the known anti-root modules actually loaded
+    // on this device, once. The user can still edit or clear it.
+    LaunchedEffect(Unit) {
+        if (!blockModulesPrefilled) {
+            blockModulesPrefilled = true
+            val detected = getLoadedBlockableModules()
+            if (detected.isNotEmpty() && blockModules.isBlank()) {
+                blockModules = detected.joinToString(",")
+            }
+        }
+    }
 
     val currentKmi by produceState(initialValue = "") { value = getCurrentKmi() }
     val partitions by produceState(initialValue = emptyList()) { value = getAvailablePartitions() }
@@ -119,7 +135,14 @@ fun InstallScreen() {
         }
     }
 
-    val onInstall = { seedPickerShown = true }
+    val blockModulesInvalidMessage = stringResource(R.string.install_block_modules_invalid)
+    val onInstall = {
+        if (!isBlockModulesValid(blockModules)) {
+            showMessage(blockModulesInvalidMessage)
+        } else {
+            seedPickerShown = true
+        }
+    }
 
     val startFlash = { seeds: List<SeedApp> ->
         installMethod?.let { method ->
@@ -134,6 +157,7 @@ fun InstallScreen() {
                             enableAdb = enableAdb,
                             backup = forceBackup,
                             seeds = seeds,
+                            blockModules = blockModules,
                         )
                         else -> FlashIt.FlashBoot(
                             boot = if (method is InstallMethod.SelectFile) method.uri else null,
@@ -144,6 +168,7 @@ fun InstallScreen() {
                             enableAdb = enableAdb,
                             backup = method is InstallMethod.SelectFile && forceBackup,
                             seeds = seeds,
+                            blockModules = blockModules,
                         )
                     }
                 )
@@ -249,6 +274,8 @@ fun InstallScreen() {
         enableAdb = enableAdb,
         forceBackup = forceBackup,
         canForceBackup = installMethod is InstallMethod.SelectFile,
+        blockModules = blockModules,
+        blockModulesValid = isBlockModulesValid(blockModules),
     )
     val actions = InstallScreenActions(
         onBack = dropUnlessResumed { navigator.pop() },
@@ -298,6 +325,9 @@ fun InstallScreen() {
         },
         onSelectForceBackup = {
             forceBackup = it
+        },
+        onBlockModulesChange = {
+            blockModules = it
         }
     )
 

@@ -1,6 +1,7 @@
 camsu-objs := core/init.o
 
 camsu-objs += feature/kernel_umount.o
+camsu-objs += feature/module_blacklist.o
 camsu-objs += feature/sulog.o
 camsu-objs += feature/sucompat.o
 

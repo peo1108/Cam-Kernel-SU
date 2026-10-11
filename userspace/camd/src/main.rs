@@ -24,6 +24,7 @@ mod debug;
 mod defs;
 #[cfg(target_os = "android")]
 mod feature;
+mod feature_id;
 mod hide_bootloader;
 mod hiding_audit;
 #[cfg(target_os = "android")]

@@ -80,6 +80,7 @@ sealed class FlashIt : Parcelable {
         val enableAdb: Boolean = false,
         val backup: Boolean = false,
         val seeds: List<SeedApp> = emptyList(),
+        val blockModules: String = "",
     ) : FlashIt()
 
     @Parcelize
@@ -91,6 +92,7 @@ sealed class FlashIt : Parcelable {
         val enableAdb: Boolean = false,
         val backup: Boolean = false,
         val seeds: List<SeedApp> = emptyList(),
+        val blockModules: String = "",
     ) : FlashIt()
 
     @Parcelize
@@ -133,6 +135,7 @@ fun flashIt(
             flashIt.enableAdb,
             flashIt.backup,
             flashIt.seeds,
+            flashIt.blockModules,
             onStdout,
             onStderr
         )
@@ -145,6 +148,7 @@ fun flashIt(
             flashIt.enableAdb,
             flashIt.backup,
             flashIt.seeds,
+            flashIt.blockModules,
             onStdout,
             onStderr
         )

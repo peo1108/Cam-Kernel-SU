@@ -14,6 +14,7 @@ import cam.su.kernel.jailbreak.CamBootReceiver
 import cam.su.kernel.ui.screen.modulerepo.RepoSort
 import cam.su.kernel.ui.util.execCamd
 import cam.su.kernel.ui.util.getFeaturePersistValue
+import cam.su.kernel.ui.util.getFeatureValue
 import cam.su.kernel.ui.util.getFeatureStatus
 import java.security.SecureRandom
 
@@ -254,11 +255,15 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     override suspend fun getSulogPersistValue(): Long? = getFeaturePersistValue("sulog")
 
+    override suspend fun getSulogValue(): Long? = getFeatureValue("sulog")
+
     override fun setSulogEnabled(enabled: Boolean): Boolean = execCamd("feature set sulog ${if (enabled) 1 else 0}", true)
 
     override suspend fun getAdbRootStatus(): String = getFeatureStatus("adb_root")
 
     override suspend fun getAdbRootPersistValue(): Long? = getFeaturePersistValue("adb_root")
+
+    override suspend fun getAdbRootValue(): Long? = getFeatureValue("adb_root")
 
     override fun setAdbRootEnabled(enabled: Boolean): Boolean =
         if (execCamd("feature set adb_root ${if (enabled) 1 else 0}", true)) {

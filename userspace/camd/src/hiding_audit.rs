@@ -487,7 +487,7 @@ mod device {
     use serde_json::json;
 
     use super::{Fix, RECOVERY_PATHS, Rules, Snapshot};
-    use crate::feature::FeatureId;
+    use crate::feature_id::FeatureId;
     use crate::{hide_bootloader, ksucalls, resetprop};
 
     /// Android app uids (per user), isolated processes included.
@@ -554,8 +554,8 @@ mod device {
     fn feature(id: FeatureId) -> Option<bool> {
         ksucalls::get_feature(id as u32)
             .ok()
-            .filter(|(_, supported)| *supported)
-            .map(|(value, _)| value != 0)
+            .filter(|state| state.supported)
+            .map(|state| state.value != 0)
     }
 
     pub fn snapshot(rules: &Rules) -> Snapshot {

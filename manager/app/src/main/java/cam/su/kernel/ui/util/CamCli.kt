@@ -23,12 +23,7 @@ import cam.su.kernel.core.tasks.BootKernelVersion
 import cam.su.kernel.core.tasks.ExtractImage
 import cam.su.kernel.core.tasks.ProbeResult
 import cam.su.kernel.core.utils.DataSourceChannel
-import cam.su.kernel.data.model.BootGuardStatus
-import cam.su.kernel.data.model.HideBootloaderStatus
-import cam.su.kernel.data.model.HidingAudit
-import cam.su.kernel.data.model.ModuleConflict
 import cam.su.kernel.data.model.forModule
-import cam.su.kernel.data.model.parseModuleConflicts
 import cam.su.kernel.data.model.visible
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.camApp
@@ -37,7 +32,6 @@ import cam.su.kernel.ui.screen.install.isValidSeedPackageName
 import cam.su.kernel.ui.util.module.readModuleIdFromZip
 import okhttp3.OkHttpClient
 import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -157,62 +151,12 @@ fun listModules(): String {
     return out.joinToString("\n").ifBlank { "[]" }
 }
 
-private fun camdStdout(args: String): String {
+/** camd's stdout for [args], run in the shared root shell. */
+internal fun camdStdout(args: String): String {
     val out = getRootShell().newJob()
         .add("${getCamDaemonPath()} $args").to(ArrayList(), null).exec().out
     return out.joinToString("\n")
 }
-
-fun getBootGuardStatus(): BootGuardStatus = BootGuardStatus.parse(camdStdout("boot-guard status"))
-
-fun clearBootGuard(): Boolean {
-    val result = execCamd("boot-guard clear", true)
-    Log.i(TAG, "boot-guard clear result: $result")
-    return result
-}
-
-/** `null` keeps a setting; [threshold] is the boot attempt that triggers (2..5). */
-fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disableAll: Boolean? = null): Boolean {
-    val args = buildList {
-        enabled?.let { add("--enabled $it") }
-        threshold?.let { add("--threshold $it") }
-        disableAll?.let { add("--mode ${if (it) "all" else "suspects"}") }
-    }
-    if (args.isEmpty()) return true
-    val result = execCamd("boot-guard set ${args.joinToString(" ")}", true)
-    Log.i(TAG, "boot-guard set $args result: $result")
-    return result
-}
-
-/** What non-root apps can still see; null when camd could not run the audit. [rules]: hiding rules JSON for camd. */
-fun runHidingAudit(rules: File? = null): HidingAudit? =
-    HidingAudit.parse(camdStdout("hiding-audit" + rulesArg(rules)))
-
-/**
- * What the app with [uid] sees from its own running processes, and whether any runs;
- * null when camd could not run the audit.
- */
-fun runAppHidingAudit(uid: Int, rules: File? = null): Pair<HidingAudit, Boolean>? {
-    val out = camdStdout("hiding-audit --uid $uid" + rulesArg(rules))
-    val audit = HidingAudit.parse(out) ?: return null
-    return audit to runCatching { JSONObject(out).optBoolean("running") }.getOrDefault(false)
-}
-
-private fun rulesArg(rules: File?): String = rules?.let { " --rules '${it.absolutePath}'" }.orEmpty()
-
-/** Turns on every fix the audit offers; true when some of it needs a reboot. */
-fun applyHidingFixes(): Boolean = HidingAudit.rebootNeededAfterApply(camdStdout("hiding-audit --apply"))
-
-fun getHideBootloaderStatus(): HideBootloaderStatus =
-    HideBootloaderStatus.parse(camdStdout("hide-bootloader status"))
-
-fun setHideBootloader(enabled: Boolean): Boolean {
-    val result = execCamd("hide-bootloader ${if (enabled) "enable" else "disable"}", true)
-    Log.i(TAG, "hide-bootloader $enabled result: $result")
-    return result
-}
-
-fun listModuleConflicts(): List<ModuleConflict> = parseModuleConflicts(camdStdout("module conflicts"))
 
 fun getModuleCount(): Int {
     val result = listModules()
@@ -237,55 +181,12 @@ fun toggleModule(id: String, enable: Boolean): Boolean {
     return result
 }
 
-fun restoreModule(id: String): Boolean {
-    val result = execCamd("module restore $id", true)
-    Log.i(TAG, "restore module $id result: $result")
-    return result
-}
-
 fun undoUninstallModule(id: String): Boolean {
     val cmd = "module undo-uninstall $id"
     val result = execCamd(cmd, true)
     Log.i(TAG, "undo uninstall module $id result: $result")
     return result
 }
-
-/** Ids of the modules that are on right now; null when the list cannot be read. */
-private fun enabledModuleIds(): List<String>? = runCatching {
-    val array = JSONArray(listModules())
-    (0 until array.length()).map { array.getJSONObject(it) }
-        .filter { it.optBoolean("enabled") }
-        .map { it.getString("id") }
-}.getOrNull()
-
-/**
- * Turns off every enabled module before a direct install, so the first boot on the new
- * Cam Kernel SU runs without them. False when a module could not be turned off.
- */
-fun disableAllModules(onStdout: (String) -> Unit): Boolean {
-    val ids = enabledModuleIds() ?: run {
-        onStdout("! Failed to read the module list")
-        return false
-    }
-    if (ids.isEmpty()) {
-        onStdout("- No enabled modules")
-        return true
-    }
-    onStdout("- Disabling ${ids.size} module(s) before install")
-    var ok = true
-    for (id in ids) {
-        if (toggleModule(id, enable = false)) {
-            onStdout("  - $id")
-        } else {
-            onStdout("! Failed to disable $id")
-            ok = false
-        }
-    }
-    return ok
-}
-
-/** The device boots with a user-set AVB key: an on-device patched boot would not verify. */
-fun isCustomAvbKey(): Boolean = getHideBootloaderStatus().customAvbKey
 
 fun uninstallModule(id: String): Boolean {
     val cmd = "module uninstall $id"

@@ -475,6 +475,10 @@
     <string name="features_attestation_yes">yes</string>
     <string name="features_attestation_no">no</string>
     <string name="features_attestation_state">Verified boot: %s</string>
+    <string name="features_attestation_os_version">Android version: %s</string>
+    <string name="features_attestation_os_patch">OS patch level: %s</string>
+    <string name="features_attestation_vendor_patch">Vendor patch level: %s</string>
+    <string name="features_attestation_boot_patch">Boot patch level: %s</string>
     <string name="features_attestation_layer2">Apps that check the certificate still see an unlocked device. Properties cannot change this; it needs the keystore layer, which is not built yet.</string>
     <string name="features_attestation_chain_ok">Certificate chain (%d): none revoked by Google</string>
     <string name="features_attestation_revoked">Certificate #%1$d is revoked by Google (%2$s): strong integrity checks fail</string>

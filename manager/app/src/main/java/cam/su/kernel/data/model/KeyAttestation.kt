@@ -9,15 +9,26 @@ const val KEY_ATTESTATION_OID = "1.3.6.1.4.1.11129.2.1.17"
  * What an app reading this device's key attestation sees.
  * [securityLevel]: 0 software, 1 TEE, 2 StrongBox.
  * [verifiedBootState]: 0 Verified, 1 SelfSigned, 2 Unverified, 3 Failed.
+ * The patch fields are null when the certificate does not carry that tag.
+ * [osVersion] is encoded major*10000 + minor*100 + sub; [osPatchLevel] is YYYYMM;
+ * [vendorPatchLevel]/[bootPatchLevel] are YYYYMMDD (older devices: YYYYMM).
  */
 @Immutable
 data class AttestationInfo(
     val securityLevel: Int,
     val deviceLocked: Boolean,
     val verifiedBootState: Int,
+    val osVersion: Int? = null,
+    val osPatchLevel: Int? = null,
+    val vendorPatchLevel: Int? = null,
+    val bootPatchLevel: Int? = null,
 )
 
 private const val TAG_ROOT_OF_TRUST = 704
+private const val TAG_OS_VERSION = 705
+private const val TAG_OS_PATCH_LEVEL = 706
+private const val TAG_VENDOR_PATCH_LEVEL = 718
+private const val TAG_BOOT_PATCH_LEVEL = 719
 
 /** A DER element: [start] until [end] is its content. */
 private class Tlv(val tagClass: Int, val tag: Int, val bytes: ByteArray, val start: Int, val end: Int) {
@@ -88,9 +99,30 @@ fun parseKeyDescription(extension: ByteArray): AttestationInfo? = runCatching {
         ?: softwareEnforced.findContextTag(TAG_ROOT_OF_TRUST)
         ?: return@runCatching null
     val rootOfTrust = explicit.children().first().children()
+    // Patch levels live in the same AuthorizationList, usually the hardware-enforced one.
+    // Each is [n] EXPLICIT INTEGER, so unwrap the context tag to its INTEGER child.
+    fun patchInt(number: Int): Int? =
+        (hardwareEnforced.findContextTag(number) ?: softwareEnforced.findContextTag(number))
+            ?.children()?.firstOrNull()?.intValue()
     AttestationInfo(
         securityLevel = securityLevel,
         deviceLocked = rootOfTrust[1].intValue() != 0,
         verifiedBootState = rootOfTrust[2].intValue(),
+        osVersion = patchInt(TAG_OS_VERSION),
+        osPatchLevel = patchInt(TAG_OS_PATCH_LEVEL),
+        vendorPatchLevel = patchInt(TAG_VENDOR_PATCH_LEVEL),
+        bootPatchLevel = patchInt(TAG_BOOT_PATCH_LEVEL),
     )
 }.getOrNull()
+
+/** "16.0.0" from the encoded osVersion (major*10000 + minor*100 + sub). */
+fun formatOsVersion(encoded: Int): String =
+    "${encoded / 10000}.${encoded / 100 % 100}.${encoded % 100}"
+
+/** "2026-10" from YYYYMM, or "2026-10-05" from YYYYMMDD; the raw value if it fits neither. */
+fun formatPatchLevel(encoded: Int): String = when {
+    encoded in 100_000..999_999 -> "%04d-%02d".format(encoded / 100, encoded % 100)
+    encoded in 10_000_000..99_999_999 ->
+        "%04d-%02d-%02d".format(encoded / 10_000, encoded / 100 % 100, encoded % 100)
+    else -> encoded.toString()
+}

@@ -36,6 +36,23 @@ class KeyAttestationTest {
     /** [1] purpose and [709] attestationApplicationId, so the parser has to skip tags. */
     private fun otherTags() = cat(tlv(tag(0xA1), set(int(2))), tlv(tag(0xBF, 0x85, 0x45), oct(ByteArray(200))))
 
+    /** DER INTEGER for values past two bytes (patch levels are up to YYYYMMDD). */
+    private fun bigInt(v: Int): ByteArray {
+        val bytes = ArrayDeque<Int>()
+        var x = v
+        if (x == 0) bytes.addFirst(0)
+        while (x > 0) { bytes.addFirst(x and 0xFF); x = x ushr 8 }
+        if ((bytes.first() and 0x80) != 0) bytes.addFirst(0) // keep it positive
+        return tlv(tag(0x02), ByteArray(bytes.size) { bytes[it].toByte() })
+    }
+
+    /** [n] EXPLICIT INTEGER, high tag number form: n = 640 + low (705 = 0x85 0x41). */
+    private fun explicitInt(low: Int, v: Int) = tlv(tag(0xBF, 0x85, low), bigInt(v))
+    private fun osVersion(v: Int) = explicitInt(0x41, v)       // 705
+    private fun osPatch(v: Int) = explicitInt(0x42, v)         // 706
+    private fun vendorPatch(v: Int) = explicitInt(0x4E, v)     // 718
+    private fun bootPatch(v: Int) = explicitInt(0x4F, v)       // 719
+
     private fun keyDescription(sw: ByteArray, tee: ByteArray, securityLevel: Int = 1) = seq(
         int(300), enum(securityLevel), int(300), enum(securityLevel),
         oct(ByteArray(16)), oct(ByteArray(0)),
@@ -55,6 +72,37 @@ class KeyAttestationTest {
     fun fallsBackToSoftwareList() {
         val desc = keyDescription(sw = rootOfTrust(locked = true, state = 0), tee = otherTags(), securityLevel = 0)
         assertEquals(AttestationInfo(securityLevel = 0, deviceLocked = true, verifiedBootState = 0), parseKeyDescription(desc))
+    }
+
+    @Test
+    fun parsesPatchLevels() {
+        val tee = cat(
+            osVersion(160000), osPatch(202610), vendorPatch(20261005), bootPatch(20261005),
+            rootOfTrust(locked = true, state = 0),
+        )
+        val info = parseKeyDescription(keyDescription(sw = otherTags(), tee = tee))
+        assertEquals(160000, info?.osVersion)
+        assertEquals(202610, info?.osPatchLevel)
+        assertEquals(20261005, info?.vendorPatchLevel)
+        assertEquals(20261005, info?.bootPatchLevel)
+    }
+
+    @Test
+    fun patchLevelsAbsentAreNull() {
+        val desc = keyDescription(sw = otherTags(), tee = cat(otherTags(), rootOfTrust(locked = true, state = 0)))
+        val info = parseKeyDescription(desc)
+        assertNull(info?.osVersion)
+        assertNull(info?.osPatchLevel)
+        assertNull(info?.vendorPatchLevel)
+        assertNull(info?.bootPatchLevel)
+    }
+
+    @Test
+    fun formatsLevels() {
+        assertEquals("16.0.0", formatOsVersion(160000))
+        assertEquals("16.1.2", formatOsVersion(160102))
+        assertEquals("2026-10", formatPatchLevel(202610))
+        assertEquals("2026-10-05", formatPatchLevel(20261005))
     }
 
     @Test

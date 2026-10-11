@@ -7,6 +7,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
+import cam.su.kernel.data.model.formatOsVersion
+import cam.su.kernel.data.model.formatPatchLevel
 import cam.su.kernel.ui.util.AttestationReport
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -42,6 +44,10 @@ fun AttestationResult(report: AttestationReport) {
         ok = info.deviceLocked,
     )
     AttestationLine(stringResource(R.string.features_attestation_state, bootState), ok = info.verifiedBootState == 0)
+    info.osVersion?.let { AttestationInfoLine(stringResource(R.string.features_attestation_os_version, formatOsVersion(it))) }
+    info.osPatchLevel?.let { AttestationInfoLine(stringResource(R.string.features_attestation_os_patch, formatPatchLevel(it))) }
+    info.vendorPatchLevel?.let { AttestationInfoLine(stringResource(R.string.features_attestation_vendor_patch, formatPatchLevel(it))) }
+    info.bootPatchLevel?.let { AttestationInfoLine(stringResource(R.string.features_attestation_boot_patch, formatPatchLevel(it))) }
     val revoked = report.revoked
     when {
         revoked == null -> AttestationLine(stringResource(R.string.features_attestation_revocation_unknown), ok = false)
@@ -66,6 +72,17 @@ private fun AttestationLine(text: String, ok: Boolean) {
         text = "${if (ok) "✓" else "⚠"}  $text",
         fontSize = 13.sp,
         color = if (ok) colorScheme.onSurfaceVariantSummary else colorScheme.error,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
+    )
+}
+
+/** A neutral fact (no pass/fail): the patch and OS levels the certificate reports. */
+@Composable
+private fun AttestationInfoLine(text: String) {
+    Text(
+        text = "·  $text",
+        fontSize = 13.sp,
+        color = colorScheme.onSurfaceVariantSummary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
     )
 }

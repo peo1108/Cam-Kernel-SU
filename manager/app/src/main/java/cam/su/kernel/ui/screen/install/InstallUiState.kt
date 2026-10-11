@@ -14,6 +14,8 @@ internal data class InstallUiState(
     val currentKmi: String,
     val slotSuffix: String,
     val installMethodOptions: List<InstallMethod>,
+    /** custom AVB key: direct install hidden, warning shown */
+    val directInstallBlocked: Boolean = false,
     val canSelectPartition: Boolean,
     val advancedOptionsShown: Boolean,
     val allowShell: Boolean,

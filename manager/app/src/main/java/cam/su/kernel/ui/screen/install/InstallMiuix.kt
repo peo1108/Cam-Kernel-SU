@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
+import cam.su.kernel.ui.component.miuix.WarningCard
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.LkmSelection
@@ -121,6 +122,14 @@ internal fun InstallScreenMiuix(
                 overscrollEffect = null,
             ) {
                 item {
+                    if (uiState.directInstallBlocked) {
+                        WarningCard(
+                            message = stringResource(R.string.direct_install_avb_blocked),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                        )
+                    }
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -309,6 +318,7 @@ private fun SelectInstallMethod(
     )
     val dialogTitle = stringResource(id = android.R.string.dialog_alert_title)
     val dialogContent = stringResource(id = R.string.install_inactive_slot_warning)
+    val disablesModules = stringResource(id = R.string.direct_install_disables_modules)
 
     val onClick = { option: InstallMethod ->
         when (option) {
@@ -336,7 +346,11 @@ private fun SelectInstallMethod(
             ) {
                 CheckboxPreference(
                     title = stringResource(id = option.label),
-                    summary = option.summary,
+                    summary = when (option) {
+                        is InstallMethod.DirectInstall,
+                        is InstallMethod.DirectInstallToInactiveSlot -> disablesModules
+                        else -> option.summary
+                    },
                     checked = option.javaClass == state.installMethod?.javaClass,
                     onCheckedChange = { onClick(option) },
                 )

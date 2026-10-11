@@ -245,6 +245,43 @@ fun undoUninstallModule(id: String): Boolean {
     return result
 }
 
+/** Ids of the modules that are on right now; null when the list cannot be read. */
+private fun enabledModuleIds(): List<String>? = runCatching {
+    val array = JSONArray(listModules())
+    (0 until array.length()).map { array.getJSONObject(it) }
+        .filter { it.optBoolean("enabled") }
+        .map { it.getString("id") }
+}.getOrNull()
+
+/**
+ * Turns off every enabled module before a direct install, so the first boot on the new
+ * Cam Kernel SU runs without them. False when a module could not be turned off.
+ */
+fun disableAllModules(onStdout: (String) -> Unit): Boolean {
+    val ids = enabledModuleIds() ?: run {
+        onStdout("! Failed to read the module list")
+        return false
+    }
+    if (ids.isEmpty()) {
+        onStdout("- No enabled modules")
+        return true
+    }
+    onStdout("- Disabling ${ids.size} module(s) before install")
+    var ok = true
+    for (id in ids) {
+        if (toggleModule(id, enable = false)) {
+            onStdout("  - $id")
+        } else {
+            onStdout("! Failed to disable $id")
+            ok = false
+        }
+    }
+    return ok
+}
+
+/** The device boots with a user-set AVB key: an on-device patched boot would not verify. */
+fun isCustomAvbKey(): Boolean = getHideBootloaderStatus().customAvbKey
+
 fun uninstallModule(id: String): Boolean {
     val cmd = "module uninstall $id"
     val result = execCamd(cmd, true)
@@ -398,6 +435,16 @@ fun installBoot(
     onStderr: (String) -> Unit,
 ): FlashResult {
     val resolver = camApp.contentResolver
+
+    if (bootUri == null) {
+        // direct install writes a boot partition that nobody re-signs
+        if (isCustomAvbKey()) {
+            return FlashResult(-1, camApp.getString(R.string.direct_install_avb_blocked), false)
+        }
+        if (!disableAllModules(onStdout)) {
+            return FlashResult(-1, "Failed to disable modules, nothing was flashed", false)
+        }
+    }
 
     val bootFile = bootUri?.let { uri ->
         with(resolver.openInputStream(uri)) {

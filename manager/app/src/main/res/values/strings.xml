@@ -172,6 +172,8 @@
     <string name="download_probe_failed">Failed to probe the image: %1$s</string>
     <string name="install_inactive_slot">Install to inactive slot (After OTA)</string>
     <string name="install_inactive_slot_warning">Your device will be **FORCED** to boot to the current inactive slot after a reboot!\nOnly use this option after OTA is done.\nContinue?</string>
+    <string name="direct_install_disables_modules">Every enabled module is turned off before flashing. Turn them back on after the device boots.</string>
+    <string name="direct_install_avb_blocked">This device boots with a self-signed AVB key (verified boot state yellow, e.g. avbroot). Direct install would write an unsigned boot image and the locked bootloader would refuse to boot it. Direct install is disabled: patch the image with \"Select a file and patch\", then sign it again with your key on a computer.</string>
     <string name="jailbreak_flash_warning">You are in **Jailbreak mode**. Flashing a partition on a device with a **locked bootloader** will break AVB (Android Verified Boot) and may cause the device to **fail to boot**.\n\nMake sure your bootloader is unlocked before proceeding!</string>
     <string name="jailbreak_flash_warning_countdown">Continue (%1$d)</string>
     <string name="install_next">Next</string>

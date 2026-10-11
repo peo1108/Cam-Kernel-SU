@@ -120,6 +120,8 @@
     <string name="search_clear">Xóa</string>
     <string name="install_inactive_slot">Cài đặt vào phân vùng không hoạt động (Sau OTA)</string>
     <string name="install_inactive_slot_warning">Thiết bị của bạn sẽ **BUỘC** phải khởi động vào phân vùng không hoạt động hiện tại sau khi khởi động lại!\nChỉ dùng tùy chọn này khi cập nhật OTA đã hoàn tất!\nTiếp tục?</string>
+    <string name="direct_install_disables_modules">Mọi module đang bật sẽ bị tắt trước khi flash. Khởi động xong thì bật lại.</string>
+    <string name="direct_install_avb_blocked">Máy này khởi động bằng khóa AVB tự ký (trạng thái verified boot màu vàng, ví dụ avbroot). Cài trực tiếp sẽ ghi ảnh boot chưa được ký và bootloader đang khóa sẽ không cho khởi động. Đã chặn cài trực tiếp: hãy vá ảnh bằng \"Chọn và vá file\" rồi ký lại bằng khóa của bạn trên máy tính.</string>
     <string name="settings_uninstall_temporary_message">Gỡ cài đặt tạm thời SU Kernel, khôi phục lại trạng thái ban đầu sau lần khởi động lại tiếp theo.</string>
     <string name="select_kmi">Chọn KMI</string>
     <string name="install_next">Kế tiếp</string>

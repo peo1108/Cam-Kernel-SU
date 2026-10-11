@@ -19,8 +19,10 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import cam.su.kernel.R
 import cam.su.kernel.getKernelVersion
 import cam.su.kernel.ui.component.choosekmidialog.ChooseKmiDialog
@@ -35,6 +37,7 @@ import cam.su.kernel.ui.util.getCurrentKmi
 import cam.su.kernel.ui.util.getDefaultPartition
 import cam.su.kernel.ui.util.getSlotSuffix
 import cam.su.kernel.ui.util.isAbDevice
+import cam.su.kernel.ui.util.isCustomAvbKey
 import cam.su.kernel.ui.util.probeRemoteBootPartitions
 import cam.su.kernel.ui.util.rootAvailable
 import top.yukonga.miuix.kmp.basic.SnackbarHostState as MiuixSnackbarHostState
@@ -69,15 +72,19 @@ fun InstallScreen() {
     val rootAvailable by produceState(initialValue = false) { value = rootAvailable() }
     val isAbDevice by produceState(initialValue = false) { value = isAbDevice() }
     val isGkiDevice by produceState(initialValue = false) { value = getKernelVersion().isGKI() }
+    val customAvbKey by produceState(initialValue = false, rootAvailable) {
+        value = rootAvailable && withContext(Dispatchers.IO) { isCustomAvbKey() }
+    }
 
     val selectFileTip = stringResource(id = R.string.select_file_tip, defaultPartition)
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
     val downloadFileMsg = stringResource(id = R.string.download_dialog_msg)
-    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, downloadFileMsg) {
+    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, customAvbKey, selectFileTip, selectFileTipNoGki, downloadFileMsg) {
         buildList {
             add(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki))
             add(InstallMethod.DownloadFile(summary = downloadFileMsg))
-            if (rootAvailable && isGkiDevice) {
+            // a user-set AVB key needs the patched image re-signed off the device
+            if (rootAvailable && isGkiDevice && !customAvbKey) {
                 add(InstallMethod.DirectInstall)
                 if (isAbDevice) add(InstallMethod.DirectInstallToInactiveSlot)
             }
@@ -233,6 +240,7 @@ fun InstallScreen() {
         currentKmi = currentKmi,
         slotSuffix = slotSuffix,
         installMethodOptions = installMethodOptions,
+        directInstallBlocked = customAvbKey,
         canSelectPartition = installMethod is InstallMethod.DirectInstall ||
             installMethod is InstallMethod.DirectInstallToInactiveSlot ||
             installMethod is InstallMethod.DownloadFile,

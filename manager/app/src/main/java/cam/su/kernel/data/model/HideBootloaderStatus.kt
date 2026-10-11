@@ -19,6 +19,18 @@ data class HideBootloaderStatus(
     val leaks: Int
         get() = props.count { !it.ok } + bootconfig.count { !it.ok }
 
+    /**
+     * The bootloader verified boot against a user-set AVB key (avbroot and the like): AVB state yellow.
+     * Read from the bootloader's own arguments first, since hiding the bootloader rewrites the property
+     * to green. Such a device must never get an on-device patched boot: it would fail verification.
+     */
+    val customAvbKey: Boolean
+        get() {
+            val state = bootconfig.firstOrNull { it.name == "androidboot.verifiedbootstate" }
+                ?: props.firstOrNull { it.name == "ro.boot.verifiedbootstate" }
+            return state?.value.equals("yellow", ignoreCase = true)
+        }
+
     companion object {
         val Empty = HideBootloaderStatus(enabled = false, props = emptyList(), bootconfig = emptyList())
 

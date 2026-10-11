@@ -21,6 +21,36 @@ class HideBootloaderStatusTest {
     }
 
     @Test
+    fun yellowBootconfigIsCustomAvbKeyEvenWhenPropIsHidden() {
+        val json = """
+            {"bootconfig":[{"name":"androidboot.verifiedbootstate","ok":false,"safe":"green","value":"yellow"}],
+             "enabled":true,
+             "props":[{"current":"green","name":"ro.boot.verifiedbootstate","ok":true,"safe":"green"}]}
+        """.trimIndent()
+        assertEquals(true, HideBootloaderStatus.parse(json).customAvbKey)
+    }
+
+    @Test
+    fun yellowPropCountsWithoutBootconfig() {
+        val json = """
+            {"bootconfig":[],"enabled":false,
+             "props":[{"current":"yellow","name":"ro.boot.verifiedbootstate","ok":false,"safe":"green"}]}
+        """.trimIndent()
+        assertEquals(true, HideBootloaderStatus.parse(json).customAvbKey)
+    }
+
+    @Test
+    fun unlockedOrUnknownIsNotCustomAvbKey() {
+        val orange = """
+            {"bootconfig":[{"name":"androidboot.verifiedbootstate","ok":false,"safe":"green","value":"orange"}],
+             "enabled":false,
+             "props":[{"current":"yellow","name":"ro.boot.verifiedbootstate","ok":false,"safe":"green"}]}
+        """.trimIndent()
+        assertEquals(false, HideBootloaderStatus.parse(orange).customAvbKey)
+        assertEquals(false, HideBootloaderStatus.Empty.customAvbKey)
+    }
+
+    @Test
     fun corruptStatusIsEmpty() {
         assertEquals(HideBootloaderStatus.Empty, HideBootloaderStatus.parse("nope"))
     }

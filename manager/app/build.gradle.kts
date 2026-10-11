@@ -132,6 +132,10 @@ android {
 
     androidResources {
         generateLocaleConfig = true
+        // Only English and Vietnamese are kept up to date (Cam's own strings, "SU Kernel" naming).
+        // The other values-* folders stay as upstream ships them so merges do not conflict, but are
+        // left out of the APK: those users get English instead of half-translated KernelSU text.
+        localeFilters += listOf("en", "vi")
     }
     compileSdk {
         version =

@@ -2,6 +2,18 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.9 - 2026-10-11
+### Tự ẩn bootloader
+- Ẩn kỹ hơn: khi bootloader để trống dấu vân tay vbmeta (`ro.boot.vbmeta.digest`) dù máy đã khóa, app tự điền lại bằng giá trị thật tính từ chính các phân vùng của máy, cho khớp với máy khóa bình thường (không bịa giá trị, không ghi đè nếu máy đã có sẵn)
+- Trang Kiểm tra ẩn root và thẻ Key attestation hiện thêm phiên bản Android và mức vá bảo mật (hệ thống / vendor / boot) mà app đọc được từ chứng chỉ, để biết máy đang khai báo mức vá nào
+### Tính năng mới
+- Khi cài, có thể chặn một số module nhân nạp lúc khởi động (ví dụ module chống root của hãng): app tự điền sẵn các module đáng ngờ đang nạp, bạn sửa hoặc xóa tùy ý
+### Kiểm tra ẩn root
+- Theo Duck Detector mới nhất (78aabb41, rule version 5): bản này nâng mục đo thời gian ghi context SELinux lên mức Nguy hiểm, nhưng SU Kernel đã sửa lỗi đó từ trước nên không bị phát hiện
+- Che thêm một kênh đo thời gian khi ghi context SELinux (theo bản vá mới của nhân)
+### Lưu ý
+- App ngân hàng kiểm tra bằng key attestation vẫn thấy máy mở khóa: sửa prop không đổi được chứng chỉ này
+
 ## 3.0.8 - 2026-10-11
 ### Sửa lỗi
 - Tự ẩn bootloader không còn báo nhầm "2 mục đang lộ bootloader" khi mọi prop đã được ẩn

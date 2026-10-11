@@ -1,5 +1,7 @@
 # OTA Manager Updates + Changelog Implementation Plan
 
+> **Trạng thái (2026-10-12): đã xong và đã phát hành.** Các ô `- [ ]` bên dưới không được tick trong lúc làm; đừng coi là việc còn dở. Hiện trạng thật: dòng 32 mục 1 và mục 8 của `docs/CAM_CHANGES.md`; bản đầu có OTA là `cam-v3.0.0`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Tagging `cam-vX.Y.Z` publishes a GitHub Release whose notes come from `CHANGELOG.md`; installed Managers notice it in the background, show the notes, download, verify and install the APK (root first, system installer as fallback), then show "What's new" once.

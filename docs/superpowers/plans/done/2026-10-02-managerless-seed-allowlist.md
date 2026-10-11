@@ -1,5 +1,7 @@
 # Managerless Kernel + Patch-Time Root Seed Implementation Plan
 
+> **Trạng thái (2026-10-12): đã xong và đã phát hành.** Các ô `- [ ]` bên dưới không được tick trong lúc làm; đừng coi là việc còn dở. Hiện trạng thật: dòng 1-6 mục 1 của `docs/CAM_CHANGES.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Remove kernel-side manager APK detection entirely; the Manager becomes an ordinary root-granted app that gets root from a "seed" list chosen at init_boot patch time.

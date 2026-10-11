@@ -1,5 +1,7 @@
 # Tự ẩn bootloader (tầng 1 + tự kiểm tra) — Kế hoạch thực hiện
 
+> **Trạng thái (2026-10-12): đã xong và đã phát hành.** Các ô `- [ ]` bên dưới không được tick trong lúc làm; đừng coi là việc còn dở. Hiện trạng thật: dòng 20 mục 1 của `docs/CAM_CHANGES.md` (tầng 2 keystore2 và tầng 3 kernel không nằm trong plan này, chưa làm).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Thẻ "Tự ẩn bootloader" trong tab Tính năng: ksud tự sửa các prop lộ trạng thái mở khóa (không cần module), và Manager có bộ tự kiểm tra cho thấy app nhìn thấy gì (prop, bootconfig, chứng chỉ attestation).

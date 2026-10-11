@@ -1,5 +1,7 @@
 # Plan: vbmeta digest + patch level cho ẩn bootloader (task 1)
 
+> **Trạng thái (2026-10-12): đã xong và đã phát hành.** Các ô `- [ ]` bên dưới không được tick trong lúc làm; đừng coi là việc còn dở. Hiện trạng thật: bản 3.0.9 (`CHANGELOG.md`), mục "Tự ẩn bootloader" của `docs/CAM_CHANGES.md`.
+
 **Ngày:** 2026-10-11
 **Bối cảnh:** Học cách TEESimulator (`JingMatrix/TEESimulator`, `VbMeta.kt` / `DeviceProps.kt`) xử lý
 verified-boot và patch level, rồi làm lại gọn trong Cam. **Không** đụng keybox / giả chứng chỉ

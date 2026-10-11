@@ -699,9 +699,9 @@ Rule nằm ở `manager/app/src/main/assets/hiding-rules.json` (`version`, `upda
 2. Ký: `python scripts/sign_hiding_rules.py --key ~/.cam/hiding-rules-key.pem` (ghi `hiding-rules.json.sig`).
 3. Chạy `HidingRulesRepositoryTest`, commit cả hai file, push lên `main`. Máy đang cài app nhận rule mới lần sau mở trang (hoặc ấn **Kiểm tra cập nhật**).
 
-### Đang theo Duck Detector tới đâu (2026-10-10)
+### Đang theo Duck Detector tới đâu (2026-10-11)
 
-Ghim `duckDetector` = `3aa2749c` (nightly), `version` 4. **Ghim nghĩa là đã xem tới commit đó, không phải đã có đủ tính năng**; những gì chưa có ghi trong `duckPending` (trang hiện "app này chưa có: …"). Bốn commit từ `b6c7c42a` lên `b77fef8d` không đổi dữ liệu mount/map/su/prop, nhưng thêm hai probe; hai commit từ `b77fef8d` lên `3aa2749c` thêm probe AVC và viết lại probe ghi context bằng native (bảng dưới):
+Ghim `duckDetector` = `78aabb41` (nightly), `version` 5. **Ghim nghĩa là đã xem tới commit đó, không phải đã có đủ tính năng**; những gì chưa có ghi trong `duckPending` (trang hiện "app này chưa có: …"). Bốn commit từ `b6c7c42a` lên `b77fef8d` không đổi dữ liệu mount/map/su/prop, nhưng thêm hai probe; hai commit từ `b77fef8d` lên `3aa2749c` thêm probe AVC và viết lại probe ghi context bằng native; hai commit từ `3aa2749c` lên `78aabb41` chỉ nâng probe timing `attr/current` từ Warning lên **Danger** (cách đo giữ nguyên) và thêm tài liệu đóng góp (bảng dưới):
 
 | Probe | Làm gì | Tình trạng |
 |---|---|---|

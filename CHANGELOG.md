@@ -2,6 +2,14 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.7 - 2026-10-11
+### Tính năng mới
+- Cài trực tiếp an toàn hơn: app tắt hết module đang bật trước khi flash, để lần khởi động đầu với bản mới không bị module làm bootloop
+- Máy root bằng khóa AVB tự ký (như avbroot) không còn thấy "Cài đặt trực tiếp" và "Cài vào phân vùng không hoạt động": app hiện cảnh báo đỏ và hướng dẫn vá file rồi ký lại trên máy tính
+### Lưu ý
+- Sau khi cài trực tiếp và khởi động lại, vào tab Module bật lại các module cần dùng
+- Máy mở khóa bootloader thông thường (kể cả kiểu efisp) vẫn cài trực tiếp như cũ
+
 ## 3.0.6 - 2026-10-10
 ### Tính năng mới
 - Ủng hộ dự án ngay trong app: chạm thẻ "Ủng hộ tại:" ở Trang chủ để mở mã QR chuyển khoản

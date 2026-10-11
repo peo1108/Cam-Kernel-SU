@@ -1,6 +1,7 @@
-// Just enough of the kernel API for policy/pkg_tracker.c to build and run on the host.
-// Every linux/*.h, ksu.h, klog.h and policy/allowlist.h under tests/stub includes only this.
-// The harness (tests/pkg_tracker_test.c) supplies the functions declared at the bottom.
+// Just enough of the kernel API for policy/pkg_tracker.c and policy/pkg_xml.c to build and run on
+// the host. Every linux/*.h, ksu.h, klog.h and policy/allowlist.h under tests/stub includes only
+// this (crypto/hash.h has the hashing). The harness (tests/pkg_tracker_test.c) supplies the
+// functions declared at the bottom.
 #ifndef KSU_TEST_KSTUB_H
 #define KSU_TEST_KSTUB_H
 
@@ -16,13 +17,20 @@
 #include <sys/types.h>
 
 // loff_t comes from glibc's sys/types.h
+typedef uint8_t u8;
 typedef uint32_t u32;
 
 #define KSU_MAX_PACKAGE_NAME 256
 #define PER_USER_RANGE 100000
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
 #define GFP_KERNEL 0
 #define kzalloc(size, gfp) calloc(1, size)
+#define kmalloc(size, gfp) malloc(size)
+#define krealloc(p, size, gfp) realloc(p, size)
+#define kvmalloc(size, gfp) malloc(size)
+#define kvfree(p) free(p)
 #define kfree(p) free(p)
 #define kstrdup(s, gfp) strdup(s)
 #define strscpy(dst, src, size) ((void)snprintf(dst, size, "%s", src))
@@ -43,6 +51,11 @@ extern struct cred *ksu_cred;
 struct file {
     int fd;
 };
+
+// No inodes here: the size comes straight from the file.
+loff_t test_file_size(struct file *f);
+#define file_inode(f) (f)
+#define i_size_read(f) test_file_size(f)
 
 struct list_head {
     struct list_head *next, *prev;
@@ -91,5 +104,6 @@ bool __ksu_is_allow_uid(uid_t uid);
 void ksu_prune_allowlist(bool (*is_uid_exist)(uid_t, char *, void *), void *data);
 void ksu_persistent_allow_list(void);
 int ksu_grant_default_root(const char *package, uid_t uid);
+int ksu_revoke_root(const char *package, uid_t uid);
 
 #endif

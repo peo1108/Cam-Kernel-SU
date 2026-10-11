@@ -22,7 +22,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 7 | Tên app `SU Kernel` (trước là `Cam Kernel SU`), gói `cam.su.kernel`, icon và splash là hình tam giác | |
 | 8 | `KERNEL_SU_UAPI_VERSION` = **upstream + 1** (lúc tách nhánh upstream là 4, Cam 5; upstream lên 5 thì Cam lên **6**, hiện tại) | Chặn Manager/camd bản cũ dùng với kernel mới, và bản Cam không bao giờ trùng số của upstream |
 | 9 | Giao diện Miuix thành kính lỏng (Liquid Glass) kiểu iOS, nền là hình nền máy đọc qua root | Spec: `docs/superpowers/specs/2026-10-02-miuix-liquid-glass-design.md` |
-| 10 | Kernel luôn cấp root cho gói Manager `cam.su.kernel` theo tên gói, dò lại UID mỗi khi `packages.list` đổi (`ksu_manager_pin_apply` trong `kernel/policy/pkg_tracker.c`) | Gỡ rồi cài lại Manager không mất root; chỉ áp dụng cho đúng gói này |
+| 10 | Kernel luôn cấp root cho gói Manager `cam.su.kernel`, dò lại UID mỗi khi `packages.list` đổi (`ksu_manager_pin_apply` trong `kernel/policy/pkg_tracker.c`), **chỉ khi gói đó ký bằng khóa Manager** (dòng 36) | Gỡ rồi cài lại Manager không mất root; chỉ áp dụng cho đúng gói này |
 | 11 | CI: chạy tay được "Build Manager", Release theo tag có quyền ghi và ghi chú tự sinh, khóa ký riêng `su-kernel` | Build bản đầy đủ (8 KMI) và phát hành trên GitHub |
 | 12 | **Chỉ còn một giao diện (Miuix kính)**: xoá toàn bộ giao diện Material, `UiMode`, mục "Kiểu giao diện" trong Cài đặt | Một giao diện thì chỉ phải bảo trì một bộ file; upstream vẫn có Material nên merge sẽ gặp conflict "sửa/xoá" (mục 4) |
 | 13 | Thẻ trạng thái ở Home là **hộp kính 3D (Filament)** với 4 slime (Mochi, Bơ, Soda, Chanh): 9 cảnh mở màn theo nước, 36 bộ đồ 3D, nhiều kiểu xếp hàng / ăn chữ / hóc / nôn | Thẻ "Đang hoạt động" có hồn, không chỉ là một dòng chữ |
@@ -48,6 +48,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 34 | **ADB không dây** (2026-10-10, thẻ trong tab Tính năng): bật adbd nghe cổng 5555 bằng root như `adb tcpip` (`setprop service.adb.tcp.port`, `ctl.restart adbd`), không cần ghép đôi; hiện lệnh `adb connect <IP Wi-Fi>:5555` để sao chép; tự tắt sau 15/30/60/120 phút hoặc không bao giờ (mặc định 30). Gỡ lỗi USB đang tắt thì bật lên và nhớ (prefs `wireless_adb`), tắt ADB không dây hoặc khởi động lại thì tắt lại. Chỉ ở Manager: `adb/WirelessAdb.kt` (+ `WirelessAdbOffWorker`, `WirelessAdbBootReceiver`), `FeaturesUiState/Screen/Miuix/ViewModel`, chuỗi `features_wireless_adb*`, test `WirelessAdbTest` | Kết nối máy tính không cần dây và không phải ghép đôi lại mỗi lần. Cổng tự mất khi khởi động lại; máy tính vẫn phải được chấp nhận trên điện thoại lần đầu. ADB bật thì app ngân hàng thấy được (mục `adb` của trang Kiểm tra) |
 | 32 | **OTA cập nhật Manager + nhật ký** (2026-10-10): release theo tag `cam-v*`, nội dung lấy từ `CHANGELOG.md` (thiếu mục thì CI dừng); app kiểm tra GitHub Releases mỗi 12 giờ (WorkManager), báo thông báo, tải vào `cacheDir/ota/`, kiểm SHA-256 + gói + chứng chỉ ký, cài bằng root (`pm install` trong shell tách cgroup) hoặc trình cài đặt Android; màn "Có gì mới" một lần sau khi cập nhật. Tên phiên bản lấy từ tag `cam-v*` (bỏ tiền tố) | Không phải gửi APK tay cho từng người. Trước đó thẻ cập nhật ở Home vẫn hỏi `tiann/KernelSU`. Spec: `docs/superpowers/specs/2026-10-10-ota-update-design.md` |
 | 35 | **Cài trực tiếp an toàn hơn** (2026-10-11, `installBoot` trong `CamCli.kt`): trước khi flash (cả "Cài trực tiếp" và "Cài vào slot không hoạt động") Manager tắt mọi module đang bật (`camd module disable`), tắt lỗi một cái là dừng, không flash; máy khởi động bằng **khóa AVB tự ký** (`androidboot.verifiedbootstate=yellow` trong `/proc/bootconfig`/`/proc/cmdline`, lấy qua `hide-bootloader status`, không bị resetprop che) thì ẩn hai cách cài trực tiếp, hiện thẻ đỏ và `installBoot` cũng từ chối | Lần boot đầu với bản mới không có module; avbroot mà cài trực tiếp thì ảnh boot không được ký, bootloader khoá từ chối boot. Mở khoá kiểu efisp/GBL (trạng thái orange) hay chế độ Jailbreak không bị chặn |
+| 36 | **Ghim Manager theo chữ ký** (2026-10-11): trước khi cấp root cho `cam.su.kernel`, kernel đọc `/data/system/packages.xml` (ABX từ Android 12, XML text trước đó; parser `kernel/policy/pkg_xml.c`), lấy chứng chỉ ký **mà PackageManager đã kiểm lúc cài** (`<package><sigs><cert>` trực tiếp, không tính `<pastSigs>`; `key` chỉ ghi ở lần dùng đầu nên có lượt đọc thứ hai tìm theo `index`), băm SHA-256 rồi so với `KSU_MANAGER_CERT` (khóa release `CN=SU Kernel, O=Cam`, `1bee10d2…a318`). Khác chữ ký, nhiều người ký, hoặc chứng chỉ quá 8 KB thì không cấp, và **thu lại** nếu uid đó đang có root (`ksu_revoke_root`: đặt hồ sơ non-root mặc định), phòng trường hợp app giả nhận lại appid cũ. Không đọc được file hoặc không tìm thấy người ký thì không cấp, nhưng giữ nguyên quyền đang có. Kiểm cả khi uid đã có root, vì appid có thể bị dùng lại. Mục seed của gói Manager bị bỏ qua, để pin quyết định (pin chạy ngay sau seed). Seed của gói khác không đổi. Kernel **không đọc APK**. Log có tiền tố `manager pin:` và in SHA-256 của chứng chỉ bị từ chối. Thêm khóa khi build: `make KSU_MANAGER_CERT_EXTRA=<sha256 hex>` (Kbuild) | Trước đây app nào đặt tên gói `cam.su.kernel` cũng có root (cài lúc chưa có Manager hoặc sau khi gỡ). Chọn đọc kết quả của PackageManager thay vì tự kiểm APK như KernelSU gốc (`apk_sign.c` từng bị bypass vì phải parse file do kẻ tấn công tạo ra). `packages.xml` chỉ `system_server` ghi được, và được ghi trước `packages.list` nên lúc observer chạy đã có dữ liệu mới. **Manager ký bằng khóa khác** (build debug cục bộ, build PR của CI) **không còn có root**: cấp tay bằng `camd allow` sẽ bị thu lại ở lần `packages.list` đổi kế tiếp. Muốn dùng bản đó thì build kernel có `KSU_MANAGER_CERT_EXTRA`. Đổi khóa ký release thì phải đổi `KSU_MANAGER_CERT` và ra LKM mới |
 
 ## 2. Lịch sử commit
 
@@ -79,15 +80,16 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 ### Kernel (`kernel/`)
 - [xoá] `manager/apk_sign.c`, `manager/apk_sign.h`, `manager/throne_tracker.c`, `manager/throne_tracker.h`, `manager/manager_observer.h`
 - [chuyển] `manager/pkg_observer.c` → `policy/pkg_observer.c`
-- [mới] `policy/pkg_tracker.c`, `policy/pkg_tracker.h` (đọc `packages.list`, áp seed, **ghim root cho gói Manager**, prune allowlist), `policy/pkg_observer.h`
+- [mới] `policy/pkg_tracker.c`, `policy/pkg_tracker.h` (đọc `packages.list`, áp seed, **ghim root cho gói Manager** sau khi kiểm chữ ký trong `packages.xml`, prune allowlist), `policy/pkg_observer.h`
+- [mới] `policy/pkg_xml.c`, `policy/pkg_xml.h`: đọc chứng chỉ ký của một gói trong `packages.xml` (ABX hoặc text), không phụ thuộc API kernel nào ngoài `krealloc`/`kfree` (dòng 36)
 - [sửa] `manager/manager_identity.h`: chỉ còn `is_manager()` = `current_uid() == 0`
 - [sửa] `hook/setuid_hook.c`: bỏ nhánh cài fd cho manager
-- [sửa] `policy/allowlist.c/.h`: bỏ các trường hợp đặc biệt cho manager; thêm `ksu_grant_default_root()`
+- [sửa] `policy/allowlist.c/.h`: bỏ các trường hợp đặc biệt cho manager; thêm `ksu_grant_default_root()`, `ksu_revoke_root()`
 - [sửa] `supercall/dispatch.c`: `GET_MANAGER_APPID` luôn trả -1; bỏ cờ `PR_BUILD`
 - [sửa] `core/init.c`, `runtime/boot_event.c`: gọi `ksu_pkg_tracker_update()` thay cho `track_throne()`
 - [sửa] `feature/selinux_hide.c` (`my_setprocattr`): kiểm quyền `setcurrent` **trước** khi parse context (file của upstream; lỗi timing có cả ở upstream)
-- [mới] `tests/`: test chạy trên host cho `policy/pkg_tracker.c` (seed, ghim Manager), `stub/` giả API kernel, `Makefile` (`make -C kernel/tests`, ASan + UBSan). Không nằm trong `Kbuild`
-- [sửa] `Kbuild`, `Kconfig`: bỏ `CONFIG_KSU_DISABLE_MANAGER`, `KSU_EXPECTED_SIZE/HASH*`, `KSU_MANAGER_PACKAGE`
+- [mới] `tests/`: test chạy trên host cho `policy/pkg_tracker.c` (seed, ghim Manager, kiểm chữ ký) và `policy/pkg_xml.c`, `stub/` giả API kernel (`stub/crypto/hash.h` có SHA-256 thuần), `xml_builder.h` ghi `packages.xml` giả như PackageManager (ABX và text), `manager_cert.der` là chứng chỉ release thật (công khai), `Makefile` (`make -C kernel/tests`, ASan + UBSan). Không nằm trong `Kbuild`
+- [sửa] `Kbuild`, `Kconfig`: bỏ `CONFIG_KSU_DISABLE_MANAGER`, `KSU_EXPECTED_SIZE/HASH*`, `KSU_MANAGER_PACKAGE`; thêm `policy/pkg_xml.o` và biến `KSU_MANAGER_CERT_EXTRA`
 
 ### UAPI (`uapi/`)
 - [sửa] `supercall.h`: `KERNEL_SU_UAPI_VERSION = 6` (upstream đang là 5; commit `1dc68cc9` đặt lại 6 sau khi upstream thêm `EVENT_SERVICES`)
@@ -263,7 +265,7 @@ Dùng `merge` thay vì `rebase`: chỉ phải giải conflict một lần. `rena
 Kernel / camd (ksud):
 - **Upstream sửa các file Cam đã xoá** (`apk_sign.c`, `throne_tracker.c`, `manager_observer.h`, `apk_sign.rs`…): giữ trạng thái **xoá** (`git rm <file>`). Nếu upstream thêm tính năng mới vào đó, xem có cần chuyển sang `policy/pkg_tracker.c` không.
 - **Upstream sửa `pkg_observer.c` ở chỗ cũ (`kernel/manager/`)**: áp thay đổi đó vào `kernel/policy/pkg_observer.c`.
-- **`policy/pkg_tracker.c`**: là file của Cam; giữ `ksu_seed_apply()` và `ksu_manager_pin_apply()`, thứ tự gọi trong `ksu_pkg_tracker_update()`: seed → pin → prune.
+- **`policy/pkg_tracker.c`**: là file của Cam; giữ `ksu_seed_apply()` và `ksu_manager_pin_apply()`, thứ tự gọi trong `ksu_pkg_tracker_update()`: seed → pin → prune. Pin phải gọi `manager_cert_check()` trước khi cấp (dòng 36). Upstream có sửa `packages.xml`/chữ ký thì cũng không đụng tới file này.
 - **`manager_identity.h`**: luôn giữ bản của Cam (chỉ có `is_manager()` = uid 0).
 - **`Kbuild` / `Kconfig`**: giữ bản đã bỏ `EXPECTED_*`, `DISABLE_MANAGER`, `MANAGER_PACKAGE`; nhận các dòng `kernelsu-objs` mới của upstream rồi đổi thành `camsu-objs` (module tên `camsu.o`). Conflict ở đoạn `KSU_EXPECTED_*` (từ commit lỗi thời `1b9b0673`) thì xoá cả đoạn.
 - **`kernel/feature/selinux_hide.c`**: từ upstream `a85dcbcf` file này giống hệt upstream (upstream đã tự kiểm `SETCURRENT` trước khi parse). Upstream sửa tiếp thì nhận bản của upstream, chỉ cần xem `my_setprocattr` vẫn gọi `ksu_avc_has_perm_compat(… PROCESS__SETCURRENT …)` **trước** `security_context_to_sid…`, rồi chạy Duck Detector hoặc trang Kiểm tra để xem mục timing.
@@ -300,7 +302,8 @@ Chạy từng lệnh, kết quả phải đúng như ghi chú:
 
 ```bash
 # 1. Không còn code tìm manager theo APK. Chỉ được còn: do_get_manager_appid trong dispatch.c,
-#    và KSU_MANAGER_PACKAGE trong policy/pkg_tracker.c (ghim root cho gói Manager, của Cam)
+#    và KSU_MANAGER_PACKAGE trong policy/pkg_tracker.c (ghim root cho gói Manager, của Cam).
+#    KSU_MANAGER_CERT (chữ ký Manager đọc từ packages.xml) cũng là của Cam, không bị bắt ở đây
 rg -n "throne|apk_sign|is_uid_manager|manager_appid|EXPECTED_(SIZE|HASH)|KSU_DISABLE_MANAGER|KSU_MANAGER_PACKAGE" kernel
 
 # 2. Code mới của upstream có dùng khái niệm manager không? Xem kỹ từng chỗ
@@ -312,6 +315,7 @@ rg -n "CamNative\.(version|kernelUAPIVersion|is[A-Z]|get[A-Z]|set[A-Z]|uid)" man
 # 4. Gói vẫn là cam.su.kernel; pin Manager vẫn được gọi
 rg -n "cam.su.kernel" manager/app/build.gradle.kts userspace/camd/build.rs kernel/policy/pkg_tracker.c
 rg -n "ksu_manager_pin_apply" kernel/policy/pkg_tracker.c        # phải ra 2 dòng: định nghĩa + lời gọi
+rg -n "manager_cert_check\(" kernel/policy/pkg_tracker.c        # phải ra 2 dòng: pin vẫn kiểm chữ ký
 
 # 4b. Tên cũ không lọt lại (mục 11). Phải rỗng, trừ file binary userspace/camd/bin/*/waitsys
 #     (chứa chuỗi "ksud-waitsys" của upstream, bình thường). Git Bash không có rg thì dùng:
@@ -426,13 +430,13 @@ Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `
 
 ## 6. Test
 
-- **Kernel (seed và ghim Manager):** `make -C kernel/tests` (gcc/clang trên Linux hoặc WSL; trên Windows chép `kernel/policy` và `kernel/tests` sang thư mục Linux rồi chạy, vì ASan không chạy trên `/mnt/c` có dấu) → **17 test đạt** dưới ASan + UBSan. Đã thử phá code (đảo thứ tự seed/ghim, bỏ giới hạn appid, đếm sai số mục): test đều bắt được.
+- **Kernel (seed, ghim Manager, chữ ký trong `packages.xml`):** `make -C kernel/tests` (gcc/clang trên Linux hoặc WSL; trên Windows chép `kernel/policy` và `kernel/tests` sang thư mục Linux rồi chạy, vì ASan không chạy trên `/mnt/c` có dấu) → **28 test đạt** dưới ASan + UBSan (2026-10-11; chạy thẳng trên `/mnt/c` trong WSL cũng được). Đã thử phá code (đảo thứ tự seed/ghim, bỏ giới hạn appid, đếm sai số mục): test đều bắt được. Phần chữ ký có thêm: mọi điểm cắt cụt file và 20000 lần hỏng một byte (không đọc lố, không báo sai chứng chỉ), chứng chỉ release thật khớp `KSU_MANAGER_CERT`. Build thật cho android16-6.12 (clang r536225): mọi `.o` biên dịch không cảnh báo, symbol mới đều có trong `System.map`. **Chưa thử trên máy:** chưa đọc `packages.xml` thật (fixture viết theo `BinaryXmlSerializer`/`PackageSignatures.writeXml`).
 - **Trên máy thật (Y700 Gen5, 2026-10-09), đợt đổi tên:** cài Manager mới khi máy còn LKM cũ → camd chuyển `/data/adb/ksu` → `/data/adb/cam`, `ksud` → `camd`, `/metadata/watchdog/ksu` → `cam`, allowlist giữ nguyên, nhãn file vẫn `ksu_file`; reboot với LKM cũ (chạy qua symlink) → root OK, giai đoạn services chạy. Flash LKM `camsu.ko` → `su` ra `u:r:cam:s0`, module tên `camsu`, `camd` được gắn nhãn `cam_file`, `u:r:ksu:s0`/`ksu_file` vẫn hợp lệ trong policy; camd mới xoá symlink cũ, reboot lại vẫn root. **Chưa thử:** app uid ≥ 10000 dò domain `ksu` khi bật SELinux hide; tính năng jailbreak.
 - **camd (ksud):** `cargo test seed:: allow:: boot_guard module_conflicts` (trong `userspace/camd`) (chạy trên Linux/WSL; build Android trong WSL cần `LIBCLANG_PATH` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android26 --sysroot=<NDK>/toolchains/llvm/prebuilt/windows-x86_64/sysroot"`). Hai test vốn đã fail sẵn khi chạy cục bộ, không liên quan tới thay đổi của Cam: `lkm_image::tests::embedded_module_uses_release_asset_layout` (thiếu `aarch64/android12-5.10_camsu.ko`, chỉ CI mới có) và `lkm_image_btf::tests::rejects_conflicting_loading_module_values`.
 - **Chạy toàn bộ test (đã chạy 2026-10-09 trên `99e000ef`):**
   - camd, trong WSL: `cd userspace/camd && CARGO_TARGET_DIR=$HOME/camd-target cargo test --target x86_64-unknown-linux-gnu` → 79 test, **77 đạt, 2 fail** (hai test trên).
   - Manager, trên Windows (ổ `K:`, mục 5): `Push-Location K:\manager; & K:\manager\gradlew.bat :app:testDebugUnitTest` → 22 lớp test, **113 test đạt** (2026-10-10, sau khi thêm `WirelessAdbTest`).
-  - Kernel (C): 17 test, xem dòng đầu mục này.
+  - Kernel (C): 28 test, xem dòng đầu mục này.
   - **CI chạy test từ 2026-10-10** (`.github/workflows/test.yml`, khi đổi `kernel/policy`, `kernel/tests`, `userspace`, `uapi`, `manager`). Job camd bỏ qua đúng hai test fail sẵn: `embedded_module_uses_release_asset_layout` (cần `.ko` mà chỉ Build Manager tạo) và `rejects_conflicting_loading_module_values` (lỗi thời từ upstream: commit `243f0dd1` của KernelSU bỏ kiểm tra `LOADING_MODULE` nhưng quên xoá test; upstream cũng fail).
 - **Trên máy thật (Y700 Gen5, 2026-10-03/04), phần UI mới:** đã thấy chạy đúng: phá kính khi vuốt khỏi Home, cửa + vá kính khi về, slime 3D chạy trên mép thẻ, đập tay / cưỡi Bơ / chơi khăm / rượt / đánh nhau, laser bằng ngón tay giữ yên, ngủ ban đêm, bật/tắt slime trong Chủ đề, 3 thẻ Hồ sơ ứng dụng (Thông tin, đường dẫn, Dung lượng) trên Chrome. Khung hình trung bình khoảng 9 ms, GPU khoảng 6 ms. **Chưa thử trên máy:** lắc máy, tự ẩn khi Flash / cài module, các nút Quản lý (sao lưu, xoá cache/dữ liệu, đóng băng, gỡ), nút copy đường dẫn.
 - **Trên máy thật (Y700 Gen5, 2026-10-04), boot guard và xung đột:** module thử `bg-test` reboot trong `service.sh` (tự dừng sau 5 lần) → 2 lần reboot, lần boot thứ 3 ksud tắt `bg-test`, máy lên bình thường; reboot thường thì `failCount` về 0; module `scune-support` đang tắt không bị đụng. Hai module `cf-a`/`cf-b` (cùng file `/system/etc`, file vendor đã bị installer chuyển ra `<module>/vendor`, prop khác giá trị) → báo đúng 3 xung đột, prop cùng giá trị không báo. Manager: thẻ Home, hộp thoại Bật lại / Bỏ qua, chip trên thẻ module, hộp thoại xung đột, dòng cảnh báo khi flash.
@@ -442,7 +446,7 @@ Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `
 ## 7. Giới hạn đã biết
 
 - **Chế độ late-load / jailbreak (trước là "magica") không có seed.** Chỉ hỗ trợ LKM qua patch init_boot. Phần jailbreak không được test sau đợt đổi tên (khách dùng EFISP, không cần).
-- **Gỡ Manager rồi cài lại** không còn mất root: kernel cấp lại root cho `cam.su.kernel` ngay khi `packages.list` đổi (cần LKM có commit "keep root for the manager package"). Cũng vì vậy **không thu root của chính Manager được**: lần thay đổi gói kế tiếp kernel sẽ cấp lại. Đánh đổi có chủ đích: app lạ đặt trùng tên gói `cam.su.kernel` cũng sẽ có root.
+- **Gỡ Manager rồi cài lại** không còn mất root: kernel cấp lại root cho `cam.su.kernel` ngay khi `packages.list` đổi (cần LKM có commit "keep root for the manager package"). Cũng vì vậy **không thu root của chính Manager được**: lần thay đổi gói kế tiếp kernel sẽ cấp lại. App lạ đặt trùng tên gói thì từ 2026-10-11 không còn có root (dòng 36). Đổi lại, **Manager ký khóa khác** (build debug, build PR) cũng không có root, trừ khi kernel build với `KSU_MANAGER_CERT_EXTRA`.
 - **Lần boot đầu sau flash,** app khác chỉ dùng `su` được sau khi mở Manager một lần (Manager cài `/data/adb/camd`).
 - **Module ghi cứng `/data/adb/ksu/...` hoặc `/data/adb/ksud`** sẽ lỗi trên kernel `cam`: camd xoá các symlink tên cũ (Cam chọn vậy, dự án dùng cho việc riêng). Biến `KSU*`, bridge WebUI `ksu`, thư mục `/data/adb/modules` vẫn còn nên module viết đúng chuẩn vẫn chạy. `sepolicy.rule` của module nhắc domain `ksu` chỉ áp cho domain `ksu`, không áp cho `cam`.
 - **ROM ZUI (Lenovo):** dialog chọn app cần thêm quyền riêng `GET_INSTALLED_APP` của ROM. Lần đầu ROM sẽ hỏi; sau khi cho phép phải mở lại dialog.

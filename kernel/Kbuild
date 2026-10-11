@@ -32,6 +32,7 @@ camsu-objs += policy/app_profile.o
 camsu-objs += policy/feature.o
 camsu-objs += policy/pkg_observer.o
 camsu-objs += policy/pkg_tracker.o
+camsu-objs += policy/pkg_xml.o
 
 camsu-objs += runtime/boot_event.o
 camsu-objs += runtime/camd_integration.o
@@ -125,6 +126,12 @@ $(info -- KSU_NEW_DCACHE_FLUSH: $(KSU_NEW_DCACHE_FLUSH))
 
 
 ccflags-y += -DKSU_NEW_DCACHE_FLUSH=$(KSU_NEW_DCACHE_FLUSH)
+
+# Trust one more Manager signing certificate (SHA-256, lower-case hex), e.g. a debug key:
+# make KSU_MANAGER_CERT_EXTRA=<hex>. Release Managers need nothing (policy/pkg_tracker.c).
+ifneq ($(KSU_MANAGER_CERT_EXTRA),)
+ccflags-y += -DKSU_MANAGER_CERT_EXTRA=\"$(KSU_MANAGER_CERT_EXTRA)\"
+endif
 
 ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes
 ccflags-y += -Wno-declaration-after-statement -Wno-unused-function

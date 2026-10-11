@@ -3,17 +3,23 @@
 #include <linux/err.h>
 #include <linux/fs.h>
 #include <linux/ctype.h>
+#include <linux/kernel.h>
 #include <linux/list.h>
+#include <linux/mm.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/types.h>
+#include <crypto/hash.h>
 
 #include "policy/allowlist.h"
 #include "policy/pkg_tracker.h"
+#include "policy/pkg_xml.h"
 #include "klog.h" // IWYU pragma: keep
 
 #define SYSTEM_PACKAGES_LIST_PATH "/data/system/packages.list"
+#define SYSTEM_PACKAGES_XML_PATH "/data/system/packages.xml"
+#define PACKAGES_XML_MAX_SIZE (32 << 20)
 
 // Patch-time root seed, written by `camd boot-patch --seed` into ksu_config:
 //   seed=<nonce>,<pkg>:<appid>[,<pkg>:<appid>...]
@@ -192,6 +198,8 @@ static bool seed_package_installed(struct list_head *pkgs, const char *pkg, u32 
     return false;
 }
 
+static bool is_manager_package(const char *pkg);
+
 // Caller holds ksu_cred. Runs from post-fs-data on: the first boot after flashing has no
 // /data/adb/camd yet, so boot-completed is never reported. packages.list from the previous
 // boot is fine here because every entry must match both package and appid.
@@ -238,6 +246,10 @@ static void ksu_seed_apply(struct list_head *pkgs)
             pr_warn("seed: invalid entry skipped\n");
             continue;
         }
+        if (is_manager_package(pkg)) {
+            pr_info("seed: skip %s: the manager pin checks its signature\n", pkg);
+            continue;
+        }
         if (!seed_package_installed(pkgs, pkg, appid)) {
             pr_info("seed: skip %s(%u): not installed or uid mismatch\n", pkg, appid);
             continue;
@@ -258,23 +270,185 @@ out:
 }
 
 // The Manager app always keeps root. After an uninstall/reinstall it comes back under a new appid
-// (and the old one is pruned), so it is matched by package name on every packages.list change.
-// Only this one package is pinned; define KSU_MANAGER_PACKAGE at build time for another name.
+// (and the old one is pruned), so it is found by package name on every packages.list change, then
+// trusted only if signed by a Manager key. Define KSU_MANAGER_PACKAGE at build time for another name.
 #ifndef KSU_MANAGER_PACKAGE
 #define KSU_MANAGER_PACKAGE "cam.su.kernel"
 #endif
+
+// SHA-256 of the certificate that signs release Managers (CN=SU Kernel, O=Cam), the
+// "certificate SHA-256 digest" of `apksigner verify --print-certs`. KSU_MANAGER_CERT_EXTRA trusts
+// one more at build time, e.g. a debug key; both are lower-case hex.
+#ifndef KSU_MANAGER_CERT
+#define KSU_MANAGER_CERT "1bee10d239c9f1b69c6af8e8e818f6ecdea711e251314ce12e78a38f3d00a318"
+#endif
+
+static const char *const manager_certs[] = {
+    KSU_MANAGER_CERT,
+#ifdef KSU_MANAGER_CERT_EXTRA
+    KSU_MANAGER_CERT_EXTRA,
+#endif
+};
+
+// An X.509 certificate in DER; the release one is 1261 bytes.
+#define MANAGER_CERT_MAX_SIZE 8192
+#define SHA256_LEN 32
+
+static bool is_manager_package(const char *pkg)
+{
+    return strncmp(pkg, KSU_MANAGER_PACKAGE, KSU_MAX_PACKAGE_NAME) == 0;
+}
+
+// The whole of packages.xml in a kvmalloc'ed buffer, or NULL.
+static u8 *read_packages_xml(size_t *len)
+{
+    struct file *fp;
+    loff_t size, pos = 0;
+    ssize_t n;
+    u8 *buf = NULL;
+
+    fp = filp_open(SYSTEM_PACKAGES_XML_PATH, O_RDONLY, 0);
+    if (IS_ERR(fp)) {
+        pr_err("manager pin: open " SYSTEM_PACKAGES_XML_PATH " failed: %ld\n", PTR_ERR(fp));
+        return NULL;
+    }
+    size = i_size_read(file_inode(fp));
+    if (size <= 0 || size > PACKAGES_XML_MAX_SIZE) {
+        pr_err("manager pin: " SYSTEM_PACKAGES_XML_PATH " size %lld\n", (long long)size);
+        goto out;
+    }
+    buf = kvmalloc(size, GFP_KERNEL);
+    if (!buf)
+        goto out;
+    while (pos < size) {
+        n = kernel_read(fp, buf + pos, size - pos, &pos);
+        if (n <= 0)
+            break;
+    }
+    if (pos != size) {
+        pr_err("manager pin: short read of " SYSTEM_PACKAGES_XML_PATH "\n");
+        kvfree(buf);
+        buf = NULL;
+        goto out;
+    }
+    *len = size;
+out:
+    filp_close(fp, 0);
+    return buf;
+}
+
+static int cert_sha256(const u8 *data, size_t len, u8 *digest)
+{
+    struct crypto_shash *tfm;
+    struct shash_desc *desc;
+    int ret;
+
+    tfm = crypto_alloc_shash("sha256", 0, 0);
+    if (IS_ERR(tfm))
+        return PTR_ERR(tfm);
+    desc = kzalloc(sizeof(*desc) + crypto_shash_descsize(tfm), GFP_KERNEL);
+    if (!desc) {
+        crypto_free_shash(tfm);
+        return -ENOMEM;
+    }
+    desc->tfm = tfm;
+    ret = crypto_shash_digest(desc, data, len, digest);
+    kfree(desc);
+    crypto_free_shash(tfm);
+    return ret;
+}
+
+// Whether PackageManager, which verified the APK when installing it, recorded a Manager key as
+// the one signer of KSU_MANAGER_PACKAGE. The APK itself is never read here.
+// 0: trusted. -EKEYREJECTED: signed by something else. Other errors: could not tell.
+static int manager_cert_check(void)
+{
+    static const char hex_digits[] = "0123456789abcdef";
+    u8 digest[SHA256_LEN];
+    char hex[SHA256_LEN * 2 + 1];
+    size_t xml_len = 0, i;
+    u8 *xml, *cert;
+    ssize_t n;
+    int ret;
+
+    xml = read_packages_xml(&xml_len);
+    if (!xml)
+        return -EIO;
+    cert = kmalloc(MANAGER_CERT_MAX_SIZE, GFP_KERNEL);
+    if (!cert) {
+        ret = -ENOMEM;
+        goto out;
+    }
+
+    n = ksu_pkg_xml_find_cert(xml, xml_len, KSU_MANAGER_PACKAGE, cert, MANAGER_CERT_MAX_SIZE);
+    if (n == -ENOTUNIQ || n == -E2BIG) {
+        // a Manager APK has exactly one signer, with a certificate far below the limit
+        pr_warn("manager pin: %s signer rejected: %zd\n", KSU_MANAGER_PACKAGE, n);
+        ret = -EKEYREJECTED;
+        goto out;
+    }
+    if (n < 0) {
+        pr_err("manager pin: no signer for %s in " SYSTEM_PACKAGES_XML_PATH ": %zd\n", KSU_MANAGER_PACKAGE, n);
+        ret = n;
+        goto out;
+    }
+
+    ret = cert_sha256(cert, n, digest);
+    if (ret) {
+        pr_err("manager pin: sha256 failed: %d\n", ret);
+        goto out;
+    }
+    for (i = 0; i < SHA256_LEN; i++) {
+        hex[2 * i] = hex_digits[digest[i] >> 4];
+        hex[2 * i + 1] = hex_digits[digest[i] & 0xf];
+    }
+    hex[SHA256_LEN * 2] = '\0';
+
+    ret = -EKEYREJECTED;
+    for (i = 0; i < ARRAY_SIZE(manager_certs); i++) {
+        if (!strcmp(hex, manager_certs[i])) {
+            ret = 0;
+            break;
+        }
+    }
+    if (ret)
+        pr_warn("manager pin: %s is signed by untrusted certificate %s\n", KSU_MANAGER_PACKAGE, hex);
+out:
+    kfree(cert);
+    kvfree(xml);
+    return ret;
+}
 
 // Caller holds ksu_cred.
 static void ksu_manager_pin_apply(struct list_head *pkgs)
 {
     struct uid_data *np;
+    int ret;
 
     list_for_each_entry (np, pkgs, list) {
-        if (strncmp(np->package, KSU_MANAGER_PACKAGE, KSU_MAX_PACKAGE_NAME) != 0)
+        if (!is_manager_package(np->package))
             continue;
         // Regular app appids only, same bounds as the seed.
         if (np->uid < KSU_SEED_MIN_APPID || np->uid > KSU_SEED_MAX_APPID)
             return;
+        // Checked even when already allowed: a reused appid would otherwise hand an impostor
+        // the root of the Manager it replaced.
+        ret = manager_cert_check();
+        if (ret == -EKEYREJECTED) {
+            if (!__ksu_is_allow_uid(np->uid))
+                return;
+            if (ksu_revoke_root(np->package, np->uid)) {
+                pr_warn("manager pin: revoke %s(%u) failed\n", np->package, np->uid);
+                return;
+            }
+            pr_warn("manager pin: revoked %s(%u)\n", np->package, np->uid);
+            ksu_persistent_allow_list();
+            return;
+        }
+        if (ret) {
+            pr_warn("manager pin: cannot check %s(%u): %d, not granting\n", np->package, np->uid, ret);
+            return;
+        }
         if (__ksu_is_allow_uid(np->uid))
             return;
         if (ksu_grant_default_root(np->package, np->uid)) {

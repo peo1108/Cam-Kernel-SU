@@ -11,8 +11,11 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ### Kiểm tra ẩn root
 - Theo Duck Detector mới nhất (78aabb41, rule version 5): bản này nâng mục đo thời gian ghi context SELinux lên mức Nguy hiểm, nhưng SU Kernel đã sửa lỗi đó từ trước nên không bị phát hiện
 - Che thêm một kênh đo thời gian khi ghi context SELinux (theo bản vá mới của nhân)
+### Bảo mật
+- Nhân chỉ cấp root cho app SU Kernel khi app được ký bằng khóa chính thức (đọc từ chữ ký Android đã kiểm lúc cài, không quét file APK): app giả đặt trùng tên gói không còn lấy được root
 ### Lưu ý
 - App ngân hàng kiểm tra bằng key attestation vẫn thấy máy mở khóa: sửa prop không đổi được chứng chỉ này
+- Phần chữ ký chỉ có hiệu lực sau khi cài lại nhân (LKM) của bản này. Bản app tự build hoặc ký bằng khóa khác sẽ không còn có root
 
 ## 3.0.8 - 2026-10-11
 ### Sửa lỗi

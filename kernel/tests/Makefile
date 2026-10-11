@@ -8,7 +8,8 @@ INCLUDES = -I stub -iquote stub -iquote ..
 test: pkg_tracker_test
 	./pkg_tracker_test
 
-pkg_tracker_test: pkg_tracker_test.c ../policy/pkg_tracker.c $(wildcard stub/*.h stub/*/*.h)
+pkg_tracker_test: pkg_tracker_test.c xml_builder.h ../policy/pkg_tracker.c ../policy/pkg_xml.c ../policy/pkg_xml.h \
+		$(wildcard stub/*.h stub/*/*.h)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ pkg_tracker_test.c
 
 clean:

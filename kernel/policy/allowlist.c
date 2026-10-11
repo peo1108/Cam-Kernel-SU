@@ -338,6 +338,27 @@ int ksu_grant_default_root(const char *package, uid_t uid)
     return ret;
 }
 
+int ksu_revoke_root(const char *package, uid_t uid)
+{
+    struct app_profile *profile;
+    int ret;
+
+    profile = kzalloc(sizeof(*profile), GFP_KERNEL);
+    if (!profile)
+        return -ENOMEM;
+
+    profile->version = KSU_APP_PROFILE_VER;
+    strscpy(profile->key, package, sizeof(profile->key));
+    profile->curr_uid = uid;
+    profile->allow_su = false;
+    profile->nrp_config.use_default = true;
+    memcpy(&profile->nrp_config.profile, &default_non_root_profile, sizeof(default_non_root_profile));
+
+    ret = ksu_set_app_profile(profile);
+    kfree(profile);
+    return ret;
+}
+
 void ksu_put_app_profile(struct app_profile *profile)
 {
     struct perm_data *p = container_of(profile, struct perm_data, profile);

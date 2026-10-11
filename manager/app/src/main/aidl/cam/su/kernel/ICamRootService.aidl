@@ -19,6 +19,7 @@ interface ICamRootService {
     boolean isLkmBundled();
     boolean isLateLoadMode();
     boolean isPrBuild();
+    String getSourceId();
 
     boolean uidShouldUmount(int uid);
 

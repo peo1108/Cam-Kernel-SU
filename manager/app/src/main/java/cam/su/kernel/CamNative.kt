@@ -54,6 +54,10 @@ object CamNative {
     val isPrBuild: Boolean
         external get
 
+    /** Kernel sources the running module was built from (KSU_IOCTL_GET_SOURCE_ID); "" when unknown. */
+    val sourceId: String
+        external get
+
     external fun uidShouldUmount(uid: Int): Boolean
 
     /**

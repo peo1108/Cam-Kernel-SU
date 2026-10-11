@@ -75,6 +75,14 @@ Java_cam_su_kernel_CamNative_isPrBuild(JNIEnv *env, jclass clazz) {
     return is_pr_build();
 }
 
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_cam_su_kernel_CamNative_getSourceId(JNIEnv *env, jclass clazz) {
+    struct ksu_get_source_id_cmd cmd;
+    get_source_id(&cmd);
+    return env->NewStringUTF(cmd.id);
+}
+
 static void fillIntArray(JNIEnv *env, jobject list, int *data, int count) {
     auto cls = env->GetObjectClass(list);
     auto add = env->GetMethodID(cls, "add", "(Ljava/lang/Object;)Z");

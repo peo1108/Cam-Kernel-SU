@@ -840,6 +840,10 @@ pub fn run() -> Result<()> {
                     "pr_build: {}",
                     (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_PR_BUILD) != 0
                 );
+                println!(
+                    "source_id: {}",
+                    ksucalls::get_source_id().unwrap_or_default()
+                );
                 Ok(())
             }
             Debug::Package => {

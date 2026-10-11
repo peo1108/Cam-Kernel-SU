@@ -154,6 +154,16 @@ struct ksu_get_sulog_fd_cmd {
     __u32 flags; /* Input: reserved for future use, must be 0 */
 };
 
+/*
+ * Cam: which kernel sources the running module was built from: the git blob hash of
+ * `git ls-tree --full-tree -r HEAD -- kernel uapi` without kernel/tests/ lines (40 hex).
+ * Empty when built outside git or from uncommitted kernel changes. The Manager compares it
+ * with the same hash taken at its own build to offer an LKM reinstall only when it matters.
+ */
+struct ksu_get_source_id_cmd {
+    char id[48]; /* Output: NUL-terminated hex, "" when unknown */
+};
+
 static const __u8 KSU_UMOUNT_WIPE = 0; /* ignore everything and wipe list */
 static const __u8 KSU_UMOUNT_ADD = 1; /* add entry (path + flags) */
 static const __u8 KSU_UMOUNT_DEL = 2; /* delete entry, strcmp */
@@ -186,5 +196,7 @@ static const __u32 KSU_IOCTL_ADD_TRY_UMOUNT = _IOC(_IOC_WRITE, 'K', 18, 0);
 static const __u32 KSU_IOCTL_SET_INIT_PGRP = _IO('K', 19);
 static const __u32 KSU_IOCTL_GET_SULOG_FD = _IOW('K', 20, struct ksu_get_sulog_fd_cmd);
 static const __u32 KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT = _IO('K', 21);
+/* Cam-only, numbered far from upstream's sequence */
+static const __u32 KSU_IOCTL_GET_SOURCE_ID = _IOR('K', 100, struct ksu_get_source_id_cmd);
 
 #endif

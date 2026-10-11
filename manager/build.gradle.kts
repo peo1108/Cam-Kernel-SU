@@ -14,6 +14,7 @@ extra["androidSourceCompatibility"] = JavaVersion.VERSION_21
 extra["androidTargetCompatibility"] = JavaVersion.VERSION_21
 extra["managerVersionCode"] = getVersionCode()
 extra["managerVersionName"] = getVersionName()
+extra["kernelSourceId"] = getKernelSourceId()
 
 fun getGitCommitCount(): Int {
     val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
@@ -23,6 +24,22 @@ fun getGitCommitCount(): Int {
 fun getGitDescribe(): String {
     val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always", "--match", "cam-v*"))
     return process.inputStream.bufferedReader().use { it.readText().trim() }
+}
+
+// Same value as KSU_SOURCE_ID in kernel/Kbuild: the git blob hash of the committed kernel/ and uapi/
+// listing (kernel/tests/ left out). The Manager offers an LKM reinstall only when it differs.
+fun getKernelSourceId(): String {
+    val process = Runtime.getRuntime().exec(arrayOf("git", "ls-tree", "--full-tree", "-r", "HEAD", "--", "kernel", "uapi"))
+    val listing = process.inputStream.bufferedReader().use { it.readText() }
+    if (process.waitFor() != 0 || listing.isBlank()) return ""
+    val content = listing.lineSequence()
+        .filter { it.isNotEmpty() && !it.contains("kernel/tests/") }
+        .joinToString("") { "$it\n" }
+        .toByteArray()
+    val digest = java.security.MessageDigest.getInstance("SHA-1")
+    digest.update("blob ${content.size}\u0000".toByteArray())
+    digest.update(content)
+    return digest.digest().joinToString("") { "%02x".format(it) }
 }
 
 fun getVersionCode(): Int {

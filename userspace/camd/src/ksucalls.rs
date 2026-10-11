@@ -308,6 +308,17 @@ pub fn get_wrapped_fd(fd: RawFd) -> Result<RawFd> {
     Ok(result)
 }
 
+/// Kernel sources the running module was built from (Cam, `KSU_IOCTL_GET_SOURCE_ID`);
+/// empty when unknown.
+pub fn get_source_id() -> Result<String> {
+    let mut cmd = ksu_uapi::ksu_get_source_id_cmd { id: [0; 48] };
+    ksuctl(ksu_uapi::KSU_IOCTL_GET_SOURCE_ID, &raw mut cmd)?;
+    cmd.id[cmd.id.len() - 1] = 0;
+    // SAFETY: the buffer ends with a NUL set just above.
+    let id = unsafe { std::ffi::CStr::from_ptr(cmd.id.as_ptr()) };
+    Ok(id.to_string_lossy().into_owned())
+}
+
 pub fn get_sulog_fd() -> Result<RawFd> {
     let mut cmd = ksu_uapi::ksu_get_sulog_fd_cmd { flags: 0 };
     let result = ksuctl(ksu_uapi::KSU_IOCTL_GET_SULOG_FD, &raw mut cmd)?;

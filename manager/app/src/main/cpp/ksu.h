@@ -31,6 +31,9 @@ bool is_late_load_mode();
 
 bool is_pr_build();
 
+// Cam: kernel source id of the running module, "" when unknown or unsupported
+void get_source_id(struct ksu_get_source_id_cmd *cmd);
+
 using p_key_t = char[KSU_MAX_PACKAGE_NAME];
 
 bool set_app_profile(const app_profile *profile);

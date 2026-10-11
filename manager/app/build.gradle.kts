@@ -21,6 +21,7 @@ val androidSourceCompatibility = rootProject.extra["androidSourceCompatibility"]
 val androidTargetCompatibility = rootProject.extra["androidTargetCompatibility"] as JavaVersion
 val managerVersionCode = rootProject.extra["managerVersionCode"] as Int
 val managerVersionName = rootProject.extra["managerVersionName"] as String
+val kernelSourceId = rootProject.extra["kernelSourceId"] as String
 
 val isPrBuild = project.findProperty("IS_PR_BUILD")?.toString()?.toBoolean() ?: false
 val defaultManagerPackageName = if (isPrBuild) "cam.su.kernel.pr" else "cam.su.kernel"
@@ -149,6 +150,7 @@ android {
         applicationId = managerPackageName
 
         buildConfigField("boolean", "IS_PR_BUILD", isPrBuild.toString())
+        buildConfigField("String", "KERNEL_SOURCE_ID", "\"$kernelSourceId\"")
         resValue("string", "app_name", managerName)
 
         externalNativeBuild {

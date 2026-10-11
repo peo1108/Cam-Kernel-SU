@@ -48,6 +48,10 @@ object Cam {
     val isPrBuild: Boolean
         get() = call(false) { it.isPrBuild }
 
+    /** Kernel sources the running module was built from; "" when unknown (older module, dirty build). */
+    val sourceId: String
+        get() = call("") { it.sourceId.orEmpty() }
+
     fun uidShouldUmount(uid: Int): Boolean = call(false) { it.uidShouldUmount(uid) }
 
     fun getAppProfile(key: String?, uid: Int): CamNative.Profile =

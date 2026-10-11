@@ -100,6 +100,7 @@ class CamRootService : RootService() {
         override fun isLkmBundled(): Boolean = CamNative.isLkmBundled
         override fun isLateLoadMode(): Boolean = CamNative.isLateLoadMode
         override fun isPrBuild(): Boolean = CamNative.isPrBuild
+        override fun getSourceId(): String = CamNative.sourceId
 
         override fun uidShouldUmount(uid: Int): Boolean = CamNative.uidShouldUmount(uid)
 

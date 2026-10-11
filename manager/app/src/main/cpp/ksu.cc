@@ -155,6 +155,14 @@ bool is_pr_build() {
     return false;
 }
 
+void get_source_id(struct ksu_get_source_id_cmd *cmd) {
+    memset(cmd, 0, sizeof(*cmd));
+    if (ksuctl(KSU_IOCTL_GET_SOURCE_ID, cmd) < 0) {
+        cmd->id[0] = '\0';
+    }
+    cmd->id[sizeof(cmd->id) - 1] = '\0';
+}
+
 bool uid_should_umount(int uid) {
     struct ksu_uid_should_umount_cmd cmd = {};
     cmd.uid = uid;

@@ -707,6 +707,21 @@ static int do_disable_escape_to_root(void __user *arg)
     return 0;
 }
 
+#ifndef KSU_SOURCE_ID
+#define KSU_SOURCE_ID ""
+#endif
+
+static int do_get_source_id(void __user *arg)
+{
+    struct ksu_get_source_id_cmd cmd = {};
+
+    strscpy(cmd.id, KSU_SOURCE_ID, sizeof(cmd.id));
+    if (copy_to_user(arg, &cmd, sizeof(cmd))) {
+        return -EFAULT;
+    }
+    return 0;
+}
+
 // IOCTL handlers mapping table
 // clang-format off
 static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
@@ -855,6 +870,12 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
         .handler = do_disable_escape_to_root, 
         .perm_check = only_root,
         .allow_su_session = true
+    },
+    {
+        .cmd = KSU_IOCTL_GET_SOURCE_ID,
+        .name = "GET_SOURCE_ID",
+        .handler = do_get_source_id,
+        .perm_check = manager_or_root
     },
     {
         .cmd = 0,

@@ -102,6 +102,15 @@ $(shell cd $(GIT_ROOT) && [ -f .git/shallow ] && $(GIT) fetch --unshallow 2>/dev
 KSU_GIT_VERSION := $(shell cd $(GIT_ROOT) && $(GIT) rev-list --count HEAD 2>/dev/null)
 KSU_GIT_VERSION_VALID := 1
 $(info -- KernelSU: Git repo detected at $(GIT_ROOT))
+# Cam: hash of the committed kernel sources (uapi/supercall.h, KSU_IOCTL_GET_SOURCE_ID).
+# The Manager build computes the same value (manager/build.gradle.kts, getKernelSourceId).
+# Left out when kernel/ or uapi/ has uncommitted changes: HEAD would not describe this build.
+KSU_SOURCE_DIRTY := $(shell cd $(GIT_ROOT) && $(GIT) diff --quiet HEAD -- kernel uapi ':!kernel/tests' 2>/dev/null || echo 1)
+ifeq ($(KSU_SOURCE_DIRTY),)
+KSU_SOURCE_ID := $(shell cd $(GIT_ROOT) && $(GIT) ls-tree --full-tree -r HEAD -- kernel uapi | grep -v 'kernel/tests/' | $(GIT) hash-object --stdin)
+ccflags-y += -DKSU_SOURCE_ID=\"$(KSU_SOURCE_ID)\"
+$(info -- KernelSU source id: $(KSU_SOURCE_ID))
+endif
 endif
 endif
 else

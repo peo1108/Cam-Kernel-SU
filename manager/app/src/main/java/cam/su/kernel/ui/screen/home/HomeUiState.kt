@@ -28,6 +28,9 @@ data class HomeUiState(
     val installState: UpdateState = UpdateState.Idle,
     val whatsNew: List<ChangelogEntry> = emptyList(),
     val currentManagerVersionCode: Long,
+    // Kernel sources of the running LKM and of the LKM this Manager bundles; "" when unknown
+    val lkmSourceId: String = "",
+    val bundledLkmSourceId: String = "",
     val systemInfo: SystemInfo,
     val bootGuard: BootGuardStatus = BootGuardStatus.Empty,
 ) {
@@ -44,9 +47,19 @@ data class HomeUiState(
         get() = isManager &&
                 lkmMode == true &&
                 isLkmBundled &&
-                camVersion?.toLong() != currentManagerVersionCode &&
+                lkmDiffers &&
                 !requiresNewKernel &&
                 !requiresNewManager
+
+    // Both source ids known: reinstall only when the kernel sources changed. Otherwise (module
+    // older than KSU_IOCTL_GET_SOURCE_ID, or built from uncommitted sources) fall back to the
+    // version number, which differs after every update.
+    val lkmDiffers: Boolean
+        get() = if (lkmSourceId.isNotEmpty() && bundledLkmSourceId.isNotEmpty()) {
+            lkmSourceId != bundledLkmSourceId
+        } else {
+            camVersion?.toLong() != currentManagerVersionCode
+        }
 
     // Jailbreak mode runs on locked bootloaders, so flashing a boot image would brick the device.
     val canInstallKernelUpdate: Boolean

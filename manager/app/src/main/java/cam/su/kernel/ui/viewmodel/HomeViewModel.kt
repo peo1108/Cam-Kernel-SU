@@ -139,6 +139,8 @@ class HomeViewModel(
             isLateLoadMode = Cam.isLateLoadMode,
             checkUpdateEnabled = settingsRepo.checkUpdate,
             currentManagerVersionCode = managerVersion.versionCode,
+            lkmSourceId = if (lkmMode == true) Cam.sourceId else "",
+            bundledLkmSourceId = BuildConfig.KERNEL_SOURCE_ID,
             systemInfo = SystemInfo(
                 kernelVersion = Os.uname().release,
                 managerVersion = "${managerVersion.versionName} (${managerVersion.versionCode}-${managerUAPIVersion})",

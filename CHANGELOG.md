@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 3.0.10 - 2026-10-12
+## 3.1.0 - 2026-10-12
 ### Tính năng mới
 - Nút "Cài lại LKM" chỉ hiện khi nhân (kernel) thật sự thay đổi, không còn hiện sau mọi bản cập nhật, đỡ phải flash khi không cần
 - Nhận bản thử nghiệm: bật trong Cài đặt → "Nhận bản thử nghiệm" để dùng thử bản mới trước khi phát hành cho mọi người (mặc định tắt, có thể còn lỗi)

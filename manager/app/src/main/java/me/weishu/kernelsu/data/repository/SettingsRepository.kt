@@ -22,8 +22,7 @@ interface SettingsRepository {
     var enableWebDebugging: Boolean
     var moduleSortEnabledFirst: Boolean
     var moduleSortActionFirst: Boolean
-    /** Name of the [me.weishu.kernelsu.ui.screen.modulerepo.RepoSort] entry. */
-    var moduleRepoSortOrder: String
+    var moduleRepoSortOrder: Int
     var superuserShowSystemApps: Boolean
     var superuserShowOnlyPrimaryUserApps: Boolean
     var superuserSortOption: Int

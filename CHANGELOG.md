@@ -2,6 +2,13 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.8 - 2026-10-11
+### Sửa lỗi
+- Tự ẩn bootloader không còn báo nhầm "2 mục đang lộ bootloader" khi mọi prop đã được ẩn
+- Tham số khởi động (`androidboot.verifiedbootstate`, `androidboot.vbmeta.device_state`) giờ hiện màu xám kèm chú thích "Chỉ root đọc được, app không thấy": app thường không đọc được chúng nên không tính là lộ
+### Lưu ý
+- App ngân hàng kiểm tra bằng key attestation vẫn thấy máy mở khóa: sửa prop không đổi được chứng chỉ này
+
 ## 3.0.7 - 2026-10-11
 ### Tính năng mới
 - Cài trực tiếp an toàn hơn: app tắt hết module đang bật trước khi flash, để lần khởi động đầu với bản mới không bị module làm bootloop

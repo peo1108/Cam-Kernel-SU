@@ -2,6 +2,18 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 3.0.10 - 2026-10-12
+### Tính năng mới
+- Nút "Cài lại LKM" chỉ hiện khi nhân (kernel) thật sự thay đổi, không còn hiện sau mọi bản cập nhật, đỡ phải flash khi không cần
+- Nhận bản thử nghiệm: bật trong Cài đặt → "Nhận bản thử nghiệm" để dùng thử bản mới trước khi phát hành cho mọi người (mặc định tắt, có thể còn lỗi)
+- Khi cập nhật vượt nhiều bản một lúc, hộp thoại cập nhật hiện nhật ký của mọi bản đã bỏ qua
+### Kiểm tra ẩn root
+- Thêm phép đếm AVC lookup của Duck Detector (rule version 6): kiểm tra phần ẩn SELinux không tra quyền thêm lần nào khi từ chối ghi context, như nhân gốc
+### Bảo mật
+- Nhân tin thêm một khóa ký dự phòng cất ngoại tuyến: nếu khóa chính bị mất, app ký bằng khóa dự phòng vẫn có root (chỉ cần cài lại app một lần)
+### Lưu ý
+- Bản này có thay đổi nhân: cài lại LKM một lần để có đủ các thay đổi trên. Từ các bản sau, nút "Cài lại LKM" chỉ hiện khi thật sự cần
+
 ## 3.0.9 - 2026-10-11
 ### Tự ẩn bootloader
 - Ẩn kỹ hơn: khi bootloader để trống dấu vân tay vbmeta (`ro.boot.vbmeta.digest`) dù máy đã khóa, app tự điền lại bằng giá trị thật tính từ chính các phân vùng của máy, cho khớp với máy khóa bình thường (không bịa giá trị, không ghi đè nếu máy đã có sẵn)

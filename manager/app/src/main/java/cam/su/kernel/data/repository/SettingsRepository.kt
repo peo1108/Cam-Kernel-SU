@@ -2,6 +2,7 @@ package cam.su.kernel.data.repository
 
 interface SettingsRepository {
     var checkUpdate: Boolean
+    var betaUpdates: Boolean
     var checkModuleUpdate: Boolean
     var notifiedVersionCode: Long
     var lastSeenVersion: String?

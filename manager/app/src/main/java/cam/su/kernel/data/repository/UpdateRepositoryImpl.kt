@@ -30,7 +30,11 @@ class UpdateRepositoryImpl : UpdateRepository {
                 .build()
             camApp.okhttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
-                parseReleases(response.body.string(), BuildConfig.VERSION_CODE.toLong())
+                parseReleases(
+                    response.body.string(),
+                    BuildConfig.VERSION_CODE.toLong(),
+                    includePrereleases = SettingsRepositoryImpl().betaUpdates,
+                )
             }
         }
     }

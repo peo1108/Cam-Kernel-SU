@@ -38,6 +38,7 @@ class SettingsViewModel(
     fun refresh() {
         viewModelScope.launch {
             val checkUpdate = repo.checkUpdate
+            val betaUpdates = repo.betaUpdates
             val checkModuleUpdate = repo.checkModuleUpdate
             val themeMode = repo.themeMode
             val miuixMonet = repo.miuixMonet
@@ -99,6 +100,7 @@ class SettingsViewModel(
             _uiState.update {
                 it.copy(
                     checkUpdate = checkUpdate,
+                    betaUpdates = betaUpdates,
                     checkModuleUpdate = checkModuleUpdate,
                     themeMode = themeMode,
                     miuixMonet = miuixMonet,
@@ -146,6 +148,11 @@ class SettingsViewModel(
         repo.checkUpdate = enabled
         UpdateScheduler.apply(camApp, enabled)
         _uiState.update { it.copy(checkUpdate = enabled) }
+    }
+
+    fun setBetaUpdates(enabled: Boolean) {
+        repo.betaUpdates = enabled
+        _uiState.update { it.copy(betaUpdates = enabled) }
     }
 
     fun setCheckModuleUpdate(enabled: Boolean) {

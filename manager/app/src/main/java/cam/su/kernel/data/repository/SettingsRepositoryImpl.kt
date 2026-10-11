@@ -41,6 +41,11 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("check_update", true)
         set(value) = prefs.edit { putBoolean("check_update", value) }
 
+    // also offer pre-releases (cam-vX.Y.Z-beta.N) as Manager updates
+    override var betaUpdates: Boolean
+        get() = prefs.getBoolean("beta_updates", false)
+        set(value) = prefs.edit { putBoolean("beta_updates", value) }
+
     override var checkModuleUpdate: Boolean
         get() = prefs.getBoolean("module_check_update", true)
         set(value) = prefs.edit { putBoolean("module_check_update", value) }

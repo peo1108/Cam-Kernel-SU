@@ -1,6 +1,8 @@
 name: Release
 # Cam releases only: tags look like cam-v3.0.1. Upstream KernelSU tags (v*) must never
 # publish anything, because every release here is an OTA update for installed Managers.
+# cam-v3.1.0-beta.1 publishes a pre-release with 3.1.0's CHANGELOG.md entry: only Managers with
+# "Beta updates" on take it.
 on:
   push:
     tags:
@@ -15,19 +17,30 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
       - name: Check tag
         id: version
         run: |
-          case "$GITHUB_REF_NAME" in
-            cam-v*) echo "version=${GITHUB_REF_NAME#cam-v}" >> "$GITHUB_OUTPUT" ;;
-            *) echo "::error::Run Release from a cam-v* tag, not '$GITHUB_REF_NAME'"; exit 1 ;;
-          esac
+          version="${GITHUB_REF_NAME#cam-v}"
+          if [[ "$GITHUB_REF_NAME" =~ ^cam-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            prerelease=false
+          elif [[ "$GITHUB_REF_NAME" =~ ^cam-v([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
+            prerelease=true
+          else
+            echo "::error::Run Release from a cam-vX.Y.Z or cam-vX.Y.Z-beta.N tag, not '$GITHUB_REF_NAME'"
+            exit 1
+          fi
+          {
+            echo "version=$version"
+            echo "notes=${BASH_REMATCH[1]}"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v7
 
       - name: Extract release notes
-        run: python3 scripts/changelog_section.py "${{ steps.version.outputs.version }}" > release-notes.md
+        run: python3 scripts/changelog_section.py "${{ steps.version.outputs.notes }}" > release-notes.md
 
       - uses: actions/upload-artifact@v7
         with:
@@ -107,6 +120,7 @@ jobs:
         with:
           name: Cam Kernel SU ${{ needs.changelog.outputs.version }}
           body_path: release-notes/release-notes.md
+          prerelease: ${{ needs.changelog.outputs.prerelease == 'true' }}
           files: |
             manager/*.apk
             lkm/lkm-*_camsu.ko

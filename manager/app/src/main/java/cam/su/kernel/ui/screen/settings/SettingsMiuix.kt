@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LayersClear
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
@@ -123,6 +124,21 @@ fun SettingPagerMiuix(
                             },
                             checked = uiState.checkUpdate,
                             onCheckedChange = actions.onSetCheckUpdate
+                        )
+                        SwitchPreference(
+                            title = stringResource(id = R.string.settings_beta_updates),
+                            summary = stringResource(id = R.string.settings_beta_updates_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.Science,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.settings_beta_updates),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            enabled = uiState.checkUpdate,
+                            checked = uiState.betaUpdates,
+                            onCheckedChange = actions.onSetBetaUpdates
                         )
                         CamIsValid {
                             SwitchPreference(

@@ -72,6 +72,59 @@ class UpdateParserTest {
     }
 
     @Test
+    fun betaChannelTakesPrereleasesButNeverDrafts() {
+        val json = list(
+            release("cam-v3.0.1", apk("3.0.1", 32900), draft = true),
+            release("cam-v3.1.0-beta.1", apk("3.1.0-beta.1", 32950), prerelease = true),
+        )
+        val info = parseReleases(json, 32800, includePrereleases = true)!!
+        assertEquals("3.1.0-beta.1", info.versionName)
+        assertEquals(32950L, info.versionCode)
+    }
+
+    @Test
+    fun skippedReleasesAddTheirNotesNewestFirst() {
+        val json = list(
+            release("cam-v3.0.7", apk("3.0.7", 32800), body = "- seven"),
+            release("cam-v3.0.9", apk("3.0.9", 32830), body = "- nine\r\n"),
+            release("cam-v3.0.8", apk("3.0.8", 32810), body = "- eight"),
+            release("cam-v3.0.6", apk("3.0.6", 32790), body = "- six"),
+        )
+        val info = parseReleases(json, 32790)!!
+        assertEquals("3.0.9", info.versionName)
+        assertEquals("## 3.0.9\n\n- nine\n\n## 3.0.8\n\n- eight\n\n## 3.0.7\n\n- seven", info.changelog)
+        assertEquals("nine", info.summary)
+        // one release ahead: its notes as they are, without a heading
+        assertEquals("- nine\r\n", parseReleases(json, 32810)!!.changelog)
+    }
+
+    @Test
+    fun skippedNotesLeaveOutPrereleasesOffTheBetaChannel() {
+        val json = list(
+            release("cam-v3.1.0", apk("3.1.0", 32900), body = "- final"),
+            release("cam-v3.1.0-beta.2", apk("3.1.0-beta.2", 32880), body = "- beta two", prerelease = true),
+            release("cam-v3.1.0-beta.1", apk("3.1.0-beta.1", 32860), body = "- beta one", prerelease = true),
+            release("cam-v3.0.9", apk("3.0.9", 32830), body = "- nine"),
+        )
+        assertEquals("## 3.1.0\n\n- final\n\n## 3.0.9\n\n- nine", parseReleases(json, 32800)!!.changelog)
+        // on the beta channel too: the betas share 3.1.0's entry, so only the final one is shown
+        assertEquals(
+            "## 3.1.0\n\n- final\n\n## 3.0.9\n\n- nine",
+            parseReleases(json, 32800, includePrereleases = true)!!.changelog,
+        )
+        // before the final: the newest beta stands for 3.1.0
+        val betas = list(
+            release("cam-v3.1.0-beta.2", apk("3.1.0-beta.2", 32880), body = "- beta two", prerelease = true),
+            release("cam-v3.1.0-beta.1", apk("3.1.0-beta.1", 32860), body = "- beta one", prerelease = true),
+            release("cam-v3.0.9", apk("3.0.9", 32830), body = "- nine"),
+        )
+        assertEquals(
+            "## 3.1.0-beta.2\n\n- beta two\n\n## 3.0.9\n\n- nine",
+            parseReleases(betas, 32800, includePrereleases = true)!!.changelog,
+        )
+    }
+
+    @Test
     fun ignoresReleaseWithoutMatchingApk() {
         val json = list(release("cam-v3.0.1", asset("camd-aarch64-linux-android")))
         assertNull(parseReleases(json, 32800))

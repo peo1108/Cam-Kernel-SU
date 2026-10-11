@@ -137,6 +137,8 @@
     <string name="app_profile_template_import_empty">Clipboard is empty!</string>
     <string name="app_profile_affects_following_apps">Affects the following apps</string>
     <string name="settings_check_update">Check for updates</string>
+    <string name="settings_beta_updates">Beta updates</string>
+    <string name="settings_beta_updates_summary">Also offer test builds before they reach everyone. They may have bugs.</string>
     <string name="settings_slimes">Roaming slimes</string>
     <string name="settings_slimes_summary">Let the slimes from the status card roam the other pages</string>
     <string name="settings_slime_count">Slimes per page</string>

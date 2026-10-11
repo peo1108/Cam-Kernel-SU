@@ -107,6 +107,8 @@
     <string name="enable_web_debugging_summary">Có thể sử dụng để gỡ lỗi WebUI. Vui lòng chỉ bật khi cần thiết.</string>
     <string name="grant_root_failed">Cấp quyền Root thất bại!</string>
     <string name="settings_check_update">Kiểm tra cập nhật</string>
+    <string name="settings_beta_updates">Nhận bản thử nghiệm</string>
+    <string name="settings_beta_updates_summary">Nhận cả bản thử trước khi phát hành cho mọi người. Có thể còn lỗi.</string>
     <string name="settings_slimes">Slime đi dạo</string>
     <string name="settings_slimes_summary">Cho mấy bé slime trong thẻ trạng thái chạy chơi khắp các trang</string>
     <string name="settings_slime_count">Số slime mỗi trang</string>

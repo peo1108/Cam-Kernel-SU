@@ -247,6 +247,13 @@ enum Debug {
 
     /// Print default package name
     Package,
+
+    /// Count AVC lookups of rejected attr/current writes (Duck Detector's probe)
+    AvcLookup {
+        /// Run the probe in this process (it gives up root; camd starts it itself)
+        #[arg(long, hide = true)]
+        child: bool,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -823,6 +830,14 @@ pub fn run() -> Result<()> {
                 MarkCommand::Refresh => debug::mark_refresh(),
             },
             Debug::Sulogd => sulog::ensure_sulogd_running(),
+            Debug::AvcLookup { child } => {
+                if child {
+                    crate::avc_lookup::device::child();
+                } else {
+                    crate::avc_lookup::device::run();
+                }
+                Ok(())
+            }
             Debug::Info => {
                 let info = ksucalls::get_info();
                 println!("version: {}", info.version);

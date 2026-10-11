@@ -656,6 +656,7 @@ fun findingTitleRes(id: String): Int? = when (id) {
     "appSelinux" -> R.string.audit_app_selinux
     "appHooked" -> R.string.audit_app_hooked
     "appAttrTiming" -> R.string.audit_app_attr_timing
+    "selinuxAvcLookups" -> R.string.audit_selinux_avc_lookups
     "profileUmount" -> R.string.audit_profile_umount
     "defaultProfileUmount" -> R.string.audit_default_profile_umount
     else -> null
@@ -667,6 +668,7 @@ private fun fixLabel(finding: HidingAudit.Finding, fixOn: Boolean): Int = when {
     finding.id == "profileUmount" || finding.id == "defaultProfileUmount" -> R.string.hiding_fix_profile
     finding.id == "appHooked" -> R.string.hiding_fix_hooked
     finding.id == "appAttrTiming" -> R.string.hiding_fix_attr_timing
+    finding.id == "selinuxAvcLookups" -> R.string.hiding_fix_avc_lookups
     else -> fixLabel(finding.fix)
 }
 
@@ -678,6 +680,7 @@ private fun passedTitle(id: String): Int = when (id) {
     "appSelinux" -> R.string.hiding_ok_app_selinux
     "appHooked" -> R.string.hiding_ok_app_hooked
     "appAttrTiming" -> R.string.hiding_ok_app_attr_timing
+    "selinuxAvcLookups" -> R.string.hiding_ok_selinux_avc_lookups
     else -> R.string.hiding_ok_profile_umount
 }
 

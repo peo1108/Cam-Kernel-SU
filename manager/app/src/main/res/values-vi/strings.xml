@@ -584,11 +584,13 @@
     <string name="hiding_checking">Đang kiểm tra…</string>
     <string name="hiding_check_updates_summary">Rule là dữ liệu có chữ ký của Cam, không phải code. Tự kiểm tra khi mở trang, tối đa 6 giờ một lần</string>
     <string name="audit_app_hooked">libc trả lời khác kernel (có hook để giấu)</string>
+    <string name="audit_selinux_avc_lookups">SELinux kiểm quyền hơn một lần khi từ chối ghi attr/current (đếm AVC lookup)</string>
     <string name="audit_app_attr_timing">SELinux từ chối context hợp lệ chậm hơn (timing attr/current)</string>
     <string name="audit_profile_umount">App không root nhưng hồ sơ tắt umount module</string>
     <string name="audit_default_profile_umount">Hồ sơ mặc định tắt umount module cho mọi app</string>
     <string name="hiding_fix_profile">Bật umount module trong hồ sơ app</string>
     <string name="hiding_fix_hooked">Tắt module hook libc: app có thể phát hiện chính cái hook</string>
+    <string name="hiding_fix_avc_lookups">Hook ẩn SELinux kiểm quyền thêm một lần trên đường này. Duck Detector chỉ hiện là thông tin, nhưng kernel gốc chỉ tra một lần: báo lại kèm phiên bản LKM</string>
     <string name="hiding_fix_attr_timing">Kernel đọc context trước rồi mới từ chối. Cập nhật LKM (đã sửa từ bản 32780); tắt Ẩn sửa đổi SELinux cũng hết lộ kiểu này nhưng lại lộ các thay đổi SELinux</string>
     <string name="hiding_from_modules">Do %1$s</string>
     <string name="hiding_disable_module">Tắt %1$s</string>
@@ -601,6 +603,7 @@
     <string name="hiding_ok_app_props">App đọc prop bootloader như đã khóa</string>
     <string name="hiding_ok_app_selinux">App thấy SELinux enforcing</string>
     <string name="hiding_ok_app_hooked">Kết quả qua libc khớp với kernel</string>
+    <string name="hiding_ok_selinux_avc_lookups">Mỗi lần ghi attr/current bị từ chối chỉ tốn một AVC lookup, như kernel gốc</string>
     <string name="hiding_ok_app_attr_timing">SELinux từ chối mọi lần ghi attr/current trong cùng một khoảng thời gian</string>
     <string name="hiding_ok_profile_umount">Mọi app không root đều được umount module</string>
     <string name="hiding_section_attestation">Chứng thực phần cứng</string>

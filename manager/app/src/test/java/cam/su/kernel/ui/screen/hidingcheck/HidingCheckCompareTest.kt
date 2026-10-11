@@ -58,6 +58,16 @@ class HidingCheckCompareTest {
     }
 
     @Test
+    fun avcLookupPassesOnlyWhenClassified() {
+        val ran = audit().copy(stats = mapOf("avcLookup" to 1, "avcLookupsA" to 100, "avcLookupsB" to 100))
+        assertEquals(listOf("selinuxAvcLookups"), HidingCheckUiState.passed(ran, emptySet()).map { it.id })
+        // the probe answered without counts, or found extra lookups
+        assertEquals(emptyList<PassedCheck>(), HidingCheckUiState.passed(audit().copy(stats = mapOf("avcLookup" to 0)), emptySet()))
+        val extra = audit(finding("selinuxAvcLookups", "A/B = 1/2")).copy(stats = mapOf("avcLookup" to 1))
+        assertEquals(emptyList<PassedCheck>(), HidingCheckUiState.passed(extra, emptySet()))
+    }
+
+    @Test
     fun mergedAuditsKeepEveryStat() {
         val merged = audit(finding("maps", "a")).copy(stats = mapOf("rootModuleMounts" to 2)) +
                 audit().copy(stats = mapOf("appView" to 1))

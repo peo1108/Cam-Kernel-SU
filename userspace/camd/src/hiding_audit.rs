@@ -112,6 +112,8 @@ pub struct Snapshot {
     /// those of [`SU_PATHS`] and [`RECOVERY_PATHS`] that exist
     pub existing: Vec<String>,
     pub selinux_enforcing: Option<bool>,
+    /// Duck Detector's AVC lookup probe ([`crate::avc_lookup`]); None when it did not answer
+    pub avc_lookup: Option<crate::avc_lookup::Reading>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -386,6 +388,23 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
         push(&mut out, "selinux", Level::Leak, Vec::new(), None);
     }
 
+    // The stock handler costs one lookup per write for both payloads; more is a hook that checks
+    // permissions again (the SELinux hide hook regressed, or an upstream variant came back).
+    if let Some(reading) = &s.avc_lookup
+        && matches!(
+            reading.profile(),
+            Some(crate::avc_lookup::Profile::OneTwo | crate::avc_lookup::Profile::TwoTwo)
+        )
+    {
+        push(
+            &mut out,
+            "selinuxAvcLookups",
+            Level::Warn,
+            vec![reading.describe()],
+            None,
+        );
+    }
+
     let adb = ["sys.usb.config", "persist.sys.usb.config"]
         .iter()
         .any(|name| prop(&s.props, name).is_some_and(|v| v.split(',').any(|f| f == "adb")));
@@ -413,10 +432,21 @@ const fn fix_name(fix: Fix) -> &'static str {
 
 /// Counts the page shows next to the findings (what is hidden well): numbers, by name.
 pub fn stats(s: &Snapshot) -> Value {
-    json!({
+    let mut stats = json!({
         "rootModuleMounts": ksu_mount_count(&s.mountinfo) + module_mounts(&s.mountinfo).len(),
         "modules": s.modules.len(),
-    })
+    });
+    // avcLookup: 1 when the counts were classified (the check ran), 0 when the probe answered
+    // without them; lookups per write x100 alongside.
+    if let Some(reading) = &s.avc_lookup {
+        stats["avcLookup"] = json!(i32::from(reading.profile().is_some()));
+        if reading.profile().is_some() {
+            use crate::avc_lookup::Reading;
+            stats["avcLookupsA"] = json!(Reading::rate_percent(&reading.a, reading.writes));
+            stats["avcLookupsB"] = json!(Reading::rate_percent(&reading.b, reading.writes));
+        }
+    }
+    stats
 }
 
 pub fn report_json(findings: &[Finding], stats: &Value) -> Value {
@@ -579,6 +609,8 @@ mod device {
             selinux_enforcing: std::fs::read_to_string("/sys/fs/selinux/enforce")
                 .ok()
                 .map(|v| v.trim() != "0"),
+            avc_lookup: crate::avc_lookup::device::collect()
+                .and_then(|report| crate::avc_lookup::Reading::from_json(&report)),
         }
     }
 
@@ -873,6 +905,37 @@ mod tests {
         let findings = audit(&s);
         assert_eq!(findings.len(), 2);
         assert!(findings.iter().all(|f| f.fix.is_none()));
+    }
+
+    #[test]
+    fn extra_avc_lookups_are_a_warning() {
+        use crate::avc_lookup::{Reading, WRITES};
+        let reading = |b: u32| Reading {
+            state: "collected".to_owned(),
+            writes: WRITES,
+            a: vec![WRITES; 4],
+            b: vec![b; 4],
+        };
+        let mut s = snapshot();
+        s.avc_lookup = Some(reading(WRITES));
+        assert!(audit(&s).is_empty());
+        assert_eq!(stats(&s)["avcLookup"], 1);
+        assert_eq!(stats(&s)["avcLookupsB"], 100);
+
+        s.avc_lookup = Some(reading(2 * WRITES));
+        let found = audit(&s);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].id, "selinuxAvcLookups");
+        assert_eq!(found[0].level, Level::Warn);
+        assert!(found[0].items[0].starts_with("A/B = 1/2"));
+
+        // timing only: no verdict, and the check does not count as passed
+        s.avc_lookup = Some(Reading {
+            state: "timingOnly".to_owned(),
+            ..Reading::default()
+        });
+        assert!(audit(&s).is_empty());
+        assert_eq!(stats(&s)["avcLookup"], 0);
     }
 
     #[test]

@@ -97,10 +97,15 @@ pub fn status_json(
 #[cfg(target_os = "android")]
 mod android {
     use super::{parse_boot_args, plan, status_json};
-    use crate::{defs, resetprop};
+    use crate::{defs, resetprop, vbmeta};
     use anyhow::{Context, Result};
     use log::{info, warn};
+    use serde_json::json;
     use std::path::Path;
+
+    /// Set by the bootloader on a locked, verified device; left empty or all-zero by
+    /// some bootloaders even though the device is locked (we fill it with the real value).
+    const VBMETA_DIGEST: &str = "ro.boot.vbmeta.digest";
 
     pub fn is_enabled() -> bool {
         Path::new(defs::HIDE_BOOTLOADER_FLAG).exists()
@@ -124,17 +129,42 @@ mod android {
                 Err(e) => warn!("hide bootloader: set {name} failed: {e}"),
             }
         }
+        fill_vbmeta_digest(&props);
+    }
+
+    /// Fill `ro.boot.vbmeta.digest` with the device's own computed digest when the
+    /// bootloader left it empty or all-zero. Never overwrites a real value, and only
+    /// touches a property the device already has (an absent one is not our business).
+    fn fill_vbmeta_digest(props: &[(String, String)]) {
+        let Some((_, current)) = props.iter().find(|(name, _)| name == VBMETA_DIGEST) else {
+            return;
+        };
+        if !(current.is_empty() || current.bytes().all(|b| b == b'0')) {
+            return;
+        }
+        match vbmeta::computed_digest() {
+            Some(digest) => match resetprop::set_prop(VBMETA_DIGEST, &digest) {
+                Ok(()) => info!("hide bootloader: {VBMETA_DIGEST} -> {digest}"),
+                Err(e) => warn!("hide bootloader: set {VBMETA_DIGEST} failed: {e}"),
+            },
+            None => warn!("hide bootloader: could not compute vbmeta digest"),
+        }
     }
 
     pub fn status() -> Result<()> {
         let props = resetprop::list_props()?;
         let bootconfig = std::fs::read_to_string("/proc/bootconfig").unwrap_or_default();
         let cmdline = std::fs::read_to_string("/proc/cmdline").unwrap_or_default();
-        let status = status_json(
+        let mut status = status_json(
             is_enabled(),
             &props,
             &parse_boot_args(&bootconfig, &cmdline),
         );
+        // What camd would fill ro.boot.vbmeta.digest with (for verifying against the
+        // bootloader's own value on a device that reports one).
+        if let (Some(obj), Some(digest)) = (status.as_object_mut(), vbmeta::computed_digest()) {
+            obj.insert("computedVbmetaDigest".to_owned(), json!(digest));
+        }
         println!("{}", serde_json::to_string_pretty(&status)?);
         Ok(())
     }

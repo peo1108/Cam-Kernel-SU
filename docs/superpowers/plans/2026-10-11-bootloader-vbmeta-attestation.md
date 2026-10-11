@@ -80,12 +80,18 @@ có thì `set_prop`. **Không bao giờ ghi đè** giá trị khác 0 đang có.
 - `status_json`: thêm hai prop này vào danh sách báo cáo để trang Kiểm tra hiện trạng thái
   (giống các prop khác, đếm vào số mục khi đã khớp).
 
-**Đã chốt với Cam (2026-10-11):**
-1. Máy khoá AVB riêng: **vẫn điền** cả `public_key_digest` (không bỏ qua). Giá trị thật của máy,
-   không bịa; chấp nhận là máy khoá riêng vẫn phân biệt được với OEM.
-2. Xác nhận hàm hash trên **máy EFISP của Cam** — root bằng EFISP nên bootloader vẫn khoá và prop
-   `ro.boot.vbmeta.*` còn nguyên giá trị thật, dùng để đối chiếu digest/public_key_digest camd tính
-   ra với giá trị bootloader báo. Đủ để xác nhận.
+**Đã chốt + đo trên máy TB323FU (2026-10-11):**
+1. **Chỉ điền `ro.boot.vbmeta.digest`**, **bỏ `public_key_digest`**. Máy TB323FU đang khoá/green
+   (EFISP, bootloader thật) nhưng `ro.boot.vbmeta.public_key_digest` **để trống** → "trông giống
+   máy khoá" của dòng này là prop đó trống; điền vào sẽ lệch máy khoá thật. Nên không đụng.
+2. **Thuật toán digest đã validate khớp 100%**: script `scratchpad/vbval.py` dựng lại từ các phân
+   vùng (`vbmeta` → chain `boot`, `recovery`, `vbmeta_system`, hash SHA-256 theo algorithm_type=2)
+   ra đúng `ab3cdba0…207` = `ro.boot.vbmeta.digest` của máy. `boot`/`recovery` lấy struct qua
+   AvbFooter (vbmeta nằm ngay sau ảnh gốc, không ở cuối phân vùng), `vbmeta_system` ở offset 0.
+3. **Đã làm** (module `userspace/camd/src/vbmeta.rs`, nối vào `hide_bootloader`): `computed_digest()`
+   tính digest; `apply_if_enabled` điền `ro.boot.vbmeta.digest` chỉ khi prop **có mặt và trống/toàn 0**
+   (không ghi đè giá trị thật, không thêm prop máy chưa có); `status` in thêm `computedVbmetaDigest`
+   để đối chiếu. TB323FU prop đã có sẵn giá trị thật nên không bị ghi đè — kiểm bằng `status`.
 
 **Test:**
 - Host (WSL): `cargo test --target x86_64-unknown-linux-gnu` với vbmeta blob dựng tay cho hàm parse

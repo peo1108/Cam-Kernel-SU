@@ -283,8 +283,16 @@ out:
 #define KSU_MANAGER_CERT "1bee10d239c9f1b69c6af8e8e818f6ecdea711e251314ce12e78a38f3d00a318"
 #endif
 
+// Offline backup key (CN=SU Kernel Backup, O=Cam), never used to sign anything yet. If the release
+// key is lost, a Manager signed with this one still gets root from every LKM already flashed
+// (users reinstall the Manager once: Android refuses the signer change as an update).
+#ifndef KSU_MANAGER_CERT_BACKUP
+#define KSU_MANAGER_CERT_BACKUP "38d0a6b8261c83f99a0d664da871d05ace67e64f1a10c19499b1a368102de4d9"
+#endif
+
 static const char *const manager_certs[] = {
     KSU_MANAGER_CERT,
+    KSU_MANAGER_CERT_BACKUP,
 #ifdef KSU_MANAGER_CERT_EXTRA
     KSU_MANAGER_CERT_EXTRA,
 #endif

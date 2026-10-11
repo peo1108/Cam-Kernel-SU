@@ -28,6 +28,9 @@ int test_fail_shash;
 // The certificate release Managers are signed with (public; from apksigner --print-certs-pem).
 static uint8_t release_cert[2048];
 static size_t release_cert_len;
+// The offline backup key's certificate (KSU_MANAGER_CERT_BACKUP), exported with keytool -exportcert.
+static uint8_t backup_cert[2048];
+static size_t backup_cert_len;
 static const uint8_t other_cert[] = { 0x30, 0x82, 0x01, 0x0a, 'i', 'm', 'p', 'o', 's', 't', 'o', 'r' };
 
 void test_log(const char *fmt, ...)
@@ -180,6 +183,11 @@ static void load_release_cert(void)
     release_cert_len = fread(release_cert, 1, sizeof(release_cert), f);
     fclose(f);
     assert(release_cert_len == 1261);
+    f = fopen("manager_cert_backup.der", "rb");
+    assert(f);
+    backup_cert_len = fread(backup_cert, 1, sizeof(backup_cert), f);
+    fclose(f);
+    assert(backup_cert_len == 1275);
 }
 
 // How cam.su.kernel is signed in the packages.xml fixture.
@@ -189,6 +197,8 @@ enum mgr_sig {
     SIG_OTHER, // some other key
     SIG_ROTATED, // other key now, release key only in <pastSigs>
     SIG_TWO_SIGNERS, // release key plus another
+    SIG_BACKUP, // offline backup key
+    SIG_ROTATED_TO_BACKUP, // backup key now, release key in <pastSigs> (APK v3 key rotation)
     SIG_NONE, // listed without <sigs>
     SIG_ABSENT, // not listed at depth 2; a nested decoy only
 };
@@ -274,6 +284,21 @@ static void build_packages_xml(struct xb *x, bool abx, enum mgr_sig sig)
         case SIG_ROTATED:
             xml_sigs(x, 1);
             xb_cert(x, 1, other_cert, sizeof(other_cert));
+            xb_start(x, "pastSigs");
+            xb_attr_int(x, "count", 2);
+            xb_cert(x, 2, release_cert, release_cert_len);
+            xb_cert(x, 1, NULL, 0);
+            xb_end(x, "pastSigs");
+            xb_end(x, "sigs");
+            break;
+        case SIG_BACKUP:
+            xml_sigs(x, 1);
+            xb_cert(x, 1, backup_cert, backup_cert_len);
+            xb_end(x, "sigs");
+            break;
+        case SIG_ROTATED_TO_BACKUP:
+            xml_sigs(x, 1);
+            xb_cert(x, 1, backup_cert, backup_cert_len);
             xb_start(x, "pastSigs");
             xb_attr_int(x, "count", 2);
             xb_cert(x, 2, release_cert, release_cert_len);
@@ -724,6 +749,19 @@ T(manager_pin_trusts_release_key_in_either_format)
     }
 }
 
+// Losing the release key must not strand flashed kernels: the backup key gets the pin too.
+T(manager_pin_trusts_backup_key)
+{
+    enum mgr_sig sigs[] = { SIG_BACKUP, SIG_ROTATED_TO_BACKUP };
+    for (int abx = 0; abx < 2; abx++) {
+        for (size_t i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++) {
+            boot_manager(abx, sigs[i]);
+            ksu_pkg_tracker_update();
+            assert(strcmp(events, "grant cam.su.kernel:10500;prune;") == 0);
+        }
+    }
+}
+
 T(manager_pin_refuses_impostor)
 {
     enum mgr_sig sigs[] = { SIG_OTHER, SIG_ROTATED, SIG_TWO_SIGNERS };
@@ -826,6 +864,7 @@ int main(void)
     RUN(xml_text_from_older_android);
     RUN(xml_truncated_or_corrupt_never_misreads);
     RUN(manager_pin_trusts_release_key_in_either_format);
+    RUN(manager_pin_trusts_backup_key);
     RUN(manager_pin_refuses_impostor);
     RUN(manager_pin_revokes_impostor_on_reused_appid);
     RUN(manager_pin_unknown_keeps_state);

@@ -17,7 +17,18 @@ class HideBootloaderStatusTest {
         assertEquals(true, status.enabled)
         assertEquals(PropCheck("ro.boot.verifiedbootstate", "orange", "green", false), status.props[0])
         assertEquals(PropCheck("androidboot.verifiedbootstate", "orange", "green", false), status.bootconfig[0])
-        assertEquals(2, status.leaks)
+        assertEquals(1, status.leaks)
+    }
+
+    @Test
+    fun bootconfigIsNotALeak() {
+        val json = """
+            {"bootconfig":[{"name":"androidboot.verifiedbootstate","ok":false,"safe":"green","value":"orange"},
+                           {"name":"androidboot.vbmeta.device_state","ok":false,"safe":"locked","value":"unlocked"}],
+             "enabled":true,
+             "props":[{"current":"green","name":"ro.boot.verifiedbootstate","ok":true,"safe":"green"}]}
+        """.trimIndent()
+        assertEquals(0, HideBootloaderStatus.parse(json).leaks)
     }
 
     @Test

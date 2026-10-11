@@ -275,7 +275,7 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
             onCheckedChange = actions.onSetHideBootloader,
         )
         CheckSection(stringResource(R.string.features_bootloader_props), status.props)
-        CheckSection(stringResource(R.string.features_bootloader_bootconfig), status.bootconfig)
+        CheckSection(stringResource(R.string.features_bootloader_bootconfig), status.bootconfig, rootOnly = true)
 
         SectionTitle(stringResource(R.string.features_attestation))
         if (state.attestationChecked) {
@@ -294,13 +294,25 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
     }
 }
 
-/** Revealing entries one per line; the ones already fine are only counted. */
+/**
+ * Revealing entries one per line; the ones already fine are only counted.
+ * [rootOnly] entries are shown muted: apps cannot read them, so they are not leaks.
+ */
 @Composable
-private fun CheckSection(title: String, checks: List<PropCheck>) {
+private fun CheckSection(title: String, checks: List<PropCheck>, rootOnly: Boolean = false) {
     if (checks.isEmpty()) return
     SectionTitle(title)
-    checks.filterNot { it.ok }.forEach { check ->
-        CheckLine("${check.name}: ${check.value} → ${check.safe}", ok = false)
+    val revealing = checks.filterNot { it.ok }
+    revealing.forEach { check ->
+        CheckLine("${check.name}: ${check.value} → ${check.safe}", ok = false, muted = rootOnly)
+    }
+    if (rootOnly && revealing.isNotEmpty()) {
+        Text(
+            text = stringResource(R.string.features_bootloader_bootconfig_note),
+            fontSize = 12.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
+        )
     }
     val fine = checks.count { it.ok }
     if (fine > 0) CheckLine(stringResource(R.string.features_bootloader_fine, fine), ok = true)
@@ -389,11 +401,11 @@ private fun WirelessAdbCard(state: FeaturesUiState, actions: FeaturesActions) {
 }
 
 @Composable
-private fun CheckLine(text: String, ok: Boolean) {
+private fun CheckLine(text: String, ok: Boolean, muted: Boolean = false) {
     Text(
-        text = "${if (ok) "✓" else "⚠"}  $text",
+        text = "${if (ok) "✓" else if (muted) "•" else "⚠"}  $text",
         fontSize = 13.sp,
-        color = if (ok) colorScheme.onSurfaceVariantSummary else colorScheme.error,
+        color = if (ok || muted) colorScheme.onSurfaceVariantSummary else colorScheme.error,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
     )
 }

@@ -450,6 +450,7 @@
     <string name="features_bootloader_enable_summary">Sửa các prop hệ thống để máy báo bootloader đã khóa và hợp lệ. Tắt thì cần khởi động lại mới về giá trị gốc.</string>
     <string name="features_bootloader_props">Prop hệ thống</string>
     <string name="features_bootloader_bootconfig">Tham số khởi động (chỉ báo, không sửa)</string>
+    <string name="features_bootloader_bootconfig_note">Chỉ root đọc được, app không thấy nên không tính là lộ.</string>
     <string name="features_bootloader_fine">%d mục giống máy đã khóa</string>
     <string name="features_attestation">Key attestation (thứ app ngân hàng thấy)</string>
     <string name="features_attestation_check">Kiểm tra attestation</string>

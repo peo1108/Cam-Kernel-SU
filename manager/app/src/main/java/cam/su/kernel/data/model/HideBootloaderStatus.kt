@@ -16,8 +16,9 @@ data class HideBootloaderStatus(
     /** from /proc/bootconfig and /proc/cmdline: reported, never rewritten */
     val bootconfig: List<PropCheck>,
 ) {
+    /** Only properties count: SELinux keeps apps out of /proc/bootconfig and /proc/cmdline. */
     val leaks: Int
-        get() = props.count { !it.ok } + bootconfig.count { !it.ok }
+        get() = props.count { !it.ok }
 
     /**
      * The bootloader verified boot against a user-set AVB key (avbroot and the like): AVB state yellow.

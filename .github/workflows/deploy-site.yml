@@ -77,8 +77,11 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
-          rsync -rlz --delete --checksum \
-            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+          ssh_cmd="ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          # Two passes so no page ever links to a missing file: new release files and feed first
+          # (nothing deleted), then pages; files no longer listed go only after everything is in.
+          rsync -rlz --checksum -e "$ssh_cmd" docs/.vitepress/dist/dl docs/.vitepress/dist/feed "deploy@$HOST:/"
+          rsync -rlz --checksum --delete --delete-delay --delay-updates -e "$ssh_cmd" \
             docs/.vitepress/dist/ "deploy@$HOST:/"
 
       # What the Manager will see: the live feed must list the newest release and its APK must load.

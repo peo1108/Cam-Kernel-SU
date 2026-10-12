@@ -48,6 +48,11 @@ const stable = all.filter((r) => !r.prerelease).slice(0, 6)
 // Betas newer than the latest stable release; older betas are of no use to anyone.
 const betas = all.slice(0, firstStable < 0 ? all.length : firstStable).filter((r) => r.prerelease)
 const keep = all.filter((r) => stable.includes(r) || betas.includes(r))
+// A release whose files are still uploading (or failed to) must not reach the site: its pages
+// would link to files that are not there. Stop; the next run (or a manual one) picks it up.
+for (const r of keep) {
+  if (!r.assets.some((a) => a.name.endsWith('.apk') && a.state === 'uploaded')) throw new Error(`${r.tag_name}: no uploaded APK yet`)
+}
 
 let fetched = 0
 const feed = []

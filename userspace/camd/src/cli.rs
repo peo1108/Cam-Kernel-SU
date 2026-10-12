@@ -141,6 +141,12 @@ enum Commands {
         command: HideBootloader,
     },
 
+    /// Deny network for the keybox/RKP path and Duck Detector
+    BlockRkp {
+        #[command(subcommand)]
+        command: BlockRkp,
+    },
+
     /// Check what non-root apps can still see, as JSON
     HidingAudit {
         /// Turn on every suggested fix (kernel umount, SELinux hide, hide bootloader)
@@ -313,6 +319,18 @@ enum HideBootloader {
     Enable,
 
     /// Turn it off; the original values come back on the next boot
+    Disable,
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum BlockRkp {
+    /// Print the feature flag and each package's network state as JSON
+    Status,
+
+    /// Turn it on and deny network for the target packages now
+    Enable,
+
+    /// Turn it off and restore network for the target packages now
     Disable,
 }
 
@@ -615,6 +633,11 @@ pub fn run() -> Result<()> {
             HideBootloader::Status => crate::hide_bootloader::status(),
             HideBootloader::Enable => crate::hide_bootloader::set_enabled(true),
             HideBootloader::Disable => crate::hide_bootloader::set_enabled(false),
+        },
+        Commands::BlockRkp { command } => match command {
+            BlockRkp::Status => crate::rkp_block::status(),
+            BlockRkp::Enable => crate::rkp_block::set_enabled(true),
+            BlockRkp::Disable => crate::rkp_block::set_enabled(false),
         },
 
         Commands::BootGuard { command } => match command {

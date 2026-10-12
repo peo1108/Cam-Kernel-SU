@@ -92,7 +92,11 @@ jobs:
           apk=$(node -e 'const r=require("./docs/.vitepress/dist/feed/releases.json")[0];console.log(r.assets.find(a=>a.name.endsWith(".apk")).browser_download_url)')
           echo "built $built, live $live"
           test "$built" = "$live"
-          curl -fsS -r 0-1023 -o /dev/null "$apk"
+          # With DL_GUARD=1 an anonymous request is refused (401) before the file is read; the files
+          # themselves were checked against GitHub's size and digest when the feed was built.
+          code=$(curl -sS -r 0-1023 -o /dev/null -w '%{http_code}' "$apk")
+          echo "apk: HTTP $code"
+          case "$code" in 200|206|401) ;; *) exit 1 ;; esac
           curl -fsS -o /dev/null https://caesarvn.xyz/feed/hiding-rules.json.sig
           curl -fsS -o /dev/null https://caesarvn.xyz/feed/module-repo/modules.json
           echo "### Deployed $built" >> "$GITHUB_STEP_SUMMARY"

@@ -212,6 +212,7 @@ test('two-step sign-in: setup, login needs the code, admin pages need it, codes 
   const { app, base } = await start(t)
   const admin = await adminClient(app, base)
   const { secret } = (await admin('POST', '/api/auth/totp/setup', {})).body
+  assert.equal((await admin('POST', '/api/auth/totp/setup', {})).body.secret, secret, 'setup again keeps the waiting key')
   const now = Math.floor(Date.now() / 30000)
   assert.equal((await admin('POST', '/api/auth/totp/enable', { code: '000000' })).status, 401)
   assert.equal((await admin('POST', '/api/auth/totp/enable', { code: totpCode(secret, now) })).status, 200)

@@ -167,9 +167,12 @@ export default function authRoutes(app) {
     'POST',
     '/api/auth/totp/setup',
     (ctx) => {
-      if (ctx.user.totp_on) fail(409, 'totp_on')
-      const secret = newSecret()
-      db.prepare('UPDATE users SET totp_secret = ? WHERE id = ?').run(secret, ctx.user.id)
+      const u = db.prepare('SELECT totp_on, totp_secret FROM users WHERE id = ?').get(ctx.user.id)
+      if (u.totp_on) fail(409, 'totp_on')
+      // Keep the key that is waiting for its first code: pressing setup again or reloading the
+      // page must not leave the authenticator app holding a key the server already replaced.
+      const secret = u.totp_secret || newSecret()
+      if (!u.totp_secret) db.prepare('UPDATE users SET totp_secret = ? WHERE id = ?').run(secret, ctx.user.id)
       return { secret, uri: otpauthUri(secret, ctx.user.email) }
     },
     { auth: 'web' },
@@ -181,6 +184,7 @@ export default function authRoutes(app) {
     (ctx) => {
       const u = db.prepare('SELECT * FROM users WHERE id = ?').get(ctx.user.id)
       if (u.totp_on) fail(409, 'totp_on')
+      if (limited(`totp:${u.id}`, 6, 900_000)) fail(429, 'slow_down')
       if (!verify(u.totp_secret, ctx.body.code, u.id)) fail(401, 'bad_totp')
       tx(db, () => {
         db.prepare('UPDATE users SET totp_on = 1 WHERE id = ?').run(u.id)

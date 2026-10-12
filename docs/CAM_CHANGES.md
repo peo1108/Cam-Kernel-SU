@@ -772,6 +772,7 @@ Thiết kế: `docs/superpowers/specs/2026-10-12-membership-design.md`. Mọi gi
 - **Trang**: `/tai-khoan`, `/thanh-vien`, `/mua`, `/ket-noi`, `/quan-tri` (+ `/en/…`, `/zh/…`).
 - **Manager**: `cam.su.kernel.account.Account` (token thiết bị trong prefs riêng), Cài đặt → Tài khoản (`ui/screen/account/AccountScreen.kt`, `Route.Account`), OTA đọc `/api/ota/releases` kèm token (`UpdateRepositoryImpl`), tải APK kèm token (`UpdateInstaller`), công tắc beta gửi `/api/tester/request`. Không còn gọi GitHub.
 - **Caddy**: bản sao cấu hình ở `site/deploy/Caddyfile` (không tự deploy: sửa `/etc/caddy/Caddyfile` trên VPS, `caddy validate`, `systemctl reload caddy`, rồi chép lại vào repo). Trang lỗi trả `Cache-Control: no-store`.
+- **Repo private (12/10/2026)**: GitHub Free cho 2.000 phút Actions/tháng, macOS tính gấp 10. Đã bỏ 2 bản camd macOS (`build-manager.yml`, `build-camd-extra`); khi merge upstream đừng thêm lại. Một Release còn khoảng 60 phút.
 - **CI**: `deploy-site.yml` (trang, `/dl/`, `/feed/`, `_private/releases.json` có cờ `urgent`), `test.yml` job `site-api`. Backend deploy tay: `site/scripts/deploy-api.sh` (test → sao lưu → cài → khởi động lại → kiểm tra).
 
 ### Phát hành

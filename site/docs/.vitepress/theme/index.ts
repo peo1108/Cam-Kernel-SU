@@ -1,5 +1,5 @@
 import DefaultTheme from 'vitepress/theme'
-import type { Theme } from 'vitepress'
+import { inBrowser, type Theme } from 'vitepress'
 import Layout from './Layout.vue'
 import HomeGlass from './components/HomeGlass.vue'
 import DownloadPanel from './components/DownloadPanel.vue'
@@ -22,7 +22,7 @@ export default {
     // browser instead: the server answers with a download, or sends a visitor to sign in.
     const before = router.onBeforeRouteChange
     router.onBeforeRouteChange = async (to) => {
-      if (/^\/(dl|feed)\//.test(new URL(to, location.origin).pathname)) {
+      if (inBrowser && /^\/(dl|feed)\//.test(new URL(to, location.origin).pathname)) {
         location.href = to
         return false
       }

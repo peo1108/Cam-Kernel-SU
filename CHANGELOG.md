@@ -2,6 +2,11 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.1.4 - 2026-10-13
+- "Chặn RKP" nay chỉ ngắt mạng khi bạn mở Duck Detector, thoát ra là mạng trở lại ngay
+### Thay đổi
+- Khi Duck Detector đang mở, cả máy tạm mất internet (Wi-Fi vẫn kết nối nhưng không ra mạng) nên app không đo được độ trễ của đường kiểm tra keybox; rời khỏi Duck Detector là mạng về ngay. Trước đây chỉ chặn cố định mạng của vài app
+
 ## 1.1.3 - 2026-10-12
 - Công tắc mới "Chặn RKP" trong Tính năng → Tự ẩn bootloader
 ### Tính năng mới

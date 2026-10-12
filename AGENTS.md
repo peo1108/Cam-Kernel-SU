@@ -70,7 +70,7 @@ cp ../userspace/camd/target/aarch64-linux-android/release/camd app/src/main/jniL
 ./gradlew clean assembleRelease
 ```
 
-Unit tests: `./gradlew :app:testDebugUnitTest` (24 classes, 132 tests, all pass on 2026-10-12; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks.
+Unit tests: `./gradlew :app:testDebugUnitTest` (25 classes, 136 tests, all pass on 2026-10-12; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks.
 
 Important: Manager build REQUIRES camd binaries to be present in `jniLibs` before building. Gradle packs whatever `libcamd.so` is there and never rebuilds it: after changing camd, copy a fresh build in, or the APK ships the old daemon (CI builds both from the same commit). From CI, install the `manager` artifact, never `manager-gradle` (no `libcamd.so` in it). On Windows, run Gradle from the `K:` drive (`docs/CAM_CHANGES.md` section 5).
 
@@ -83,7 +83,7 @@ npm run build   # data (releases, CHANGELOG.md, module-repo) is read at build ti
 ```
 
 CI (`deploy-site.yml`) rsyncs `docs/.vitepress/dist` to the VPS; see row 38 of `docs/CAM_CHANGES.md`.
-The Manager reads OTA, hiding rules and the module library from `caesarvn.xyz/feed/` (built by `site/scripts/build-feed.mjs`), not from GitHub: keep that feed's JSON layout identical to the GitHub releases API (section 14 of `docs/CAM_CHANGES.md`, preparing for a private repository).
+The Manager gets updates from `caesarvn.xyz/api/ota/releases` with its account token (Settings → Account) and hiding rules / the module library from `caesarvn.xyz/feed/`, never from GitHub (the repository goes private). Business rules (memberships, prices, payments, beta testers) live in `site/api`: tests `node --test site/api/test/api.test.mjs site/api/test/business.test.mjs`, deploy `site/scripts/deploy-api.sh`. Section 14 of `docs/CAM_CHANGES.md`.
 
 ### Website (`website/`)
 

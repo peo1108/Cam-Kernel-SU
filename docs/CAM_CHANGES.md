@@ -52,6 +52,8 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 37 | **Chỉ mời cài lại LKM khi kernel thật sự đổi** (2026-10-12): Kbuild nhúng `KSU_SOURCE_ID` = hash của cây `kernel/` + `uapi/` ở `HEAD` (`git ls-tree --full-tree -r HEAD -- kernel uapi`, bỏ dòng `kernel/tests/`, qua `git hash-object --stdin`); ioctl riêng của Cam `KSU_IOCTL_GET_SOURCE_ID` (`_IOR('K', 100, …)`, `manager_or_root`) trả về. Gradle tính cùng giá trị (`getKernelSourceId` trong `manager/build.gradle.kts`, `BuildConfig.KERNEL_SOURCE_ID`); `HomeUiState.lkmDiffers` so hai hash. Một bên rỗng (LKM cũ chưa có ioctl, LKM build từ cây có thay đổi chưa commit, Manager build ngoài git) thì quay về so số phiên bản như trước. `camd debug info` in `source_id` | Trước đây số phiên bản LKM luôn khác app sau mỗi bản cập nhật nên nút **Cài lại LKM** gần như lần nào cũng hiện, khiến người dùng flash không cần thiết (mỗi lần flash là một lần rủi ro). Test: `LkmUpdateTest` |
 | 38 | **Website riêng** (2026-10-12): `site/` (VitePress 1.6.4, giao diện kính giống Manager, tiếng Việt ở `/`, tiếng Anh ở `/en/`): trang chủ, Tải về (bản `cam-v*` mới nhất lấy từ GitHub API lúc build), Nhật ký (đọc `CHANGELOG.md`), Thư viện module (`modules.json` của nhánh `module-repo`), hướng dẫn. `deploy-site.yml` build rồi rsync lên VPS của Cam (`/var/www/caesarvn`, Caddy, https://caesarvn.xyz) bằng khoá chỉ chạy được `rrsync -wo` (secret `SITE_DEPLOY_KEY`, `SITE_KNOWN_HOSTS`, `SITE_DEPLOY_HOST`); chạy khi push `site/**` hoặc `CHANGELOG.md`, khi có release, và mỗi ngày. Slug tiêu đề đổi `đ` thành `d` (`config.mts`) | `website/` vẫn là trang kernelsu.org để merge dễ; trang của Cam nằm thư mục riêng nên merge upstream không đụng tới |
 | 39 | **Manager không còn đọc GitHub** (2026-10-12, chuẩn bị đóng repo, mục 14): OTA đọc `https://caesarvn.xyz/feed/releases.json` (cùng định dạng releases API, APK ở `/dl/`, `digest` sha256 do site tự tính và so với GitHub), GitHub chỉ còn là dự phòng (`UpdateRepositoryImpl.GITHUB_URL`, có TODO gỡ); rule ẩn root đọc `https://caesarvn.xyz/feed/hiding-rules.json` (+ `.sig`, bản chép nguyên byte); thư viện module đọc `https://caesarvn.xyz/feed/module-repo`. Feed do `site/scripts/build-feed.mjs` dựng, `deploy-site.yml` chạy sau mỗi Release / Module Repo (`workflow_run`) và tự kiểm tra feed đang chạy. Test: `UpdateParserTest.readsSiteFeed` | Repo private thì GitHub trả 404: máy đã cài sẽ mất OTA, rule và thư viện module. Feed nằm trên VPS của Cam, chữ ký APK và chữ ký rule vẫn kiểm như cũ nên VPS bị chiếm cũng không cài được bản giả |
+| 40 | **Thành viên và thanh toán** (2026-10-12, mục 14): `site/api` (tài khoản, đơn hàng, VietQR SePay, webhook, đối soát, sổ giao dịch, hoàn tiền, 2FA admin, cài đặt kinh doanh, panel `/quan-tri`, sao lưu mã hoá); 13 test (`site/api/test`), chạy trong `test.yml` | Bán thành viên 200k, truy cập sớm 20k; mọi quy tắc ở server |
+| 41 | **Manager liên kết tài khoản caesarvn.xyz** (2026-10-12): Cài đặt → Tài khoản (`AccountScreen.kt`, mã 6 ký tự + QR), OTA chỉ cho tài khoản thành viên (`/api/ota/releases` kèm token), tải APK kèm token, công tắc beta gửi yêu cầu beta tester. Test: `AccountParseTest` | Repo private: app không còn đọc GitHub; quyền nhận bản do server quyết |
 
 ## 2. Lịch sử commit
 
@@ -744,42 +746,52 @@ Ghim `duckDetector` = `78aabb41` (nightly), `version` 6 (2026-10-12: bỏ `AVC l
 - **Merge upstream (trước `f7bfa28d`):** upstream vẫn để `modules.kernelsu.org` trong `ModuleRepoRepositoryImpl.kt`, `ModuleRepoApi.kt` (2 chỗ) và `ModuleRepoScreen.kt` (`webUrl`/`sourceUrl` mặc định, Cam để rỗng). Conflict ở đó thì giữ bản của Cam. Khi tổ chức cũ được mở lại thì có thể chuyển về, nhưng không bắt buộc.
 
 
-## 14. Đóng repo về private (chuẩn bị 2026-10-12)
+## 14. Kinh doanh: thành viên, thanh toán, OTA riêng, đóng repo (2026-10-12)
 
-Mục tiêu: khi tới ngày chỉ cần bấm **Settings → General → Danger Zone → Change visibility → Private**, không phải sửa gì thêm.
+Thiết kế: `docs/superpowers/specs/2026-10-12-membership-design.md`. Mọi giá, quyền và quy tắc nằm ở backend (`site/api`), trình duyệt và Manager chỉ hiển thị.
 
-### Hạ tầng (đã xong 2026-10-12)
+### Sản phẩm
 
-| Thứ người dùng tải | Trước | Giờ |
+| Gói | Giá (đổi được ở /quan-tri → Cài đặt) | Được gì |
 |---|---|---|
-| OTA của Manager | `api.github.com/.../releases` | `caesarvn.xyz/feed/releases.json` (GitHub là dự phòng) |
-| File APK, LKM, camd | `github.com/.../releases/download/...` | `caesarvn.xyz/dl/<tag>/<file>` |
-| Rule ẩn root | `raw.githubusercontent.com/.../main/.../hiding-rules.json` | `caesarvn.xyz/feed/hiding-rules.json` (+ `.sig`) |
-| Thư viện module | `raw.githubusercontent.com/.../module-repo` | `caesarvn.xyz/feed/module-repo` |
-| Trang web, nút tải | (chưa có) | `caesarvn.xyz`, không còn link GitHub nào |
+| Thành viên | 200.000đ một lần | Tải app, mọi bản chính thức sau 20 ngày (mãi mãi), xin mã nguồn |
+| Truy cập sớm | 20.000đ một bản | Bản đó ngay (cần là thành viên) |
+| Beta tester | miễn phí, Cam duyệt | Thành viên xin (công tắc "Nhận bản thử nghiệm" trong app hoặc nút trên web); được duyệt thì nhận mọi bản ngay, cả bản beta |
+| Bản `[gấp]` | thành viên, ngay | Tiêu đề changelog có đuôi `[gấp]` |
+| Rule ẩn root, thư viện module | mọi người | `/feed/` công khai |
 
-- `site/scripts/build-feed.mjs`: đọc releases và nhánh `module-repo` qua API bằng `GITHUB_TOKEN` (đọc được repo private), mirror bản stable mới nhất (đủ file), 5 bản stable trước và các beta mới hơn (chỉ APK), sinh `releases.json` cùng định dạng API (`tag_name`, `prerelease`, `body`, `assets[].browser_download_url`, `digest`), chép rule và module-repo.
-- `deploy-site.yml`: chạy sau `Release` và `Module Repo` (`workflow_run`, vì release/push tạo bằng `GITHUB_TOKEN` không bắn event `release`/`push`), khi đổi `site/**`, `CHANGELOG.md`, rule; mỗi ngày 01:30 UTC; bước cuối so tag mới nhất của feed đang chạy với bản vừa dựng và thử tải APK.
-- Caddy (`/etc/caddy/Caddyfile` trên VPS): `/feed/*` `Cache-Control: no-cache` (app hỏi lại bằng ETag, không đổi thì 304), `/dl/*` tải về, `try_files` cho URL không đuôi `.html`.
+### Thành phần
 
-### Phát hành khi repo đã private (không đổi gì so với mục 8)
+- **API** `site/api` (Node 24, `node:sqlite`, không thư viện ngoài), service `cam-site-api` trên VPS, `127.0.0.1:7792` sau Caddy. Database `/var/lib/cam-site-api/cam.db`. Cấu hình và khoá bí mật: `/etc/cam-site-api.env` (root, 600), không bao giờ vào repo.
+  - `routes/auth.mjs` đăng ký, đăng nhập, Google, quên mật khẩu, 2FA (TOTP, `totp.mjs`).
+  - `routes/pay.mjs` đơn hàng, VietQR SePay, webhook `/api/pay/sepay` (header `Authorization: Apikey <SEPAY_WEBHOOK_KEY>`), đối soát qua SePay API (`SEPAY_API_TOKEN`, 3 phút/lần), sổ giao dịch `payments` (không xoá), thiếu/thừa/trả trùng/trả trễ, gán tay, hoàn tiền (thu lại quyền).
+  - `routes/device.mjs` ghép đôi app (mã 6 ký tự, không nhập mật khẩu trong app), `/api/ota/*`, cổng `/api/dl/check` cho Caddy `forward_auth` (bật bằng `DL_GUARD=1`).
+  - `routes/admin.mjs` + `settings.mjs` panel `/quan-tri`: thành viên, cấp/thu quyền tay (cả email chưa đăng ký), khoá tài khoản, beta tester, đơn, giao dịch, mã nguồn, cài đặt, nhật ký thao tác.
+  - `backup.mjs` sao lưu mã hoá AES-256-GCM mỗi đêm 03:30 (timer `cam-site-backup`), giữ 30 bản ở `/var/backups/cam-site-api`, gửi Telegram nếu có bot. **Khoá `BACKUP_KEY` trong env phải được chép ra chỗ khác**, mất là không mở được bản sao lưu. Khôi phục: `node /opt/cam-site-api/backup.mjs restore <file> <out.db>`.
+  - Lệnh trên VPS: `cam-admin promote|demote|grant|users|requests`.
+- **Trang**: `/tai-khoan`, `/thanh-vien`, `/mua`, `/ket-noi`, `/quan-tri` (+ `/en/…`, `/zh/…`).
+- **Manager**: `cam.su.kernel.account.Account` (token thiết bị trong prefs riêng), Cài đặt → Tài khoản (`ui/screen/account/AccountScreen.kt`, `Route.Account`), OTA đọc `/api/ota/releases` kèm token (`UpdateRepositoryImpl`), tải APK kèm token (`UpdateInstaller`), công tắc beta gửi `/api/tester/request`. Không còn gọi GitHub.
+- **CI**: `deploy-site.yml` (trang, `/dl/`, `/feed/`, `_private/releases.json` có cờ `urgent`), `test.yml` job `site-api`. Backend deploy tay: `site/scripts/deploy-api.sh` (test → sao lưu → cài → khởi động lại → kiểm tra).
 
-1. Thêm mục `## X.Y.Z - YYYY-MM-DD` vào `CHANGELOG.md`, push.
-2. Tag `cam-vX.Y.Z` (bản chính) hoặc `cam-vX.Y.Z-beta.N` (beta, chỉ máy bật "Nhận bản thử nghiệm" nhận), push tag.
-3. `Release` build, ký, tạo GitHub Release (lưu trữ, chỉ người có quyền repo thấy).
-4. `Release` xong là `Deploy Site` tự chạy: `/dl/`, `releases.json`, trang Tải về và Nhật ký có bản mới. Beta chỉ vào feed, không hiện ở trang Tải về.
-5. Trong 12 giờ Manager tự báo cập nhật. Xem kết quả ở Actions → Deploy Site (tóm tắt "Deployed cam-v…").
+### Phát hành
 
-### Thứ tự đóng repo
+1. Thêm `## X.Y.Z - YYYY-MM-DD` vào `CHANGELOG.md` (thêm ` [gấp]` sau ngày nếu là bản sửa lỗi gấp), push.
+2. Tag `cam-vX.Y.Z` (bản chính) hoặc `cam-vX.Y.Z-beta.N` (chỉ beta tester nhận), push tag.
+3. `Release` build + ký → `Deploy Site` tự chạy → `/dl/`, danh mục, trang Tải về có bản mới. Thành viên nhận sau `embargo_days` ngày, tester nhận ngay, ai mua vé sớm nhận ngay.
+4. Sửa `site/api`: chạy `site/scripts/deploy-api.sh`.
 
-1. **Bây giờ (repo còn public):** ra một bản có dòng 39 (đổi URL), ví dụ `cam-v3.2.0`. Máy cũ nhận bản này qua GitHub như mọi lần.
-2. **Chờ khoảng 2 tháng** (dự kiến tới **2026-12-12**) để mọi người lên bản đó. Ai còn bản cũ sau khi đóng phải tải tay một lần ở `caesarvn.xyz/tai-ve`.
-3. **Trước ngày đóng, kiểm tra:**
-   - VPS còn hạn (hết hạn **2026-11-05**, phải gia hạn trước) và `https://caesarvn.xyz/feed/releases.json` có bản mới nhất.
-   - Actions → Deploy Site lần gần nhất xanh.
-   - Gói GitHub đủ phút Actions cho repo private (gói Free: 2000 phút/tháng; build đủ 8 KMI tốn nhiều). Thiếu thì lên Pro hoặc dùng self-hosted runner.
-4. **Bấm Private.** Chạy tay Actions → Deploy Site một lần để chắc nó đọc được repo private (`GITHUB_TOKEN`).
-5. **Bản kế tiếp:** gỡ `GITHUB_URL` trong `UpdateRepositoryImpl.kt` (TODO đã ghi) và câu nhắc trong mục này.
-6. Người xin mã nguồn ở `caesarvn.xyz/ma-nguon`: xem bằng `cam-requests` trên VPS (`/var/lib/cam-site-api/requests.jsonl`), duyệt thì mời vào repo với quyền Read.
+### Ngày ra mắt (19/10/2026), theo thứ tự
 
-Lưu ý giấy phép: phần lớn mã là KernelSU (kernel GPL-2.0, còn lại GPL-3.0); người nhận bản build có quyền nhận mã nguồn tương ứng.
+1. Chuyển các mục 3.x của `CHANGELOG.md` sang `docs/CHANGELOG-beta.md`; `CHANGELOG.md` bắt đầu bằng `## 1.1.1 - 2026-10-19`.
+2. Push, tag `cam-v1.1.1`. `build-feed.mjs`/`release.data.ts` tự bỏ mọi bản phát hành trước `cam-v1.1.1`.
+3. VPS: `DL_GUARD=1` trong `/etc/cam-site-api.env`, `systemctl restart cam-site-api`. Từ đây `/dl/` chỉ trả file cho người có quyền.
+4. `/quan-tri` → Cài đặt → bật "Đang bán thành viên" (đang tắt từ 2026-10-12 để không ai trả tiền trước ngày ra mắt).
+5. Thử trọn: tài khoản mới → mua (chuyển khoản thật số nhỏ hoặc gán tay) → liên kết app → nhận OTA.
+6. GitHub → Settings → Danger Zone → Private. Chạy tay Actions → Deploy Site một lần.
+
+### Còn thiếu (cần Cam)
+
+- `SEPAY_API_TOKEN` (SePay → API Access) cho đối soát định kỳ; chưa có thì chỉ dựa vào webhook.
+- Google OAuth (`GOOGLE_CLIENT_ID/SECRET`), Brevo (`BREVO_API_KEY`, quên mật khẩu, biên nhận), bot Telegram (`TG_TOKEN`, `TG_CHAT`).
+- Điều khoản dịch vụ, chính sách hoàn tiền, quyền riêng tư: chưa có trang, cần Cam quyết nội dung (liên hệ, điều kiện hoàn).
+- Giấy phép: phần lớn mã là KernelSU (GPL-2.0 nhân, GPL-3.0 còn lại); người nhận bản build có quyền nhận mã nguồn tương ứng.

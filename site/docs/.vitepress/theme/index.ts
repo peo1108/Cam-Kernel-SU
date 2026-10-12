@@ -16,7 +16,18 @@ import './style.css'
 export default {
   extends: DefaultTheme,
   Layout,
-  enhanceApp({ app }) {
+  enhanceApp({ app, router }) {
+    // Release files (/dl/) and feed files are not pages. VitePress routes any link whose extension it
+    // does not know (.apk, .ko, camd-*) as a page and shows its 404 until a reload. Hand them to the
+    // browser instead: the server answers with a download, or sends a visitor to sign in.
+    const before = router.onBeforeRouteChange
+    router.onBeforeRouteChange = async (to) => {
+      if (/^\/(dl|feed)\//.test(new URL(to, location.origin).pathname)) {
+        location.href = to
+        return false
+      }
+      return before?.(to)
+    }
     app.component('HomeGlass', HomeGlass)
     app.component('DownloadPanel', DownloadPanel)
     app.component('ChangelogList', ChangelogList)

@@ -1,0 +1,49 @@
+# Caddy config for caesarvn.xyz, copied from /etc/caddy/Caddyfile on the VPS (2026-10-12).
+# The VPS file also has unrelated sites; only the Cam block is kept here. Caddy is not deployed
+# from the repo: after a change, edit the VPS file, then `caddy validate` and `systemctl reload caddy`,
+# and update this copy so the two stay the same.
+# Behind it: static pages from CI (deploy-site.yml) in /var/www/caesarvn, the API (site/api,
+# service cam-site-api) on 127.0.0.1:7792. Certificates: Caddy, Let's Encrypt (Cloudflare "DNS only").
+
+# Web Cam Kernel SU: file tinh, CI rsync vao /var/www/caesarvn bang user deploy.
+caesarvn.xyz, www.caesarvn.xyz {
+	root * /var/www/caesarvn
+	# VitePress cleanUrls: /tai-ve is tai-ve.html
+	try_files {path} {path}.html {path}/index.html
+	handle_errors {
+		rewrite * /404.html
+		# an error page must never be cached (the /dl/ rule below would keep it for a day)
+		header Cache-Control "no-store"
+		header -Content-Disposition
+		file_server
+	}
+	# Release catalog for the API only (site/scripts/build-feed.mjs); never served.
+	respond /_private/* 404
+	# Downloads: the API says who may have which release (DL_GUARD in /etc/cam-site-api.env).
+	handle /dl/* {
+		forward_auth 127.0.0.1:7792 {
+			uri /api/dl/check
+		}
+		file_server
+	}
+	handle /api/* {
+		reverse_proxy 127.0.0.1:7792
+	}
+	# OTA feed, hiding rules, module library: always revalidated (ETag), so a release shows at once.
+	@feed path /feed/*
+	header @feed Cache-Control "no-cache"
+	@dl path /dl/*
+	header @dl Cache-Control "public, max-age=86400"
+	header @dl Content-Disposition attachment
+	encode zstd gzip
+	file_server
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+}
+

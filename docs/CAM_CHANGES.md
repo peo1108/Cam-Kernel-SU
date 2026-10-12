@@ -768,9 +768,10 @@ Thiết kế: `docs/superpowers/specs/2026-10-12-membership-design.md`. Mọi gi
   - `routes/device.mjs` ghép đôi app (mã 6 ký tự, không nhập mật khẩu trong app), `/api/ota/*`, cổng `/api/dl/check` cho Caddy `forward_auth` (bật bằng `DL_GUARD=1`).
   - `routes/admin.mjs` + `settings.mjs` panel `/quan-tri`: thành viên, cấp/thu quyền tay (cả email chưa đăng ký), khoá tài khoản, beta tester, đơn, giao dịch, mã nguồn, cài đặt, nhật ký thao tác.
   - `backup.mjs` sao lưu mã hoá AES-256-GCM mỗi đêm 03:30 (timer `cam-site-backup`), giữ 30 bản ở `/var/backups/cam-site-api`, gửi Telegram nếu có bot. **Khoá `BACKUP_KEY` trong env phải được chép ra chỗ khác**, mất là không mở được bản sao lưu. Khôi phục: `node /opt/cam-site-api/backup.mjs restore <file> <out.db>`.
-  - Lệnh trên VPS: `cam-admin promote|demote|grant|users|requests`.
+  - Lệnh trên VPS: `cam-admin promote|demote|grant|users|requests`. Quên mật khẩu mà mail chậm: `/quan-tri` → người dùng → "Tạo link đặt lại mật khẩu" (1 giờ, một lần), gửi tay.
 - **Trang**: `/tai-khoan`, `/thanh-vien`, `/mua`, `/ket-noi`, `/quan-tri` (+ `/en/…`, `/zh/…`).
 - **Manager**: `cam.su.kernel.account.Account` (token thiết bị trong prefs riêng), Cài đặt → Tài khoản (`ui/screen/account/AccountScreen.kt`, `Route.Account`), OTA đọc `/api/ota/releases` kèm token (`UpdateRepositoryImpl`), tải APK kèm token (`UpdateInstaller`), công tắc beta gửi `/api/tester/request`. Không còn gọi GitHub.
+- **Caddy**: bản sao cấu hình ở `site/deploy/Caddyfile` (không tự deploy: sửa `/etc/caddy/Caddyfile` trên VPS, `caddy validate`, `systemctl reload caddy`, rồi chép lại vào repo). Trang lỗi trả `Cache-Control: no-store`.
 - **CI**: `deploy-site.yml` (trang, `/dl/`, `/feed/`, `_private/releases.json` có cờ `urgent`), `test.yml` job `site-api`. Backend deploy tay: `site/scripts/deploy-api.sh` (test → sao lưu → cài → khởi động lại → kiểm tra).
 
 ### Phát hành

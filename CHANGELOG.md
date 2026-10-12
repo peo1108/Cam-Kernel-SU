@@ -2,6 +2,13 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.1.3 - 2026-10-12
+- Công tắc mới "Chặn RKP" trong Tính năng → Tự ẩn bootloader
+### Tính năng mới
+- Chặn RKP: cắt mạng dịch vụ cấp khoá RKP và Duck Detector để kiểm tra keybox không lộ độ trễ; tự bật lại sau mỗi lần khởi động. Chỉ dùng cho máy không cấp được khoá RKP
+### Thay đổi
+- Mua truy cập sớm hiện thành cửa sổ ngay trên Home thay cho một trang riêng
+
 ## 1.1.2 - 2026-10-12
 - Nhận sớm bản mới ngay trong app: xem có gì mới, quét mã QR chuyển khoản, tự xác nhận rồi cập nhật
 ### Tài khoản

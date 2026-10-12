@@ -108,7 +108,7 @@
     <string name="grant_root_failed">Cấp quyền Root thất bại!</string>
     <string name="settings_check_update">Kiểm tra cập nhật</string>
     <string name="settings_beta_updates">Nhận bản thử nghiệm</string>
-    <string name="settings_beta_updates_summary">Nhận cả bản thử trước khi phát hành cho mọi người. Có thể còn lỗi.</string>
+    <string name="settings_beta_updates_summary">Nhận bản thử trước mọi người. Cần được duyệt làm beta tester (Cài đặt → Tài khoản). Có thể còn lỗi.</string>
     <string name="settings_slimes">Slime đi dạo</string>
     <string name="settings_slimes_summary">Cho mấy bé slime trong thẻ trạng thái chạy chơi khắp các trang</string>
     <string name="settings_slime_count">Số slime mỗi trang</string>
@@ -640,4 +640,32 @@
     <string name="update_installing_hint">App sẽ tự đóng và mở lại khi xong</string>
     <string name="update_retry">Thử lại</string>
     <string name="update_hide">Ẩn</string>
+    <!-- caesarvn.xyz account (cam.su.kernel.account.Account) -->
+    <string name="account_title">Tài khoản</string>
+    <string name="account_unlinked">Liên kết để nhận cập nhật</string>
+    <string name="account_link">Liên kết tài khoản</string>
+    <string name="account_link_summary">Điện thoại hiện mã; xác nhận trên caesarvn.xyz khi đã đăng nhập. Không nhập mật khẩu trong app.</string>
+    <string name="account_code_title">Mã liên kết</string>
+    <string name="account_code_hint">Quét QR bằng thiết bị khác, hoặc mở trang bên dưới ngay trên điện thoại này, đăng nhập rồi xác nhận mã.</string>
+    <string name="account_open_web">Mở trang liên kết</string>
+    <string name="account_waiting">Đang chờ xác nhận…</string>
+    <string name="account_expired">Mã đã hết hạn.</string>
+    <string name="account_new_code">Tạo mã mới</string>
+    <string name="account_member">Thành viên</string>
+    <string name="account_not_member">Chưa là thành viên: chưa nhận được cập nhật cho tới khi tham gia.</string>
+    <string name="account_join">Tham gia trên web</string>
+    <string name="account_tester">Beta tester</string>
+    <string name="account_tester_none">Chưa xin</string>
+    <string name="account_tester_pending">Đang chờ duyệt</string>
+    <string name="account_tester_approved">Đã duyệt: nhận mọi bản ngay, cả bản thử nghiệm</string>
+    <string name="account_tester_rejected">Chưa được duyệt</string>
+    <string name="account_tester_ask">Xin làm beta tester</string>
+    <string name="account_tester_sent">Đã gửi yêu cầu. Được duyệt là nhận bản thử nghiệm.</string>
+    <string name="account_waiting_releases">Bản đang chờ mở</string>
+    <string name="account_opens_on">Mở ngày %1$s</string>
+    <string name="account_get_early">Nhận sớm trên web</string>
+    <string name="account_unlink">Huỷ liên kết điện thoại này</string>
+    <string name="account_error">Không kết nối được caesarvn.xyz. Thử lại.</string>
+    <string name="account_members_only">Cần tham gia thành viên trước.</string>
+    <string name="account_refresh">Làm mới</string>
 </resources>

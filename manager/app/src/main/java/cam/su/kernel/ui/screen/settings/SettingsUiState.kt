@@ -8,6 +8,8 @@ import com.materialkolor.dynamiccolor.ColorSpec
 data class SettingsUiState(
     val checkUpdate: Boolean = true,
     val betaUpdates: Boolean = false,
+    /** Email of the linked caesarvn.xyz account, null when this phone is not linked. */
+    val accountEmail: String? = null,
     val checkModuleUpdate: Boolean = true,
     val themeMode: Int = 0,
     val miuixMonet: Boolean = false,
@@ -84,4 +86,5 @@ data class SettingsScreenActions(
     val onSetAutoJailbreak: (Boolean) -> Unit,
     val onSetUseSoftReboot: (Boolean) -> Unit,
     val onOpenAbout: () -> Unit,
+    val onOpenAccount: () -> Unit,
 )

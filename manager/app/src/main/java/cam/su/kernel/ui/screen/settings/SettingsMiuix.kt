@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.automirrored.rounded.Rule
+import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.BugReport
@@ -106,6 +107,26 @@ fun SettingPagerMiuix(
                 overscrollEffect = null,
             ) {
                 item {
+                    GlassCard(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        ArrowPreference(
+                            title = stringResource(id = R.string.account_title),
+                            summary = uiState.accountEmail ?: stringResource(id = R.string.account_unlinked),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.AccountCircle,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.account_title),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = actions.onOpenAccount,
+                        )
+                    }
+
                     GlassCard(
                         modifier = Modifier
                             .padding(top = 12.dp)

@@ -3,6 +3,7 @@ package cam.su.kernel.data.repository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import cam.su.kernel.BuildConfig
+import cam.su.kernel.account.Account
 import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.isNetworkAvailable
 import cam.su.kernel.update.UpdateInfo
@@ -15,39 +16,38 @@ class UpdateRepositoryImpl : UpdateRepository {
 
     private companion object {
         /**
-         * The site's mirror of the releases API (site/scripts/build-feed.mjs): same JSON layout,
-         * APKs served from caesarvn.xyz, so updates keep working once the repository is private.
+         * Releases this phone's account may install, in the GitHub releases API layout
+         * (site/api/routes/device.mjs): the server applies membership, the waiting days, early
+         * access and beta tester. Not linked or not a member: no updates (Settings → Account).
          */
-        const val FEED_URL = "https://caesarvn.xyz/feed/releases.json"
-
-        // TODO(after the repository goes private): drop this fallback (docs/CAM_CHANGES.md, section 14).
-        // releases/latest is no good here: it can point at a non-Cam release (sfs-archive)
-        const val GITHUB_URL = "https://api.github.com/repos/peo1108/Cam-Kernel-SU/releases?per_page=30"
+        const val OTA_URL = "${Account.SITE}/api/ota/releases"
     }
 
     override suspend fun fetchLatest(): Result<UpdateInfo?> = withContext(Dispatchers.IO) {
-        if (!isNetworkAvailable(camApp)) return@withContext Result.success(null)
-        val json = runCatching { get(FEED_URL) }.recoverCatching { get(GITHUB_URL) }
-        json.map {
-            parseReleases(
-                it,
-                BuildConfig.VERSION_CODE.toLong(),
-                includePrereleases = SettingsRepositoryImpl().betaUpdates,
-            )
-        }
-    }
-
-    private fun get(url: String): String {
-        val request = Request.Builder()
-            .url(url)
-            .header("Accept", "application/vnd.github+json")
-            // revalidate every time (ETag): a new release still shows at once, and an unchanged
-            // feed costs a 304 (on GitHub those do not count against the 60 requests/hour limit)
-            .cacheControl(CacheControl.Builder().noCache().build())
-            .build()
-        return camApp.okhttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("HTTP ${response.code} for $url")
-            response.body.string()
+        if (!isNetworkAvailable(camApp) || !Account.isLinked()) return@withContext Result.success(null)
+        runCatching {
+            val builder = Request.Builder()
+                .url(OTA_URL)
+                // revalidate every time: a new release still shows at once
+                .cacheControl(CacheControl.Builder().noCache().build())
+            Account.authorize(builder, OTA_URL)
+            camApp.okhttpClient.newCall(builder.build()).execute().use { response ->
+                when (response.code) {
+                    200 -> parseReleases(
+                        response.body.string(),
+                        BuildConfig.VERSION_CODE.toLong(),
+                        // The server only sends betas to approved testers; the switch still lets a
+                        // tester stay on stable releases.
+                        includePrereleases = SettingsRepositoryImpl().betaUpdates,
+                    )
+                    401 -> {
+                        Account.forget()
+                        null
+                    }
+                    403 -> null
+                    else -> throw IOException("HTTP ${response.code}")
+                }
+            }
         }
     }
 }

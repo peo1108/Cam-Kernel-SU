@@ -138,7 +138,7 @@
     <string name="app_profile_affects_following_apps">Affects the following apps</string>
     <string name="settings_check_update">Check for updates</string>
     <string name="settings_beta_updates">Beta updates</string>
-    <string name="settings_beta_updates_summary">Also offer test builds before they reach everyone. They may have bugs.</string>
+    <string name="settings_beta_updates_summary">Get test builds before everyone. Needs approval as a beta tester (Settings → Account). They may have bugs.</string>
     <string name="settings_slimes">Roaming slimes</string>
     <string name="settings_slimes_summary">Let the slimes from the status card roam the other pages</string>
     <string name="settings_slime_count">Slimes per page</string>
@@ -656,4 +656,32 @@
     <string name="update_installing_hint">The app closes and reopens when done</string>
     <string name="update_retry">Retry</string>
     <string name="update_hide">Hide</string>
+    <!-- caesarvn.xyz account (cam.su.kernel.account.Account) -->
+    <string name="account_title">Account</string>
+    <string name="account_unlinked">Link to get updates</string>
+    <string name="account_link">Link account</string>
+    <string name="account_link_summary">The phone shows a code; confirm it on caesarvn.xyz while signed in. No password is typed into this app.</string>
+    <string name="account_code_title">Link code</string>
+    <string name="account_code_hint">Scan the QR with another device, or open the page below on this phone, sign in and confirm the code.</string>
+    <string name="account_open_web">Open the link page</string>
+    <string name="account_waiting">Waiting for confirmation…</string>
+    <string name="account_expired">The code expired.</string>
+    <string name="account_new_code">New code</string>
+    <string name="account_member">Member</string>
+    <string name="account_not_member">Not a member yet: no updates until you join.</string>
+    <string name="account_join">Join on the website</string>
+    <string name="account_tester">Beta tester</string>
+    <string name="account_tester_none">Not requested</string>
+    <string name="account_tester_pending">Waiting for approval</string>
+    <string name="account_tester_approved">Approved: every release at once, betas included</string>
+    <string name="account_tester_rejected">Not approved</string>
+    <string name="account_tester_ask">Ask to be a beta tester</string>
+    <string name="account_tester_sent">Request sent. You get betas once it is approved.</string>
+    <string name="account_waiting_releases">Waiting releases</string>
+    <string name="account_opens_on">Opens on %1$s</string>
+    <string name="account_get_early">Get it early on the website</string>
+    <string name="account_unlink">Unlink this phone</string>
+    <string name="account_error">Could not reach caesarvn.xyz. Try again.</string>
+    <string name="account_members_only">Join as a member first.</string>
+    <string name="account_refresh">Refresh</string>
 </resources>

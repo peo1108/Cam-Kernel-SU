@@ -41,6 +41,11 @@ sealed interface Route : NavKey, Parcelable {
     @Serializable
     data object About : Route
 
+    /** Settings → Account: link this phone to a caesarvn.xyz account (updates, beta tester). */
+    @Parcelize
+    @Serializable
+    data object Account : Route
+
     @Parcelize
     @Serializable
     data object Sulog : Route

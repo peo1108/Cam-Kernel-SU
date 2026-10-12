@@ -56,6 +56,7 @@ fun SettingPager(
         onSetAutoJailbreak = viewModel::setAutoJailbreak,
         onSetUseSoftReboot = viewModel::setUseSoftReboot,
         onOpenAbout = { navigator.push(Route.About) },
+        onOpenAccount = { navigator.push(Route.Account) },
     )
 
     SettingPagerMiuix(uiState, actions, bottomInnerPadding)

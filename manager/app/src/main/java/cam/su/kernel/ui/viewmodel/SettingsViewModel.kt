@@ -39,6 +39,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val checkUpdate = repo.checkUpdate
             val betaUpdates = repo.betaUpdates
+            val accountEmail = cam.su.kernel.account.Account.email()
             val checkModuleUpdate = repo.checkModuleUpdate
             val themeMode = repo.themeMode
             val miuixMonet = repo.miuixMonet
@@ -101,6 +102,7 @@ class SettingsViewModel(
                 it.copy(
                     checkUpdate = checkUpdate,
                     betaUpdates = betaUpdates,
+                    accountEmail = accountEmail,
                     checkModuleUpdate = checkModuleUpdate,
                     themeMode = themeMode,
                     miuixMonet = miuixMonet,
@@ -153,6 +155,8 @@ class SettingsViewModel(
     fun setBetaUpdates(enabled: Boolean) {
         repo.betaUpdates = enabled
         _uiState.update { it.copy(betaUpdates = enabled) }
+        // Turning betas on asks to be a beta tester; Cam approves it on caesarvn.xyz.
+        if (enabled) viewModelScope.launch(Dispatchers.IO) { cam.su.kernel.account.Account.requestTester() }
     }
 
     fun setCheckModuleUpdate(enabled: Boolean) {

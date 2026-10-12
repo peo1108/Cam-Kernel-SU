@@ -1,5 +1,6 @@
 package cam.su.kernel.update
 
+import cam.su.kernel.account.Account
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -132,7 +133,8 @@ object UpdateInstaller {
         val dir = otaDir(context).apply { mkdirs() }
         val target = File(dir, info.apkName)
         return runCatching {
-            val request = Request.Builder().url(info.apkUrl).build()
+            // Downloads from caesarvn.xyz need this phone's account token (the /dl/ gate).
+            val request = Account.authorize(Request.Builder().url(info.apkUrl), info.apkUrl).build()
             camApp.okhttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
                 val body = response.body

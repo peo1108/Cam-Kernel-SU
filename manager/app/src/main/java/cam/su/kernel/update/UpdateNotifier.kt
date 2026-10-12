@@ -8,6 +8,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import cam.su.kernel.R
+import cam.su.kernel.account.LockedRelease
 import cam.su.kernel.ui.CamActivity
 
 /** Notifications for "an update is out" and "the update was installed". */
@@ -36,6 +37,23 @@ object UpdateNotifier {
             ID_AVAILABLE,
             context.getString(R.string.update_available_title, context.getString(R.string.app_name), info.versionName),
             info.summary,
+            intent,
+        )
+    }
+
+    /**
+     * A release this account may not install yet. Same notification and same tap as an update:
+     * Home opens the early access screen for it (version notes, payment, then the update).
+     */
+    fun notifyOffer(context: Context, offer: LockedRelease) {
+        val intent = Intent(context, CamActivity::class.java)
+            .putExtra(EXTRA_SHOW_UPDATE, true)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        post(
+            context,
+            ID_AVAILABLE,
+            context.getString(R.string.update_available_title, context.getString(R.string.app_name), offer.version),
+            offer.summary,
             intent,
         )
     }

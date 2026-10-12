@@ -6,6 +6,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import cam.su.kernel.update.UpdateSignal
 import cam.su.kernel.update.UpdateFailure
 import cam.su.kernel.update.UpdateState
@@ -251,15 +252,35 @@ private fun UpdateCard(
         showProgress = true
         actions.onUpdateClick()
     })
+    val offer = state.offer
     val showFromNotification by UpdateSignal.showUpdateDialog.collectAsState()
-    LaunchedEffect(showFromNotification, update) {
+    LaunchedEffect(showFromNotification, update, offer) {
         // wait for Home's own check to find the update before consuming the request
         if (showFromNotification && update != null) {
             UpdateSignal.consume()
             if (install is UpdateState.Idle) {
                 updateDialog.showConfirm(title = title, content = update.changelog.ifBlank { null }, markdown = true, confirm = updateText)
             }
+        } else if (showFromNotification && offer != null) {
+            // not open to this account yet: its notes, the early access payment, then the update
+            UpdateSignal.consume()
+            actions.onOpenOffer(offer)
         }
+    }
+
+    // A newer release this account gets after the waiting days: tap to see it and get it now.
+    AnimatedVisibility(
+        visible = update == null && install is UpdateState.Idle && offer != null,
+        enter = fadeIn() + expandVertically(),
+        exit = shrinkVertically() + fadeOut()
+    ) {
+        val o = offer ?: return@AnimatedVisibility
+        val day = remember(o.openAt) { java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM).format(java.util.Date(o.openAt)) }
+        WarningCard(
+            message = stringResource(R.string.early_card, o.version, day),
+            level = WarningLevel.Notice,
+            onClick = { actions.onOpenOffer(o) },
+        )
     }
 
     AnimatedVisibility(

@@ -1,6 +1,8 @@
 package cam.su.kernel.account
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import cam.su.kernel.camApp
 import kotlinx.coroutines.Dispatchers
@@ -113,6 +115,38 @@ object Account {
         }
     }
 
+    /**
+     * Early access to [tag] (20,000đ by default), bought in the app (site/api/routes/pay.mjs). The
+     * server hands back the waiting order for the same release instead of making a second one.
+     */
+    suspend fun buyEarly(tag: String): Result<Order> = withContext(Dispatchers.IO) {
+        if (!isLinked()) return@withContext Result.failure(OrderException("sign_in"))
+        runCatching {
+            val (code, text) = call("POST", "/api/orders", JSONObject().put("kind", "early").put("tag", tag).toString(), auth = true)
+            if (code != 200) throw OrderException(errorCode(text) ?: "http_$code")
+            parseOrder(text)
+        }
+    }
+
+    /** The order as the server sees it now: pending, paid or expired. */
+    suspend fun order(orderCode: String): Result<Order> = withContext(Dispatchers.IO) {
+        runCatching {
+            val (code, text) = call("GET", "/api/orders/$orderCode", auth = true)
+            if (code != 200) throw OrderException(errorCode(text) ?: "http_$code")
+            parseOrder(text)
+        }
+    }
+
+    /** The VietQR image of an order (drawn by SePay with the amount and transfer note filled in). */
+    suspend fun qrImage(url: String): Result<Bitmap> = withContext(Dispatchers.IO) {
+        runCatching {
+            camApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+                BitmapFactory.decodeStream(response.body.byteStream()) ?: throw IOException("not an image")
+            }
+        }
+    }
+
     suspend fun unlink(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             if (isLinked()) runCatching { call("POST", "/api/devices/self/unlink", auth = true) }
@@ -129,16 +163,88 @@ sealed interface PollResult {
     data class Linked(val token: String, val email: String?) : PollResult
 }
 
-/** [tester]: "none", "pending", "approved" or "rejected". */
+/**
+ * [tester]: "none", "pending", "approved" or "rejected". [canBuyEarly]: early access is on sale
+ * (member, selling turned on in /quan-tri, payments set up).
+ */
 data class AccountStatus(
     val email: String,
     val member: Boolean,
     val tester: String,
     val locked: List<LockedRelease>,
     val joinUrl: String,
+    val canBuyEarly: Boolean = false,
 )
 
-data class LockedRelease(val version: String, val openAt: Long, val prerelease: Boolean, val price: Long)
+/**
+ * A release this account cannot install yet. [versionCode] comes from the APK's name (0 when the
+ * server gave none); [changelog] is its CHANGELOG.md entry.
+ */
+data class LockedRelease(
+    val version: String,
+    val tag: String,
+    val openAt: Long,
+    val prerelease: Boolean,
+    val price: Long,
+    val versionCode: Long = 0,
+    val changelog: String = "",
+) {
+    /** First "- " line of the notes, shown in the notification (like UpdateInfo.summary). */
+    val summary: String?
+        get() = changelog.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("- ") }?.removePrefix("- ")?.trim()
+}
+
+private val APK_VERSION_CODE = Regex("""_(\d+)-release\.apk$""")
+
+/** Where to send the money. [content] is the transfer note: the order code the bank matches. */
+data class PayInfo(val image: String, val bank: String, val account: String, val holder: String, val content: String)
+
+/** [status]: "pending", "paid" or "expired". [received] is what came in so far (a short transfer). */
+data class Order(
+    val code: String,
+    val tag: String?,
+    val version: String?,
+    val amount: Long,
+    val received: Long,
+    val status: String,
+    val expiresAt: Long,
+    val pay: PayInfo?,
+) {
+    val paid: Boolean get() = status == "paid"
+    val due: Long get() = (amount - received).coerceAtLeast(0)
+}
+
+/** The server's error code ("sales_closed", "already_open", "members_only", ...). */
+class OrderException(val code: String) : IOException(code)
+
+/**
+ * The newest locked release worth announcing: newer than the running app ([currentVersionCode])
+ * and than the update it may already install ([openVersionCode], 0 when none). Betas only with
+ * [includePrereleases] (they reach approved testers only, and those get every release at once).
+ */
+fun newestOffer(status: AccountStatus, currentVersionCode: Long, openVersionCode: Long = 0, includePrereleases: Boolean = false): LockedRelease? =
+    status.locked
+        .filter { it.versionCode > maxOf(currentVersionCode, openVersionCode) && (includePrereleases || !it.prerelease) }
+        .maxByOrNull { it.versionCode }
+
+internal fun errorCode(json: String): String? = runCatching { JSONObject(json).optString("error").ifEmpty { null } }.getOrNull()
+
+internal fun parseOrder(json: String): Order {
+    val o = JSONObject(json)
+    val pay = o.optJSONObject("pay")?.let {
+        PayInfo(it.getString("image"), it.optString("bank"), it.optString("account"), it.optString("holder"), it.getString("content"))
+    }
+    return Order(
+        code = o.getString("code"),
+        tag = o.optString("tag").takeIf { it.isNotEmpty() && it != "null" },
+        version = o.optString("version").takeIf { it.isNotEmpty() && it != "null" },
+        amount = o.getLong("amount"),
+        received = o.optLong("received"),
+        status = o.getString("status"),
+        expiresAt = o.optLong("expires_at"),
+        pay = pay,
+    )
+}
 
 internal fun parsePairing(json: String): Pairing {
     val o = JSONObject(json)
@@ -163,8 +269,17 @@ internal fun parseStatus(json: String): AccountStatus {
         tester = o.optString("tester", "none"),
         locked = (0 until (locked?.length() ?: 0)).map { i ->
             val r = locked!!.getJSONObject(i)
-            LockedRelease(r.getString("version"), r.optLong("open_at"), r.optBoolean("prerelease"), r.optLong("price"))
+            LockedRelease(
+                version = r.getString("version"),
+                tag = r.optString("tag", "cam-v" + r.getString("version")),
+                openAt = r.optLong("open_at"),
+                prerelease = r.optBoolean("prerelease"),
+                price = r.optLong("price"),
+                versionCode = APK_VERSION_CODE.find(r.optString("apk"))?.groupValues?.get(1)?.toLongOrNull() ?: 0,
+                changelog = if (r.isNull("body")) "" else r.optString("body"),
+            )
         },
         joinUrl = o.optString("join_url", "${Account.SITE}/thanh-vien"),
+        canBuyEarly = o.optBoolean("can_buy_early"),
     )
 }

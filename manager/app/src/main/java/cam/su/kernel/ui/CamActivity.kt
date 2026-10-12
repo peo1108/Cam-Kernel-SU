@@ -48,6 +48,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -93,6 +94,7 @@ import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.navigation3.rememberNavigator
 import cam.su.kernel.ui.screen.about.AboutScreen
 import cam.su.kernel.ui.screen.account.AccountScreen
+import cam.su.kernel.ui.screen.account.EarlyAccessScreen
 import cam.su.kernel.ui.screen.appprofile.AppProfileScreen
 import cam.su.kernel.ui.screen.hidingcheck.HidingCheckScreen
 import cam.su.kernel.ui.screen.colorpalette.ColorPaletteScreen
@@ -268,6 +270,7 @@ class CamActivity : ComponentActivity() {
                             entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
                             entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPage { AboutScreen() } }
                             entry<Route.Account>(swipeDismiss = swipeDismiss) { GlassPage { AccountScreen() } }
+                            entry<Route.EarlyAccess>(swipeDismiss = swipeDismiss) { key -> GlassPage { EarlyAccessScreen(key.tag, key.version) } }
                             entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPage { SulogScreen() } }
                             entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPage { ColorPaletteScreen() } }
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPage { AppProfileTemplateScreen() } }
@@ -448,6 +451,11 @@ fun MainScreen(
     val currentPage = mainPagerState.pagerState.currentPage
     LaunchedEffect(currentPage) {
         mainPagerState.syncPage()
+    }
+    // An update was asked for (notification tap, "Update now" after early access): Home shows it.
+    val updateRequested by UpdateSignal.showUpdateDialog.collectAsState()
+    LaunchedEffect(updateRequested) {
+        if (updateRequested) mainPagerState.animateToPage(0)
     }
     // Lets the slimes in the status card see a swipe away from home as it starts.
     DisposableEffect(mainPagerState.pagerState) {

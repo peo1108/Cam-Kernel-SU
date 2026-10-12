@@ -45,12 +45,14 @@ import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.account.Account
 import cam.su.kernel.account.AccountStatus
+import cam.su.kernel.account.LockedRelease
 import cam.su.kernel.account.Pairing
 import cam.su.kernel.account.PollResult
 import cam.su.kernel.donate.VietQr
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassIconButton
 import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
@@ -191,6 +193,7 @@ fun AccountScreen() {
                         is AccountUi.Linked -> LinkedCards(
                             status = state.status,
                             onJoin = { uri.openUri(state.status.joinUrl) },
+                            onOpenRelease = { r -> navigator.push(Route.EarlyAccess(r.tag, r.version)) },
                             onAskTester = {
                                 scope.launch {
                                     Account.requestTester()
@@ -285,6 +288,7 @@ private fun CodeCard(state: AccountUi.Code, onOpenWeb: () -> Unit, onNewCode: ()
 private fun LinkedCards(
     status: AccountStatus,
     onJoin: () -> Unit,
+    onOpenRelease: (LockedRelease) -> Unit,
     onAskTester: () -> Unit,
     onRefresh: () -> Unit,
     onUnlink: () -> Unit,
@@ -333,15 +337,23 @@ private fun LinkedCards(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.account_waiting_releases), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     status.locked.take(5).forEach { r ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(r.version, fontFamily = FontFamily.Monospace)
-                            Text(
-                                stringResource(R.string.account_opens_on, date.format(Date(r.openAt))),
-                                color = colorScheme.onSurfaceVariantSummary,
-                            )
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text(r.version, fontFamily = FontFamily.Monospace)
+                                Text(
+                                    stringResource(R.string.account_opens_on, date.format(Date(r.openAt))),
+                                    color = colorScheme.onSurfaceVariantSummary,
+                                    fontSize = 13.sp,
+                                )
+                            }
+                            // notes, payment in the app, then the update
+                            TextButton(text = stringResource(R.string.account_get_early), onClick = { onOpenRelease(r) })
                         }
                     }
-                    TextButton(text = stringResource(R.string.account_get_early), onClick = onJoin, modifier = Modifier.fillMaxWidth())
                 }
             }
         }

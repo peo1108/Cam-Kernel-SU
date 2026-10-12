@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import cam.su.kernel.KernelVersion
 import cam.su.kernel.data.model.BootGuardStatus
 import cam.su.kernel.update.ChangelogEntry
+import cam.su.kernel.account.LockedRelease
 import cam.su.kernel.update.UpdateInfo
 import cam.su.kernel.update.UpdateState
 
@@ -25,6 +26,8 @@ data class HomeUiState(
     val isLateLoadMode: Boolean,
     val checkUpdateEnabled: Boolean,
     val update: UpdateInfo? = null,
+    /** A newer release this account may install only after the waiting days: early access offer. */
+    val offer: LockedRelease? = null,
     val installState: UpdateState = UpdateState.Idle,
     val whatsNew: List<ChangelogEntry> = emptyList(),
     val currentManagerVersionCode: Long,
@@ -91,4 +94,5 @@ data class HomeActions(
     val onJailbreakClick: () -> Unit = {},
     val onReenableModule: (String) -> Unit = {},
     val onDismissBootGuard: () -> Unit = {},
+    val onOpenOffer: (LockedRelease) -> Unit = {},
 )

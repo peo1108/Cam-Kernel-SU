@@ -29,14 +29,23 @@ object UpdateScheduler {
     }
 }
 
-/** Notifies once per new release; failures wait for the next period instead of retrying. */
+/**
+ * Notifies once per new release, whether this account may install it now or only after the
+ * waiting days (then the tap offers early access). Failures wait for the next period.
+ */
 class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val info = UpdateRepositoryImpl().fetchLatest().getOrNull() ?: return Result.success()
+        val repo = UpdateRepositoryImpl()
         val settings = SettingsRepositoryImpl()
-        if (info.versionCode > settings.notifiedVersionCode) {
+        val info = repo.fetchLatest().getOrNull()
+        if (info != null && info.versionCode > settings.notifiedVersionCode) {
             UpdateNotifier.notifyAvailable(applicationContext, info)
             settings.notifiedVersionCode = info.versionCode
+        }
+        val offer = repo.fetchOffer(info?.versionCode ?: 0).getOrNull()
+        if (offer != null && offer.versionCode > settings.notifiedVersionCode) {
+            UpdateNotifier.notifyOffer(applicationContext, offer)
+            settings.notifiedVersionCode = offer.versionCode
         }
         return Result.success()
     }

@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import cam.su.kernel.BuildConfig
 import cam.su.kernel.account.Account
+import cam.su.kernel.account.LockedRelease
+import cam.su.kernel.account.newestOffer
 import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.isNetworkAvailable
 import cam.su.kernel.update.UpdateInfo
@@ -47,6 +49,15 @@ class UpdateRepositoryImpl : UpdateRepository {
                     403 -> null
                     else -> throw IOException("HTTP ${response.code}")
                 }
+            }
+        }
+    }
+
+    override suspend fun fetchOffer(openVersionCode: Long): Result<LockedRelease?> {
+        if (!isNetworkAvailable(camApp) || !Account.isLinked()) return Result.success(null)
+        return Account.status().map { status ->
+            status?.takeIf { it.member }?.let {
+                newestOffer(it, BuildConfig.VERSION_CODE.toLong(), openVersionCode, SettingsRepositoryImpl().betaUpdates)
             }
         }
     }

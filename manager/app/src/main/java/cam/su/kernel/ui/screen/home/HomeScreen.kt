@@ -10,6 +10,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,6 +33,7 @@ import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
 import cam.su.kernel.ui.navigation3.Navigator
 import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.viewmodel.HomeViewModel
+import cam.su.kernel.update.UpdateSignal
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -68,6 +70,12 @@ fun HomePager(
         }
     }
 
+    // "Update now" after paying for early access, or a notification tap: check again at once.
+    val updateRequested by UpdateSignal.showUpdateDialog.collectAsState()
+    LaunchedEffect(updateRequested) {
+        if (updateRequested && hasActivated) viewModel.refresh()
+    }
+
     LifecycleResumeEffect(Unit) {
         if (initialResumeHandled.value && latestIsCurrentPage) {
             viewModel.refresh()
@@ -97,6 +105,7 @@ fun HomePager(
         onDismissWhatsNew = viewModel::dismissWhatsNew,
         onReenableModule = viewModel::reenableModule,
         onDismissBootGuard = viewModel::dismissBootGuard,
+        onOpenOffer = { navigator.push(Route.EarlyAccess(it.tag, it.version)) },
     )
 
     HomePagerMiuix(

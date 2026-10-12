@@ -88,11 +88,13 @@ class HomeViewModel(
                 val state = buildState()
                 if (state.isManager && state.isRootAvailable) state.copy(bootGuard = getBootGuardStatus()) else state
             }
-            _uiState.update { baseState.copy(update = it.update, installState = it.installState, whatsNew = it.whatsNew) }
+            _uiState.update { baseState.copy(update = it.update, offer = it.offer, installState = it.installState, whatsNew = it.whatsNew) }
             withContext(Dispatchers.IO) { checkWhatsNew() }
             if (baseState.checkUpdateEnabled) {
                 val result = updateRepo.fetchLatest()
                 _uiState.update { it.copy(update = keepKnownUpdate(it.update, result)) }
+                val offer = updateRepo.fetchOffer(_uiState.value.update?.versionCode ?: 0)
+                _uiState.update { it.copy(offer = offer.getOrElse { _ -> it.offer }) }
             }
         }
     }

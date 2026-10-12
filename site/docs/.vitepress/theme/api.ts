@@ -27,6 +27,7 @@ const ERRORS: Record<string, Record<Lang, string>> = {
   email_taken: { vi: 'Email này đã có tài khoản. Đăng nhập nhé.', en: 'This email already has an account. Sign in instead.', zh: '该邮箱已注册，请直接登录。' },
   bad_login: { vi: 'Sai email hoặc mật khẩu.', en: 'Wrong email or password.', zh: '邮箱或密码错误。' },
   locked: { vi: 'Tài khoản đang bị khoá.', en: 'This account is locked.', zh: '账号已被锁定。' },
+  not_yourself: { vi: 'Không làm việc này cho chính tài khoản đang dùng.', en: 'Not for your own account.', zh: '不能对自己的账号执行此操作。' },
   slow_down: { vi: 'Thử quá nhiều lần. Đợi một lát.', en: 'Too many tries. Wait a little.', zh: '尝试次数过多，请稍后再试。' },
   sign_in: { vi: 'Cần đăng nhập.', en: 'Please sign in.', zh: '请先登录。' },
   members_only: { vi: 'Chỉ dành cho thành viên.', en: 'Members only.', zh: '仅限会员。' },

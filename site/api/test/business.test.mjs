@@ -239,6 +239,29 @@ test('two-step sign-in: setup, login needs the code, admin pages need it, codes 
   assert.equal((await second('GET', '/api/admin/overview')).status, 200)
 })
 
+test('admin reset link: works once, not for yourself, not for locked accounts', async (t) => {
+  const { app, base } = await start(t)
+  const admin = await adminClient(app, base)
+  const user = client(base)
+  await user('POST', '/api/auth/register', { email: 'quen@x.io', password: 'password1' })
+  const uid = app.db.prepare("SELECT id FROM users WHERE email = 'quen@x.io'").get().id
+  const selfId = app.db.prepare("SELECT id FROM users WHERE role = 'admin'").get().id
+  assert.equal((await admin('POST', `/api/admin/users/${selfId}/reset-link`, {})).body.error, 'not_yourself')
+
+  const { url } = (await admin('POST', `/api/admin/users/${uid}/reset-link`, {})).body
+  const token = new URL(url).searchParams.get('reset')
+  assert.ok(token)
+  assert.equal(app.db.prepare('SELECT COUNT(*) n FROM resets WHERE token_hash = ?').get(token).n, 0, 'only the hash is stored')
+  const anon = client(base)
+  assert.equal((await anon('POST', '/api/auth/reset/confirm', { token, password: 'newpassword1' })).status, 200)
+  assert.equal((await anon('POST', '/api/auth/reset/confirm', { token, password: 'other12345' })).status, 400, 'used once')
+  assert.equal((await anon('POST', '/api/auth/login', { email: 'quen@x.io', password: 'newpassword1' })).status, 200)
+
+  app.db.prepare('UPDATE users SET locked_at = ? WHERE id = ?').run(Date.now(), uid)
+  assert.equal((await admin('POST', `/api/admin/users/${uid}/reset-link`, {})).body.error, 'locked')
+  assert.ok(app.db.prepare("SELECT 1 FROM audit WHERE action = 'reset_link'").get())
+})
+
 test('beta testers: members ask, Cam approves, testers get every release at once (betas too)', async (t) => {
   const { app, base } = await start(t)
   const admin = await adminClient(app, base)

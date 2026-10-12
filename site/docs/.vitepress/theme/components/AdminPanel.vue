@@ -82,6 +82,7 @@ async function load(t: Tab = tab.value) {
 
 async function openUser(id: number) {
   await run(async () => {
+    resetLink.value = null
     detail.value = await api('GET', `/api/admin/users/${id}`)
     memberForm.note = ''
     memberForm.expires = ''
@@ -237,6 +238,25 @@ const saveSettings = () =>
     })
     Object.assign(settings, out)
   }, 'Đã lưu cài đặt.')
+
+const resetLink = ref<{ url: string; expires_at: number } | null>(null)
+const resetCopied = ref(false)
+
+function makeResetLink() {
+  const u = detail.value.user
+  if (!confirm(`Tạo link đặt lại mật khẩu cho ${u.email}? Ai có link đều đổi được mật khẩu trong 1 giờ.`)) return
+  run(async () => {
+    resetLink.value = await api('POST', `/api/admin/users/${u.id}/reset-link`, {})
+    resetCopied.value = false
+  }, 'Đã tạo link. Gửi riêng cho đúng người.')
+}
+
+async function copyResetLink() {
+  try {
+    await navigator.clipboard.writeText(resetLink.value!.url)
+    resetCopied.value = true
+  } catch {}
+}
 
 function resetTotp() {
   const u = detail.value.user
@@ -704,9 +724,15 @@ onMounted(async () => {
           <div class="btns">
             <button v-if="!detail.user.locked_at" class="mini bad" @click="lock(true)">Khoá tài khoản</button>
             <button v-else class="mini" @click="lock(false)">Mở khoá</button>
+            <button v-if="!detail.user.locked_at" class="mini" @click="makeResetLink">Tạo link đặt lại mật khẩu</button>
             <button v-if="detail.user.totp" class="mini" @click="resetTotp">Tắt 2FA (mất điện thoại)</button>
             <button v-if="detail.user.role !== 'admin'" class="mini" @click="setRole('admin')">Cho làm admin</button>
             <button v-else class="mini" @click="setRole('user')">Bỏ admin</button>
+          </div>
+          <div v-if="resetLink" class="resetlink">
+            <p class="muted small">Link dùng được một lần, hết hạn lúc {{ new Date(resetLink.expires_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }}. Chỉ gửi cho chính chủ tài khoản.</p>
+            <code>{{ resetLink.url }}</code>
+            <button class="mini" @click="copyResetLink">{{ resetCopied ? 'Đã chép' : 'Chép link' }}</button>
           </div>
         </aside>
       </div>
@@ -719,6 +745,8 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.resetlink { margin-top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.resetlink code { word-break: break-all; font-size: 12.5px; padding: 8px 10px; border-radius: 10px; background: rgba(var(--lg-ink), 0.06); user-select: all; }
 .adm { max-width: 1180px; }
 .adm-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 22px; }
 .adm-head h1 { font-size: clamp(34px, 6vw, 50px); font-weight: 800; margin: 0; letter-spacing: -0.03em; }

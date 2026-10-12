@@ -2,7 +2,7 @@
 // Orders and the payments ledger are in pay.mjs. Every write is in the audit log.
 import { isTester, membership, tx } from '../db.mjs'
 import { DAY, fail } from '../http.mjs'
-import { cleanEmail } from '../auth.mjs'
+import { cleanEmail, newToken, sha256 } from '../auth.mjs'
 import { readSettings, writeSettings } from '../settings.mjs'
 import { str } from './auth.mjs'
 import { deviceId } from './member.mjs'
@@ -152,6 +152,23 @@ export default function adminRoutes(app) {
   )
 
   /** Lost phone: turn off someone's two-step sign-in so they can set it up again. */
+  // A password reset link Cam sends by hand (Zalo, Messenger) when mail is late or lands in spam.
+  // Same token and 1-hour lifetime as the mailed one (/api/auth/reset/confirm); only its hash is kept.
+  r.add(
+    'POST',
+    '/api/admin/users/:id/reset-link',
+    (ctx) => {
+      const u = userRow(ctx.params.id)
+      if (u.id === ctx.user.id) fail(400, 'not_yourself')
+      if (u.locked_at) fail(409, 'locked')
+      const token = newToken()
+      db.prepare('INSERT INTO resets(token_hash, user_id, created_at) VALUES (?, ?, ?)').run(sha256(token), u.id, Date.now())
+      app.audit(ctx.user, 'reset_link', u.email)
+      return { url: `${cfg.origin}/tai-khoan?reset=${token}`, expires_at: Date.now() + 3600_000 }
+    },
+    A,
+  )
+
   r.add(
     'POST',
     '/api/admin/users/:id/totp-reset',

@@ -309,8 +309,8 @@ pub fn on_boot_completed() {
     // the framework sets some of them (sys.oem_unlock_allowed) once it is up
     crate::hide_bootloader::apply_if_enabled();
 
-    // the firewall deny chain is cleared on reboot, and `cmd connectivity` needs
-    // system_server, so re-apply the RKP/Duck network block here, after boot.
+    // the watcher process and its firewall rule are both gone after a reboot, so
+    // respawn the Duck-foreground watcher here if the feature is still enabled.
     crate::rkp_block::apply_if_enabled();
 
     let path = Path::new(defs::BOOT_GUARD_PATH);

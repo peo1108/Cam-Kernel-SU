@@ -141,7 +141,7 @@ enum Commands {
         command: HideBootloader,
     },
 
-    /// Deny network for the keybox/RKP path and Duck Detector
+    /// Cut all device network while Duck Detector is in the foreground
     BlockRkp {
         #[command(subcommand)]
         command: BlockRkp,
@@ -324,14 +324,17 @@ enum HideBootloader {
 
 #[derive(clap::Subcommand, Debug)]
 enum BlockRkp {
-    /// Print the feature flag and each package's network state as JSON
+    /// Print the flag, whether the network is cut now, and the foreground app as JSON
     Status,
 
-    /// Turn it on and deny network for the target packages now
+    /// Turn it on and start the foreground watcher
     Enable,
 
-    /// Turn it off and restore network for the target packages now
+    /// Turn it off, stop the watcher and restore network now
     Disable,
+
+    /// Run the foreground watcher loop (internal; spawned by enable/boot)
+    Watch,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -638,6 +641,7 @@ pub fn run() -> Result<()> {
             BlockRkp::Status => crate::rkp_block::status(),
             BlockRkp::Enable => crate::rkp_block::set_enabled(true),
             BlockRkp::Disable => crate::rkp_block::set_enabled(false),
+            BlockRkp::Watch => crate::rkp_block::watch(),
         },
 
         Commands::BootGuard { command } => match command {

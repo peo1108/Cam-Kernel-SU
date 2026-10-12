@@ -22,7 +22,8 @@ Cam Kernel SU is a fork of KernelSU: a kernel-based root solution for Android wi
 /manager/                     # Android manager app - Kotlin/Jetpack Compose UI (Miuix glass only)
 /modules/                     # Cam module library source list (published to the module-repo branch)
 /docs/                        # CAM_CHANGES.md (fork notes, merge guide), translated READMEs, plans
-/website/                     # Documentation website - VitePress
+/website/                     # KernelSU's documentation website - VitePress (kept for merges, not deployed)
+/site/                        # Cam's own website (caesarvn.xyz) - VitePress, deployed by deploy-site.yml
 /js/                          # JavaScript library for module WebUI
 /.github/workflows/           # CI/CD workflows for building and testing
 /scripts/                     # Build and maintenance scripts (Python, shell, sed)
@@ -69,9 +70,20 @@ cp ../userspace/camd/target/aarch64-linux-android/release/camd app/src/main/jniL
 ./gradlew clean assembleRelease
 ```
 
-Unit tests: `./gradlew :app:testDebugUnitTest` (24 classes, 131 tests, all pass on 2026-10-12; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks.
+Unit tests: `./gradlew :app:testDebugUnitTest` (24 classes, 132 tests, all pass on 2026-10-12; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks.
 
 Important: Manager build REQUIRES camd binaries to be present in `jniLibs` before building. Gradle packs whatever `libcamd.so` is there and never rebuilds it: after changing camd, copy a fresh build in, or the APK ships the old daemon (CI builds both from the same commit). From CI, install the `manager` artifact, never `manager-gradle` (no `libcamd.so` in it). On Windows, run Gradle from the `K:` drive (`docs/CAM_CHANGES.md` section 5).
+
+### Cam website (`site/`)
+
+```bash
+cd site
+npm ci
+npm run build   # data (releases, CHANGELOG.md, module-repo) is read at build time
+```
+
+CI (`deploy-site.yml`) rsyncs `docs/.vitepress/dist` to the VPS; see row 38 of `docs/CAM_CHANGES.md`.
+The Manager reads OTA, hiding rules and the module library from `caesarvn.xyz/feed/` (built by `site/scripts/build-feed.mjs`), not from GitHub: keep that feed's JSON layout identical to the GitHub releases API (section 14 of `docs/CAM_CHANGES.md`, preparing for a private repository).
 
 ### Website (`website/`)
 

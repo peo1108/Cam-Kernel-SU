@@ -1,0 +1,95 @@
+name: Deploy Site
+
+# Cam's own website (site/, https://caesarvn.xyz), served by Caddy on the Cam VPS.
+# Not website/: that is still KernelSU's documentation (see deploy-website.yml).
+# Besides the pages it publishes everything users download (site/scripts/build-feed.mjs): release
+# files under /dl/, the Manager's OTA feed, hiding rules and module library under /feed/. The
+# Manager reads only these, so the repository can be private (docs/CAM_CHANGES.md, section 14).
+#
+# A release or beta needs nothing by hand: Release ends -> this runs -> site, /dl/ and the OTA
+# feed have it. workflow_run is required here: a release created with GITHUB_TOKEN (release.yml)
+# and a push by GITHUB_TOKEN (module-repo.yml) do not trigger `release` or `push` events.
+on:
+  workflow_run:
+    workflows: [Release, Module Repo]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'CHANGELOG.md'
+      - 'manager/app/src/main/assets/hiding-rules.json'
+      - 'manager/app/src/main/assets/hiding-rules.json.sig'
+      - '.github/workflows/deploy-site.yml'
+  # Releases made by hand in the GitHub UI (with a personal token, not GITHUB_TOKEN).
+  release:
+    types: [published]
+  schedule:
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # After Release / Module Repo only when they succeeded (a failed release has nothing new).
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./site
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          # Release data comes from the GitHub API; the token also reads the private repository.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build
+
+      # Release files (/dl/), the OTA feed, hiding rules and the module library (/feed/).
+      - name: Build the feed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run feed
+
+      # The deploy key only runs rrsync, write-only into /var/www/caesarvn (no shell).
+      - name: Upload to the VPS
+        env:
+          SSH_KEY: ${{ secrets.SITE_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SITE_KNOWN_HOSTS }}
+          HOST: ${{ secrets.SITE_DEPLOY_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+          rsync -rlz --delete --checksum \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            docs/.vitepress/dist/ "deploy@$HOST:/"
+
+      # What the Manager will see: the live feed must list the newest release and its APK must load.
+      - name: Check the live feed
+        run: |
+          built=$(node -e 'console.log(require("./docs/.vitepress/dist/feed/releases.json")[0].tag_name)')
+          live=$(curl -fsS https://caesarvn.xyz/feed/releases.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s)[0].tag_name))')
+          apk=$(node -e 'const r=require("./docs/.vitepress/dist/feed/releases.json")[0];console.log(r.assets.find(a=>a.name.endsWith(".apk")).browser_download_url)')
+          echo "built $built, live $live"
+          test "$built" = "$live"
+          curl -fsS -r 0-1023 -o /dev/null "$apk"
+          curl -fsS -o /dev/null https://caesarvn.xyz/feed/hiding-rules.json.sig
+          curl -fsS -o /dev/null https://caesarvn.xyz/feed/module-repo/modules.json
+          echo "### Deployed $built" >> "$GITHUB_STEP_SUMMARY"

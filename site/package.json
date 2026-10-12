@@ -1,0 +1,17 @@
+{
+  "name": "cam-kernel-su-site",
+  "private": true,
+  "description": "Cam Kernel SU website: https://caesarvn.xyz",
+  "license": "GPL-3.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs",
+    "feed": "node scripts/build-feed.mjs"
+  },
+  "devDependencies": {
+    "vitepress": "1.6.4",
+    "vue": "3.5.42"
+  }
+}

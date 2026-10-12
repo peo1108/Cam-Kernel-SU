@@ -15,5 +15,6 @@ __pycache__
 /IMG_*.PNG
 /logo mẫu/
 /note.txt
+/vps.txt
 # encrypted signing key backups (scripts/backup_signing_keys.sh); keep them outside the repo
 cam-signing-keys-*.enc

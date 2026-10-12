@@ -50,6 +50,8 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 35 | **Cài trực tiếp an toàn hơn** (2026-10-11, `installBoot` trong `CamCli.kt`): trước khi flash (cả "Cài trực tiếp" và "Cài vào slot không hoạt động") Manager tắt mọi module đang bật (`camd module disable`), tắt lỗi một cái là dừng, không flash; máy khởi động bằng **khóa AVB tự ký** (`androidboot.verifiedbootstate=yellow` trong `/proc/bootconfig`/`/proc/cmdline`, lấy qua `hide-bootloader status`, không bị resetprop che) thì ẩn hai cách cài trực tiếp, hiện thẻ đỏ và `installBoot` cũng từ chối | Lần boot đầu với bản mới không có module; avbroot mà cài trực tiếp thì ảnh boot không được ký, bootloader khoá từ chối boot. Mở khoá kiểu efisp/GBL (trạng thái orange) hay chế độ Jailbreak không bị chặn |
 | 36 | **Ghim Manager theo chữ ký** (2026-10-11): trước khi cấp root cho `cam.su.kernel`, kernel đọc `/data/system/packages.xml` (ABX từ Android 12, XML text trước đó; parser `kernel/policy/pkg_xml.c`), lấy chứng chỉ ký **mà PackageManager đã kiểm lúc cài** (`<package><sigs><cert>` trực tiếp, không tính `<pastSigs>`; `key` chỉ ghi ở lần dùng đầu nên có lượt đọc thứ hai tìm theo `index`), băm SHA-256 rồi so với `KSU_MANAGER_CERT` (khóa release `CN=SU Kernel, O=Cam`, `1bee10d2…a318`). Khác chữ ký, nhiều người ký, hoặc chứng chỉ quá 8 KB thì không cấp, và **thu lại** nếu uid đó đang có root (`ksu_revoke_root`: đặt hồ sơ non-root mặc định), phòng trường hợp app giả nhận lại appid cũ. Không đọc được file hoặc không tìm thấy người ký thì không cấp, nhưng giữ nguyên quyền đang có. Kiểm cả khi uid đã có root, vì appid có thể bị dùng lại. Mục seed của gói Manager bị bỏ qua, để pin quyết định (pin chạy ngay sau seed). Seed của gói khác không đổi. Kernel **không đọc APK**. Log có tiền tố `manager pin:` và in SHA-256 của chứng chỉ bị từ chối. Thêm khóa khi build: `make KSU_MANAGER_CERT_EXTRA=<sha256 hex>` (Kbuild) | Trước đây app nào đặt tên gói `cam.su.kernel` cũng có root (cài lúc chưa có Manager hoặc sau khi gỡ). Chọn đọc kết quả của PackageManager thay vì tự kiểm APK như KernelSU gốc (`apk_sign.c` từng bị bypass vì phải parse file do kẻ tấn công tạo ra). `packages.xml` chỉ `system_server` ghi được, và được ghi trước `packages.list` nên lúc observer chạy đã có dữ liệu mới. **Manager ký bằng khóa khác** (build debug cục bộ, build PR của CI) **không còn có root**: cấp tay bằng `camd allow` sẽ bị thu lại ở lần `packages.list` đổi kế tiếp. Muốn dùng bản đó thì build kernel có `KSU_MANAGER_CERT_EXTRA`. Đổi khóa ký release thì phải đổi `KSU_MANAGER_CERT` và ra LKM mới. **Khóa dự phòng** (2026-10-11): kernel tin thêm `KSU_MANAGER_CERT_BACKUP` (`38d0a6b8…e4d9`, `CN=SU Kernel Backup, O=Cam`, `~/.android-keys/su-kernel-backup.jks`, chưa ký gì): mất khóa release thì ký Manager bằng khóa này, người dùng gỡ rồi cài lại Manager một lần (Android không cho đổi người ký khi cập nhật) và vẫn có root với mọi LKM đã flash từ bản có dòng này. Xoay khóa APK v3 (khóa mới ở `<sigs>`, khóa cũ ở `<pastSigs>`) cũng được nhận. Test: `manager_pin_trusts_backup_key` |
 | 37 | **Chỉ mời cài lại LKM khi kernel thật sự đổi** (2026-10-12): Kbuild nhúng `KSU_SOURCE_ID` = hash của cây `kernel/` + `uapi/` ở `HEAD` (`git ls-tree --full-tree -r HEAD -- kernel uapi`, bỏ dòng `kernel/tests/`, qua `git hash-object --stdin`); ioctl riêng của Cam `KSU_IOCTL_GET_SOURCE_ID` (`_IOR('K', 100, …)`, `manager_or_root`) trả về. Gradle tính cùng giá trị (`getKernelSourceId` trong `manager/build.gradle.kts`, `BuildConfig.KERNEL_SOURCE_ID`); `HomeUiState.lkmDiffers` so hai hash. Một bên rỗng (LKM cũ chưa có ioctl, LKM build từ cây có thay đổi chưa commit, Manager build ngoài git) thì quay về so số phiên bản như trước. `camd debug info` in `source_id` | Trước đây số phiên bản LKM luôn khác app sau mỗi bản cập nhật nên nút **Cài lại LKM** gần như lần nào cũng hiện, khiến người dùng flash không cần thiết (mỗi lần flash là một lần rủi ro). Test: `LkmUpdateTest` |
+| 38 | **Website riêng** (2026-10-12): `site/` (VitePress 1.6.4, giao diện kính giống Manager, tiếng Việt ở `/`, tiếng Anh ở `/en/`): trang chủ, Tải về (bản `cam-v*` mới nhất lấy từ GitHub API lúc build), Nhật ký (đọc `CHANGELOG.md`), Thư viện module (`modules.json` của nhánh `module-repo`), hướng dẫn. `deploy-site.yml` build rồi rsync lên VPS của Cam (`/var/www/caesarvn`, Caddy, https://caesarvn.xyz) bằng khoá chỉ chạy được `rrsync -wo` (secret `SITE_DEPLOY_KEY`, `SITE_KNOWN_HOSTS`, `SITE_DEPLOY_HOST`); chạy khi push `site/**` hoặc `CHANGELOG.md`, khi có release, và mỗi ngày. Slug tiêu đề đổi `đ` thành `d` (`config.mts`) | `website/` vẫn là trang kernelsu.org để merge dễ; trang của Cam nằm thư mục riêng nên merge upstream không đụng tới |
+| 39 | **Manager không còn đọc GitHub** (2026-10-12, chuẩn bị đóng repo, mục 14): OTA đọc `https://caesarvn.xyz/feed/releases.json` (cùng định dạng releases API, APK ở `/dl/`, `digest` sha256 do site tự tính và so với GitHub), GitHub chỉ còn là dự phòng (`UpdateRepositoryImpl.GITHUB_URL`, có TODO gỡ); rule ẩn root đọc `https://caesarvn.xyz/feed/hiding-rules.json` (+ `.sig`, bản chép nguyên byte); thư viện module đọc `https://caesarvn.xyz/feed/module-repo`. Feed do `site/scripts/build-feed.mjs` dựng, `deploy-site.yml` chạy sau mỗi Release / Module Repo (`workflow_run`) và tự kiểm tra feed đang chạy. Test: `UpdateParserTest.readsSiteFeed` | Repo private thì GitHub trả 404: máy đã cài sẽ mất OTA, rule và thư viện module. Feed nằm trên VPS của Cam, chữ ký APK và chữ ký rule vẫn kiểm như cũ nên VPS bị chiếm cũng không cài được bản giả |
 
 ## 2. Lịch sử commit
 
@@ -740,3 +742,44 @@ Ghim `duckDetector` = `78aabb41` (nightly), `version` 6 (2026-10-12: bỏ `AVC l
 - **Thêm module:** thêm một mục vào `sources.json` (đọc `module.prop` trong zip để lấy đúng `id`), chạy script thử, push lên `main`. Mỗi module trong thư viện là thứ người dùng flash với quyền root: chỉ thêm repo đáng tin, đọc qua trước.
 - **Upstream đã chuyển sang API mới** (`f7bfa28d`, #3880: `modules.kernelsu.org/api/v1`, kiểm sha256 zip, `data/registry/`). Cam **không nhận** commit này (2026-10-11, chọn giữ thư viện riêng): merge đi qua commit revert `a071ef24`. Upstream sửa tiếp các file module repo (`ModuleRepo*`, `data/registry/*`, `DownloadService.kt`, `GithubMarkdown.kt`…) sẽ conflict hoặc đưa lại file `data/registry/`: giữ bản của Cam, `git rm` file registry mới. Muốn chuyển sang API mới thì revert `a071ef24`, bỏ `module-repo.yml`.
 - **Merge upstream (trước `f7bfa28d`):** upstream vẫn để `modules.kernelsu.org` trong `ModuleRepoRepositoryImpl.kt`, `ModuleRepoApi.kt` (2 chỗ) và `ModuleRepoScreen.kt` (`webUrl`/`sourceUrl` mặc định, Cam để rỗng). Conflict ở đó thì giữ bản của Cam. Khi tổ chức cũ được mở lại thì có thể chuyển về, nhưng không bắt buộc.
+
+
+## 14. Đóng repo về private (chuẩn bị 2026-10-12)
+
+Mục tiêu: khi tới ngày chỉ cần bấm **Settings → General → Danger Zone → Change visibility → Private**, không phải sửa gì thêm.
+
+### Hạ tầng (đã xong 2026-10-12)
+
+| Thứ người dùng tải | Trước | Giờ |
+|---|---|---|
+| OTA của Manager | `api.github.com/.../releases` | `caesarvn.xyz/feed/releases.json` (GitHub là dự phòng) |
+| File APK, LKM, camd | `github.com/.../releases/download/...` | `caesarvn.xyz/dl/<tag>/<file>` |
+| Rule ẩn root | `raw.githubusercontent.com/.../main/.../hiding-rules.json` | `caesarvn.xyz/feed/hiding-rules.json` (+ `.sig`) |
+| Thư viện module | `raw.githubusercontent.com/.../module-repo` | `caesarvn.xyz/feed/module-repo` |
+| Trang web, nút tải | (chưa có) | `caesarvn.xyz`, không còn link GitHub nào |
+
+- `site/scripts/build-feed.mjs`: đọc releases và nhánh `module-repo` qua API bằng `GITHUB_TOKEN` (đọc được repo private), mirror bản stable mới nhất (đủ file), 5 bản stable trước và các beta mới hơn (chỉ APK), sinh `releases.json` cùng định dạng API (`tag_name`, `prerelease`, `body`, `assets[].browser_download_url`, `digest`), chép rule và module-repo.
+- `deploy-site.yml`: chạy sau `Release` và `Module Repo` (`workflow_run`, vì release/push tạo bằng `GITHUB_TOKEN` không bắn event `release`/`push`), khi đổi `site/**`, `CHANGELOG.md`, rule; mỗi ngày 01:30 UTC; bước cuối so tag mới nhất của feed đang chạy với bản vừa dựng và thử tải APK.
+- Caddy (`/etc/caddy/Caddyfile` trên VPS): `/feed/*` `Cache-Control: no-cache` (app hỏi lại bằng ETag, không đổi thì 304), `/dl/*` tải về, `try_files` cho URL không đuôi `.html`.
+
+### Phát hành khi repo đã private (không đổi gì so với mục 8)
+
+1. Thêm mục `## X.Y.Z - YYYY-MM-DD` vào `CHANGELOG.md`, push.
+2. Tag `cam-vX.Y.Z` (bản chính) hoặc `cam-vX.Y.Z-beta.N` (beta, chỉ máy bật "Nhận bản thử nghiệm" nhận), push tag.
+3. `Release` build, ký, tạo GitHub Release (lưu trữ, chỉ người có quyền repo thấy).
+4. `Release` xong là `Deploy Site` tự chạy: `/dl/`, `releases.json`, trang Tải về và Nhật ký có bản mới. Beta chỉ vào feed, không hiện ở trang Tải về.
+5. Trong 12 giờ Manager tự báo cập nhật. Xem kết quả ở Actions → Deploy Site (tóm tắt "Deployed cam-v…").
+
+### Thứ tự đóng repo
+
+1. **Bây giờ (repo còn public):** ra một bản có dòng 39 (đổi URL), ví dụ `cam-v3.2.0`. Máy cũ nhận bản này qua GitHub như mọi lần.
+2. **Chờ khoảng 2 tháng** (dự kiến tới **2026-12-12**) để mọi người lên bản đó. Ai còn bản cũ sau khi đóng phải tải tay một lần ở `caesarvn.xyz/tai-ve`.
+3. **Trước ngày đóng, kiểm tra:**
+   - VPS còn hạn (hết hạn **2026-11-05**, phải gia hạn trước) và `https://caesarvn.xyz/feed/releases.json` có bản mới nhất.
+   - Actions → Deploy Site lần gần nhất xanh.
+   - Gói GitHub đủ phút Actions cho repo private (gói Free: 2000 phút/tháng; build đủ 8 KMI tốn nhiều). Thiếu thì lên Pro hoặc dùng self-hosted runner.
+4. **Bấm Private.** Chạy tay Actions → Deploy Site một lần để chắc nó đọc được repo private (`GITHUB_TOKEN`).
+5. **Bản kế tiếp:** gỡ `GITHUB_URL` trong `UpdateRepositoryImpl.kt` (TODO đã ghi) và câu nhắc trong mục này.
+6. Người xin mã nguồn ở `caesarvn.xyz/ma-nguon`: xem bằng `cam-requests` trên VPS (`/var/lib/cam-site-api/requests.jsonl`), duyệt thì mời vào repo với quyền Read.
+
+Lưu ý giấy phép: phần lớn mã là KernelSU (kernel GPL-2.0, còn lại GPL-3.0); người nhận bản build có quyền nhận mã nguồn tương ứng.

@@ -84,9 +84,17 @@ export default function deviceRoutes(app) {
         email: ctx.user.email,
         member: !!(st.member || st.admin),
         tester: st.tester || st.admin ? 'approved' : req?.status ?? 'none',
+        // Releases this account cannot install yet. The notes and the APK's name (its version code)
+        // let the app announce one and sell early access; never a download link.
         locked: rel
           .filter((x) => !x.open)
-          .map((x) => ({ version: x.version, tag: x.tag, open_at: x.open_at, prerelease: x.prerelease, price: s.price_early })),
+          .map((x) => {
+            const r = app.catalog().find((c) => c.tag_name === x.tag)
+            const apk = r?.assets?.find((a) => a.name.endsWith('.apk'))
+            return { version: x.version, tag: x.tag, open_at: x.open_at, prerelease: x.prerelease, price: s.price_early, body: r?.body ?? '', apk: apk?.name ?? null }
+          }),
+        // The app offers "get it now" only while early access is on sale and payments are set up.
+        can_buy_early: !!(st.member && s.sales_open && s.early_open && cfg.bankAccount && cfg.bankCode),
         join_url: `${cfg.origin}/thanh-vien`,
         buy_url: `${cfg.origin}/thanh-vien#releases`,
       }

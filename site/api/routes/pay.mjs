@@ -146,6 +146,8 @@ export default function payRoutes(app) {
 
   /* ----- buying ----- */
 
+  // Orders come from the website or from the Manager (device token): early access is bought in
+  // the app, which shows the same VietQR and polls GET /api/orders/:code until it is paid.
   r.add(
     'POST',
     '/api/orders',
@@ -183,7 +185,7 @@ export default function payRoutes(app) {
         .run(newCode(), u.id, kind, tag, amount, 'pending', now, now + s.order_hours * 3600_000).lastInsertRowid
       return publicOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id))
     },
-    { auth: 'web' },
+    { auth: 'user' },
   )
 
   r.add(
@@ -195,7 +197,7 @@ export default function payRoutes(app) {
       if (!o || (o.user_id !== ctx.user.id && ctx.user.role !== 'admin')) fail(404, 'no_order')
       return publicOrder(o)
     },
-    { auth: 'web' },
+    { auth: 'user' },
   )
 
   r.add(
@@ -208,7 +210,7 @@ export default function payRoutes(app) {
       db.prepare("UPDATE orders SET status = 'expired', note = 'người mua huỷ' WHERE id = ?").run(o.id)
       return { ok: true }
     },
-    { auth: 'web' },
+    { auth: 'user' },
   )
 
   /* ----- SePay webhook ----- */

@@ -1,4 +1,5 @@
 // Payments, devices, OTA, /dl gate, 2FA, settings.  node --test site/api/test
+import { writeSettings } from '../settings.mjs'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
@@ -156,6 +157,45 @@ test('early access: members only, only for releases not open yet, opens after pa
   await webhook(base, { id: 9, transferAmount: 20000, content: o.code })
   const rel = (await c('GET', '/api/me')).body.releases.find((r) => r.tag === 'cam-v1.2.0')
   assert.equal(rel.open, true)
+})
+
+test('early access bought in the app: device token orders, polls, then the release is in its OTA list', async (t) => {
+  const { app, base } = await start(t)
+  const c = client(base)
+  await c('POST', '/api/auth/register', { email: 'a@x.io', password: 'password1' })
+  app.db.prepare("INSERT INTO grants(email, kind, by, created_at) VALUES ('a@x.io', 'member', 't', ?)").run(Date.now())
+  const pair = await (await fetch(base + '/api/devices/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Pixel' }) })).json()
+  await c('POST', '/api/devices/confirm', { code: pair.code })
+  const { token } = await (await fetch(`${base}/api/devices/poll?id=${pair.id}`)).json()
+  // The Manager: Bearer token, JSON body, no cookie, no Origin.
+  const dev = (method, path, body) =>
+    fetch(base + path, { method, headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined }).then(async (r) => ({ status: r.status, body: await r.json() }))
+
+  const status = (await dev('GET', '/api/ota/status')).body
+  assert.equal(status.can_buy_early, true)
+  assert.deepEqual(status.locked.map((r) => r.tag), ['cam-v1.2.0'])
+  assert.equal(status.locked[0].apk, 'SU_Kernel_1.2.0_1-release.apk')
+  assert.equal(status.locked[0].body, '- notes')
+  assert.ok(!JSON.stringify(status.locked).includes('https://'), 'no download link for a locked release')
+
+  const o = (await dev('POST', '/api/orders', { kind: 'early', tag: 'cam-v1.2.0' })).body
+  assert.equal(o.amount, 20000)
+  assert.equal(o.pay.content, o.code)
+  assert.equal((await dev('POST', '/api/orders', { kind: 'early', tag: 'cam-v1.2.0' })).body.code, o.code, 'same pending order again')
+  assert.equal((await dev('GET', `/api/orders/${o.code}`)).body.status, 'pending')
+  assert.ok(!(await dev('GET', '/api/ota/releases')).body.some((r) => r.tag_name === 'cam-v1.2.0'))
+
+  await webhook(base, { id: 77, transferAmount: 20000, content: `CK ${o.code}` })
+  assert.equal((await dev('GET', `/api/orders/${o.code}`)).body.status, 'paid')
+  assert.ok((await dev('GET', '/api/ota/releases')).body.some((r) => r.tag_name === 'cam-v1.2.0'))
+  assert.equal((await dev('GET', '/api/ota/status')).body.locked.length, 0)
+
+  // Someone else's device cannot read this order; sales closed hides the offer.
+  const other = client(base)
+  await other('POST', '/api/auth/register', { email: 'b@x.io', password: 'password1' })
+  assert.equal((await other('GET', `/api/orders/${o.code}`)).status, 404)
+  writeSettings(app.db, { early_open: false }, 'test')
+  assert.equal((await dev('GET', '/api/ota/status')).body.can_buy_early, false)
 })
 
 test('settings from the panel change prices and stop sales', async (t) => {

@@ -40,3 +40,14 @@ fun setHideBootloader(enabled: Boolean): Boolean {
 
 /** The device boots with a user-set AVB key: an on-device patched boot would not verify. */
 fun isCustomAvbKey(): Boolean = getHideBootloaderStatus().customAvbKey
+
+/** Whether the RKP/Duck network block is on; false when camd could not report. */
+fun getBlockRkpEnabled(): Boolean =
+    runCatching { JSONObject(camdStdout("block-rkp status").orEmpty()).optBoolean("enabled") }
+        .getOrDefault(false)
+
+fun setBlockRkp(enabled: Boolean): Boolean {
+    val result = execCamd("block-rkp ${if (enabled) "enable" else "disable"}", true)
+    Log.i(TAG, "block-rkp $enabled result: $result")
+    return result
+}

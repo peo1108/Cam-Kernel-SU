@@ -450,6 +450,7 @@
     <string name="features_bootloader_clean">Không có gì lộ bootloader</string>
     <string name="features_bootloader_leaks">%d mục đang lộ bootloader</string>
     <string name="features_bootloader_enable_summary">Sửa các prop hệ thống để máy báo bootloader đã khóa và hợp lệ. Tắt thì cần khởi động lại mới về giá trị gốc.</string>
+    <string name="features_block_rkp">Chặn RKP</string>
     <string name="features_bootloader_props">Prop hệ thống</string>
     <string name="features_bootloader_bootconfig">Tham số khởi động (chỉ báo, không sửa)</string>
     <string name="features_bootloader_bootconfig_note">Chỉ root đọc được, app không thấy nên không tính là lộ.</string>

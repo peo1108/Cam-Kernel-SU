@@ -48,6 +48,7 @@ fun FeaturesPager(
         onSetConflictIncludeProps = viewModel::setConflictIncludeProps,
         onRescanConflicts = viewModel::rescanConflicts,
         onSetHideBootloader = viewModel::setHideBootloader,
+        onSetBlockRkp = viewModel::setBlockRkp,
         onCheckAttestation = viewModel::checkAttestation,
         onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck()) },
         onSetWirelessAdb = viewModel::setWirelessAdb,

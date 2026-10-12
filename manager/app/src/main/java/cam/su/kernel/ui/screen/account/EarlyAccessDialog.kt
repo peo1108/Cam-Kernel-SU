@@ -224,7 +224,9 @@ private fun OfferBody(state: EarlyUi.Offer) {
     )
     if (r.changelog.isNotBlank()) {
         Text(stringResource(R.string.early_notes), fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
-        Box(Modifier.fillMaxWidth()) { MarkdownContent(content = r.changelog, isMarkdown = true) }
+        // MarkdownContent scrolls on its own: inside the popup's scroll it needs a bounded height,
+        // or Compose throws (infinite max height for a vertical scroll).
+        Box(Modifier.fillMaxWidth().heightIn(max = 280.dp)) { MarkdownContent(content = r.changelog, isMarkdown = true) }
     }
 }
 

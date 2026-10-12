@@ -7,8 +7,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // Cam's own module library (modules.kernelsu.org went down with its GitHub org, 2026-09):
-// built from modules/sources.json by the Module Repo workflow, same JSON layout.
-const val MODULE_REPO_URL = "https://raw.githubusercontent.com/peo1108/Cam-Kernel-SU/module-repo"
+// built from modules/sources.json by the Module Repo workflow, same JSON layout. Read from the
+// site's copy of the module-repo branch (site/scripts/build-feed.mjs), not from GitHub.
+const val MODULE_REPO_URL = "https://caesarvn.xyz/feed/module-repo"
 
 data class ModuleDetail(
     val readme: String,

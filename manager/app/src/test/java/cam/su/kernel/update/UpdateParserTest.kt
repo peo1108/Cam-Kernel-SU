@@ -176,4 +176,48 @@ class UpdateParserTest {
         val noBullet = parseReleases(list(release("cam-v3.0.1", apk("3.0.1", 32900), body = "Chỉ có chữ")), 32800)!!
         assertNull(noBullet.summary)
     }
+
+    /** The site's feed (site/scripts/build-feed.mjs) as it is published: same layout as the API. */
+    @Test
+    fun readsSiteFeed() {
+        val json = """
+            [
+             {
+              "tag_name": "cam-v3.2.0-beta.1",
+              "name": "Cam Kernel SU 3.2.0-beta.1",
+              "draft": false,
+              "prerelease": true,
+              "published_at": "2026-10-20T10:00:00Z",
+              "body": "- beta",
+              "assets": [{
+               "name": "SU_Kernel_3.2.0-beta.1_32900-release.apk",
+               "size": 21000000,
+               "digest": "sha256:ABCDEF0123",
+               "browser_download_url": "https://caesarvn.xyz/dl/cam-v3.2.0-beta.1/SU_Kernel_3.2.0-beta.1_32900-release.apk"
+              }]
+             },
+             {
+              "tag_name": "cam-v3.1.0",
+              "name": "Cam Kernel SU 3.1.0",
+              "draft": false,
+              "prerelease": false,
+              "published_at": "2026-10-11T19:52:33Z",
+              "body": "- stable",
+              "assets": [{
+               "name": "SU_Kernel_3.1.0_32836-release.apk",
+               "size": 21000000,
+               "digest": "sha256:0123456789",
+               "browser_download_url": "https://caesarvn.xyz/dl/cam-v3.1.0/SU_Kernel_3.1.0_32836-release.apk"
+              }]
+             }
+            ]
+        """.trimIndent()
+        val stable = parseReleases(json, 32800)!!
+        assertEquals("3.1.0", stable.versionName)
+        assertEquals("https://caesarvn.xyz/dl/cam-v3.1.0/SU_Kernel_3.1.0_32836-release.apk", stable.apkUrl)
+        assertEquals("0123456789", stable.sha256)
+        val beta = parseReleases(json, 32800, includePrereleases = true)!!
+        assertEquals("3.2.0-beta.1", beta.versionName)
+        assertEquals("abcdef0123", beta.sha256)
+    }
 }

@@ -42,7 +42,9 @@ class HidingRulesRepository(private val context: Context = camApp) {
     companion object {
         private const val TAG = "HidingRules"
         private const val ASSET = "hiding-rules.json"
-        private const val RULES_URL = "https://raw.githubusercontent.com/peo1108/Cam-Kernel-SU/main/manager/app/src/main/assets/$ASSET"
+        // Byte-for-byte copy of assets/$ASSET (and .sig) published by site/scripts/build-feed.mjs
+        // on every change, so rule updates keep working once the repository is private.
+        private const val RULES_URL = "https://caesarvn.xyz/feed/$ASSET"
         private const val DUCK_URL = "https://api.github.com/repos/eltavine/Duck-Detector-Refactoring/commits/nightly"
         const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
 

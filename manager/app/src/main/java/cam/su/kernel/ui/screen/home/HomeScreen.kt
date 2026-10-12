@@ -105,7 +105,6 @@ fun HomePager(
         onDismissWhatsNew = viewModel::dismissWhatsNew,
         onReenableModule = viewModel::reenableModule,
         onDismissBootGuard = viewModel::dismissBootGuard,
-        onOpenOffer = { navigator.push(Route.EarlyAccess(it.tag, it.version)) },
     )
 
     HomePagerMiuix(

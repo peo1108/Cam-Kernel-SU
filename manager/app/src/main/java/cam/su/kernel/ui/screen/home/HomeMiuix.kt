@@ -69,6 +69,8 @@ import androidx.compose.ui.unit.sp
 import cam.su.kernel.KernelVersion
 import cam.su.kernel.Cam
 import cam.su.kernel.R
+import cam.su.kernel.account.LockedRelease
+import cam.su.kernel.ui.screen.account.EarlyAccessDialog
 import cam.su.kernel.ui.component.WarningLevel
 import cam.su.kernel.ui.screen.home.arena.StatusArena
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
@@ -253,6 +255,8 @@ private fun UpdateCard(
         actions.onUpdateClick()
     })
     val offer = state.offer
+    // The early access popup (notes, VietQR, then "Update now") for a release not open to this account yet.
+    var offerShown by remember { mutableStateOf<LockedRelease?>(null) }
     val showFromNotification by UpdateSignal.showUpdateDialog.collectAsState()
     LaunchedEffect(showFromNotification, update, offer) {
         // wait for Home's own check to find the update before consuming the request
@@ -264,7 +268,7 @@ private fun UpdateCard(
         } else if (showFromNotification && offer != null) {
             // not open to this account yet: its notes, the early access payment, then the update
             UpdateSignal.consume()
-            actions.onOpenOffer(offer)
+            offerShown = offer
         }
     }
 
@@ -279,7 +283,21 @@ private fun UpdateCard(
         WarningCard(
             message = stringResource(R.string.early_card, o.version, day),
             level = WarningLevel.Notice,
-            onClick = { actions.onOpenOffer(o) },
+            onClick = { offerShown = o },
+        )
+    }
+
+    offerShown?.let { o ->
+        EarlyAccessDialog(
+            show = true,
+            tag = o.tag,
+            version = o.version,
+            onDismissRequest = { offerShown = null },
+            onUpdate = {
+                // Home checks again, finds the release open and shows the usual update dialog.
+                offerShown = null
+                UpdateSignal.request()
+            },
         )
     }
 

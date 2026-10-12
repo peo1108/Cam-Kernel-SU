@@ -94,5 +94,4 @@ data class HomeActions(
     val onJailbreakClick: () -> Unit = {},
     val onReenableModule: (String) -> Unit = {},
     val onDismissBootGuard: () -> Unit = {},
-    val onOpenOffer: (LockedRelease) -> Unit = {},
 )

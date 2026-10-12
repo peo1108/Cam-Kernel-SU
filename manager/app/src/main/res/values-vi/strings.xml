@@ -682,11 +682,8 @@
     <string name="early_short">Đã nhận %1$s, còn thiếu %2$s.</string>
     <string name="early_expired">Mã thanh toán này đã hết hạn.</string>
     <string name="early_renew">Tạo mã thanh toán mới</string>
-    <string name="early_manual">Thông tin chuyển khoản</string>
     <string name="early_bank">Ngân hàng</string>
     <string name="early_account">Số tài khoản</string>
-    <string name="early_holder">Chủ tài khoản</string>
-    <string name="early_amount">Số tiền</string>
     <string name="early_content">Nội dung chuyển khoản</string>
     <string name="early_content_hint">Ghi đúng nội dung này: hệ thống dựa vào nó để nhận ra đơn của bạn.</string>
     <string name="early_copy">Chép</string>

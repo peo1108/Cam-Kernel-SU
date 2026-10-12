@@ -94,7 +94,6 @@ import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.navigation3.rememberNavigator
 import cam.su.kernel.ui.screen.about.AboutScreen
 import cam.su.kernel.ui.screen.account.AccountScreen
-import cam.su.kernel.ui.screen.account.EarlyAccessScreen
 import cam.su.kernel.ui.screen.appprofile.AppProfileScreen
 import cam.su.kernel.ui.screen.hidingcheck.HidingCheckScreen
 import cam.su.kernel.ui.screen.colorpalette.ColorPaletteScreen
@@ -270,7 +269,6 @@ class CamActivity : ComponentActivity() {
                             entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
                             entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPage { AboutScreen() } }
                             entry<Route.Account>(swipeDismiss = swipeDismiss) { GlassPage { AccountScreen() } }
-                            entry<Route.EarlyAccess>(swipeDismiss = swipeDismiss) { key -> GlassPage { EarlyAccessScreen(key.tag, key.version) } }
                             entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPage { SulogScreen() } }
                             entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPage { ColorPaletteScreen() } }
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPage { AppProfileTemplateScreen() } }

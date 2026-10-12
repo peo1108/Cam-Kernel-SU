@@ -46,11 +46,6 @@ sealed interface Route : NavKey, Parcelable {
     @Serializable
     data object Account : Route
 
-    /** Early access to one release: its notes, the VietQR payment, then the update on Home. */
-    @Parcelize
-    @Serializable
-    data class EarlyAccess(val tag: String, val version: String) : Route
-
     @Parcelize
     @Serializable
     data object Sulog : Route

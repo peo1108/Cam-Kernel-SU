@@ -698,11 +698,8 @@
     <string name="early_short">Received %1$s, %2$s still to pay.</string>
     <string name="early_expired">This payment code expired.</string>
     <string name="early_renew">New payment code</string>
-    <string name="early_manual">Transfer details</string>
     <string name="early_bank">Bank</string>
     <string name="early_account">Account number</string>
-    <string name="early_holder">Account holder</string>
-    <string name="early_amount">Amount</string>
     <string name="early_content">Transfer note</string>
     <string name="early_content_hint">Use exactly this note: it is how the payment finds your order.</string>
     <string name="early_copy">Copy</string>

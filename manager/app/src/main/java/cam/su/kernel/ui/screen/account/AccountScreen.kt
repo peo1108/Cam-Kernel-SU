@@ -56,6 +56,7 @@ import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.su.kernel.update.UpdateSignal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -96,6 +97,7 @@ fun AccountScreen() {
     val errorText = stringResource(R.string.account_error)
     val membersOnly = stringResource(R.string.account_members_only)
     val sentText = stringResource(R.string.account_tester_sent)
+    var offerShown by remember { mutableStateOf<LockedRelease?>(null) }
 
     suspend fun refresh() {
         message = null
@@ -134,6 +136,21 @@ fun AccountScreen() {
             }
         }
         ui = code.copy(expired = true)
+    }
+
+    offerShown?.let { r ->
+        EarlyAccessDialog(
+            show = true,
+            tag = r.tag,
+            version = r.version,
+            onDismissRequest = { offerShown = null },
+            onUpdate = {
+                // back to Home, which checks again and shows the usual update dialog
+                offerShown = null
+                UpdateSignal.request()
+                navigator.popUntil { it is Route.Main }
+            },
+        )
     }
 
     val scrollBehavior = MiuixScrollBehavior()
@@ -193,7 +210,7 @@ fun AccountScreen() {
                         is AccountUi.Linked -> LinkedCards(
                             status = state.status,
                             onJoin = { uri.openUri(state.status.joinUrl) },
-                            onOpenRelease = { r -> navigator.push(Route.EarlyAccess(r.tag, r.version)) },
+                            onOpenRelease = { r -> offerShown = r },
                             onAskTester = {
                                 scope.launch {
                                     Account.requestTester()

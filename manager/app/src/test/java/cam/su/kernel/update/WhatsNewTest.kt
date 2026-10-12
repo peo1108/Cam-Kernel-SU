@@ -26,6 +26,13 @@ class WhatsNewTest {
     }
 
     @Test
+    fun renumberedReleaseShowsItsOwnEntry() {
+        val d = decideWhatsNew("3.1.0", "1.1.1", entries("1.1.1"))
+        assertEquals(listOf("1.1.1"), d.show.map { it.version })
+        assertEquals("1.1.1", d.saveLastSeen)
+    }
+
+    @Test
     fun devBuildDoesNothing() {
         for (current in listOf("3.0.0-5-gabc1234", "21536a17")) {
             val d = decideWhatsNew("3.0.0", current, all)

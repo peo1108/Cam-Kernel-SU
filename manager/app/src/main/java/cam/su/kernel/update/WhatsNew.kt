@@ -8,8 +8,13 @@ data class WhatsNewDecision(val show: List<ChangelogEntry>, val saveLastSeen: St
  * hashes) and versions without an entry show nothing.
  */
 fun decideWhatsNew(lastSeen: String?, current: String, entries: List<ChangelogEntry>): WhatsNewDecision {
-    if (parseSemver(current) == null) return WhatsNewDecision(emptyList(), null)
+    val now = parseSemver(current) ?: return WhatsNewDecision(emptyList(), null)
     if (lastSeen == null) return WhatsNewDecision(emptyList(), current)
     if (lastSeen == current) return WhatsNewDecision(emptyList(), null)
+    // Numbering restarted (3.x betas -> 1.1.1): an update, not a downgrade. Show this version only.
+    val last = parseSemver(lastSeen)
+    if (last != null && last.first > now.first) {
+        return WhatsNewDecision(entries.filter { it.version == current }, current)
+    }
     return WhatsNewDecision(ChangelogParser.entriesNewerThan(entries, lastSeen, current), current)
 }

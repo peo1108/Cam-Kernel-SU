@@ -13,7 +13,7 @@ node --test --test-timeout=60000 test/api.test.mjs test/business.test.mjs >/dev/
 
 echo "== backup and install"
 tmp="$(mktemp -d)"
-tar --force-local -cf "$tmp/api.tar" *.mjs routes/*.mjs 2>/dev/null || tar -cf "$tmp/api.tar" *.mjs routes/*.mjs
+tar --force-local -cf "$tmp/api.tar" ./*.mjs ./routes/*.mjs 2>/dev/null || tar -cf "$tmp/api.tar" ./*.mjs ./routes/*.mjs
 scp -q -i "$KEY" "$tmp/api.tar" "$HOST:/root/api.tar"
 rm -rf "$tmp"
 ssh -i "$KEY" -o BatchMode=yes "$HOST" 'set -e

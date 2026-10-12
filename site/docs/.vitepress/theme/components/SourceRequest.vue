@@ -8,7 +8,11 @@ const props = defineProps<{ lang: 'vi' | 'en' | 'zh' }>()
 const T = {
   vi: {
     title: 'Mã nguồn.',
-    lead: 'Không công khai. Gửi lời, chờ duyệt.',
+    lead: 'Không công khai. Thành viên gửi lời, chờ duyệt.',
+    needSignIn: 'Đăng nhập bằng tài khoản thành viên để gửi.',
+    membersOnly: 'Chỉ thành viên mới gửi được yêu cầu mã nguồn.',
+    signInHref: '/tai-khoan?next=/ma-nguon',
+    signIn: 'Đăng nhập',
     name: 'Bạn là ai',
     namePh: 'Tên hoặc biệt danh',
     contact: 'Liên lạc',
@@ -27,7 +31,11 @@ const T = {
   },
   en: {
     title: 'Source.',
-    lead: 'Not public. Ask, and wait.',
+    lead: 'Not public. Members ask, and wait.',
+    needSignIn: 'Sign in with a member account to send this.',
+    membersOnly: 'Only members can request the source.',
+    signInHref: '/en/account?next=/en/source',
+    signIn: 'Sign in',
     name: 'Who are you',
     namePh: 'Name or nickname',
     contact: 'Contact',
@@ -46,7 +54,11 @@ const T = {
   },
   zh: {
     title: '源码。',
-    lead: '不公开。提出申请，等待审核。',
+    lead: '不公开。会员提出申请，等待审核。',
+    needSignIn: '请使用会员账号登录后提交。',
+    membersOnly: '只有会员可以申请源码。',
+    signInHref: '/zh/account?next=/zh/source',
+    signIn: '登录',
     name: '你是谁',
     namePh: '名字或昵称',
     contact: '联系方式',
@@ -69,6 +81,7 @@ const t = computed(() => T[props.lang])
 const form = ref({ name: '', contact: '', github: '', reason: '', website: '' })
 const state = ref<'idle' | 'sending' | 'sent' | 'error'>('idle')
 const error = ref('')
+const needLogin = ref(false)
 
 const GH = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/
 
@@ -92,7 +105,8 @@ async function submit() {
       return
     }
     state.value = 'error'
-    error.value = res.status === 429 ? t.value.tooMany : res.status === 400 ? t.value.invalid : t.value.failed
+    error.value = res.status === 401 ? t.value.needSignIn : res.status === 403 ? t.value.membersOnly : res.status === 429 ? t.value.tooMany : res.status === 400 ? t.value.invalid : t.value.failed
+    needLogin.value = res.status === 401
   } catch {
     state.value = 'error'
     error.value = t.value.failed
@@ -138,7 +152,7 @@ function reset() {
           </label>
           <!-- Left empty by people; bots fill it. -->
           <input v-model="form.website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
-          <p v-if="state === 'error'" class="err">{{ error }}</p>
+          <p v-if="state === 'error'" class="err">{{ error }} <a v-if="needLogin" :href="t.signInHref">{{ t.signIn }} →</a></p>
           <button class="lg lg-btn lg-tinted lg-press" type="submit" :disabled="state === 'sending'">
             {{ state === 'sending' ? t.sending : t.send }}
           </button>

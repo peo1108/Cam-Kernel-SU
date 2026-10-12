@@ -88,6 +88,11 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   sitemap: { hostname: 'https://caesarvn.xyz' },
+  // Local preview/dev: send /api to `node site/api/server.mjs` (on the VPS Caddy does this).
+  vite: {
+    server: { proxy: { '/api': 'http://127.0.0.1:7792' } },
+    preview: { proxy: { '/api': 'http://127.0.0.1:7792' } },
+  },
   head: [
     // Set before first paint so entrance cards start hidden instead of flashing (theme/glass/runtime.ts).
     ['script', {}, "document.documentElement.classList.add('lg-js')"],
@@ -150,6 +155,7 @@ export default defineConfig({
           { text: 'Nhật ký', link: '/nhat-ky' },
           { text: 'Tải về', link: '/tai-ve' },
           { text: 'Mã nguồn', link: '/ma-nguon' },
+          { text: 'Tài khoản', link: '/thanh-vien', activeMatch: '/(thanh-vien|tai-khoan|quan-tri)' },
         ],
         sidebar: { '/huong-dan/': guideVi() },
         outline: { label: 'Trên trang này', level: [2, 3] },
@@ -184,6 +190,7 @@ export default defineConfig({
           { text: 'Changelog', link: '/en/changelog' },
           { text: 'Download', link: '/en/download' },
           { text: 'Source', link: '/en/source' },
+          { text: 'Account', link: '/en/member', activeMatch: '/en/(member|account)' },
         ],
         sidebar: { '/en/guide/': guideEn() },
         outline: { level: [2, 3] },
@@ -205,6 +212,7 @@ export default defineConfig({
           { text: '更新日志', link: '/zh/changelog' },
           { text: '下载', link: '/zh/download' },
           { text: '源码', link: '/zh/source' },
+          { text: '账号', link: '/zh/member', activeMatch: '/zh/(member|account)' },
         ],
         sidebar: { '/zh/guide/': guideZh() },
         outline: { label: '本页内容', level: [2, 3] },

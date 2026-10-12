@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { api } from '../api'
 import { data as release } from '../../data/release.data'
 import { data as changelog } from '../../data/changelog.data'
 import { mb, fmtDate } from '../format'
@@ -15,6 +16,7 @@ const T = {
     notes: 'Ghi chú phát hành',
     noData: 'Chưa có bản nào. Quay lại sau.',
     ota: 'Đã cài rồi thì app tự báo khi có bản mới (kiểm tra mỗi 12 giờ), không cần tải lại tay.',
+    locked: 'Tải về dành cho thành viên.', lockedIn: 'Đăng nhập hoặc tham gia', memberHref: '/thanh-vien', notYet: 'Bản này chưa mở cho bạn. Xem ngày mở hoặc nhận sớm', here: 'ở trang thành viên',
     lkmTitle: 'Module nhân (LKM)',
     lkmLead: 'Chỉ cần khi chọn "Sử dụng file LKM cục bộ" lúc cài. KMI xem bằng uname -r: 5.15.x-android13-... là android13-5.15.',
     toolsTitle: 'Công cụ dòng lệnh',
@@ -33,6 +35,7 @@ const T = {
     notes: 'Release notes',
     noData: 'Nothing here yet. Come back later.',
     ota: 'Once installed, the app tells you about new releases (it checks every 12 hours); no need to come back here.',
+    locked: 'Downloads are for members.', lockedIn: 'Sign in or join', memberHref: '/en/member', notYet: 'This release is not open for you yet. See when it opens or get it early', here: 'on your account page',
     lkmTitle: 'Kernel module (LKM)',
     lkmLead: 'Only needed for "Use local LKM file" during install. Find your KMI with uname -r: 5.15.x-android13-... means android13-5.15.',
     toolsTitle: 'Command-line tools',
@@ -51,6 +54,7 @@ const T = {
     notes: '更新说明',
     noData: '暂时没有。稍后再来。',
     ota: '安装后，应用会自动提示新版本（每 12 小时检查一次），无需再回来这里。',
+    locked: '下载仅限会员。', lockedIn: '登录或加入', memberHref: '/zh/member', notYet: '该版本尚未对你开放。查看开放日期或抢先获取', here: '请到会员页',
     lkmTitle: '内核模块（LKM）',
     lkmLead: '仅在安装时选择“使用本地 LKM 文件”才需要。用 uname -r 查看 KMI：5.15.x-android13-... 即 android13-5.15。',
     toolsTitle: '命令行工具',
@@ -65,6 +69,24 @@ const T = {
 
 const t = computed(() => T[props.lang])
 const latest = release.latest
+
+// What this visitor may download (the server decides; /dl/ enforces it). Until we know, links
+// point at the account page, so nobody lands on an error.
+const openTags = ref<Set<string> | null>(null)
+const signedIn = ref(false)
+onMounted(async () => {
+  try {
+    const f = await api<any>('GET', '/api/auth/features')
+    signedIn.value = !!f.signed_in
+    if (!f.signed_in) return (openTags.value = new Set())
+    const me = await api<any>('GET', '/api/me')
+    openTags.value = new Set(me.releases.filter((r: any) => r.open).map((r: any) => r.tag))
+  } catch {
+    openTags.value = new Set()
+  }
+})
+const can = (tag: string) => !!openTags.value?.has(tag)
+const href = (tag: string, url: string) => (can(tag) ? url : t.value.memberHref)
 const arch = ref<'aarch64' | 'x86_64'>('aarch64')
 const lkm = computed(() => (latest?.lkm ?? []).filter((l) => l.arch === arch.value))
 // Prefer the changelog date (local release day) over GitHub's UTC timestamp.
@@ -89,13 +111,17 @@ const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))
         </div>
       </div>
       <div class="hc-actions">
-        <a v-if="latest.apk" class="lg lg-btn lg-tinted lg-press" data-lens="droplet" :href="latest.apk.url">
+        <a v-if="latest.apk" class="lg lg-btn lg-tinted lg-press" data-lens="droplet" :href="href(latest.tag, latest.apk.url)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14" /></svg>
           {{ t.apk }}
         </a>
         <a class="lg lg-btn lg-drop lg-press" data-lens="droplet" :href="`${t.changelogLink}#v${latest.version.replaceAll('.', '-')}`">{{ t.notes }}</a>
       </div>
       <p class="hc-ota">{{ t.ota }}</p>
+      <p v-if="openTags && !can(latest.tag)" class="hc-lock">
+        🔒 <template v-if="!signedIn">{{ t.locked }} <a :href="t.memberHref">{{ t.lockedIn }} →</a></template>
+        <template v-else>{{ t.notYet }} <a :href="t.memberHref">{{ t.here }} →</a></template>
+      </p>
     </section>
 
     <section v-else class="hero-card lg lg-hover lg-in">
@@ -119,7 +145,7 @@ const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))
         </div>
         <p class="muted">{{ t.lkmLead }}</p>
         <div class="kmi">
-          <a v-for="l in lkm" :key="l.kmi" class="kmi-item" :href="l.url">
+          <a v-for="l in lkm" :key="l.kmi" class="kmi-item" :href="href(latest.tag, l.url)">
             <span class="cam-mono">{{ l.kmi }}</span>
             <span class="size">{{ mb(l.size) }}</span>
           </a>
@@ -130,7 +156,7 @@ const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))
         <h2 class="lg-display">{{ t.toolsTitle }}</h2>
         <p class="muted">{{ t.toolsLead }}</p>
         <div class="tools">
-          <a v-for="a in latest.tools" :key="a.name" class="tool" :href="a.url">
+          <a v-for="a in latest.tools" :key="a.name" class="tool" :href="href(latest.tag, a.url)">
             <span class="cam-mono">{{ a.name }}</span><span class="size">{{ mb(a.size) }}</span>
           </a>
         </div>
@@ -142,7 +168,7 @@ const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))
           <li v-for="r in release.older" :key="r.tag">
             <a :href="`${t.changelogLink}#v${r.version.replaceAll('.', '-')}`" class="cam-mono">v{{ r.version }}</a>
             <span class="muted">{{ fmtDate(dateOf(r.version, r.date), lang) }}</span>
-            <a v-if="r.apk" :href="r.apk.url" class="apk">APK</a>
+            <a v-if="r.apk" :href="href(r.tag, r.apk.url)" class="apk">APK</a>
           </li>
         </ul>
         <a class="lg lg-btn lg-drop lg-press small" data-lens="droplet" :href="t.changelogLink">{{ t.changelog }} →</a>
@@ -167,6 +193,8 @@ const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))
 .hc-title { font-size: clamp(26px, 5vw, 34px); font-weight: 800; line-height: 1.15; margin-top: 6px; }
 .hc-sub { color: var(--vp-c-text-2); font-size: 14px; }
 .hc-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.hc-lock { flex-basis: 100%; margin: 0; font-size: 14.5px; font-weight: 600; }
+.hc-lock a { color: rgb(var(--lg-accent)); }
 .hc-ota {
   flex-basis: 100%;
   margin: 0;

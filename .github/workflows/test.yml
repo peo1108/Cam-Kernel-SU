@@ -3,7 +3,8 @@ name: Test
 # Unit tests the build workflows do not run: the kernel's seed and Manager pin logic
 # (kernel/tests, on the host under ASan/UBSan), camd on the Linux host, and the Manager's JVM
 # tests (among them HidingRulesRepositoryTest, which fails when hiding-rules.json was edited
-# without re-signing it), and the CHANGELOG.md extractor the Release workflow relies on.
+# without re-signing it), the CHANGELOG.md extractor the Release workflow relies on, and the
+# caesarvn.xyz API that sells memberships and serves the OTA feed (site/api).
 
 on:
   push:
@@ -20,6 +21,7 @@ on:
       - 'CHANGELOG.md'
       - 'scripts/changelog_section.py'
       - 'scripts/test_changelog_section.py'
+      - 'site/api/**'
   pull_request:
     branches: [ "main", "dev" ]
     paths:
@@ -34,6 +36,7 @@ on:
       - 'CHANGELOG.md'
       - 'scripts/changelog_section.py'
       - 'scripts/test_changelog_section.py'
+      - 'site/api/**'
   workflow_dispatch:
   # release.yml runs every test before it publishes an OTA update
   workflow_call:
@@ -49,6 +52,16 @@ jobs:
 
       - name: Changelog extractor tests
         run: python3 -m unittest scripts/test_changelog_section.py -v
+
+  # caesarvn.xyz API (site/api): accounts, payments and the SePay webhook, devices, OTA, 2FA.
+  site-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: node --test --test-timeout=60000 site/api/test/api.test.mjs site/api/test/business.test.mjs
 
   kernel:
     runs-on: ubuntu-latest

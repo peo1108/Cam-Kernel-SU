@@ -8,6 +8,8 @@
 //                                     a sha256 digest computed here
 //   dist/feed/hiding-rules.json(.sig) byte-for-byte copies of the signed rules in the repo
 //   dist/feed/module-repo/...         the module-repo branch (modules.json, module/<id>.json)
+//   dist/_private/releases.json       the same releases plus `urgent` (CHANGELOG heading ends in
+//                                     [gấp]) for the API's membership rules; Caddy never serves it
 //
 // GITHUB_TOKEN (CI) reads releases and the module-repo branch once the repository is private.
 // Fails loudly: a broken feed must never replace a working one.
@@ -20,6 +22,7 @@ const REPO = 'peo1108/Cam-Kernel-SU'
 const SITE = process.env.SITE_URL || 'https://caesarvn.xyz'
 const DIST = fileURLToPath(new URL('../docs/.vitepress/dist/', import.meta.url))
 const ASSETS = fileURLToPath(new URL('../../manager/app/src/main/assets/', import.meta.url))
+const CHANGELOG = fileURLToPath(new URL('../../CHANGELOG.md', import.meta.url))
 const auth = process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}
 
 async function api(path, accept = 'application/vnd.github+json') {
@@ -34,7 +37,12 @@ async function sha256(file) {
 
 /* ---------------- releases + downloads ---------------- */
 
-const all = (await (await api('releases?per_page=30')).json()).filter((r) => !r.draft && /^cam-v/.test(r.tag_name))
+// The official line starts at cam-v1.1.1 (launch, 2026-10-19). Once it exists, everything
+// published before it (the 3.x beta-test builds) is left out of the site and the OTA feed.
+const FIRST_OFFICIAL = 'cam-v1.1.1'
+let all = (await (await api('releases?per_page=30')).json()).filter((r) => !r.draft && /^cam-v/.test(r.tag_name))
+const official = all.find((r) => r.tag_name === FIRST_OFFICIAL)
+if (official) all = all.filter((r) => Date.parse(r.published_at) >= Date.parse(official.published_at))
 const firstStable = all.findIndex((r) => !r.prerelease)
 const stable = all.filter((r) => !r.prerelease).slice(0, 6)
 // Betas newer than the latest stable release; older betas are of no use to anyone.
@@ -82,6 +90,16 @@ for (const r of keep) {
 }
 await mkdir(join(DIST, 'feed'), { recursive: true })
 await writeFile(join(DIST, 'feed', 'releases.json'), JSON.stringify(feed, null, 1))
+
+// Urgent releases skip the members' 20-day wait: `## 1.2.3 - 2026-11-01 [gấp]`.
+const urgent = new Set(
+  [...(await readFile(CHANGELOG, 'utf8')).matchAll(/^## (\d+\.\d+\.\d+)\s+-\s+\S+.*\[gấp\]/gm)].map((m) => m[1]),
+)
+await mkdir(join(DIST, '_private'), { recursive: true })
+await writeFile(
+  join(DIST, '_private', 'releases.json'),
+  JSON.stringify(feed.map((r) => ({ ...r, urgent: urgent.has(r.tag_name.replace(/^cam-v/, '').replace(/-beta\.\d+$/, '')) })), null, 1),
+)
 console.log(`releases: ${feed.map((r) => r.tag_name).join(', ')} (${(fetched / 1048576).toFixed(1)} MB fetched)`)
 
 /* ---------------- hiding rules (signed: copied byte for byte) ---------------- */

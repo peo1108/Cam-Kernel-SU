@@ -68,8 +68,11 @@ export default {
       const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=20`, { headers })
       if (!res.ok) throw new Error(`GitHub API ${res.status}`)
       const list = (await res.json()) as any[]
+      // Same cut as scripts/build-feed.mjs: from the first official release on, older builds go.
+      const official = list.find((r) => r.tag_name === 'cam-v1.1.1')
       const releases = list
         .filter((r) => !r.draft && !r.prerelease && /^cam-v/.test(r.tag_name))
+        .filter((r) => !official || Date.parse(r.published_at) >= Date.parse(official.published_at))
         .map((r, i) => toRelease(r, i === 0))
       return { latest: releases[0] ?? null, older: releases.slice(1, 6) }
     } catch (e) {

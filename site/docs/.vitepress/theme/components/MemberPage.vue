@@ -3,6 +3,7 @@
 // date, or early access to buy), devices, orders, password and two-step sign-in.
 // Prices and rules come from /api/me; buying creates an order on the server and goes to /mua.
 import { computed, onMounted, ref } from 'vue'
+import qrcode from 'qrcode-generator'
 import { ApiError, api, day, errorText, vnd, type Lang } from '../api'
 
 const props = defineProps<{ lang: Lang }>()
@@ -17,7 +18,7 @@ const T = {
     orders: 'Đơn hàng', noOrders: 'Chưa có đơn.', pay: 'Thanh toán', status: { pending: 'Chờ thanh toán', paid: 'Đã trả', expired: 'Hết hạn', refunded: 'Đã hoàn' },
     security: 'Bảo mật', current: 'Mật khẩu hiện tại', newPass: 'Mật khẩu mới', change: 'Đổi mật khẩu', changed: 'Đã đổi mật khẩu.',
     twoStep: 'Xác thực 2 bước', twoStepOn: 'Đang bật', twoStepOff: 'Đang tắt', twoStepLead: 'Mỗi lần đăng nhập cần thêm mã 6 số từ app Google Authenticator, Authy, 2FAS…',
-    setup: 'Bật xác thực 2 bước', scanKey: 'Thêm vào app xác thực bằng khoá này (hoặc mở liên kết trên điện thoại):', enterCode: 'Mã 6 số', enable: 'Xác nhận và bật',
+    setup: 'Bật xác thực 2 bước', scanKey: 'Mở Google Authenticator (hoặc Authy, 2FAS…) → thêm → quét mã QR này. Không quét được thì nhập khoá bên dưới.', keyLabel: 'Khoá', copyKey: 'Chép khoá', copied: 'Đã chép', openApp: 'Đang dùng điện thoại? Mở thẳng app xác thực', step2: 'Nhập mã 6 số app vừa hiện để bật', enterCode: 'Mã 6 số', enable: 'Xác nhận và bật',
     disable: 'Tắt', disableCode: 'Nhập mã để tắt', adminWarn: 'Tài khoản admin nên bật xác thực 2 bước.',
     beta: 'Beta tester', betaLead: 'Nhận mọi bản mới ngay khi ra, cả bản thử nghiệm. Cần được admin duyệt.', betaAsk: 'Xin làm beta tester', betaState: { none: 'Chưa xin', pending: 'Đang chờ duyệt', approved: 'Bạn là beta tester', rejected: 'Chưa được duyệt' },
     logout: 'Đăng xuất', admin: 'Quản trị', signin: '/tai-khoan?next=/thanh-vien', buy: '/mua', connect: '/ket-noi',
@@ -32,7 +33,7 @@ const T = {
     orders: 'Orders', noOrders: 'No orders.', pay: 'Pay', status: { pending: 'Awaiting payment', paid: 'Paid', expired: 'Expired', refunded: 'Refunded' },
     security: 'Security', current: 'Current password', newPass: 'New password', change: 'Change password', changed: 'Password changed.',
     twoStep: 'Two-step sign-in', twoStepOn: 'On', twoStepOff: 'Off', twoStepLead: 'Each sign-in also asks for a 6-digit code from Google Authenticator, Authy, 2FAS…',
-    setup: 'Turn on two-step sign-in', scanKey: 'Add it to your authenticator app with this key (or open the link on your phone):', enterCode: '6-digit code', enable: 'Confirm and turn on',
+    setup: 'Turn on two-step sign-in', scanKey: 'Open Google Authenticator (or Authy, 2FAS…) → add → scan this QR code. Cannot scan? Type the key below.', keyLabel: 'Key', copyKey: 'Copy key', copied: 'Copied', openApp: 'On this phone? Open your authenticator app directly', step2: 'Enter the 6-digit code it shows to turn it on', enterCode: '6-digit code', enable: 'Confirm and turn on',
     disable: 'Turn off', disableCode: 'Code to turn off', adminWarn: 'Admin accounts should use two-step sign-in.',
     beta: 'Beta tester', betaLead: 'Get every release as soon as it ships, betas included. Needs the admin\'s approval.', betaAsk: 'Ask to be a beta tester', betaState: { none: 'Not requested', pending: 'Waiting for approval', approved: 'You are a beta tester', rejected: 'Not approved' },
     logout: 'Sign out', admin: 'Admin', signin: '/en/account?next=/en/member', buy: '/en/buy', connect: '/en/connect',
@@ -47,7 +48,7 @@ const T = {
     orders: '订单', noOrders: '暂无订单。', pay: '付款', status: { pending: '等待付款', paid: '已付款', expired: '已过期', refunded: '已退款' },
     security: '安全', current: '当前密码', newPass: '新密码', change: '修改密码', changed: '密码已修改。',
     twoStep: '两步验证', twoStepOn: '已开启', twoStepOff: '未开启', twoStepLead: '每次登录还需输入身份验证器（Google Authenticator、Authy、2FAS…）中的 6 位代码。',
-    setup: '开启两步验证', scanKey: '用此密钥添加到身份验证器（或在手机上打开链接）：', enterCode: '6 位代码', enable: '确认并开启',
+    setup: '开启两步验证', scanKey: '打开 Google Authenticator（或 Authy、2FAS…）→ 添加 → 扫描此二维码。无法扫描时请手动输入下方密钥。', keyLabel: '密钥', copyKey: '复制密钥', copied: '已复制', openApp: '正在用手机？直接打开身份验证器', step2: '输入应用显示的 6 位代码以开启', enterCode: '6 位代码', enable: '确认并开启',
     disable: '关闭', disableCode: '输入代码以关闭', adminWarn: '管理员账号应开启两步验证。',
     beta: '测试者', betaLead: '新版本一发布即可获取，包括测试版。需要管理员批准。', betaAsk: '申请成为测试者', betaState: { none: '未申请', pending: '等待批准', approved: '你是测试者', rejected: '未获批准' },
     logout: '退出登录', admin: '管理', signin: '/zh/account?next=/zh/member', buy: '/zh/buy', connect: '/zh/connect',
@@ -63,6 +64,24 @@ const cur = ref('')
 const pw = ref('')
 const totp = ref<{ secret: string; uri: string } | null>(null)
 const totpCode = ref('')
+const keyCopied = ref(false)
+
+// The QR is drawn here in the browser: the secret never goes to an outside QR service.
+const totpQr = computed(() => {
+  if (!totp.value) return ''
+  const q = qrcode(0, 'M')
+  q.addData(totp.value.uri)
+  q.make()
+  return q.createSvgTag({ cellSize: 5, margin: 0, scalable: true })
+})
+
+async function copyKey() {
+  try {
+    await navigator.clipboard.writeText(totp.value!.secret)
+    keyCopied.value = true
+    setTimeout(() => (keyCopied.value = false), 1500)
+  } catch {}
+}
 const busy = ref(false)
 
 async function load() {
@@ -210,9 +229,15 @@ onMounted(load)
         <template v-if="!me.user.totp">
           <button v-if="!totp" class="mini" :disabled="busy" @click="startTotp">{{ t.setup }}</button>
           <div v-else class="totp">
-            <p class="small">{{ t.scanKey }}</p>
-            <code class="key">{{ totp.secret.match(/.{1,4}/g)?.join(' ') }}</code>
-            <a class="small" :href="totp.uri">otpauth://…</a>
+            <p class="small">① {{ t.scanKey }}</p>
+            <div class="qr" role="img" :aria-label="t.scanKey" v-html="totpQr" />
+            <div class="keyrow">
+              <span class="muted small">{{ t.keyLabel }}</span>
+              <code class="key">{{ totp.secret.match(/.{1,4}/g)?.join(' ') }}</code>
+              <button class="mini" type="button" @click="copyKey">{{ keyCopied ? t.copied : t.copyKey }}</button>
+            </div>
+            <a class="small applink" :href="totp.uri">{{ t.openApp }} →</a>
+            <p class="small">② {{ t.step2 }}</p>
             <form class="row" @submit.prevent="enableTotp">
               <input v-model="totpCode" inputmode="numeric" maxlength="6" :placeholder="t.enterCode" required />
               <button class="mini accent" type="submit" :disabled="busy">{{ t.enable }}</button>
@@ -274,7 +299,11 @@ onMounted(load)
   background: rgba(var(--lg-surface), 0.55);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, var(--lg-rim-base));
 }
-.totp { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.totp { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.qr { width: 220px; max-width: 70vw; padding: 14px; border-radius: 20px; background: #fff; box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.35); }
+.qr :deep(svg) { display: block; width: 100%; height: auto; }
+.keyrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.applink { color: rgb(var(--lg-accent)); text-decoration: none; font-weight: 600; }
 .key { font-size: 17px; letter-spacing: 0.08em; padding: 8px 12px; border-radius: 12px; background: rgba(var(--lg-ink), 0.06); user-select: all; }
 .mini {
   padding: 7px 14px;

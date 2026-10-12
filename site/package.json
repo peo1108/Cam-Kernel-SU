@@ -11,6 +11,7 @@
     "feed": "node scripts/build-feed.mjs"
   },
   "devDependencies": {
+    "qrcode-generator": "2.0.4",
     "vitepress": "1.6.4",
     "vue": "3.5.42"
   }

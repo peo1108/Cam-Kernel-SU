@@ -230,6 +230,33 @@ function scanEntrance() {
   })
 }
 
+/**
+ * Pages that fetch first (member page, downloads, changelog) render their cards after the route
+ * scan above, so those cards would sit hidden until the 3 s fallback. Watch for new nodes and
+ * scan again in the next frame; one scan per frame however many nodes arrive.
+ */
+function watchLateContent() {
+  let queued = false
+  let cards = false
+  let lenses = false
+  new MutationObserver((records) => {
+    for (const r of records) {
+      r.addedNodes.forEach((n) => {
+        if (!(n instanceof Element)) return
+        if (n.matches('.lg-in') || n.querySelector('.lg-in')) cards = true
+        if (n.matches('[data-lens]') || n.querySelector('[data-lens]')) lenses = true
+      })
+    }
+    if (queued || !(cards || lenses)) return
+    queued = true
+    requestAnimationFrame(() => {
+      if (cards) scanEntrance()
+      if (lenses) scanLenses()
+      queued = cards = lenses = false
+    })
+  }).observe(document.body, { childList: true, subtree: true })
+}
+
 /* ---------------- nav drop ---------------- */
 
 function scanNavDrop() {
@@ -322,6 +349,7 @@ export function initGlass() {
   startTilt()
   startScrollEdge()
   refreshGlass()
+  watchLateContent()
   // Never leave content hidden if an observer misses something.
   setTimeout(() => {
     document.querySelectorAll<HTMLElement>('.lg-in:not(.lg-in-done)').forEach((n) => {

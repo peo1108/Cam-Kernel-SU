@@ -177,6 +177,11 @@ test('early access bought in the app: device token orders, polls, then the relea
   assert.equal(status.locked[0].apk, 'SU_Kernel_1.2.0_1-release.apk')
   assert.equal(status.locked[0].body, '- notes')
   assert.ok(!JSON.stringify(status.locked).includes('https://'), 'no download link for a locked release')
+  // Managers up to 1.1.3 crash drawing the notes: they get none, newer ones get them.
+  const asApp = (code) =>
+    fetch(base + '/api/ota/status', { headers: { Authorization: `Bearer ${token}`, 'User-Agent': `CamSU/${code}` } }).then((r) => r.json())
+  assert.equal((await asApp(32864)).locked[0].body, '')
+  assert.equal((await asApp(32865)).locked[0].body, '- notes')
 
   const o = (await dev('POST', '/api/orders', { kind: 'early', tag: 'cam-v1.2.0' })).body
   assert.equal(o.amount, 20000)

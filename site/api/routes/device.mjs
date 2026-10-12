@@ -79,6 +79,10 @@ export default function deviceRoutes(app) {
       const st = app.accountState(ctx.user)
       const s = app.settings()
       const rel = app.releaseStates(st)
+      // Managers up to 1.1.3 (version code 32864) crash drawing the notes in the early access
+      // popup (nested vertical scroll, fixed in c7b4a565): send them no notes, the popup works.
+      const appCode = Number(/^CamSU\/(\d+)/.exec(String(ctx.req.headers['user-agent'] || ''))?.[1] ?? 0)
+      const notesCrash = appCode > 0 && appCode <= 32864
       const req = db.prepare('SELECT status FROM tester_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(ctx.user.id)
       return {
         email: ctx.user.email,
@@ -91,7 +95,7 @@ export default function deviceRoutes(app) {
           .map((x) => {
             const r = app.catalog().find((c) => c.tag_name === x.tag)
             const apk = r?.assets?.find((a) => a.name.endsWith('.apk'))
-            return { version: x.version, tag: x.tag, open_at: x.open_at, prerelease: x.prerelease, price: s.price_early, body: r?.body ?? '', apk: apk?.name ?? null }
+            return { version: x.version, tag: x.tag, open_at: x.open_at, prerelease: x.prerelease, price: s.price_early, body: notesCrash ? '' : r?.body ?? '', apk: apk?.name ?? null }
           }),
         // The app offers "get it now" only while early access is on sale and payments are set up.
         can_buy_early: !!(st.member && s.sales_open && s.early_open && cfg.bankAccount && cfg.bankCode),

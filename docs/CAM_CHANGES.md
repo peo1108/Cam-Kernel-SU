@@ -782,8 +782,8 @@ Thiết kế: `docs/superpowers/specs/2026-10-12-membership-design.md`. Mọi gi
 
 ### Ngày ra mắt (19/10/2026), theo thứ tự
 
-1. Chuyển các mục 3.x của `CHANGELOG.md` sang `docs/CHANGELOG-beta.md`; `CHANGELOG.md` bắt đầu bằng `## 1.1.1 - 2026-10-19`.
-2. Push, tag `cam-v1.1.1`. `build-feed.mjs`/`release.data.ts` tự bỏ mọi bản phát hành trước `cam-v1.1.1`.
+1. ~~Chuyển các mục 3.x của `CHANGELOG.md` sang `docs/CHANGELOG-beta.md`~~, xong 12/10: `CHANGELOG.md` bắt đầu bằng `## 1.1.1 - 2026-10-12`.
+2. ~~Push, tag `cam-v1.1.1`~~, xong 12/10; các release 3.x đã xoá trên GitHub (tag vẫn giữ). `build-feed.mjs`/`release.data.ts` tự bỏ mọi bản trước `cam-v1.1.1`. Mọi thành viên được mở sớm 1.1.1 (quyền `early` cho `*` trong `/quan-tri`), không phải chờ 20 ngày cho bản đầu tiên. Manager 3.x so `versionCode` nên vẫn nhận 1.1.1 qua GitHub cho tới khi repo đóng; hộp "Có gì mới" coi số chính giảm (3 → 1) là cập nhật (`WhatsNew.kt`).
 3. VPS: `DL_GUARD=1` trong `/etc/cam-site-api.env`, `systemctl restart cam-site-api`. Từ đây `/dl/` chỉ trả file cho người có quyền.
 4. `/quan-tri` → Cài đặt → bật "Đang bán thành viên" (đang tắt từ 2026-10-12 để không ai trả tiền trước ngày ra mắt).
 5. Thử trọn: tài khoản mới → mua (chuyển khoản thật số nhỏ hoặc gán tay) → liên kết app → nhận OTA.

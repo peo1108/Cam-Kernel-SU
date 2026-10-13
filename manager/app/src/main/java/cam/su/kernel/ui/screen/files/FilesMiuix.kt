@@ -12,7 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,6 +82,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -309,9 +311,15 @@ private fun Panel(index: Int, state: FilesUiState, vm: FilesViewModel, wide: Boo
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (wide && active) colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent)
-            // a tap on empty space makes this the panel the toolbar acts on
-            .pointerInput(index) { detectTapGestures { vm.setActive(index) } },
+            .background(if (wide && active) colorScheme.primary.copy(alpha = 0.09f) else Color.Transparent)
+            // Any touch in a panel (tap, scroll, empty space) makes it the one the drawer, the
+            // toolbar and the menus act on. Initial pass, nothing consumed: the list still scrolls.
+            .pointerInput(index) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    vm.setActive(index)
+                }
+            },
     ) {
         LazyColumn(
             state = listState,

@@ -5,7 +5,7 @@
 #   scripts/device_smoke.sh            # the only device attached
 #   scripts/device_smoke.sh -s SERIAL  # pick one
 #
-# Needs: adb, python3 (to check the JSON), and root granted to Shell in the Manager.
+# Needs: adb, python (to check the JSON), and root granted to Shell in the Manager.
 # It only reads state; nothing on the device is changed.
 set -u
 
@@ -30,7 +30,7 @@ root() {
 rc_of() { sed -n 's/^__rc=//p' <<<"$1" | tail -n 1; }
 body_of() { sed '/^__rc=/d' <<<"$1"; }
 
-is_json() { python3 -c 'import json,sys; json.load(sys.stdin)' >/dev/null 2>&1 <<<"$1"; }
+is_json() { "$PY" -c 'import json,sys; json.load(sys.stdin)' >/dev/null 2>&1 <<<"$1"; }
 
 check_json() {
     local name=$1 cmd=$2 out
@@ -46,7 +46,15 @@ if ! "${ADB[@]}" get-state >/dev/null 2>&1; then
     echo "no device: connect one, or pick it with -s SERIAL" >&2
     exit 2
 fi
-command -v python3 >/dev/null || { echo "python3 is needed to check the JSON" >&2; exit 2; }
+# Windows has a python3 stub that only opens the Store, so try each name for real
+PY=
+for p in python3 python; do
+    if "$p" -c '' >/dev/null 2>&1; then
+        PY=$p
+        break
+    fi
+done
+[ -n "$PY" ] || { echo "python is needed to check the JSON" >&2; exit 2; }
 
 echo "== device: $("${ADB[@]}" shell getprop ro.product.model | tr -d '\r'), Android $("${ADB[@]}" shell getprop ro.build.version.release | tr -d '\r')"
 

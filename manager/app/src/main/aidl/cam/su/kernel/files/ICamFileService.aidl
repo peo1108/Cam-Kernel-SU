@@ -3,6 +3,7 @@ package cam.su.kernel.files;
 
 import cam.su.kernel.files.FileEntry;
 import cam.su.kernel.files.IFileOpCallback;
+import cam.su.kernel.files.IScriptCallback;
 import rikka.parcelablelist.ParcelableListSlice;
 
 // Served by CamFileService (uid 0) for the Files tab. Paths are absolute.
@@ -69,4 +70,10 @@ interface ICamFileService {
 
     // stops the measure and checksums calls running now (their dialog was closed)
     void cancelReads();
+
+    // runs the shell script at path as root, in its own session, the way modules run theirs
+    // (busybox ash when there is one); returns the id the callback events carry
+    int runScript(String path, IScriptCallback callback);
+    // ends the script and everything it started
+    void stopScript(int id);
 }

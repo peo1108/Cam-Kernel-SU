@@ -74,6 +74,8 @@ fun FilesPager(
 
                 is FilesEvent.Hex -> navigator.push(Route.HexViewer(event.path))
 
+                is FilesEvent.Run -> navigator.push(Route.Script(event.path))
+
                 is FilesEvent.Flash -> navigator.push(Route.Flash(FlashIt.FlashModules(listOf(Uri.fromFile(event.file)))))
 
                 is FilesEvent.Share -> {

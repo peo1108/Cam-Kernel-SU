@@ -113,6 +113,7 @@ sealed interface FilesEvent {
     data class Flash(val file: File) : FilesEvent
     data class Edit(val path: String) : FilesEvent
     data class Hex(val path: String) : FilesEvent
+    data class Run(val path: String) : FilesEvent
 }
 
 data class FilesUiState(
@@ -408,6 +409,10 @@ class FilesViewModel : ViewModel() {
 
     fun hex(entry: FileEntry) {
         viewModelScope.launch { events.send(FilesEvent.Hex(entry.path)) }
+    }
+
+    fun runScript(entry: FileEntry) {
+        viewModelScope.launch { events.send(FilesEvent.Run(entry.path)) }
     }
 
     fun showChecksum(entry: FileEntry) {

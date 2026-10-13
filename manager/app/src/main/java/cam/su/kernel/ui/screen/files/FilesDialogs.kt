@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.InstallMobile
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.runtime.Composable
@@ -206,6 +207,12 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
         )
 
         is FilesDialogState.OpenAs -> FilesDialog(show = true, title = stringResource(R.string.files_open_with), onDismiss = close) {
+            if (FileKinds.isScript(dialog.entry)) {
+                ListAction(stringResource(R.string.files_run)) {
+                    close()
+                    vm.runScript(dialog.entry)
+                }
+            }
             ListAction(stringResource(R.string.files_text_editor)) {
                 close()
                 vm.edit(dialog.entry)
@@ -359,6 +366,14 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                     GridCell(Icons.Rounded.Unarchive, stringResource(R.string.files_extract_to), onClick = {
                         close()
                         vm.extract(targets, other)
+                    }),
+                )
+            }
+            if (single && FileKinds.isScript(entry)) {
+                add(
+                    GridCell(Icons.Rounded.PlayArrow, stringResource(R.string.files_run), onClick = {
+                        close()
+                        vm.runScript(entry)
                     }),
                 )
             }

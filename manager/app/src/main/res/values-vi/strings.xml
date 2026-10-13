@@ -742,6 +742,17 @@
     <string name="files_error_xdev">Khác phân vùng</string>
     <string name="files_error_xdev_hint">Không đổi tên sang phân vùng khác được: nhập một thư mục làm đích để di chuyển vào đó</string>
     <string name="files_op_busy">Đang có thao tác khác chạy</string>
+    <string name="files_run">Chạy bằng root</string>
+    <string name="script_running">Đang chạy bằng root…</string>
+    <string name="script_exit">Đã xong · mã thoát %1$d</string>
+    <string name="script_lost">Dịch vụ root dừng giữa chừng khi script đang chạy</string>
+    <string name="script_stop">Dừng</string>
+    <string name="script_rerun">Chạy lại</string>
+    <string name="script_copy">Chép output</string>
+    <string name="script_copied">Đã chép output</string>
+    <string name="script_leave_title">Script đang chạy</string>
+    <string name="script_leave_message">Thoát sẽ dừng script và mọi thứ nó đã chạy.</string>
+    <string name="script_stop_leave">Dừng và thoát</string>
     <string name="files_header_counts">Thư mục: %1$d  Tệp: %2$d</string>
     <string name="files_header_selected">Đã chọn: %1$d</string>
     <string name="files_header_disk">Ổ: %1$s/%2$s</string>

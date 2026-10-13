@@ -237,6 +237,13 @@ fun TextEditorScreen(path: String) {
                 wrap = !wrap
             }
         }
+        // a script being written: run it (saved first) and read its output
+        if (!Archives.isInside(path) && !vm.readOnly && (name.endsWith(".sh") || '.' !in name)) {
+            MenuRow(stringResource(R.string.files_run)) {
+                menu = false
+                if (vm.modified) vm.save { navigator.push(Route.Script(path)) } else navigator.push(Route.Script(path))
+            }
+        }
         if (!Archives.isInside(path)) {
             MenuRow(stringResource(R.string.files_hex)) {
                 menu = false

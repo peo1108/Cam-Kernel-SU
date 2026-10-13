@@ -187,6 +187,17 @@ object FileKinds {
         return if (extension(entry.name).isEmpty() && entry.contentSize < 1024 * 1024) FileKind.TEXT else FileKind.OTHER
     }
 
+    /**
+     * Offered "Run as root": a .sh file, or a regular file with an execute bit (module scripts
+     * often have no extension). Not inside an archive, not a link to who knows what.
+     */
+    fun isScript(entry: FileEntry): Boolean {
+        if (entry.isDir || Archives.isInside(entry.path)) return false
+        if (entry.isLink) return !entry.linkBroken && extension(entry.name) == "sh"
+        if (entry.type != FileEntry.TYPE_FILE) return false
+        return extension(entry.name) == "sh" || entry.mode and 0x49 != 0
+    }
+
     fun mime(entry: FileEntry): String = when (of(entry)) {
         FileKind.APK -> "application/vnd.android.package-archive"
         FileKind.TEXT -> "text/plain"

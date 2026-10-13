@@ -757,6 +757,17 @@
     <string name="files_error_xdev">On another file system</string>
     <string name="files_error_xdev_hint">A rename cannot cross file systems: type a folder as the target to move it there</string>
     <string name="files_op_busy">Another operation is still running</string>
+    <string name="files_run">Run as root</string>
+    <string name="script_running">Running as root…</string>
+    <string name="script_exit">Finished · exit code %1$d</string>
+    <string name="script_lost">The root service stopped while the script ran</string>
+    <string name="script_stop">Stop</string>
+    <string name="script_rerun">Run again</string>
+    <string name="script_copy">Copy output</string>
+    <string name="script_copied">Output copied</string>
+    <string name="script_leave_title">The script is running</string>
+    <string name="script_leave_message">Leaving stops it, and whatever it started.</string>
+    <string name="script_stop_leave">Stop and leave</string>
     <string name="files_header_counts">Folders: %1$d  Files: %2$d</string>
     <string name="files_header_selected">Selected: %1$d</string>
     <string name="files_header_disk">Disk: %1$s/%2$s</string>

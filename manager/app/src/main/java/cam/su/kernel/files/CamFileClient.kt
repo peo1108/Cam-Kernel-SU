@@ -231,6 +231,50 @@ object CamFileClient {
         return OpHandle(id, events.receiveAsFlow())
     }
 
+    /** Runs the script at [path] as root; [ScriptHandle.events] ends with [ScriptEvent.Exit]. */
+    suspend fun runScript(path: String): ScriptHandle {
+        val events = Channel<ScriptEvent>(Channel.UNLIMITED)
+        var remote: IBinder? = null
+        val death = IBinder.DeathRecipient {
+            events.trySend(ScriptEvent.Exit(-1))
+            events.close()
+        }
+        val callback = object : IScriptCallback.Stub() {
+            override fun onOutput(id: Int, text: String) {
+                events.trySend(ScriptEvent.Output(text))
+            }
+
+            override fun onExit(id: Int, code: Int) {
+                events.trySend(ScriptEvent.Exit(code))
+                events.close()
+                runCatching { remote?.unlinkToDeath(death, 0) }
+            }
+        }
+        val id = call { s ->
+            val binder = s.asBinder()
+            binder.linkToDeath(death, 0)
+            remote = binder
+            try {
+                s.runScript(path, callback)
+            } catch (e: Exception) {
+                runCatching { binder.unlinkToDeath(death, 0) }
+                throw e
+            }
+        }
+        return ScriptHandle(id, events.receiveAsFlow())
+    }
+
+    class ScriptHandle internal constructor(val id: Int, val events: Flow<ScriptEvent>) {
+        suspend fun stop() = call { it.stopScript(id) }
+    }
+
+    sealed interface ScriptEvent {
+        data class Output(val text: String) : ScriptEvent
+
+        /** -1 when the root process died under it. */
+        data class Exit(val code: Int) : ScriptEvent
+    }
+
     class OpHandle internal constructor(val id: Int, val events: Flow<OpEvent>) {
         suspend fun cancel() = call { it.cancelOp(id) }
 

@@ -29,6 +29,7 @@ class CamFileService : RootService() {
     /** Bumped by cancelReads(): a measure or checksum started before it stops. */
     private val readGeneration = AtomicInteger()
     private val ops = ConcurrentHashMap<Int, RunningOp>()
+    private val scripts = ConcurrentHashMap<Int, ScriptRunner>()
 
     private class RunningOp {
         val cancelled = AtomicBoolean(false)
@@ -135,6 +136,42 @@ class CamFileService : RootService() {
 
         override fun cancelReads() {
             readGeneration.incrementAndGet()
+        }
+
+        override fun runScript(path: String, callback: IScriptCallback): Int = call {
+            val script = FsPath.normalize(path)
+            if (!FileMode.isRegular(OsBackend.stat(script).mode)) throw FsException(Errno.EINVAL, script, "not a regular file: $script")
+            val id = nextOpId.getAndIncrement()
+            lateinit var death: IBinder.DeathRecipient
+            val runner = ScriptRunner(
+                script,
+                onOutput = { runCatching { callback.onOutput(id, it) } },
+                onExit = { code ->
+                    scripts.remove(id)
+                    runCatching { callback.asBinder().unlinkToDeath(death, 0) }
+                    runCatching { callback.onExit(id, code) }
+                },
+            )
+            // the app going away stops what it started
+            death = IBinder.DeathRecipient { runner.stop() }
+            try {
+                callback.asBinder().linkToDeath(death, 0)
+            } catch (_: android.os.RemoteException) {
+                throw FsException(Errno.EIO, script, "the app is gone")
+            }
+            scripts[id] = runner
+            try {
+                runner.start()
+            } catch (e: Exception) {
+                scripts.remove(id)
+                runCatching { callback.asBinder().unlinkToDeath(death, 0) }
+                throw e
+            }
+            id
+        }
+
+        override fun stopScript(id: Int) {
+            scripts[id]?.stop()
         }
 
         override fun mkdir(path: String) = call { fs.mkdir(path) }

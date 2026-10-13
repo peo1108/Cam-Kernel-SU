@@ -298,6 +298,10 @@ object CamFileClient {
 
     class ScriptHandle internal constructor(val id: Int, val events: Flow<ScriptEvent>) {
         suspend fun stop() = call { it.stopScript(id) }
+
+        suspend fun input(text: String) = call { it.writeScript(id, text) }
+
+        suspend fun endInput() = call { it.closeScriptInput(id) }
     }
 
     sealed interface ScriptEvent {

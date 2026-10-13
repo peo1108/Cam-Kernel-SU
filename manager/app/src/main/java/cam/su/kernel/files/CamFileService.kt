@@ -225,6 +225,14 @@ class CamFileService : RootService() {
             scripts[id]?.stop()
         }
 
+        override fun writeScript(id: Int, text: String) = call {
+            (scripts[id] ?: throw FsException(Errno.EPIPE, detail = "the script ended")).input(text)
+        }
+
+        override fun closeScriptInput(id: Int) {
+            scripts[id]?.endInput()
+        }
+
         override fun mkdir(path: String) = call { fs.mkdir(path) }
 
         override fun createFile(path: String) = call { fs.createFile(path) }

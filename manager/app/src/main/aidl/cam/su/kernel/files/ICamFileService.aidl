@@ -77,6 +77,9 @@ interface ICamFileService {
     int runScript(String path, IScriptCallback callback);
     // ends the script and everything it started
     void stopScript(int id);
+    // text to the script's stdin; closeScriptInput is EOF (Ctrl+D)
+    void writeScript(int id, String text);
+    void closeScriptInput(int id);
 
     // every partition under by-name as "name\tsize in bytes"
     String[] partitions();

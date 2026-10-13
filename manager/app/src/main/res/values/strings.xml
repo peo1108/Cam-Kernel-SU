@@ -768,6 +768,8 @@
     <string name="script_leave_title">The script is running</string>
     <string name="script_leave_message">Leaving stops it, and whatever it started.</string>
     <string name="script_stop_leave">Stop and leave</string>
+    <string name="script_input">Input (stdin)</string>
+    <string name="script_send">Send</string>
     <string name="files_header_counts">Folders: %1$d  Files: %2$d</string>
     <string name="files_header_selected">Selected: %1$d</string>
     <string name="files_header_disk">Disk: %1$s/%2$s</string>

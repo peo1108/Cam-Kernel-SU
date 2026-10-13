@@ -43,6 +43,7 @@ class ScriptViewModel : ViewModel() {
         lines = emptyList()
         exitCode = null
         error = null
+        inputClosed = false
         running = true
         job = viewModelScope.launch {
             val h = try {
@@ -81,6 +82,33 @@ class ScriptViewModel : ViewModel() {
             // a script usually changes files: the Files tab reloads
             FileChanges.notify(path)
         }
+    }
+
+    /** EOF was sent: nothing more can be typed in this run. */
+    var inputClosed by mutableStateOf(false)
+        private set
+
+    /**
+     * One typed line to the script. It is shown in the output as a terminal echoes it: a pipe has
+     * no echo of its own, and a prompt printed without a newline ("Name: ") gets the answer after it.
+     */
+    fun send(line: String) {
+        val h = handle ?: return
+        output.append(line + "\n")
+        lines = output.snapshot()
+        viewModelScope.launch {
+            try {
+                h.input(line + "\n")
+            } catch (e: FsException) {
+                error = e
+            }
+        }
+    }
+
+    fun endInput() {
+        val h = handle ?: return
+        inputClosed = true
+        viewModelScope.launch { runCatching { h.endInput() } }
     }
 
     fun stop() {

@@ -18,6 +18,7 @@ object Errno {
     const val EINVAL = 22
     const val EFBIG = 27
     const val ENOSPC = 28
+    const val EPIPE = 32
     const val EROFS = 30
     const val ENOTEMPTY = 39
     const val ELOOP = 40

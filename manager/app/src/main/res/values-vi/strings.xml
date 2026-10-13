@@ -753,6 +753,8 @@
     <string name="script_leave_title">Script đang chạy</string>
     <string name="script_leave_message">Thoát sẽ dừng script và mọi thứ nó đã chạy.</string>
     <string name="script_stop_leave">Dừng và thoát</string>
+    <string name="script_input">Nhập (stdin)</string>
+    <string name="script_send">Gửi</string>
     <string name="files_header_counts">Thư mục: %1$d  Tệp: %2$d</string>
     <string name="files_header_selected">Đã chọn: %1$d</string>
     <string name="files_header_disk">Ổ: %1$s/%2$s</string>

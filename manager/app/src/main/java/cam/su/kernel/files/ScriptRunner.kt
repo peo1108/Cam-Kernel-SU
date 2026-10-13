@@ -35,8 +35,7 @@ class ScriptRunner(
         builder.environment().putAll(environment(builder.environment()["PATH"]))
         val p = builder.start()
         process = p
-        // no input: a script waiting on stdin reads EOF instead of hanging
-        runCatching { p.outputStream.close() }
+        // stdin stays open: what is typed on the screen reaches `read` (input()), EOF on demand
         val reader = InputStreamReader(p.inputStream, Charsets.UTF_8)
         val output = thread(name = "cam-script-out") {
             try {
@@ -67,6 +66,23 @@ class ScriptRunner(
             if (output.isAlive) runCatching { p.inputStream.close() }
             onExit(code)
         }
+    }
+
+    /** [text] to the script's stdin (a pipe, not a terminal: `read` works, a full screen program does not). */
+    fun input(text: String) {
+        val stdin = process?.outputStream ?: throw FsException(Errno.EINVAL, path, "not started")
+        try {
+            stdin.write(text.toByteArray(Charsets.UTF_8))
+            stdin.flush()
+        } catch (e: java.io.IOException) {
+            // the script closed its stdin or already ended
+            throw FsException(Errno.EPIPE, path, e.message)
+        }
+    }
+
+    /** End of input, as Ctrl+D in a terminal: a `while read` loop finishes. */
+    fun endInput() {
+        runCatching { process?.outputStream?.close() }
     }
 
     /** SIGTERM to the whole session, SIGKILL to what is left a moment later. */

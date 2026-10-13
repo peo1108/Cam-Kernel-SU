@@ -19,7 +19,16 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import top.yukonga.miuix.kmp.basic.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -163,7 +172,39 @@ fun ScriptScreen(path: String) {
                     }
                 }
             }
-            Row(Modifier.windowInsetsPadding(WindowInsets.navigationBars)) {}
+            // stdin: a line at a time, as typed at a prompt; EOF ends a `while read` loop
+            if (vm.running && !vm.inputClosed) {
+                var typed by remember { mutableStateOf("") }
+                val send = {
+                    vm.send(typed)
+                    typed = ""
+                    follow = true
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextField(
+                        value = typed,
+                        onValueChange = { typed = it },
+                        label = stringResource(R.string.script_input),
+                        singleLine = true,
+                        // plain input: Vietnamese IMEs would turn "dd" into "đ" in a command
+                        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password, imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { send() }),
+                        modifier = Modifier.weight(1f),
+                    )
+                    GlassIconButton(onClick = send) {
+                        Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = stringResource(R.string.script_send), tint = colorScheme.primary)
+                    }
+                    TextButton(text = "EOF", onClick = vm::endInput)
+                }
+            } else {
+                Row(Modifier.windowInsetsPadding(WindowInsets.navigationBars)) {}
+            }
         }
     }
 

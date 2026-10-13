@@ -101,4 +101,7 @@ interface FsBackend {
 
     /** Truncates; closing the stream fsyncs before it closes. */
     fun openWrite(path: String): OutputStream
+
+    /** [total, available] bytes of the file system holding [path]. */
+    fun statFs(path: String): LongArray
 }

@@ -13,6 +13,11 @@ interface ICamFileService {
     // null when nothing is there
     FileEntry stat(String path);
 
+    // [total, available] bytes of the file system holding path
+    long[] statFs(String path);
+    // [bytes, files, folders] under path, not crossing symlinks
+    long[] measure(String path);
+
     void mkdir(String path);
     void createFile(String path);
     void symlink(String target, String link);

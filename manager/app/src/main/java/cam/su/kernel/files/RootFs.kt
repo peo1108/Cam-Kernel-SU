@@ -69,6 +69,47 @@ class RootFs(private val fs: FsBackend) {
         }
     }
 
+    fun statFs(path: String): LongArray = fs.statFs(FsPath.normalize(path))
+
+    /**
+     * [bytes, files, folders] under [path], not crossing symlinks; the folder itself is not
+     * counted. Entries that cannot be read are skipped, like `du` does.
+     */
+    fun measure(path: String): LongArray {
+        val root = FsPath.normalize(path)
+        var bytes = 0L
+        var files = 0L
+        var dirs = 0L
+        val pending = ArrayDeque<String>()
+        val rootSt = fs.lstat(root)
+        if (!FileMode.isDir(rootSt.mode)) return longArrayOf(rootSt.size, 1, 0)
+        pending.addLast(root)
+        while (pending.isNotEmpty()) {
+            val dir = pending.removeLast()
+            val names = try {
+                fs.list(dir)
+            } catch (_: FsException) {
+                continue
+            }
+            for (name in names) {
+                val child = FsPath.child(dir, name)
+                val st = try {
+                    fs.lstat(child)
+                } catch (_: FsException) {
+                    continue
+                }
+                if (FileMode.isDir(st.mode)) {
+                    dirs++
+                    pending.addLast(child)
+                } else {
+                    files++
+                    if (FileMode.isRegular(st.mode)) bytes += st.size
+                }
+            }
+        }
+        return longArrayOf(bytes, files, dirs)
+    }
+
     fun openRead(path: String): InputStream {
         val p = FsPath.normalize(path)
         val st = fs.stat(p)

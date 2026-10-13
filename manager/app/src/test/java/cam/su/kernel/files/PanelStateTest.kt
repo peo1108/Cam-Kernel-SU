@@ -99,4 +99,29 @@ class PanelStateTest {
         assertEquals("-rwSr--r--", FileFormat.permissions(0x8000 or 0x9A4)) // 4644
         assertEquals("0755", FileFormat.octal(0x4000 or 0x1ED))
     }
+
+    @Test
+    fun selectionRangeInvertSameType() {
+        val list = listOf(entry("d", dir = true), entry("a.txt"), entry("b.zip"), entry("c.txt"), entry("e.zip"))
+        val paths = list.map { it.path }
+        assertEquals(paths.subList(1, 4).toSet(), SelectionOps.range(list, setOf(paths[1], paths[3])))
+        assertEquals(setOf(paths[0], paths[2], paths[4]), SelectionOps.invert(list, setOf(paths[1], paths[3])))
+        assertEquals(setOf(paths[1], paths[3]), SelectionOps.sameType(list, setOf(paths[1])))
+        assertEquals(setOf(paths[0], paths[2], paths[4]), SelectionOps.sameType(list, setOf(paths[0], paths[2])))
+        assertEquals(emptySet<String>(), SelectionOps.range(list, emptySet()))
+    }
+
+    @Test
+    fun fileKinds() {
+        assertEquals(FileKind.FOLDER, FileKinds.of(entry("x.zip", dir = true)))
+        assertEquals(FileKind.ARCHIVE, FileKinds.of(entry("Config.ZIP")))
+        assertEquals(FileKind.APK, FileKinds.of(entry("a.apk")))
+        assertEquals(FileKind.DISK_IMAGE, FileKinds.of(entry("init_boot.img")))
+        assertEquals(FileKind.TEXT, FileKinds.of(entry("module.prop")))
+        assertEquals(FileKind.TEXT, FileKinds.of(entry("post-fs-data", size = 100)))
+        assertEquals(FileKind.OTHER, FileKinds.of(entry("blob", size = 5L * 1024 * 1024)))
+        assertEquals(FileKind.OTHER, FileKinds.of(entry("a.weird")))
+        assertEquals("", FileKinds.extension(".hidden"))
+        assertEquals("", FileKinds.extension("trailing."))
+    }
 }

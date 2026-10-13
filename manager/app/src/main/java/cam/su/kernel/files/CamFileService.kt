@@ -46,6 +46,10 @@ class CamFileService : RootService() {
 
         override fun stat(path: String): FileEntry? = call { fs.stat(path) }
 
+        override fun statFs(path: String): LongArray = call { fs.statFs(path) }
+
+        override fun measure(path: String): LongArray = call { fs.measure(path) }
+
         override fun mkdir(path: String) = call { fs.mkdir(path) }
 
         override fun createFile(path: String) = call { fs.createFile(path) }

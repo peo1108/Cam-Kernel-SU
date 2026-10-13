@@ -147,6 +147,11 @@ class FakeFs : FsBackend {
         }
     }
 
+    override fun statFs(path: String): LongArray {
+        resolve(path, follow = true)
+        return longArrayOf(1000, 400)
+    }
+
     // --- internals ---
 
     private fun create(path: String, node: Node) {

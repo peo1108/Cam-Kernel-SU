@@ -249,6 +249,20 @@ class RootFsTest {
     }
 
     @Test
+    fun measureCountsTreeWithoutFollowingLinks() {
+        fake.dir("/outside")
+        fake.file("/outside/huge", "x".repeat(1000))
+        fake.dir("/data/adb/m")
+        fake.dir("/data/adb/m/sub")
+        fake.file("/data/adb/m/a", "12345")
+        fake.file("/data/adb/m/sub/b", "123")
+        fake.link("/data/adb/m/out", "/outside")
+
+        assertEquals(listOf(8L, 3L, 1L), fs.measure("/data/adb/m").toList())
+        assertEquals(listOf(5L, 1L, 0L), fs.measure("/data/adb/m/a").toList())
+    }
+
+    @Test
     fun errnoSurvivesBinder() {
         val back = FsException.fromRemote(FsException(Errno.EEXIST, "/data/a").toRemote())!!
         assertEquals(Errno.EEXIST, back.errno)

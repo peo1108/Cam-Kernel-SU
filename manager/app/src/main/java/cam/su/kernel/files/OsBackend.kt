@@ -78,6 +78,11 @@ object OsBackend : FsBackend {
 
     override fun remove(path: String) = os(path) { Os.remove(path) }
 
+    override fun statFs(path: String): LongArray = os(path) {
+        val st = Os.statvfs(path)
+        longArrayOf(st.f_blocks * st.f_frsize, st.f_bavail * st.f_frsize)
+    }
+
     override fun openRead(path: String): InputStream =
         FdInputStream(os(path) { Os.open(path, O_RDONLY or O_CLOEXEC, 0) }, path)
 

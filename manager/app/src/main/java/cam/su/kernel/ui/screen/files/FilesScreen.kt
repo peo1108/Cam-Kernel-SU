@@ -1,5 +1,9 @@
 package cam.su.kernel.ui.screen.files
 
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -7,14 +11,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.R
 import cam.su.kernel.files.Errno
 import cam.su.kernel.files.OpKind
+import cam.su.kernel.ui.viewmodel.FilesEvent
 import cam.su.kernel.ui.viewmodel.FilesMessage
 import cam.su.kernel.ui.viewmodel.FilesViewModel
-import android.content.Context
+import java.io.File
 
 @Composable
 fun FilesPager(
@@ -29,7 +35,8 @@ fun FilesPager(
         if (isCurrentPage) viewModel.start()
     }
 
-    val canGoBack = uiState.activePanel.selection.isNotEmpty() || uiState.activePanel.nav.back.isNotEmpty()
+    // MT: back drops the selection, then goes up; at "/" the tab lets go.
+    val canGoBack = uiState.activePanel.selection.isNotEmpty() || uiState.activePanel.nav.parent != null
     BackHandler(enabled = isCurrentPage && canGoBack) { viewModel.back() }
 
     LaunchedEffect(uiState.message) {
@@ -38,7 +45,42 @@ fun FilesPager(
         viewModel.consumeMessage()
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is FilesEvent.Open -> startChooser(
+                    context,
+                    Intent(Intent.ACTION_VIEW).setDataAndType(uriOf(context, event.file), event.mime),
+                )
+
+                is FilesEvent.Share -> {
+                    val uris = event.files.map { uriOf(context, it) }
+                    val intent = if (uris.size == 1) {
+                        Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris.single())
+                    } else {
+                        Intent(Intent.ACTION_SEND_MULTIPLE).putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+                    }
+                    intent.type = "*/*"
+                    intent.clipData = ClipData.newRawUri(null, uris.first()).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
+                    startChooser(context, intent)
+                }
+            }
+        }
+    }
+
     FilesPagerMiuix(uiState, viewModel, bottomInnerPadding)
+}
+
+private fun uriOf(context: Context, file: File) =
+    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+
+private fun startChooser(context: Context, intent: Intent) {
+    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    try {
+        context.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, R.string.files_no_app, Toast.LENGTH_SHORT).show()
+    }
 }
 
 private fun messageText(context: Context, message: FilesMessage): String = when (message) {
@@ -49,7 +91,7 @@ private fun messageText(context: Context, message: FilesMessage): String = when 
     }
 
     FilesMessage.Cancelled -> context.getString(R.string.files_cancelled)
-    FilesMessage.NotYet -> context.getString(R.string.files_not_yet)
+    FilesMessage.Done -> context.getString(R.string.files_done_short)
     is FilesMessage.Failed -> buildString {
         append(errnoText(context, message.errno))
         message.detail?.let { append("\n").append(it) }

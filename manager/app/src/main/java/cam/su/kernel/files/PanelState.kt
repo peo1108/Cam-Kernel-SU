@@ -149,3 +149,66 @@ object FileFormat {
 
     fun octal(mode: Int): String = (mode and FileMode.PERM_MASK).toString(8).padStart(4, '0')
 }
+
+/** What a file is, for its icon and for what tapping it does. */
+enum class FileKind { FOLDER, ARCHIVE, APK, IMAGE, DISK_IMAGE, TEXT, AUDIO, VIDEO, OTHER }
+
+object FileKinds {
+    private val byExtension = buildMap {
+        listOf("zip", "jar", "7z", "rar", "tar", "gz", "tgz", "xz", "bz2", "zst", "lz4").forEach { put(it, FileKind.ARCHIVE) }
+        listOf("apk", "apks", "xapk", "apkm").forEach { put(it, FileKind.APK) }
+        listOf("png", "jpg", "jpeg", "gif", "webp", "bmp", "heic", "heif", "svg").forEach { put(it, FileKind.IMAGE) }
+        listOf("img", "bin", "iso", "lz4img").forEach { put(it, FileKind.DISK_IMAGE) }
+        listOf(
+            "txt", "sh", "prop", "rc", "xml", "json", "conf", "cfg", "ini", "log", "md", "kt", "java",
+            "c", "h", "cpp", "py", "js", "ts", "html", "css", "yml", "yaml", "toml", "csv", "list", "te",
+        ).forEach { put(it, FileKind.TEXT) }
+        listOf("mp3", "flac", "ogg", "wav", "m4a", "aac", "opus").forEach { put(it, FileKind.AUDIO) }
+        listOf("mp4", "mkv", "webm", "avi", "mov", "3gp").forEach { put(it, FileKind.VIDEO) }
+    }
+
+    fun extension(name: String): String {
+        val dot = name.lastIndexOf('.')
+        return if (dot > 0 && dot < name.length - 1) name.substring(dot + 1).lowercase(Locale.ROOT) else ""
+    }
+
+    fun of(entry: FileEntry): FileKind {
+        if (entry.isDir) return FileKind.FOLDER
+        byExtension[extension(entry.name)]?.let { return it }
+        // Extensionless files under the usual script/config folders are text.
+        return if (extension(entry.name).isEmpty() && entry.size < 1024 * 1024) FileKind.TEXT else FileKind.OTHER
+    }
+
+    fun mime(entry: FileEntry): String = when (of(entry)) {
+        FileKind.APK -> "application/vnd.android.package-archive"
+        FileKind.TEXT -> "text/plain"
+        FileKind.ARCHIVE -> if (extension(entry.name) == "zip") "application/zip" else "application/octet-stream"
+        FileKind.IMAGE -> "image/*"
+        FileKind.AUDIO -> "audio/*"
+        FileKind.VIDEO -> "video/*"
+        else -> "*/*"
+    }
+}
+
+/** MT's selection bar: select range, invert, same type. Paths in, paths out. */
+object SelectionOps {
+    /** Everything between the first and the last selected entry, in list order. */
+    fun range(entries: List<FileEntry>, selected: Set<String>): Set<String> {
+        val indices = entries.indices.filter { entries[it].path in selected }
+        if (indices.isEmpty()) return selected
+        return selected + entries.subList(indices.first(), indices.last() + 1).map { it.path }
+    }
+
+    fun invert(entries: List<FileEntry>, selected: Set<String>): Set<String> =
+        entries.map { it.path }.filterTo(HashSet()) { it !in selected }
+
+    /** Every entry of a kind already selected: folders, or files with a selected extension. */
+    fun sameType(entries: List<FileEntry>, selected: Set<String>): Set<String> {
+        val chosen = entries.filter { it.path in selected }
+        val folders = chosen.any { it.isDir }
+        val extensions = chosen.filter { !it.isDir }.mapTo(HashSet()) { FileKinds.extension(it.name) }
+        return selected + entries.filter { e ->
+            if (e.isDir) folders else FileKinds.extension(e.name) in extensions
+        }.map { it.path }
+    }
+}

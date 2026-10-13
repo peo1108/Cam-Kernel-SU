@@ -1,10 +1,19 @@
 package cam.su.kernel.ui.screen.files
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +24,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,99 +33,113 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
-import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.automirrored.rounded.TextSnippet
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Android
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.Audiotrack
+import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Flip
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.LinkOff
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.SdCard
+import androidx.compose.material.icons.rounded.SelectAll
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
-import cam.su.kernel.files.ConflictChoice
+import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.FileEntry
 import cam.su.kernel.files.FileFormat
+import cam.su.kernel.files.FileKind
+import cam.su.kernel.files.FileKinds
 import cam.su.kernel.files.FsPath
-import cam.su.kernel.files.OpKind
-import cam.su.kernel.files.SortBy
 import cam.su.kernel.ui.component.ListPopupDefaults
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.GlassDialog
 import cam.su.kernel.ui.component.glass.GlassIconButton
 import cam.su.kernel.ui.component.glass.GlassListPopup
-import cam.su.kernel.ui.component.glass.LocalGlassOverlayBackdrop
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import cam.su.kernel.ui.util.shouldShowSplitPane
 import cam.su.kernel.ui.viewmodel.FilesUiState
 import cam.su.kernel.ui.viewmodel.FilesViewModel
-import cam.su.kernel.ui.viewmodel.OpUi
 import cam.su.kernel.ui.viewmodel.PanelUi
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Sort
-import top.yukonga.miuix.kmp.preference.CheckboxLocation
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import top.yukonga.miuix.kmp.window.WindowDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
+
+/** Which dialog is up; at most one besides the operation dialogs. */
+sealed interface FilesDialogState {
+    data class Menu(val panel: Int, val entry: FileEntry) : FilesDialogState
+    data class ConfirmCopy(val sources: List<String>, val move: Boolean, val dest: String) : FilesDialogState
+    data class ConfirmDelete(val sources: List<String>) : FilesDialogState
+    data class Rename(val entry: FileEntry) : FilesDialogState
+    data class MoveTarget(val entry: FileEntry) : FilesDialogState
+    data class Tools(val entry: FileEntry) : FilesDialogState
+    data object Create : FilesDialogState
+    data object Sort : FilesDialogState
+    data class Permissions(val entry: FileEntry) : FilesDialogState
+    data class Owner(val entry: FileEntry) : FilesDialogState
+    data class Context(val entry: FileEntry) : FilesDialogState
+}
 
 @Composable
 fun FilesPagerMiuix(
@@ -123,127 +147,126 @@ fun FilesPagerMiuix(
     vm: FilesViewModel,
     bottomInnerPadding: Dp,
 ) {
-    val scrollBehavior = MiuixScrollBehavior()
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
     val barColor = if (backdrop != null) Color.Transparent else colorScheme.surface
     val wide = shouldShowSplitPane()
-    var confirmDelete by remember { mutableStateOf(false) }
+    var dialog by remember { mutableStateOf<FilesDialogState?>(null) }
+    var drawer by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        topBar = {
-            BlurredBar(backdrop, scrollBehavior = scrollBehavior) {
-                SmallTopAppBar(
-                    title = stringResource(R.string.files),
-                    color = barColor,
-                    scrollBehavior = scrollBehavior,
-                    actions = { TopActions(state, vm) },
-                )
-            }
-        },
-        popupHost = { },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
-    ) { innerPadding ->
-        Box(modifier = (if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier).fillMaxSize()) {
-            Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
-                if (!wide) PanelSwitcher(state, vm)
-                val listBottom = bottomInnerPadding + if (state.activePanel.selection.isNotEmpty()) 96.dp else 12.dp
-                if (wide) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        for (i in 0..1) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                BlurredBar(backdrop) {
+                    SmallTopAppBar(
+                        title = state.activePanel.nav.path.let { if (it == "/") it else "$it/" },
+                        color = barColor,
+                        navigationIcon = {
+                            GlassIconButton(onClick = { drawer = true }) {
+                                Icon(Icons.Rounded.Menu, contentDescription = null, tint = colorScheme.onSurface)
+                            }
+                        },
+                        actions = { OverflowMenu(state, vm, onSort = { dialog = FilesDialogState.Sort }) },
+                    )
+                }
+            },
+            popupHost = { },
+            contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
+        ) { innerPadding ->
+            Box(modifier = (if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier).fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = innerPadding.calculateTopPadding(), bottom = bottomInnerPadding),
+                ) {
+                    HeaderStats(state.activePanel)
+                    if (!wide) PanelSwitcher(state, vm)
+                    Row(modifier = Modifier.weight(1f)) {
+                        val shown = if (wide) listOf(0, 1) else listOf(state.active)
+                        shown.forEachIndexed { i, index ->
+                            if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(colorScheme.dividerLine))
                             Box(modifier = Modifier.weight(1f)) {
-                                Panel(i, state, vm, listBottom, scrollBehavior.nestedScrollConnection, swipeToSwitch = false)
+                                key(index) {
+                                    Panel(index, state, vm, wide, onMenu = { entry -> dialog = FilesDialogState.Menu(index, entry) })
+                                }
                             }
                         }
                     }
-                } else {
-                    // Own list state per panel: switching panels must not carry the scroll over.
-                    key(state.active) {
-                        Panel(state.active, state, vm, listBottom, scrollBehavior.nestedScrollConnection, swipeToSwitch = true)
-                    }
                 }
-            }
-            if (state.activePanel.selection.isNotEmpty() && state.op == null) {
-                SelectionBar(
+                ToolbarButton(
                     state = state,
                     vm = vm,
-                    onDelete = { confirmDelete = true },
+                    onCreate = { dialog = FilesDialogState.Create },
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = bottomInnerPadding + 8.dp, start = 12.dp, end = 12.dp),
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = bottomInnerPadding + 12.dp),
                 )
             }
         }
+
+        FilesDrawer(visible = drawer, state = state, vm = vm, onClose = { drawer = false })
     }
 
-    FilesDialog(
-        show = confirmDelete,
-        title = stringResource(R.string.files_delete_title, state.activePanel.selection.size),
-        onDismiss = { confirmDelete = false },
-    ) {
-        Text(stringResource(R.string.files_delete_message))
-        DialogButtons(
-            dismiss = stringResource(android.R.string.cancel) to { confirmDelete = false },
-            confirm = stringResource(R.string.files_delete) to {
-                confirmDelete = false
-                vm.deleteSelection()
-            },
-        )
-    }
-
-    state.op?.let { op ->
-        OpDialog(op, vm)
-        op.conflict?.let { ConflictDialog(it, vm) }
-    }
+    FilesDialogs(state, vm, dialog, onDialog = { dialog = it })
 }
 
 @Composable
-private fun TopActions(state: FilesUiState, vm: FilesViewModel) {
+private fun HeaderStats(panel: PanelUi) {
+    val parts = buildList {
+        add(stringResource(R.string.files_header_counts, panel.folders, panel.files))
+        if (panel.selection.isNotEmpty()) add(stringResource(R.string.files_header_selected, panel.selection.size))
+        panel.disk?.let { disk ->
+            add(stringResource(R.string.files_header_disk, FileFormat.size(disk[0] - disk[1]), FileFormat.size(disk[0])))
+        }
+    }
+    Text(
+        text = parts.joinToString("   "),
+        fontSize = 11.sp,
+        color = colorScheme.onSurfaceVariantSummary,
+        maxLines = 1,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+    )
+}
+
+@Composable
+private fun OverflowMenu(state: FilesUiState, vm: FilesViewModel, onSort: () -> Unit) {
     GlassButtonGroup {
         Box {
-            var showSort by remember { mutableStateOf(false) }
-            GlassIconButton(onClick = { showSort = true }, holdDownState = showSort) {
-                Icon(imageVector = MiuixIcons.Sort, tint = colorScheme.onSurface, contentDescription = null)
+            var show by remember { mutableStateOf(false) }
+            GlassIconButton(onClick = { show = true }, holdDownState = show) {
+                Icon(Icons.Rounded.MoreVert, contentDescription = null, tint = colorScheme.onSurface)
             }
             GlassListPopup(
-                show = showSort,
+                show = show,
                 popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                 alignment = PopupPositionProvider.Align.TopEnd,
-                onDismissRequest = { showSort = false },
+                onDismissRequest = { show = false },
             ) {
                 ListPopupColumn {
-                    val labels = listOf(
-                        SortBy.NAME to R.string.files_sort_name,
-                        SortBy.SIZE to R.string.files_sort_size,
-                        SortBy.TIME to R.string.files_sort_time,
-                        SortBy.TYPE to R.string.files_sort_type,
+                    val items: List<Pair<String, () -> Unit>> = listOf(
+                        stringResource(R.string.files_refresh) to { vm.refresh() },
+                        stringResource(R.string.files_select_all) to { vm.selectAll() },
+                        stringResource(R.string.files_menu_sort) to onSort,
+                        (stringResource(R.string.files_show_hidden) + if (state.sort.showHidden) "  ✓" else "") to { vm.toggleHidden() },
+                        stringResource(R.string.files_menu_add_bookmark) to { vm.addBookmark(state.activePanel.nav.path) },
+                        stringResource(R.string.files_menu_set_home) to { vm.setHome() },
+                        stringResource(R.string.files_menu_swap) to { vm.swapPanels() },
                     )
-                    labels.forEachIndexed { index, (by, label) ->
-                        val arrow = if (state.sort.by == by) (if (state.sort.descending) "  ↓" else "  ↑") else ""
+                    items.forEachIndexed { index, (label, action) ->
                         DropdownImpl(
-                            text = stringResource(label) + arrow,
-                            optionSize = labels.size,
-                            isSelected = state.sort.by == by,
+                            text = label,
+                            optionSize = items.size,
+                            isSelected = false,
                             onSelectedIndexChange = {
-                                vm.setSort(by)
-                                showSort = false
+                                show = false
+                                action()
                             },
                             index = index,
                         )
                     }
                 }
             }
-        }
-        GlassIconButton(onClick = vm::toggleHidden) {
-            Icon(
-                imageVector = if (state.sort.showHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                tint = colorScheme.onSurface,
-                contentDescription = stringResource(R.string.files_show_hidden),
-            )
-        }
-        GlassIconButton(onClick = vm::refresh) {
-            Icon(imageVector = Icons.Rounded.Refresh, tint = colorScheme.onSurface, contentDescription = stringResource(R.string.files_refresh))
         }
     }
 }
@@ -253,136 +276,107 @@ private fun PanelSwitcher(state: FilesUiState, vm: FilesViewModel) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         state.panels.forEachIndexed { index, panel ->
             val active = index == state.active
             GlassCard(
                 modifier = Modifier.weight(1f),
-                insideMargin = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                insideMargin = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 colors = if (active) CardDefaults.defaultColors(color = colorScheme.primaryContainer, contentColor = colorScheme.onPrimaryContainer) else null,
                 onClick = { vm.setActive(index) },
             ) {
                 Text(
                     text = "${index + 1} · ${FsPath.name(panel.nav.path).ifEmpty { "/" }}",
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = panel.nav.path,
-                    fontSize = 11.sp,
-                    color = colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.StartEllipsis,
-                )
             }
         }
     }
 }
 
 @Composable
-private fun Panel(
-    index: Int,
-    state: FilesUiState,
-    vm: FilesViewModel,
-    bottomPadding: Dp,
-    nestedScroll: androidx.compose.ui.input.nestedscroll.NestedScrollConnection,
-    swipeToSwitch: Boolean,
-) {
+private fun Panel(index: Int, state: FilesUiState, vm: FilesViewModel, wide: Boolean, onMenu: (FileEntry) -> Unit) {
     val panel = state.panels[index]
     val active = index == state.active
-    val listState = rememberPanelListState(index, panel.nav.path)
-    val swipeThreshold = with(LocalDensity.current) { 96.dp.toPx() }
+    val selecting = panel.selection.isNotEmpty()
+    val listState = rememberPanelListState(panel.nav.path)
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            // side by side: tint the panel that copy/move/delete act on
-            .background(if (!swipeToSwitch && active) colorScheme.primary.copy(alpha = 0.06f) else Color.Transparent)
-            .then(
-                if (swipeToSwitch) {
-                    Modifier.pointerInput(index) {
-                        var dx = 0f
-                        detectHorizontalDragGestures(
-                            onDragStart = { dx = 0f },
-                            onDragEnd = { if (abs(dx) > swipeThreshold) vm.setActive(1 - index) },
-                        ) { _, amount -> dx += amount }
-                    }
-                } else {
-                    Modifier
-                },
-            ),
+            .background(if (wide && active) colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent)
+            // a tap on empty space makes this the panel the toolbar acts on
+            .pointerInput(index) { detectTapGestures { vm.setActive(index) } },
     ) {
-        Breadcrumb(
-            path = panel.nav.path,
-            highlighted = active,
-            onClick = {
-                vm.setActive(index)
-                vm.navigate(index, it)
-            },
-        )
-        Box(modifier = Modifier.weight(1f)) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scrollEndHaptic()
-                    .overScrollVertical()
-                    .nestedScroll(nestedScroll),
-                contentPadding = PaddingValues(bottom = bottomPadding),
-                overscrollEffect = null,
-            ) {
-                panel.nav.parent?.let { parent ->
-                    item(key = "..") {
-                        UpRow(onClick = {
-                            vm.setActive(index)
-                            vm.navigate(index, parent)
-                        })
-                    }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .overScrollVertical(),
+            // room for the floating toolbar button
+            contentPadding = PaddingValues(bottom = 80.dp),
+            overscrollEffect = null,
+        ) {
+            panel.nav.parent?.let { parent ->
+                item(key = "..") {
+                    UpRow(onClick = {
+                        vm.setActive(index)
+                        vm.navigate(index, parent)
+                    })
                 }
-                items(panel.entries, key = { it.path }) { entry ->
-                    FileRow(
-                        entry = entry,
-                        selected = entry.path in panel.selection,
-                        onOpen = {
-                            vm.setActive(index)
-                            if (panel.selection.isEmpty()) vm.open(index, entry) else vm.toggleSelection(index, entry.path)
-                        },
-                        onSelect = {
-                            vm.setActive(index)
-                            vm.toggleSelection(index, entry.path)
-                        },
+            }
+            items(panel.entries, key = { it.path }) { entry ->
+                FileRow(
+                    entry = entry,
+                    selected = entry.path in panel.selection,
+                    onOpen = {
+                        vm.setActive(index)
+                        when {
+                            selecting -> vm.toggleSelection(index, entry.path)
+                            entry.isDir -> vm.navigate(index, entry.path)
+                            else -> vm.openWith(entry, FileKinds.mime(entry))
+                        }
+                    },
+                    onMenu = {
+                        vm.setActive(index)
+                        onMenu(entry)
+                    },
+                    onSwipe = {
+                        vm.setActive(index)
+                        vm.toggleSelection(index, entry.path)
+                    },
+                )
+            }
+            val errno = panel.errorErrno
+            if (!panel.loading && panel.entries.isEmpty() && errno != null) {
+                item(key = "error") {
+                    Text(
+                        text = errnoText(LocalContext.current, errno),
+                        color = colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
                     )
                 }
-                if (!panel.loading && panel.entries.isEmpty()) {
-                    item(key = "empty") {
-                        val context = LocalContext.current
-                        Text(
-                            text = panel.errorErrno?.let { errnoText(context, it) } ?: stringResource(R.string.files_empty),
-                            color = if (panel.errorErrno != null) colorScheme.error else colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                        )
-                    }
-                }
             }
-            if (panel.loading && panel.entries.isEmpty()) {
-                InfiniteProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
-            }
+        }
+        if (panel.loading && panel.entries.isEmpty()) {
+            InfiniteProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp))
         }
     }
 }
 
-/** One list state per panel, scrolled back to where it was when a folder is reopened. */
+/** Scrolled back to where it was when a folder is reopened. */
 @Composable
-private fun rememberPanelListState(index: Int, path: String): LazyListState {
-    val positions = remember(index) { HashMap<String, Pair<Int, Int>>() }
+private fun rememberPanelListState(path: String): LazyListState {
+    val positions = remember { HashMap<String, Pair<Int, Int>>() }
     val listState = rememberLazyListState()
-    val current = remember(index) { mutableStateOf(path) }
+    val current = remember { mutableStateOf(path) }
     LaunchedEffect(path) {
         val previous = current.value
         if (previous != path) {
@@ -396,50 +390,17 @@ private fun rememberPanelListState(index: Int, path: String): LazyListState {
 }
 
 @Composable
-private fun Breadcrumb(path: String, highlighted: Boolean, onClick: (String) -> Unit) {
-    val crumbs = FileFormat.breadcrumb(path)
-    val rowState = rememberLazyListState()
-    LaunchedEffect(path) { rowState.scrollToItem(crumbs.lastIndex) }
-    LazyRow(
-        state = rowState,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        itemsIndexed(crumbs) { i, (label, target) ->
-            val last = i == crumbs.lastIndex
-            Text(
-                text = label,
-                fontSize = 13.sp,
-                fontWeight = if (last) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (last && highlighted) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable { onClick(target) }
-                    .padding(horizontal = 6.dp, vertical = 6.dp),
-            )
-            if (i > 0 && !last) Text("›", fontSize = 13.sp, color = colorScheme.onSurfaceVariantSummary)
-            if (i == 0 && crumbs.size > 1) Spacer(Modifier.width(2.dp))
-        }
-    }
-}
-
-@Composable
 private fun UpRow(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.FolderOpen, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(36.dp).padding(4.dp))
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text("..", fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            Text(stringResource(R.string.files_up), fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary)
-        }
+        KindTile(FileKind.FOLDER, link = false)
+        Spacer(Modifier.width(10.dp))
+        Text("..", fontSize = 14.sp)
     }
 }
 
@@ -447,215 +408,300 @@ private val dateFormat = SimpleDateFormat("yy-MM-dd HH:mm", Locale.ROOT)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun FileRow(entry: FileEntry, selected: Boolean, onOpen: () -> Unit, onSelect: () -> Unit) {
-    val icon: ImageVector = when {
-        entry.isLink && entry.linkBroken -> Icons.Rounded.LinkOff
-        entry.isDir -> Icons.Rounded.Folder
-        entry.isLink -> Icons.Rounded.Link
-        else -> Icons.AutoMirrored.Rounded.InsertDriveFile
-    }
-    val iconTint = when {
-        entry.isLink && entry.linkBroken -> colorScheme.error
-        entry.isDir -> colorScheme.primary
-        else -> colorScheme.onSurfaceVariantSummary
-    }
+private fun FileRow(entry: FileEntry, selected: Boolean, onOpen: () -> Unit, onMenu: () -> Unit, onSwipe: () -> Unit) {
+    val swipeThreshold = with(LocalDensity.current) { 48.dp.toPx() }
     val details = buildString {
-        if (!entry.isDir) append(FileFormat.size(entry.size)).append("  ")
-        append(dateFormat.format(Date(entry.mtime))).append("  ")
-        append(FileFormat.permissions(entry.mode))
+        append(dateFormat.format(Date(entry.mtime)))
+        if (!entry.isDir) append("  ").append(FileFormat.size(entry.size))
+        if (entry.isLink) append("  → ").append(entry.linkTarget ?: "?")
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (selected) colorScheme.primary.copy(alpha = 0.14f) else Color.Transparent)
-            .combinedClickable(onClick = onOpen, onLongClick = onSelect)
+            .background(if (selected) colorScheme.primary.copy(alpha = 0.28f) else Color.Transparent)
+            // MT: a sideways swipe on a row selects it
+            .pointerInput(entry.path) {
+                var dx = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dx = 0f },
+                    onDragEnd = { if (abs(dx) > swipeThreshold) onSwipe() },
+                ) { change, amount ->
+                    dx += amount
+                    change.consume()
+                }
+            }
+            .combinedClickable(onClick = onOpen, onLongClick = onMenu)
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KindTile(FileKinds.of(entry), link = entry.isLink, broken = entry.linkBroken)
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.name,
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
+            )
+            Text(
+                text = details,
+                fontSize = 10.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (entry.linkBroken) colorScheme.error else colorScheme.onSurfaceVariantSummary,
+            )
+        }
+    }
+}
+
+private fun kindColor(kind: FileKind): Color = when (kind) {
+    FileKind.FOLDER -> Color(0xFF37474F)
+    FileKind.ARCHIVE -> Color(0xFF8D6E63)
+    FileKind.APK -> Color(0xFF43A047)
+    FileKind.IMAGE -> Color(0xFFAB47BC)
+    FileKind.DISK_IMAGE -> Color(0xFF607D8B)
+    FileKind.TEXT -> Color(0xFF1E88E5)
+    FileKind.AUDIO -> Color(0xFFF4511E)
+    FileKind.VIDEO -> Color(0xFFE53935)
+    FileKind.OTHER -> Color(0xFF757575)
+}
+
+private fun kindIcon(kind: FileKind): ImageVector = when (kind) {
+    FileKind.FOLDER -> Icons.Rounded.Folder
+    FileKind.ARCHIVE -> Icons.Rounded.Inventory2
+    FileKind.APK -> Icons.Rounded.Android
+    FileKind.IMAGE -> Icons.Rounded.Image
+    FileKind.DISK_IMAGE -> Icons.Rounded.Storage
+    FileKind.TEXT -> Icons.AutoMirrored.Rounded.TextSnippet
+    FileKind.AUDIO -> Icons.Rounded.Audiotrack
+    FileKind.VIDEO -> Icons.Rounded.Movie
+    FileKind.OTHER -> Icons.AutoMirrored.Rounded.InsertDriveFile
+}
+
+/** MT's rounded square icon, colored by kind; a link badge for symlinks. */
+@Composable
+fun KindTile(kind: FileKind, link: Boolean, broken: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .size(30.dp)
+            .clip(RoundedCornerShape(7.dp))
+            .background(if (broken) colorScheme.error else kindColor(kind)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(kindIcon(kind), contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        if (link) {
+            Icon(
+                Icons.Rounded.Link,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(12.dp)
+                    .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(3.dp)),
+            )
+        }
+    }
+}
+
+/**
+ * MT's bottom toolbar folded into one round button; tapped, the bar slides out to its left.
+ * It opens by itself when a selection starts, since the selection tools live there.
+ */
+@Composable
+private fun ToolbarButton(state: FilesUiState, vm: FilesViewModel, onCreate: () -> Unit, modifier: Modifier) {
+    val panel = state.activePanel
+    val selecting = panel.selection.isNotEmpty()
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(selecting) { if (selecting) expanded = true }
+
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandHorizontally(expandFrom = Alignment.End) + fadeIn(),
+            exit = shrinkHorizontally(shrinkTowards = Alignment.End) + fadeOut(),
+        ) {
+            GlassCard(cornerRadius = 28.dp, insideMargin = PaddingValues(horizontal = 4.dp, vertical = 2.dp)) {
+                Row {
+                    if (selecting) {
+                        ToolButton(Icons.Rounded.SelectAll, R.string.files_select_all) { vm.selectAll() }
+                        ToolButton(Icons.Rounded.UnfoldMore, R.string.files_sel_range) { vm.selectRange() }
+                        ToolButton(Icons.Rounded.Close, R.string.files_sel_exit) { vm.clearSelection() }
+                        ToolButton(Icons.Rounded.Flip, R.string.files_sel_invert) { vm.invertSelection() }
+                        ToolButton(Icons.Rounded.DoneAll, R.string.files_sel_same) { vm.selectSameType() }
+                    } else {
+                        ToolButton(Icons.AutoMirrored.Rounded.ArrowBack, R.string.files_back, enabled = panel.nav.back.isNotEmpty()) { vm.historyBack() }
+                        ToolButton(Icons.AutoMirrored.Rounded.ArrowForward, R.string.files_forward, enabled = panel.nav.forward.isNotEmpty()) { vm.historyForward() }
+                        ToolButton(Icons.Rounded.Add, R.string.files_new, onClick = onCreate)
+                        ToolButton(Icons.Rounded.SwapHoriz, R.string.files_sync) { vm.syncOther() }
+                        ToolButton(Icons.Rounded.ArrowUpward, R.string.files_up, enabled = panel.nav.parent != null) { vm.goUp() }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        GlassCard(
+            cornerRadius = 28.dp,
+            insideMargin = PaddingValues(0.dp),
+            colors = if (selecting) CardDefaults.defaultColors(color = colorScheme.primaryContainer, contentColor = colorScheme.onPrimaryContainer) else null,
+            onClick = { expanded = !expanded },
+        ) {
+            Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+                Icon(
+                    if (expanded) Icons.Rounded.Close else Icons.Rounded.Apps,
+                    contentDescription = null,
+                    tint = colorScheme.onSurface,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ToolButton(icon: ImageVector, label: Int, enabled: Boolean = true, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .alpha(if (enabled) 1f else 0.35f),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = stringResource(label), tint = colorScheme.onSurface, modifier = Modifier.size(22.dp))
+    }
+}
+
+/** MT's left drawer: local roots with usage bars, then bookmarks. */
+@Composable
+private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewModel, onClose: () -> Unit) {
+    AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.35f))
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose),
+        )
+    }
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInHorizontally { -it },
+        exit = slideOutHorizontally { -it },
+    ) {
+        GlassCard(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(300.dp)
+                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start))
+                .padding(8.dp),
+            insideMargin = PaddingValues(vertical = 8.dp),
+        ) {
+            val go = { path: String ->
+                vm.navigateActive(path)
+                onClose()
+            }
+            LazyColumn {
+                item { DrawerSection(stringResource(R.string.files_drawer_local)) }
+                item { DrawerRoot(Icons.Rounded.PhoneAndroid, stringResource(R.string.files_drawer_root), "/") { go("/") } }
+                item { DrawerRoot(Icons.Rounded.SdCard, stringResource(R.string.files_drawer_storage), STORAGE) { go(STORAGE) } }
+                item {
+                    DrawerItem(Icons.Rounded.Home, stringResource(R.string.files_drawer_home), null, onClick = {
+                        vm.goHome()
+                        onClose()
+                    })
+                }
+                item { DrawerSection(stringResource(R.string.files_drawer_bookmarks)) }
+                items(state.bookmarks, key = { it }) { path ->
+                    DrawerItem(
+                        Icons.Rounded.Bookmark,
+                        FsPath.name(path).ifEmpty { "/" },
+                        path,
+                        onClick = { go(path) },
+                        onLongClick = { vm.removeBookmark(path) },
+                    )
+                }
+                item {
+                    Text(
+                        text = stringResource(R.string.files_drawer_restore),
+                        fontSize = 12.sp,
+                        color = colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { vm.restoreBookmarks() }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val STORAGE = "/storage/emulated/0"
+
+@Composable
+private fun DrawerSection(title: String) {
+    Text(
+        text = title,
+        fontSize = 13.sp,
+        color = colorScheme.onSurfaceVariantSummary,
+        modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun DrawerRoot(icon: ImageVector, title: String, path: String, onClick: () -> Unit) {
+    var usage by remember { mutableStateOf<LongArray?>(null) }
+    LaunchedEffect(path) { usage = runCatching { CamFileClient.statFs(path) }.getOrNull() }
+    val disk = usage
+    DrawerItem(
+        icon,
+        title,
+        disk?.let { stringResource(R.string.files_drawer_used, FileFormat.size(it[0] - it[1]), FileFormat.size(it[1])) },
+        progress = disk?.takeIf { it[0] > 0 }?.let { (it[0] - it[1]).toFloat() / it[0] },
+        onClick = onClick,
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DrawerItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String?,
+    progress: Float? = null,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(if (selected) colorScheme.primary else Color.Transparent)
-                .clickable(onClick = onSelect),
+                .size(32.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(colorScheme.onSurface.copy(alpha = 0.85f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = if (selected) Icons.Rounded.Check else icon,
-                contentDescription = null,
-                tint = if (selected) colorScheme.onPrimary else iconTint,
-                modifier = Modifier.size(28.dp),
-            )
+            Icon(icon, contentDescription = null, tint = colorScheme.surface, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = entry.name,
-                fontSize = 15.sp,
-                maxLines = 1,
-                overflow = TextOverflow.MiddleEllipsis,
-                color = if (entry.name.startsWith(".")) colorScheme.onSurfaceVariantSummary else colorScheme.onSurface,
-            )
-            if (entry.isLink) {
-                Text(
-                    text = "→ ${entry.linkTarget ?: "?"}",
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.MiddleEllipsis,
-                    color = if (entry.linkBroken) colorScheme.error else colorScheme.onSurfaceVariantSummary,
-                )
+            Text(title, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            progress?.let {
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 3.dp)
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(colorScheme.dividerLine),
+                ) {
+                    Box(Modifier.fillMaxWidth(it).fillMaxHeight().background(colorScheme.primary))
+                }
             }
-            Text(
-                text = details,
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                maxLines = 1,
-                color = colorScheme.onSurfaceVariantSummary,
-            )
+            subtitle?.let { Text(it, fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.StartEllipsis) }
         }
-    }
-}
-
-@Composable
-private fun SelectionBar(state: FilesUiState, vm: FilesViewModel, onDelete: () -> Unit, modifier: Modifier) {
-    val count = state.activePanel.selection.size
-    val other = FsPath.name(state.otherPanel.nav.path).ifEmpty { "/" }
-    GlassCard(
-        modifier = modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.files_selected, count) + "  ·  " + stringResource(R.string.files_to_other, other),
-            fontSize = 12.sp,
-            color = colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(horizontal = 8.dp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            BarAction(Icons.Rounded.ContentCopy, stringResource(R.string.files_copy)) { vm.copySelection(move = false) }
-            BarAction(Icons.AutoMirrored.Rounded.DriveFileMove, stringResource(R.string.files_move)) { vm.copySelection(move = true) }
-            BarAction(Icons.Rounded.Delete, stringResource(R.string.files_delete), onDelete)
-            BarAction(Icons.Rounded.DoneAll, stringResource(R.string.files_select_all)) { vm.selectAll(state.active) }
-            BarAction(Icons.Rounded.Close, stringResource(android.R.string.cancel)) { vm.clearSelection(state.active) }
-        }
-    }
-}
-
-@Composable
-private fun BarAction(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(icon, contentDescription = label, tint = colorScheme.onSurface, modifier = Modifier.size(22.dp))
-        Text(label, fontSize = 11.sp, maxLines = 1)
-    }
-}
-
-@Composable
-private fun OpDialog(op: OpUi, vm: FilesViewModel) {
-    val context = LocalContext.current
-    FilesDialog(show = op.conflict == null, title = opTitle(context, op.kind), onDismiss = null) {
-        LinearProgressIndicator(
-            modifier = Modifier.fillMaxWidth(),
-            progress = if (op.total > 0) (op.done.toFloat() / op.total).coerceIn(0f, 1f) else null,
-        )
-        Spacer(Modifier.height(10.dp))
-        val amount = if (op.kind == OpKind.DELETE) "${op.done} / ${op.total}" else "${FileFormat.size(op.done)} / ${FileFormat.size(op.total)}"
-        Text(amount, fontSize = 13.sp)
-        Text(
-            text = op.current,
-            fontSize = 12.sp,
-            color = colorScheme.onSurfaceVariantSummary,
-            maxLines = 2,
-            overflow = TextOverflow.MiddleEllipsis,
-        )
-        TextButton(
-            text = stringResource(android.R.string.cancel),
-            onClick = vm::cancelOp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-        )
-    }
-}
-
-@Composable
-private fun ConflictDialog(conflict: cam.su.kernel.files.CamFileClient.OpEvent.Conflict, vm: FilesViewModel) {
-    var applyAll by remember(conflict) { mutableStateOf(false) }
-    val merge = conflict.srcIsDir && conflict.dstIsDir
-    FilesDialog(show = true, title = stringResource(R.string.files_conflict_title), onDismiss = null) {
-        Text(
-            stringResource(
-                R.string.files_conflict_message,
-                FsPath.name(conflict.dst),
-                FsPath.parent(conflict.dst),
-            ),
-        )
-        CheckboxPreference(
-            title = stringResource(R.string.files_conflict_apply_all),
-            checked = applyAll,
-            checkboxLocation = CheckboxLocation.Start,
-            insideMargin = PaddingValues(vertical = 12.dp),
-            onCheckedChange = { applyAll = it },
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(
-                text = stringResource(R.string.files_conflict_skip),
-                onClick = { vm.resolveConflict(ConflictChoice.SKIP, applyAll) },
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(
-                text = stringResource(R.string.files_conflict_rename),
-                onClick = { vm.resolveConflict(ConflictChoice.RENAME, applyAll) },
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(
-                text = stringResource(if (merge) R.string.files_conflict_merge else R.string.files_conflict_overwrite),
-                onClick = { vm.resolveConflict(ConflictChoice.OVERWRITE, applyAll) },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-            )
-        }
-        TextButton(
-            text = stringResource(android.R.string.cancel),
-            onClick = vm::cancelOp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-        )
-    }
-}
-
-@Composable
-private fun DialogButtons(dismiss: Pair<String, () -> Unit>, confirm: Pair<String, () -> Unit>) {
-    Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-        TextButton(text = dismiss.first, onClick = dismiss.second, modifier = Modifier.weight(1f))
-        TextButton(
-            text = confirm.first,
-            onClick = confirm.second,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.textButtonColorsPrimary(),
-        )
-    }
-}
-
-/** Glass overlay inside glass pages, a plain window dialog otherwise (as DialogMiuix does). */
-@Composable
-private fun FilesDialog(
-    show: Boolean,
-    title: String,
-    onDismiss: (() -> Unit)?,
-    content: @Composable () -> Unit,
-) {
-    val body: @Composable () -> Unit = { Column(modifier = Modifier.fillMaxWidth()) { content() } }
-    if (LocalGlassOverlayBackdrop.current != null) {
-        GlassDialog(show = show, title = title, onDismissRequest = onDismiss, content = body)
-    } else {
-        WindowDialog(show = show, title = title, onDismissRequest = onDismiss, content = body)
     }
 }

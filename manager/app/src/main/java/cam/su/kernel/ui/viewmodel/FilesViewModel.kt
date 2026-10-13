@@ -11,16 +11,22 @@ import cam.su.kernel.files.FileEntry
 import cam.su.kernel.files.FileOp
 import cam.su.kernel.files.FileSort
 import cam.su.kernel.files.FsException
+import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.OpKind
 import cam.su.kernel.files.PanelNav
+import cam.su.kernel.files.SelectionOps
 import cam.su.kernel.files.SortBy
 import cam.su.kernel.files.SortOptions
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 
 data class PanelUi(
     val nav: PanelNav,
@@ -29,7 +35,12 @@ data class PanelUi(
     /** errno of the last failed listing; the list then stays empty. */
     val errorErrno: Int? = null,
     val selection: Set<String> = emptySet(),
-)
+    /** [total, available] bytes of the file system the folder is on. */
+    val disk: LongArray? = null,
+) {
+    val folders get() = entries.count { it.isDir }
+    val files get() = entries.size - folders
+}
 
 data class OpUi(
     val kind: OpKind,
@@ -39,11 +50,20 @@ data class OpUi(
     val conflict: CamFileClient.OpEvent.Conflict? = null,
 )
 
+/** The Properties dialog: [measure] fills in after the tree was walked. */
+data class PropertiesUi(val entry: FileEntry, val measure: LongArray? = null)
+
 sealed interface FilesMessage {
     data class Finished(val kind: OpKind, val items: Int, val skipped: Int) : FilesMessage
     data object Cancelled : FilesMessage
     data class Failed(val errno: Int, val detail: String?) : FilesMessage
-    data object NotYet : FilesMessage
+    data object Done : FilesMessage
+}
+
+/** One-shot work for the screen: hand a cached copy of a root file to another app. */
+sealed interface FilesEvent {
+    data class Open(val file: File, val mime: String) : FilesEvent
+    data class Share(val files: List<File>) : FilesEvent
 }
 
 data class FilesUiState(
@@ -52,6 +72,9 @@ data class FilesUiState(
     val sort: SortOptions = SortOptions(),
     val op: OpUi? = null,
     val message: FilesMessage? = null,
+    val properties: PropertiesUi? = null,
+    val bookmarks: List<String> = emptyList(),
+    val busy: Boolean = false,
 ) {
     val activePanel get() = panels[active]
     val otherPanel get() = panels[1 - active]
@@ -62,12 +85,14 @@ class FilesViewModel : ViewModel() {
     private val raw = arrayOf<List<FileEntry>>(emptyList(), emptyList())
     private val loadJobs = arrayOfNulls<Job>(2)
     private var opHandle: CamFileClient.OpHandle? = null
+    private val events = Channel<FilesEvent>(Channel.BUFFERED)
+    val eventFlow: Flow<FilesEvent> = events.receiveAsFlow()
 
     private val _uiState = MutableStateFlow(
         FilesUiState(
             panels = listOf(
-                PanelUi(PanelNav(prefs.getString(KEY_PATH_0, null) ?: DEFAULT_PATH_0)),
-                PanelUi(PanelNav(prefs.getString(KEY_PATH_1, null) ?: DEFAULT_PATH_1)),
+                PanelUi(PanelNav(prefs.getString(KEY_PATH_0, null) ?: home(0))),
+                PanelUi(PanelNav(prefs.getString(KEY_PATH_1, null) ?: home(1))),
             ),
             active = prefs.getInt(KEY_ACTIVE, 0).coerceIn(0, 1),
             sort = SortOptions(
@@ -75,6 +100,7 @@ class FilesViewModel : ViewModel() {
                 descending = prefs.getBoolean(KEY_SORT_DESC, false),
                 showHidden = prefs.getBoolean(KEY_SHOW_HIDDEN, true),
             ),
+            bookmarks = loadBookmarks(),
         ),
     )
     val uiState: StateFlow<FilesUiState> = _uiState.asStateFlow()
@@ -95,69 +121,198 @@ class FilesViewModel : ViewModel() {
     }
 
     fun setActive(index: Int) {
+        if (_uiState.value.active == index) return
         _uiState.update { it.copy(active = index) }
         prefs.edit { putInt(KEY_ACTIVE, index) }
     }
 
+    // --- navigation (MT: back key = up, ‹ › = history) ---
+
     fun navigate(panel: Int, path: String) = setNav(panel, _uiState.value.panels[panel].nav.go(path))
 
-    fun open(panel: Int, entry: FileEntry) {
-        if (entry.isDir) {
-            navigate(panel, entry.path)
-        } else {
-            // Viewers and the editor come with the next tasks of the plan.
-            _uiState.update { it.copy(message = FilesMessage.NotYet) }
-        }
-    }
+    fun navigateActive(path: String) = navigate(_uiState.value.active, path)
 
-    fun goUp(panel: Int) {
+    fun goUp(panel: Int = _uiState.value.active) {
         _uiState.value.panels[panel].nav.parent?.let { navigate(panel, it) }
     }
 
-    /** True when it moved; false lets back leave the tab. */
+    fun historyBack() {
+        val state = _uiState.value
+        state.activePanel.nav.goBack()?.let { setNav(state.active, it) }
+    }
+
+    fun historyForward() {
+        val state = _uiState.value
+        state.activePanel.nav.goForward()?.let { setNav(state.active, it) }
+    }
+
+    /** ⇄: the other panel goes to this panel's folder. */
+    fun syncOther() {
+        val state = _uiState.value
+        navigate(1 - state.active, state.activePanel.nav.path)
+    }
+
+    fun swapPanels() {
+        val state = _uiState.value
+        val (a, b) = state.panels
+        raw.reverse()
+        _uiState.update { it.copy(panels = listOf(b, a)) }
+        prefs.edit {
+            putString(KEY_PATH_0, b.nav.path)
+            putString(KEY_PATH_1, a.nav.path)
+        }
+    }
+
+    /** System back: drop the selection, else go up; false at "/" so the tab can be left. */
     fun back(): Boolean {
         val state = _uiState.value
         if (state.activePanel.selection.isNotEmpty()) {
             clearSelection(state.active)
             return true
         }
-        val previous = state.activePanel.nav.goBack() ?: return false
-        setNav(state.active, previous)
+        val parent = state.activePanel.nav.parent ?: return false
+        navigate(state.active, parent)
         return true
     }
 
-    fun canGoBack(): Boolean = _uiState.value.let { it.activePanel.selection.isNotEmpty() || it.activePanel.nav.back.isNotEmpty() }
+    fun setHome() {
+        val state = _uiState.value
+        prefs.edit { putString(if (state.active == 0) KEY_HOME_0 else KEY_HOME_1, state.activePanel.nav.path) }
+        _uiState.update { it.copy(message = FilesMessage.Done) }
+    }
+
+    fun goHome() = navigateActive(home(_uiState.value.active))
+
+    // --- selection ---
 
     fun toggleSelection(panel: Int, path: String) = updatePanel(panel) {
         it.copy(selection = if (path in it.selection) it.selection - path else it.selection + path)
     }
 
-    fun selectAll(panel: Int) = updatePanel(panel) { p -> p.copy(selection = p.entries.map { it.path }.toSet()) }
+    fun selectAll(panel: Int = _uiState.value.active) = updatePanel(panel) { p -> p.copy(selection = p.entries.map { it.path }.toSet()) }
 
-    fun clearSelection(panel: Int) = updatePanel(panel) { it.copy(selection = emptySet()) }
+    fun selectRange() = updatePanel(_uiState.value.active) { it.copy(selection = SelectionOps.range(it.entries, it.selection)) }
 
-    fun setSort(by: SortBy) {
-        val current = _uiState.value.sort
-        // Picking the same order again flips the direction, like a table header.
-        val next = if (current.by == by) current.copy(descending = !current.descending) else current.copy(by = by, descending = false)
-        applySort(next)
+    fun invertSelection() = updatePanel(_uiState.value.active) { it.copy(selection = SelectionOps.invert(it.entries, it.selection)) }
+
+    fun selectSameType() = updatePanel(_uiState.value.active) { it.copy(selection = SelectionOps.sameType(it.entries, it.selection)) }
+
+    fun clearSelection(panel: Int = _uiState.value.active) = updatePanel(panel) { it.copy(selection = emptySet()) }
+
+    /** What a menu on [entry] acts on: the whole selection when [entry] is part of it. */
+    fun targetsFor(panel: Int, entry: FileEntry): List<String> {
+        val selection = _uiState.value.panels[panel].selection
+        return if (entry.path in selection) selection.toList() else listOf(entry.path)
     }
+
+    // --- sort / view ---
+
+    fun setSort(by: SortBy, descending: Boolean) = applySort(_uiState.value.sort.copy(by = by, descending = descending))
 
     fun toggleHidden() = applySort(_uiState.value.sort.let { it.copy(showHidden = !it.showHidden) })
 
     fun consumeMessage() = _uiState.update { it.copy(message = null) }
 
-    // --- operations ---
+    // --- bookmarks ---
 
-    fun copySelection(move: Boolean) {
-        val state = _uiState.value
-        val sources = state.activePanel.selection.toList()
-        if (sources.isEmpty()) return
-        runOp(FileOp(if (move) OpKind.MOVE else OpKind.COPY, sources, state.otherPanel.nav.path))
+    fun addBookmark(path: String) {
+        val list = _uiState.value.bookmarks
+        if (path in list) return
+        saveBookmarks(list + path)
+        _uiState.update { it.copy(message = FilesMessage.Done) }
     }
 
-    fun deleteSelection() {
-        val sources = _uiState.value.activePanel.selection.toList()
+    fun removeBookmark(path: String) = saveBookmarks(_uiState.value.bookmarks - path)
+
+    fun restoreBookmarks() = saveBookmarks((DEFAULT_BOOKMARKS + _uiState.value.bookmarks).distinct())
+
+    // --- single file actions ---
+
+    fun create(name: String, folder: Boolean) = simple(refreshActive = true) {
+        val path = FsPath.child(_uiState.value.activePanel.nav.path, name)
+        if (folder) CamFileClient.mkdir(path) else CamFileClient.createFile(path)
+    }
+
+    fun rename(path: String, newName: String) = simple(refreshActive = true) {
+        CamFileClient.rename(path, FsPath.child(FsPath.parent(path), newName))
+    }
+
+    /** Long-pressed Move: to a path typed by hand (a folder, or a new full name). */
+    fun moveTo(path: String, target: String) = simple(refreshActive = true) {
+        val dest = target.trim().let { if (it.startsWith("/")) it else FsPath.child(FsPath.parent(path), it) }
+        val existing = CamFileClient.stat(dest)
+        CamFileClient.rename(path, if (existing?.isDir == true) FsPath.child(dest, FsPath.name(path)) else dest)
+    }
+
+    fun symlinkInOther(path: String) = simple(refreshActive = true) {
+        CamFileClient.symlink(path, FsPath.child(_uiState.value.otherPanel.nav.path, FsPath.name(path)))
+    }
+
+    fun chmod(path: String, mode: Int, recursive: Boolean) = simple(refreshActive = true) {
+        CamFileClient.chmod(path, mode, recursive)
+        reloadProperties(path)
+    }
+
+    fun chown(path: String, uid: Int, gid: Int, recursive: Boolean) = simple(refreshActive = true) {
+        CamFileClient.chown(path, uid, gid, recursive)
+        reloadProperties(path)
+    }
+
+    fun setContext(path: String, context: String, recursive: Boolean) = simple(refreshActive = true) {
+        CamFileClient.setContext(path, context, recursive)
+        reloadProperties(path)
+    }
+
+    fun showProperties(entry: FileEntry) {
+        _uiState.update { it.copy(properties = PropertiesUi(entry)) }
+        viewModelScope.launch {
+            val measure = runCatching { CamFileClient.measure(entry.path) }.getOrNull() ?: return@launch
+            _uiState.update { s -> s.copy(properties = s.properties?.takeIf { it.entry.path == entry.path }?.copy(measure = measure)) }
+        }
+    }
+
+    fun hideProperties() = _uiState.update { it.copy(properties = null) }
+
+    private suspend fun reloadProperties(path: String) {
+        if (_uiState.value.properties?.entry?.path != path) return
+        CamFileClient.stat(path)?.let { fresh -> _uiState.update { it.copy(properties = it.properties?.copy(entry = fresh)) } }
+    }
+
+    /** Opens a file with another app: root files are copied to the cache first. */
+    fun openWith(entry: FileEntry, mime: String) = cached(listOf(entry)) { files -> FilesEvent.Open(files.single(), mime) }
+
+    fun share(entries: List<FileEntry>) = cached(entries.filter { !it.isDir }) { FilesEvent.Share(it) }
+
+    private fun cached(entries: List<FileEntry>, event: (List<File>) -> FilesEvent) {
+        if (entries.isEmpty()) return
+        _uiState.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            try {
+                val dir = File(camApp.cacheDir, "files_open").apply {
+                    deleteRecursively()
+                    mkdirs()
+                }
+                val files = entries.map { e -> File(dir, e.name).also { CamFileClient.copyToLocal(e.path, it) } }
+                events.send(event(files))
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            } finally {
+                _uiState.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    // --- operations ---
+
+    fun copy(sources: List<String>, move: Boolean, destDir: String = _uiState.value.otherPanel.nav.path) {
+        if (sources.isEmpty()) return
+        runOp(FileOp(if (move) OpKind.MOVE else OpKind.COPY, sources, destDir))
+    }
+
+    /** Long-pressed Copy: a copy next to the original ("name (1)"). */
+    fun copyHere(sources: List<String>) = copy(sources, move = false, destDir = FsPath.parent(sources.first()))
+
+    fun delete(sources: List<String>) {
         if (sources.isEmpty()) return
         runOp(FileOp(OpKind.DELETE, sources))
     }
@@ -213,7 +368,32 @@ class FilesViewModel : ViewModel() {
         }
     }
 
+    /** Runs a quick root call; errors become a message, success reloads. */
+    private fun simple(refreshActive: Boolean, block: suspend () -> Unit) {
+        viewModelScope.launch {
+            try {
+                block()
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+            if (refreshActive) refresh()
+        }
+    }
+
     // --- internals ---
+
+    private fun home(panel: Int) =
+        prefs.getString(if (panel == 0) KEY_HOME_0 else KEY_HOME_1, null) ?: if (panel == 0) DEFAULT_PATH_0 else DEFAULT_PATH_1
+
+    private fun loadBookmarks(): List<String> {
+        if (!prefs.contains(KEY_BOOKMARKS)) return DEFAULT_BOOKMARKS
+        return prefs.getString(KEY_BOOKMARKS, "").orEmpty().split('\n').filter { it.isNotEmpty() }
+    }
+
+    private fun saveBookmarks(list: List<String>) {
+        prefs.edit { putString(KEY_BOOKMARKS, list.joinToString("\n")) }
+        _uiState.update { it.copy(bookmarks = list) }
+    }
 
     private fun setNav(panel: Int, nav: PanelNav) {
         updatePanel(panel) { it.copy(nav = nav, selection = emptySet()) }
@@ -231,6 +411,7 @@ class FilesViewModel : ViewModel() {
             } catch (e: FsException) {
                 Result.failure(e)
             }
+            val disk = runCatching { CamFileClient.statFs(path) }.getOrNull()
             if (_uiState.value.panels[panel].nav.path != path) return@launch
             raw[panel] = result.getOrDefault(emptyList())
             val sort = _uiState.value.sort
@@ -242,6 +423,7 @@ class FilesViewModel : ViewModel() {
                     loading = false,
                     errorErrno = (result.exceptionOrNull() as? FsException)?.errno,
                     selection = p.selection.filterTo(HashSet()) { it in paths },
+                    disk = disk,
                 )
             }
         }
@@ -270,9 +452,20 @@ class FilesViewModel : ViewModel() {
         const val DEFAULT_PATH_1 = "/data/adb"
         const val KEY_PATH_0 = "path_0"
         const val KEY_PATH_1 = "path_1"
+        const val KEY_HOME_0 = "home_0"
+        const val KEY_HOME_1 = "home_1"
         const val KEY_ACTIVE = "active"
         const val KEY_SORT_BY = "sort_by"
         const val KEY_SORT_DESC = "sort_desc"
         const val KEY_SHOW_HIDDEN = "show_hidden"
+        const val KEY_BOOKMARKS = "bookmarks"
+
+        val DEFAULT_BOOKMARKS = listOf(
+            "/data/adb/modules",
+            "/data/adb/cam",
+            "/data/adb/service.d",
+            "/data/adb/post-fs-data.d",
+            "/data/local/tmp",
+        )
     }
 }

@@ -16,31 +16,21 @@
 
 ## Đặc tả
 
-### Bố cục
+### Bố cục và thao tác (chép theo MT Manager 2.26, quan sát trên tablet ngày 2026-10-13)
 
-- Tab **"Tệp"** (en "Files"), icon `Icons.Rounded.Folder`, thứ tự: Home, Superuser, Module, Tính năng, **Tệp**, Cài đặt.
-- **Hai panel** (trái/phải), mỗi panel có thư mục hiện tại, lịch sử back/forward, vị trí cuộn theo từng thư mục và tập file đang chọn.
-  - Màn hình dọc: mỗi lúc hiện một panel, vuốt ngang trên vùng danh sách hoặc chạm vào thanh panel ở đầu trang để chuyển. Panel đang hiện là "panel hiện tại", panel còn lại là "panel đích".
-  - Màn hình ngang hoặc màn rộng (`shouldShowSplitPane()`): hai panel cạnh nhau, panel hiện tại có viền nhấn.
-  - Lưu ý: vuốt ngang trên danh sách không được chuyển tab của pager chính. Pager chính chỉ chuyển trang khi vuốt từ mép, hoặc tắt `userScrollEnabled` khi đang ở tab Tệp.
-- **Thanh đường dẫn (breadcrumb)**: chạm một đoạn để nhảy về thư mục đó, nhấn giữ để gõ đường dẫn tay (có gợi ý tự hoàn thành).
-- **Mỗi dòng file**: icon theo loại, tên, dòng phụ "kích thước · thời gian sửa · `rwxr-x---`". Tuỳ chọn hiện owner:group và SELinux context. Symlink ghi `→ đích`, symlink gãy tô đỏ.
-- **Thanh công cụ dưới**: Tạo mới (file / thư mục / symlink) · Làm mới · Chọn tất cả · Sắp xếp & lọc · Tìm kiếm · ⋮ (hiện file ẩn, hiện context, kích thước chữ). Khi đang chọn nhiều, thanh này đổi thành: Copy · Move · Xoá · Nén · ⋮ (thuộc tính, chọn ngược, bỏ chọn).
+Cam chốt ngày 2026-10-13: "làm giống y như MT Manager, kiểu clone". Bố cục, menu và cử chỉ giống MT; màu và kính theo Cam (Miuix glass). Chỉ cần tablet/màn rộng; màn hẹp giữ chạy được, không cần giống MT.
 
-### Tương tác (giống MT)
-
-| Thao tác | Kết quả |
-|---|---|
-| Chạm item | Mở thư mục; với file thì mở bằng trình xem trong app theo loại (text, ảnh, zip, APK, còn lại hỏi "Mở bằng") |
-| Chạm icon của item | Chọn/bỏ chọn, vào chế độ chọn nhiều |
-| Nhấn giữ item | Dialog lưới thao tác (mục bên dưới) |
-| Vuốt từ mép trái hoặc nút ☰ | Drawer: gốc, bookmark, công cụ |
-| Back | Lùi lịch sử panel → thoát chế độ chọn → về trang Home như các tab khác |
-| Kéo xuống | Làm mới |
-
-**Lưới thao tác khi nhấn giữ** (ẩn mục không áp dụng): Mở bằng · Copy → panel kia · Move → panel kia · Đổi tên · Xoá · Nén · Giải nén (sang đây / sang panel kia) · Thuộc tính · Quyền · Tạo symlink ở panel kia · Bookmark · Checksum · Sao chép đường dẫn · Chia sẻ · **Cài như module** (file `.zip`) · **Thay bằng module** (file dưới `/system`, `/vendor`, `/product`, `/system_ext`, `/odm`).
-
-**Copy/Move**: đích mặc định là thư mục của panel kia, dialog xác nhận cho đổi đích. Trùng tên → hỏi Ghi đè / Bỏ qua / Đổi tên tự động / Gộp thư mục, kèm ô "Áp dụng cho tất cả".
+- **Thanh trên**: ☰ (drawer) · tiêu đề là đường dẫn của panel đang dùng, có `/` ở cuối · dòng phụ "Thư mục: N  Tệp: M  [Đã chọn: K]  Ổ: đã dùng/tổng" · ⋮.
+- **⋮**: Làm mới · Tìm kiếm · Chọn tất cả · Sắp xếp · Tệp ẩn · Thêm bookmark · Đặt làm Home · Đổi chỗ hai panel.
+- **Hai panel** cạnh nhau, dòng dày: icon ô vuông bo góc màu theo loại (thư mục, zip, apk, ảnh, img, text, khác), tên, dòng phụ "yy-MM-dd HH:mm  kích thước" (thư mục không có kích thước; symlink thêm "→ đích"). Dòng `..` ở đầu. Chạm vào panel nào thì panel đó thành panel đang dùng.
+- **Thanh dưới** (trên thanh tab của Cam): ‹ lùi lịch sử · › tiến · + (hộp "Tạo": ô tên, Huỷ / Tệp / Thư mục) · ⇄ (panel kia nhảy tới cùng thư mục) · ↑ thư mục cha.
+- **Back của hệ thống**: đang chọn thì bỏ chọn; không thì lên thư mục cha; ở `/` thì rời tab như các tab khác.
+- **Chọn**: vuốt ngang trên một dòng để chọn/bỏ chọn (MT: "Swipe files can be selected directly"). Khi có mục được chọn: dòng tô màu cả dòng, chạm dòng là chọn/bỏ, thanh dưới đổi thành Chọn hết · Chọn khoảng (giữa mục chọn đầu và cuối) · × · Đảo chọn · Chọn cùng loại (cùng đuôi).
+- **Chạm**: thư mục thì mở; tệp thì mở theo loại (text → trình sửa, zip → duyệt như thư mục; tới khi có các trình đó thì hộp "Mở bằng" của hệ thống).
+- **Nhấn giữ** → hộp lưới 2 cột, dòng gợi ý trên cùng "Mục có dấu • nhấn giữ để làm ngay trong panel này": Sao chép → • · Di chuyển → • · Xoá · Đổi tên · Công cụ · Nén · Thuộc tính · Chia sẻ · Mở bằng... · Thêm bookmark (+ mục riêng của Cam ở giai đoạn 3). Mục không áp dụng thì mờ (Chia sẻ, Mở bằng với thư mục). Nhấn giữ một mục đang được chọn thì thao tác áp dụng cho cả nhóm đang chọn.
+  - Sao chép → / Di chuyển →: hộp "Sao chép X vào /đích/ ?" Huỷ / OK, đích là thư mục của panel kia. Nhấn giữ: Sao chép tạo bản sao ngay trong thư mục này; Di chuyển hỏi đường dẫn đích.
+  - Công cụ: Tạo liên kết mềm (ở panel kia), Tính checksum (giai đoạn 2).
+  - Thuộc tính: Tên, Thư mục cha, Loại, Kích thước "1.18G (1269816211)" (tính cả cây), Ngày sửa, Quyền "drwxrws---(2770)", Owner, Group, Context SELinux (thêm của Cam), Số tệp/Số thư mục. "Thêm" → Quyền (ô tick r/w/x + setuid/setgid/sticky, áp dụng đệ quy) · Owner và group · Context. Đóng.
 
 ### Drawer
 
@@ -142,6 +132,9 @@
 - Thử trên máy 2026-10-13 (Lenovo TB323FU, Android 16): `DeviceCheck` (bản debug, `app_process` root) 17/17; UI hai panel ngang, màn kiểu điện thoại (wm size 1080x2340), copy 300 MB /data→/sdcard, giữ cả hai, move khác phân vùng có ghi đè, xoá cây có symlink ra ngoài, hủy ở hộp trùng tên, xoá /config bị chặn. Lỗi tìm ra: FUSE /sdcard không có symlink (ENOSYS) và move khác phân vùng xoá mất mục bị bỏ qua, đã sửa (`3ddfc9fc`).
 
 ### Task 4: Lưới thao tác và các dialog
+
+> Làm 2026-10-13 theo đặc tả MT ở trên: lưới nhấn giữ, xác nhận Sao chép/Di chuyển (nhấn giữ: sao chép tại chỗ, di chuyển tới đường dẫn gõ tay), Xoá, Đổi tên, Tạo (+), Công cụ (liên kết mềm), Thuộc tính (đo cả cây qua `measure`, Quyền/Owner/Context), Sắp xếp, Mở bằng và Chia sẻ (bản chép trong cache, FileProvider), drawer + bookmark (Task 7 làm luôn). Thanh dưới của MT gom vào một nút tròn ở góc phải, chạm thì bung ra (Cam yêu cầu). Còn lại: Nén (Task 8), checksum (Task 10).
+> Lỗi tìm ra trên máy: process root của libsu nằm trong mount namespace của app nên `/data/data` chỉ thấy 2 thư mục (app data isolation); nay cả `CamRootClient` và `CamFileClient` khởi động nó bằng `GLOBAL_MNT_SHELL`. Hộp thoại overlay của Miuix giữ lambda nội dung lúc hiện, nên Thuộc tính/tiến độ/trùng tên đọc `uiState` bên trong nội dung.
 
 **Files:** Create `ui/screen/files/ActionGrid.kt`, `dialog/RenameDialog.kt`, `NewItemDialog.kt`, `PropertiesDialog.kt` (thông tin + quyền dạng ô tick ↔ bát phân + owner + context), `ConflictDialog.kt`, `ConfirmDangerDialog.kt`; `files/Permissions.kt` (đổi `mode` ↔ `rwx` ↔ bát phân, Kotlin thuần) + test.
 

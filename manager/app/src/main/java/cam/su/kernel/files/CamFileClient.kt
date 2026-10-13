@@ -45,6 +45,10 @@ object CamFileClient {
 
     suspend fun stat(path: String): FileEntry? = call { it.stat(path) }
 
+    suspend fun statFs(path: String): LongArray = call { it.statFs(path) }
+
+    suspend fun measure(path: String): LongArray = call { it.measure(path) }
+
     suspend fun mkdir(path: String) = call { it.mkdir(path) }
 
     suspend fun createFile(path: String) = call { it.createFile(path) }
@@ -68,6 +72,15 @@ object CamFileClient {
             val bytes = FileInputStream(pfd.fileDescriptor).readBytes()
             pfd.checkError()
             bytes
+        }
+    }
+
+    /** Copies the root-only file at [path] to [target] (app storage), for viewers and sharing. */
+    suspend fun copyToLocal(path: String, target: java.io.File) = call { s ->
+        s.openRead(path).use { pfd ->
+            // the pfd owns the descriptor; checkError() needs it still open
+            target.outputStream().use { FileInputStream(pfd.fileDescriptor).copyTo(it) }
+            pfd.checkError()
         }
     }
 
@@ -173,7 +186,10 @@ object CamFileClient {
             }
             val intent = Intent(camApp, CamFileService::class.java)
             val task = RootService.bindOrTask(intent, Shell.EXECUTOR, connection)
-            task?.let { CamCli.SHELL.execTask(it) }
+            // Started from the global mount namespace shell: libsu runs every RootService of
+            // the app in one root process, and the Files tab must see what init sees, not the
+            // app's own view (app data isolation hides other apps under /data/data).
+            task?.let { CamCli.GLOBAL_MNT_SHELL.execTask(it) }
         }
     }
 }

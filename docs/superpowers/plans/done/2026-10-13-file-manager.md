@@ -1,5 +1,7 @@
 # Tab "Tệp" (trình quản lý file kiểu MT Manager) — Kế hoạch thực hiện
 
+> **Trạng thái (2026-10-13): đã làm xong cả 14 task và thử trên máy (TB323FU, Android 16).** Các ô `- [ ]` còn lại không được tick trong lúc làm; đừng coi là việc còn dở. Hiện trạng thật: dòng 42 mục 1 của `docs/CAM_CHANGES.md`. Khác với plan: trình sửa text viết bằng Compose (không dùng Sora Editor); bố cục và thao tác theo MT Manager do Cam chốt giữa chừng (mục "Bố cục và thao tác"); thanh công cụ gom vào một nút tròn; tab Tệp chỉ cần tốt trên tablet.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Thêm tab "Tệp" trên thanh điều hướng: trình quản lý file chạy bằng quyền root, thao tác và tương tác giống MT Manager (hai panel, nhấn giữ ra lưới thao tác, copy/move sang panel kia), cộng các tính năng riêng của Cam (ghi đè systemless, xem theo mount namespace của app, cài zip như module).

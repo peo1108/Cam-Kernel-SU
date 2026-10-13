@@ -45,6 +45,10 @@ class FakeFs : FsBackend {
 
     fun link(path: String, target: String): Link = put(path, Link(target))
 
+    fun bytes(path: String, data: ByteArray, perm: Int = 0x1A4): Regular = put(path, Regular(data, perm))
+
+    fun data(path: String) = (node(path, follow = true) as Regular).data
+
     fun node(path: String, follow: Boolean = false): Node = resolve(path, follow).second
 
     fun text(path: String) = String((node(path, follow = true) as Regular).data)

@@ -306,11 +306,22 @@ class FilesViewModel : ViewModel() {
     // --- single file actions ---
 
     fun create(name: String, folder: Boolean) = simple(refreshActive = true) {
-        val path = FsPath.child(_uiState.value.activePanel.nav.path, name)
+        val dir = _uiState.value.activePanel.nav.path
+        if (Archives.isInside(dir)) {
+            val path = Archives.join(Archives.split(dir).first, (Archives.split(dir).second + "/" + name).trim('/'))
+            if (folder) CamFileClient.archiveMkdir(path) else CamFileClient.archiveWrite(path, ByteArray(0))
+            return@simple
+        }
+        val path = FsPath.child(dir, name)
         if (folder) CamFileClient.mkdir(path) else CamFileClient.createFile(path)
     }
 
     fun rename(path: String, newName: String) = simple(refreshActive = true) {
+        if (Archives.isInside(path)) {
+            val inner = Archives.split(path).second
+            CamFileClient.archiveRename(path, (inner.substringBeforeLast('/', "") + "/" + newName).trim('/'))
+            return@simple
+        }
         CamFileClient.rename(path, FsPath.child(FsPath.parent(path), newName))
     }
 
@@ -581,8 +592,19 @@ class FilesViewModel : ViewModel() {
 
     fun copy(sources: List<String>, move: Boolean, destDir: String = _uiState.value.otherPanel.nav.path) {
         if (sources.isEmpty()) return
-        // Out of an archive, copying is extracting (archives are read-only here).
-        if (Archives.isInside(sources.first())) return extract(sources, destDir)
+        val intoArchive = Archives.isInside(destDir)
+        // Out of an archive, copying is extracting; archive to archive is not supported.
+        if (Archives.isInside(sources.first())) {
+            if (intoArchive) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(cam.su.kernel.files.Errno.EINVAL, null)) }
+                return
+            }
+            return extract(sources, destDir)
+        }
+        if (intoArchive && !Archives.isZip(Archives.split(destDir).first)) {
+            _uiState.update { it.copy(message = FilesMessage.Failed(cam.su.kernel.files.Errno.EROFS, null)) }
+            return
+        }
         runOp(FileOp(if (move) OpKind.MOVE else OpKind.COPY, sources, destDir))
     }
 

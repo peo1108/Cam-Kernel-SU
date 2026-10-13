@@ -221,7 +221,11 @@ class RootFs(private val fs: FsBackend) {
      * [beforeCommit] runs after all data is on disk and before the rename; if it throws,
      * the old file is left untouched.
      */
-    fun writeAtomic(path: String, input: InputStream, beforeCommit: () -> Unit = {}) {
+    fun writeAtomic(path: String, input: InputStream, beforeCommit: () -> Unit = {}) =
+        writeAtomicWith(path, beforeCommit) { input.copyTo(it) }
+
+    /** [writeAtomic] for content produced by [body] (an archive being rewritten, say). */
+    fun writeAtomicWith(path: String, beforeCommit: () -> Unit = {}, body: (java.io.OutputStream) -> Unit) {
         var target = FsPath.normalize(path)
         var old = lstatOrNull(target)
         if (old != null && FileMode.isLink(old.mode)) {
@@ -235,7 +239,7 @@ class RootFs(private val fs: FsBackend) {
         lstatOrNull(tmp)?.let { if (FileMode.isRegular(it.mode)) fs.remove(tmp) }
         fs.createFile(tmp, (old?.mode ?: DEFAULT_FILE_MODE) and FileMode.PERM_MASK)
         try {
-            fs.openWrite(tmp).use { input.copyTo(it) }
+            fs.openWrite(tmp).use(body)
             beforeCommit()
             copyMetadata(old, target, tmp)
             fs.rename(tmp, target)

@@ -51,6 +51,36 @@ object CamFileClient {
         }
     }
 
+    suspend fun archiveRename(path: String, newInner: String) = call {
+        val (archive, inner) = Archives.split(path)
+        it.archiveRename(archive, inner, newInner)
+    }
+
+    suspend fun archiveMkdir(path: String) = call {
+        val (archive, inner) = Archives.split(path)
+        it.archiveMkdir(archive, inner)
+    }
+
+    /** Puts [bytes] at [path] inside a zip (`/a.zip!/dir/file`). */
+    suspend fun archiveWrite(path: String, bytes: ByteArray) = call { s ->
+        val (archive, inner) = Archives.split(path)
+        val (readEnd, writeEnd) = ParcelFileDescriptor.createReliablePipe()
+        val producer = thread(name = "cam-archive-write") {
+            try {
+                FileOutputStream(writeEnd.fileDescriptor).write(bytes)
+                writeEnd.close()
+            } catch (e: Throwable) {
+                runCatching { writeEnd.closeWithError(e.message ?: "write failed") }
+            }
+        }
+        try {
+            s.archiveWrite(archive, inner, readEnd)
+        } finally {
+            readEnd.close()
+            producer.join()
+        }
+    }
+
     /** pm's answer: "Success", or why it failed. */
     suspend fun installPackage(path: String): String = call { it.installPackage(path) }
 

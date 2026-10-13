@@ -302,6 +302,11 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                     }),
                 ),
             )
+            // inside a zip: delete and rename rewrite the archive (tar stays read-only)
+            if (inArchive && Archives.isZip(Archives.split(entry.path).first)) {
+                add(GridCell(Icons.Rounded.Delete, stringResource(R.string.files_delete), onClick = { onDialog(FilesDialogState.ConfirmDelete(targets)) }))
+                add(GridCell(Icons.Rounded.Edit, stringResource(R.string.files_rename), enabled = single, onClick = { onDialog(FilesDialogState.Rename(entry)) }))
+            }
             if (!inArchive) {
                 add(
                     GridCell(

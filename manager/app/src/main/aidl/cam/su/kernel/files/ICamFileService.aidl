@@ -17,6 +17,12 @@ interface ICamFileService {
     ParcelableListSlice<FileEntry> listArchive(String archive, String inner);
     // one file inside an archive, as openRead
     ParcelFileDescriptor openArchiveEntry(String archive, String inner);
+    // zip archives edited in place (rewritten through a temp file); tar is read-only
+    void archiveRename(String archive, String from, String to);
+    void archiveMkdir(String archive, String inner);
+    // replaces (or adds) the file at inner with what source carries, read to EOF
+    void archiveWrite(String archive, String inner, in ParcelFileDescriptor source);
+
     // pm install of an .apk or a split bundle; returns pm's answer ("Success" or the failure)
     String installPackage(String path);
 

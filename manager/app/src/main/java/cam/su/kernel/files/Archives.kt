@@ -53,6 +53,9 @@ object Archives {
         return ext in TAR && (ext == "tar" || ext == "tgz" || ext == "txz" || lower.endsWith(".tar.gz") || lower.endsWith(".tar.xz"))
     }
 
+    /** Zip-format archives can be edited in place; tar ones are read-only. */
+    fun isZip(name: String) = name.lowercase(Locale.ROOT).substringAfterLast('.', "") in ZIP
+
     fun isApkBundle(name: String) = name.lowercase(Locale.ROOT).substringAfterLast('.', "") in setOf("apks", "xapk", "apkm")
 
     fun open(file: File): ArchiveReader {

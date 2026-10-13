@@ -94,6 +94,24 @@ class CamFileService : RootService() {
             pipeFrom(input) { reader.close() }
         }
 
+        override fun archiveRename(archive: String, from: String, to: String) = call {
+            editZip(archive) { ZipEditor.Edits(renames = mapOf(from.trim('/') to to.trim('/'))) }
+        }
+
+        override fun archiveMkdir(archive: String, inner: String) = call {
+            editZip(archive) { ZipEditor.Edits(mkdirs = listOf(inner)) }
+        }
+
+        override fun archiveWrite(archive: String, inner: String, source: ParcelFileDescriptor) = call {
+            source.use { pfd ->
+                val bytes = FileInputStream(pfd.fileDescriptor).readBytes()
+                pfd.checkError()
+                editZip(archive) {
+                    ZipEditor.Edits(adds = listOf(ZipEditor.Addition(inner.trim('/'), bytes.size.toLong()) { bytes.inputStream() }))
+                }
+            }
+        }
+
         override fun installPackage(path: String): String = call { ApkInstaller.install(FsPath.normalize(path), OsBackend) }
 
         override fun measure(path: String): LongArray = call { fs.measure(path) }
@@ -164,6 +182,26 @@ class CamFileService : RootService() {
         }
     }
 
+    /** Copying (or moving) into a zip: add the files, then drop the sources on a move. */
+    private fun intoZip(op: FileOp, listener: OpListener, cancelled: () -> Boolean): OpResult {
+        val (archive, inner) = Archives.split(op.destDir!!)
+        if (!Archives.isZip(archive)) throw FsException(Errno.EROFS, archive, "only zip archives can be edited")
+        val editor = ZipEditor(OsBackend, listener, cancelled)
+        val (adds, dirs) = editor.additionsFrom(op.sources, inner)
+        val result = editor.apply(FsPath.normalize(archive), ZipEditor.Edits(adds = adds, mkdirs = dirs))
+        if (op.kind == OpKind.MOVE && result.skipped == 0) {
+            FileOpEngine(OsBackend, listener, cancelled).run(FileOp(OpKind.DELETE, op.sources))
+        }
+        return result
+    }
+
+    /** Rewrites a zip archive; replacing an entry with the same name is what the caller wants here. */
+    private fun editZip(archive: String, edits: () -> ZipEditor.Edits) {
+        val path = FsPath.normalize(archive)
+        if (!Archives.isZip(path)) throw FsException(Errno.EROFS, path, "only zip archives can be edited")
+        ZipEditor(OsBackend).apply(path, edits())
+    }
+
     /** Streams [input] into a reliable pipe from a thread; returns the read end. */
     private fun pipeFrom(input: java.io.InputStream, onDone: () -> Unit): ParcelFileDescriptor {
         val (readEnd, writeEnd) = ParcelFileDescriptor.createReliablePipe()
@@ -208,6 +246,18 @@ class CamFileService : RootService() {
 
                 OpKind.COMPRESS -> ArchiveOps(OsBackend, listener, cancelled)
                     .compress(op.sources, op.destDir ?: throw FsException(Errno.EINVAL))
+
+                // deleting inside a zip: rewrite it without those entries
+                OpKind.DELETE if Archives.isInside(op.sources.first()) -> {
+                    val archive = Archives.split(op.sources.first()).first
+                    if (!Archives.isZip(archive)) throw FsException(Errno.EROFS, archive, "only zip archives can be edited")
+                    ZipEditor(OsBackend, listener, cancelled)
+                        .apply(FsPath.normalize(archive), ZipEditor.Edits(deletes = op.sources.map { Archives.split(it).second }.toSet()))
+                }
+
+                OpKind.COPY if op.destDir?.let(Archives::isInside) == true -> intoZip(op, listener, cancelled)
+
+                OpKind.MOVE if op.destDir?.let(Archives::isInside) == true -> intoZip(op, listener, cancelled)
 
                 else -> FileOpEngine(OsBackend, listener, cancelled).run(op)
             }

@@ -76,7 +76,8 @@ class TextEditorViewModel : ViewModel() {
                 val bytes = CamFileClient.readBytes(file)
                 val text = TextDoc.decode(bytes)
                 limit = when {
-                    inArchive -> EditorLimit.ARCHIVE
+                    // zips are edited in place; tar archives are read-only
+                    inArchive && !Archives.isZip(Archives.split(file).first) -> EditorLimit.ARCHIVE
                     TextDoc.looksBinary(bytes) -> EditorLimit.BINARY
                     bytes.size > MAX_EDIT -> EditorLimit.LARGE
                     else -> EditorLimit.NONE
@@ -165,7 +166,7 @@ class TextEditorViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val bytes = current.encode(text)
-                CamFileClient.write(path) { it.write(bytes) }
+                if (Archives.isInside(path)) CamFileClient.archiveWrite(path, bytes) else CamFileClient.write(path) { it.write(bytes) }
                 saved = text
                 message = EditorMessage.Saved
                 then()

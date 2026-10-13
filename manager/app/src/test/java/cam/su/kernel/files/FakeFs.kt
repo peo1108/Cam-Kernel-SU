@@ -26,6 +26,14 @@ class FakeFs : FsBackend {
     /** Context the "kernel" gives new files, like a type transition would. */
     var newFileContext: String? = "u:object_r:system_file:s0"
 
+    /** Paths that are other file systems: rename(2) across them fails with EXDEV. */
+    var mounts = listOf<String>()
+
+    /** Reading these fails halfway through. */
+    var failRead = setOf<String>()
+
+    private fun mountOf(path: String) = mounts.filter { FsPath.isSameOrInside(path, it) }.maxByOrNull { it.length } ?: "/"
+
     // --- test setup helpers ---
 
     fun dir(path: String): Dir = put(path, Dir())
@@ -84,6 +92,7 @@ class FakeFs : FsBackend {
     }
 
     override fun rename(from: String, to: String) {
+        if (mountOf(from) != mountOf(to)) throw FsException(Errno.EXDEV, from)
         val node = resolve(from, follow = false).second
         val dst = parentDir(to)
         val existing = dst.children[FsPath.name(to)]
@@ -111,7 +120,17 @@ class FakeFs : FsBackend {
 
     override fun openRead(path: String): InputStream {
         val node = resolve(path, follow = true).second
-        return ByteArrayInputStream((node as? Regular ?: throw FsException(Errno.EISDIR, path)).data)
+        val data = (node as? Regular ?: throw FsException(Errno.EISDIR, path)).data
+        if (path !in failRead) return ByteArrayInputStream(data)
+        return object : InputStream() {
+            var sent = false
+            override fun read(): Int = throw FsException(Errno.EIO, path)
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (sent) throw FsException(Errno.EIO, path)
+                sent = true
+                return minOf(len, data.size / 2).also { System.arraycopy(data, 0, b, off, it) }
+            }
+        }
     }
 
     override fun openWrite(path: String): OutputStream {

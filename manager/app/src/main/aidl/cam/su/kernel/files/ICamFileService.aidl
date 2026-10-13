@@ -2,6 +2,7 @@
 package cam.su.kernel.files;
 
 import cam.su.kernel.files.FileEntry;
+import cam.su.kernel.files.IFileOpCallback;
 import rikka.parcelablelist.ParcelableListSlice;
 
 // Served by CamFileService (uid 0) for the Files tab. Paths are absolute.
@@ -29,4 +30,11 @@ interface ICamFileService {
     // reads source (a reliable pipe) to EOF, then replaces the file atomically,
     // keeping its mode, owner and SELinux label
     void writeFile(String path, in ParcelFileDescriptor source);
+
+    // kind: OpKind ordinal (COPY, MOVE, DELETE); destDir null for DELETE.
+    // Runs in the background; returns the id that callback events carry.
+    int startOp(int kind, in String[] sources, String destDir, boolean preserve, IFileOpCallback callback);
+    void cancelOp(int id);
+    // choice: ConflictChoice ordinal (OVERWRITE, SKIP, RENAME)
+    void resolveConflict(int id, int choice, boolean applyAll);
 }

@@ -126,8 +126,9 @@
 - File đang chép ghi vào `<tên>.camtmp`, xong mới `rename`; huỷ thì xoá `.camtmp`.
 - Giữ mode, owner, mtime, context khi chép (bật mặc định, có tuỳ chọn tắt).
 
-- [ ] Engine + chính sách trùng tên
-- [ ] Test các mục 1, 2, 4, 5 của Review Focus
+- [x] Engine + chính sách trùng tên (`FileOpEngine`, chạy trong `CamFileService.startOp`, client `CamFileClient.startOp` → `OpHandle.events`)
+- [x] Test các mục 1, 2, 4, 5 của Review Focus (`FileOpEngineTest`, 16 test)
+- Ghi chú: chưa giữ mtime (`android.system.Os` không có `utimensat` công khai). Owner và nhãn chép theo kiểu cố gắng hết mức: FUSE `/sdcard` từ chối thì bỏ qua, dữ liệu vẫn chép. `/` và thư mục cấp 1 không cho move/xoá (copy thì được).
 
 ### Task 3: Tab và hai panel
 

@@ -8,6 +8,11 @@ import rikka.parcelablelist.ParcelableListSlice
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 /**
@@ -17,6 +22,13 @@ import kotlin.concurrent.thread
 class CamFileService : RootService() {
 
     private val fs = RootFs(OsBackend)
+    private val nextOpId = AtomicInteger(1)
+    private val ops = ConcurrentHashMap<Int, RunningOp>()
+
+    private class RunningOp {
+        val cancelled = AtomicBoolean(false)
+        val answers = LinkedBlockingQueue<Resolution>()
+    }
 
     override fun onBind(intent: Intent): IBinder = Stub()
 
@@ -66,6 +78,41 @@ class CamFileService : RootService() {
             readEnd
         }
 
+        override fun startOp(
+            kind: Int,
+            sources: Array<String>,
+            destDir: String?,
+            preserve: Boolean,
+            callback: IFileOpCallback,
+        ): Int {
+            val opKind = OpKind.entries.getOrNull(kind) ?: throw FsException(Errno.EINVAL).toRemote()
+            val op = FileOp(opKind, sources.toList(), destDir, preserve)
+            val id = nextOpId.getAndIncrement()
+            val running = RunningOp()
+            ops[id] = running
+            // The app going away cancels what it started.
+            val death = IBinder.DeathRecipient { running.cancelled.set(true) }
+            runCatching { callback.asBinder().linkToDeath(death, 0) }
+            thread(name = "cam-file-op-$id") {
+                try {
+                    runOp(id, op, running, callback)
+                } finally {
+                    ops.remove(id)
+                    runCatching { callback.asBinder().unlinkToDeath(death, 0) }
+                }
+            }
+            return id
+        }
+
+        override fun cancelOp(id: Int) {
+            ops[id]?.cancelled?.set(true)
+        }
+
+        override fun resolveConflict(id: Int, choice: Int, applyAll: Boolean) {
+            val resolved = ConflictChoice.entries.getOrNull(choice) ?: ConflictChoice.SKIP
+            ops[id]?.answers?.offer(Resolution(resolved, applyAll))
+        }
+
         override fun writeFile(path: String, source: ParcelFileDescriptor) = call {
             source.use { pfd ->
                 // checkError() turns a writer that gave up halfway into an IOException,
@@ -73,5 +120,33 @@ class CamFileService : RootService() {
                 fs.writeAtomic(path, FileInputStream(pfd.fileDescriptor)) { pfd.checkError() }
             }
         }
+    }
+
+    private fun runOp(id: Int, op: FileOp, running: RunningOp, callback: IFileOpCallback) {
+        val listener = object : OpListener {
+            override fun onProgress(done: Long, total: Long, current: String) {
+                runCatching { callback.onProgress(id, done, total, current) }
+            }
+
+            override fun onConflict(src: String, dst: String, srcIsDir: Boolean, dstIsDir: Boolean): Resolution {
+                running.answers.clear()
+                callback.onConflict(id, src, dst, srcIsDir, dstIsDir)
+                while (!running.cancelled.get()) {
+                    running.answers.poll(200, TimeUnit.MILLISECONDS)?.let { return it }
+                }
+                throw OpCancelledException()
+            }
+        }
+        val engine = FileOpEngine(OsBackend, listener) { running.cancelled.get() }
+        val (result, errno, error) = try {
+            Triple(engine.run(op), 0, null)
+        } catch (_: OpCancelledException) {
+            Triple(null, -1, null)
+        } catch (e: FsException) {
+            Triple(null, e.errno, e.message)
+        } catch (e: Exception) {
+            Triple(null, Errno.EIO, e.message ?: e.javaClass.simpleName)
+        }
+        runCatching { callback.onDone(id, result?.items ?: 0, result?.skipped ?: 0, errno, error) }
     }
 }

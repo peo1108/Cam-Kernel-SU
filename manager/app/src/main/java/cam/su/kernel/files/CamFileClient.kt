@@ -11,6 +11,9 @@ import cam.su.kernel.ui.util.CamCli
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -89,6 +92,47 @@ object CamFileClient {
             // reading from would block forever on a full pipe.
             readEnd.close()
             producer.join()
+        }
+    }
+
+    /** Starts [op] in the root process; follow it through [OpHandle.events]. */
+    suspend fun startOp(op: FileOp): OpHandle {
+        val events = Channel<OpEvent>(Channel.UNLIMITED)
+        val callback = object : IFileOpCallback.Stub() {
+            override fun onProgress(id: Int, done: Long, total: Long, current: String) {
+                events.trySend(OpEvent.Progress(done, total, current))
+            }
+
+            override fun onConflict(id: Int, src: String, dst: String, srcIsDir: Boolean, dstIsDir: Boolean) {
+                events.trySend(OpEvent.Conflict(src, dst, srcIsDir, dstIsDir))
+            }
+
+            override fun onDone(id: Int, items: Int, skipped: Int, errno: Int, error: String?) {
+                events.trySend(OpEvent.Done(items, skipped, errno, error))
+                events.close()
+            }
+        }
+        val id = call {
+            it.startOp(op.kind.ordinal, op.sources.toTypedArray(), op.destDir, op.preserve, callback)
+        }
+        return OpHandle(id, events.receiveAsFlow())
+    }
+
+    class OpHandle internal constructor(val id: Int, val events: Flow<OpEvent>) {
+        suspend fun cancel() = call { it.cancelOp(id) }
+
+        suspend fun resolve(choice: ConflictChoice, applyAll: Boolean) =
+            call { it.resolveConflict(id, choice.ordinal, applyAll) }
+    }
+
+    sealed interface OpEvent {
+        data class Progress(val done: Long, val total: Long, val current: String) : OpEvent
+        data class Conflict(val src: String, val dst: String, val srcIsDir: Boolean, val dstIsDir: Boolean) : OpEvent
+
+        /** [errno] 0 when it finished, -1 when cancelled. */
+        data class Done(val items: Int, val skipped: Int, val errno: Int, val error: String?) : OpEvent {
+            val ok get() = errno == 0
+            val cancelled get() = errno == -1
         }
     }
 

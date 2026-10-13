@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Cottage
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -214,6 +215,7 @@ enum class BottomBarDestination(
     SuperUser(R.string.superuser, Icons.Rounded.Security),
     Module(R.string.module, Icons.Rounded.Extension),
     Features(R.string.features, Icons.Rounded.AutoAwesome),
+    Files(R.string.files, Icons.Rounded.Folder),
     Setting(R.string.settings, Icons.Rounded.Settings)
 }
 

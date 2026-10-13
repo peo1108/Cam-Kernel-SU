@@ -105,6 +105,8 @@ import cam.su.kernel.ui.screen.module.ModulePager
 import cam.su.kernel.ui.screen.modulerepo.ModuleRepoDetailScreen
 import cam.su.kernel.ui.screen.modulerepo.ModuleRepoScreen
 import cam.su.kernel.ui.screen.features.FeaturesPager
+import cam.su.kernel.ui.screen.files.FilesPager
+import cam.su.kernel.ui.component.bottombar.BottomBarDestination
 import cam.su.kernel.ui.screen.settings.SettingPager
 import cam.su.kernel.ui.screen.sulog.SulogScreen
 import cam.su.kernel.ui.screen.superuser.SuperUserPager
@@ -442,6 +444,8 @@ fun MainScreen(
     val barBackdrop: Backdrop = if (barBackground != null) rememberCombinedBackdrop(barBackground, backdrop) else backdrop
 
     val settledPage = mainPagerState.pagerState.settledPage
+    // The Files tab uses sideways swipes to switch its panels; leave it through the bar.
+    val pagerSwipe = userScrollEnabled && settledPage != BottomBarDestination.Files.ordinal
     LaunchedEffect(settledPage) {
         onPageChanged(settledPage)
     }
@@ -483,13 +487,13 @@ fun MainScreen(
                         .pagerGestureOverride(
                             pagerState = mainPagerState.pagerState,
                             mode = pagerMode,
-                            enabled = userScrollEnabled,
+                            enabled = pagerSwipe,
                         )
                         .then(if (enableFloatingBottomBar && enableFloatingBottomBarBlur) Modifier.layerBackdrop(backdrop) else Modifier),
                     state = mainPagerState.pagerState,
                     beyondViewportPageCount = if (contentReady) MainPagerConfig.LAST_PAGE_INDEX else 0,
                     overscrollEffect = null,
-                    userScrollEnabled = userScrollEnabled && !interceptPagerGestures,
+                    userScrollEnabled = pagerSwipe && !interceptPagerGestures,
                     pageNestedScrollConnection = if (interceptPagerGestures) {
                         PagerGestureNestedScrollConnection
                     } else {
@@ -509,7 +513,8 @@ fun MainScreen(
                         1 -> if (contentReady || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
                         2 -> if (contentReady || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
                         3 -> if (contentReady || isCurrentPage) FeaturesPager(bottomInnerPadding, isCurrentPage)
-                        4 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
+                        4 -> if (contentReady || isCurrentPage) FilesPager(bottomInnerPadding, isCurrentPage)
+                        5 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
                     }
                 }
             }

@@ -20,6 +20,15 @@ class WirelessAdbTest {
     }
 
     @Test
+    fun bootCleanupOnlyAfterARealReboot() {
+        // BOOT_COMPLETED after a force stop: the port is still set, adbd still runs
+        assertFalse(WirelessAdb.bootCleanupNeeded(WirelessAdbStatus(port = 5555, running = true, adbEnabled = true)))
+        // a real reboot drops the port property
+        assertTrue(WirelessAdb.bootCleanupNeeded(WirelessAdbStatus(port = null, running = true, adbEnabled = true)))
+        assertTrue(WirelessAdb.bootCleanupNeeded(WirelessAdbStatus.Off))
+    }
+
+    @Test
     fun onWhenAdbdRunsOnAPort() {
         val status = WirelessAdbStatus.parse(listOf("5555", "running", "1"))
         assertEquals(5555, status.port)

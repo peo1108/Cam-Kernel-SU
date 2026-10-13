@@ -53,11 +53,15 @@ object WirelessAdb {
     val TIMEOUTS = listOf(0, 15, 30, 60, 120)
 
     internal const val WORK_NAME = "cam-wireless-adb-off"
+
+    /** The boot clean-up; its own name, so queueing it never replaces the auto off timer. */
+    internal const val BOOT_WORK_NAME = "cam-wireless-adb-boot"
     private const val PREFS = "wireless_adb"
     private const val KEY_ENABLED_ADB = "enabledAdb"
     private const val KEY_TIMEOUT = "timeoutMinutes"
     private const val KEY_ENABLED_AT = "enabledAt"
     internal const val INPUT_REQUESTED_AT = "requestedAt"
+    internal const val INPUT_BOOT = "boot"
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -78,9 +82,17 @@ object WirelessAdb {
      */
     fun isStale(requestedAt: Long, enabledAt: Long): Boolean = requestedAt <= 0 || enabledAt > requestedAt
 
-    internal fun offRequest(): androidx.work.OneTimeWorkRequest.Builder =
+    /**
+     * Whether the boot clean-up has anything to undo. Android 15+ also sends BOOT_COMPLETED to an
+     * app the next time it starts after a force stop (an update, an `adb install`, Settings), with
+     * no reboot at all: then the TCP port, which never survives a reboot, is still set and adbd
+     * still runs, and the session must be left alone.
+     */
+    fun bootCleanupNeeded(status: WirelessAdbStatus): Boolean = !status.on
+
+    internal fun offRequest(boot: Boolean = false): androidx.work.OneTimeWorkRequest.Builder =
         OneTimeWorkRequestBuilder<WirelessAdbOffWorker>()
-            .setInputData(androidx.work.workDataOf(INPUT_REQUESTED_AT to System.currentTimeMillis()))
+            .setInputData(androidx.work.workDataOf(INPUT_REQUESTED_AT to System.currentTimeMillis(), INPUT_BOOT to boot))
 
     /** Blocking (root shell). */
     fun status(): WirelessAdbStatus {
@@ -167,11 +179,21 @@ object WirelessAdb {
         ?.hostAddress
 }
 
-/** Turns wireless ADB off when its time is up. */
+/** Turns wireless ADB off when its time is up, and cleans up after a reboot. */
 class WirelessAdbOffWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val requestedAt = inputData.getLong(WirelessAdb.INPUT_REQUESTED_AT, 0)
         if (WirelessAdb.isStale(requestedAt, WirelessAdb.enabledAt(applicationContext))) return Result.success()
+        if (inputData.getBoolean(WirelessAdb.INPUT_BOOT, false)) {
+            // BOOT_COMPLETED after a force stop, no reboot: the session and its timer stay
+            if (!WirelessAdb.bootCleanupNeeded(WirelessAdb.status())) return Result.success()
+            // A real reboot: a timer left from before it has nothing to turn off any more, and
+            // must not end a session started since. USB debugging this turned on goes back off.
+            if (!WirelessAdb.enabledAdb(applicationContext)) {
+                WorkManager.getInstance(applicationContext).cancelUniqueWork(WirelessAdb.WORK_NAME)
+                return Result.success()
+            }
+        }
         WirelessAdb.disable(applicationContext)
         return Result.success()
     }
@@ -179,21 +201,16 @@ class WirelessAdbOffWorker(context: Context, params: WorkerParameters) : Corouti
 
 /**
  * The port does not survive a reboot, but USB debugging this turned on does: put it back off.
- * A timer left from before the reboot is dropped, so it cannot turn off ADB started since.
+ * Android 15+ also delivers BOOT_COMPLETED after a force stop; the worker tells the two apart.
  */
 class WirelessAdbBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != Intent.ACTION_BOOT_COMPLETED) return
-        val work = WorkManager.getInstance(context)
-        if (!WirelessAdb.enabledAdb(context)) {
-            work.cancelUniqueWork(WirelessAdb.WORK_NAME)
-            return
-        }
-        // root shell work off the main thread
-        work.enqueueUniqueWork(
-            WirelessAdb.WORK_NAME,
+        // root shell work off the main thread, queued apart from the auto off timer
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            WirelessAdb.BOOT_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
-            WirelessAdb.offRequest().build(),
+            WirelessAdb.offRequest(boot = true).build(),
         )
     }
 }

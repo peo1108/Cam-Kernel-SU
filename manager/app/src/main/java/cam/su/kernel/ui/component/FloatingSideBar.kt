@@ -83,8 +83,8 @@ import kotlin.math.sign
 internal val SIDE_BAR_WIDTH = 64.dp
 private val INSET = 4.dp
 
-/** The drop: 56 dp across like the bottom bar's, as tall as one of its tabs is wide. */
-private val TAB_HEIGHT = 76.dp
+/** The drop: 56 dp across like the bottom bar's, a little taller than wide. */
+private val TAB_HEIGHT = 68.dp
 
 val LocalFloatingSideBarTabScale = staticCompositionLocalOf { { 1f } }
 

@@ -862,4 +862,17 @@
     <string name="files_tap_to_copy">Chạm vào một giá trị để sao chép</string>
     <string name="hex_go_to">Đi tới offset</string>
     <string name="hex_offset_hint">Offset (0x1A2B hoặc 6699)</string>
+    <string name="files_override">Ghi đè systemless</string>
+    <string name="files_override_active">Tệp này đang có bản ghi đè trong module.</string>
+    <string name="files_override_none">Chưa có bản ghi đè; phân vùng gốc không bao giờ bị ghi.</string>
+    <string name="files_override_no_metamodule">Chưa cài metamodule nên module không được mount, ghi đè sẽ không có tác dụng. Hãy cài một metamodule trước.</string>
+    <string name="files_override_edit">Sửa bản sao trong module</string>
+    <string name="files_override_replace">Thay bằng %1$s</string>
+    <string name="files_override_remove">Gỡ bản ghi đè</string>
+    <string name="files_override_reboot">Có hiệu lực sau khi khởi động lại. Module: cam_file_override.</string>
+    <string name="files_drawer_tools">Công cụ</string>
+    <string name="files_view_as_app">Xem như ứng dụng</string>
+    <string name="files_view_as_app_summary">Xem tệp đúng như một ứng dụng đang chạy nhìn thấy (mount namespace của nó)</string>
+    <string name="files_viewing_as">Đang xem như: %1$s</string>
+    <string name="files_op_channel">Thao tác tệp</string>
 </resources>

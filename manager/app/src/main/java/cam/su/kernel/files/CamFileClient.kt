@@ -67,6 +67,14 @@ object CamFileClient {
 
     suspend fun cancelSearch() = call { it.cancelSearch() }
 
+    /** Running app processes: (pid, uid, process name). */
+    suspend fun appProcesses(): List<Triple<Int, Int, String>> = call { s ->
+        s.appProcesses().mapNotNull { line ->
+            val parts = line.split('\t')
+            if (parts.size < 3) null else Triple(parts[0].toInt(), parts[1].toInt(), parts[2])
+        }.sortedBy { it.third }
+    }
+
     suspend fun measure(path: String): LongArray = call { it.measure(path) }
 
     suspend fun mkdir(path: String) = call { it.mkdir(path) }

@@ -108,6 +108,12 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- keeps a long copy / move / extract from the Files tab running with the app in the background -->
+        <service
+            android:name=".files.FileOpService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <receiver
             android:name=".jailbreak.CamBootReceiver"
             android:directBootAware="true"

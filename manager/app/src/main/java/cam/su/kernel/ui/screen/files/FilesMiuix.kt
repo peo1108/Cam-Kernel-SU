@@ -94,6 +94,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
+import cam.su.kernel.files.AppView
 import cam.su.kernel.files.Archives
 import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.FileEntry
@@ -203,7 +204,7 @@ fun FilesPagerMiuix(
                         .fillMaxSize()
                         .padding(top = innerPadding.calculateTopPadding(), bottom = bottomInnerPadding),
                 ) {
-                    HeaderStats(state.activePanel)
+                    HeaderStats(state.activePanel, state.appNames)
                     if (!wide) PanelSwitcher(state, vm)
                     Row(modifier = Modifier.weight(1f)) {
                         val shown = if (wide) listOf(0, 1) else listOf(state.active)
@@ -240,8 +241,11 @@ fun FilesPagerMiuix(
 }
 
 @Composable
-private fun HeaderStats(panel: PanelUi) {
+private fun HeaderStats(panel: PanelUi, appNames: Map<Int, String>) {
     val parts = buildList {
+        AppView.parse(panel.nav.path)?.let { (pid, _) ->
+            add(stringResource(R.string.files_viewing_as, appNames[pid] ?: "pid $pid"))
+        }
         add(stringResource(R.string.files_header_counts, panel.folders, panel.files))
         if (panel.selection.isNotEmpty()) add(stringResource(R.string.files_header_selected, panel.selection.size))
         panel.disk?.let { disk ->
@@ -643,7 +647,9 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 .fillMaxHeight()
                 .width(300.dp)
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start))
-                .padding(8.dp),
+                .padding(8.dp)
+                // the glass alone samples a busy file list under it; keep the drawer readable
+                .background(colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(24.dp)),
             insideMargin = PaddingValues(vertical = 8.dp),
         ) {
             val go = { path: String ->
@@ -657,6 +663,13 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 item {
                     DrawerItem(Icons.Rounded.Home, stringResource(R.string.files_drawer_home), null, onClick = {
                         vm.goHome()
+                        onClose()
+                    })
+                }
+                item { DrawerSection(stringResource(R.string.files_drawer_tools)) }
+                item {
+                    DrawerItem(Icons.Rounded.Apps, stringResource(R.string.files_view_as_app), stringResource(R.string.files_view_as_app_summary), onClick = {
+                        vm.chooseApp()
                         onClose()
                     })
                 }

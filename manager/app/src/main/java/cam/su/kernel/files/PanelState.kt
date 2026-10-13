@@ -234,3 +234,39 @@ object SearchPattern {
         return Regex("^$body$", RegexOption.IGNORE_CASE)
     }
 }
+
+/**
+ * Systemless overrides: a file under a read-only partition is replaced by a copy in one shared
+ * module, the way modules replace files (`/vendor/x` lives at `system/vendor/x` in a module).
+ * Modules are only mounted by a metamodule, so nothing happens without one.
+ */
+object Systemless {
+    const val MODULE = "/data/adb/modules/cam_file_override"
+    const val METAMODULE_LINK = "/data/adb/metamodule"
+    private val ROOTS = listOf("/system", "/vendor", "/product", "/system_ext", "/odm")
+
+    val MODULE_PROP = """
+        id=cam_file_override
+        name=Cam file overrides
+        version=1
+        versionCode=1
+        author=Cam Kernel SU
+        description=Files replaced from the Files tab (systemless).
+    """.trimIndent() + "\n"
+
+    fun canOverride(path: String) = ROOTS.any { path.startsWith("$it/") }
+
+    fun target(path: String): String =
+        "$MODULE/system" + if (path.startsWith("/system/")) path.removePrefix("/system") else path
+}
+
+/** "Browse as an app": its mount namespace seen through /proc/<pid>/root. */
+object AppView {
+    private val PREFIX = Regex("""^/proc/(\d+)/root(/.*)?$""")
+
+    fun root(pid: Int) = "/proc/$pid/root"
+
+    /** (pid, path inside the app's view) when [path] goes through an app's root. */
+    fun parse(path: String): Pair<Int, String>? =
+        PREFIX.find(path)?.let { it.groupValues[1].toInt() to it.groupValues[2].ifEmpty { "/" } }
+}

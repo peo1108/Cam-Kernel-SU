@@ -877,4 +877,17 @@
     <string name="files_tap_to_copy">Tap a value to copy it</string>
     <string name="hex_go_to">Go to offset</string>
     <string name="hex_offset_hint">Offset (0x1A2B or 6699)</string>
+    <string name="files_override">Systemless override</string>
+    <string name="files_override_active">An override for this file is in the module.</string>
+    <string name="files_override_none">No override yet; the partition itself is never written.</string>
+    <string name="files_override_no_metamodule">No metamodule is installed, so modules are not mounted and an override would do nothing. Install a metamodule first.</string>
+    <string name="files_override_edit">Edit a copy in the module</string>
+    <string name="files_override_replace">Replace with %1$s</string>
+    <string name="files_override_remove">Remove the override</string>
+    <string name="files_override_reboot">Takes effect after a reboot. Module: cam_file_override.</string>
+    <string name="files_drawer_tools">Tools</string>
+    <string name="files_view_as_app">Browse as an app</string>
+    <string name="files_view_as_app_summary">See files the way a running app sees them (its mount namespace)</string>
+    <string name="files_viewing_as">Viewing as: %1$s</string>
+    <string name="files_op_channel">File operations</string>
 </resources>

@@ -124,4 +124,24 @@ class PanelStateTest {
         assertEquals("", FileKinds.extension(".hidden"))
         assertEquals("", FileKinds.extension("trailing."))
     }
+
+    @Test
+    fun systemlessTargets() {
+        assertTrue(Systemless.canOverride("/system/etc/hosts"))
+        assertTrue(Systemless.canOverride("/vendor/etc/thermal.conf"))
+        assertTrue(!Systemless.canOverride("/data/adb/x") && !Systemless.canOverride("/system"))
+        assertEquals("/data/adb/modules/cam_file_override/system/etc/hosts", Systemless.target("/system/etc/hosts"))
+        assertEquals("/data/adb/modules/cam_file_override/system/vendor/etc/a.conf", Systemless.target("/vendor/etc/a.conf"))
+        assertTrue(Systemless.MODULE_PROP.lines().first() == "id=cam_file_override")
+        assertTrue(Systemless.MODULE_PROP.endsWith("\n"))
+    }
+
+    @Test
+    fun appViewPaths() {
+        assertEquals(1234 to "/", AppView.parse("/proc/1234/root"))
+        assertEquals(1234 to "/data/data", AppView.parse("/proc/1234/root/data/data"))
+        assertNull(AppView.parse("/proc/1234/status"))
+        assertNull(AppView.parse("/data/proc/1/root"))
+        assertEquals("/proc/7/root", AppView.root(7))
+    }
 }

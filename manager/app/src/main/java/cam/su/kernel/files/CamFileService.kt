@@ -68,6 +68,17 @@ class CamFileService : RootService() {
 
         override fun cancelSearch() = searchCancelled.set(true)
 
+        override fun appProcesses(): Array<String> = call {
+            File("/proc").listFiles { f -> f.name.all(Char::isDigit) }.orEmpty().mapNotNull { dir ->
+                runCatching {
+                    val uid = android.system.Os.stat(dir.path).st_uid
+                    if (uid % 100_000 < 10_000) return@runCatching null
+                    val name = File(dir, "cmdline").readBytes().takeWhile { it != 0.toByte() }.toByteArray().decodeToString()
+                    if (name.isEmpty()) null else "${dir.name}\t$uid\t$name"
+                }.getOrNull()
+            }.toTypedArray()
+        }
+
         override fun listArchive(archive: String, inner: String): ParcelableListSlice<FileEntry> = call {
             Archives.open(File(FsPath.normalize(archive))).use { ParcelableListSlice(Archives.list(it, archive, inner)) }
         }

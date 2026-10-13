@@ -27,6 +27,8 @@ interface ICamFileService {
     // name pattern (* ? wildcards) and optional content; stops at limit or cancelSearch()
     ParcelableListSlice<FileEntry> search(String root, String pattern, String content, int limit);
     void cancelSearch();
+    // running app processes as "pid\tuid\tname" (uid >= 10000), for browsing as an app sees
+    String[] appProcesses();
 
     // [total, available] bytes of the file system holding path
     long[] statFs(String path);

@@ -5,11 +5,15 @@ import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cam.su.kernel.camApp
+import cam.su.kernel.files.AppView
 import cam.su.kernel.files.Archives
+import cam.su.kernel.files.Systemless
 import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.ConflictChoice
 import cam.su.kernel.files.FileEntry
 import cam.su.kernel.files.FileOp
+import cam.su.kernel.files.FileOpProgress
+import cam.su.kernel.files.FileOpService
 import cam.su.kernel.files.FileSort
 import cam.su.kernel.files.FsException
 import cam.su.kernel.files.FsPath
@@ -67,6 +71,16 @@ data class ApkInfoUi(
     val icon: android.graphics.drawable.Drawable?,
 )
 
+/** The systemless override dialog for one system file. */
+data class OverrideUi(
+    val entry: FileEntry,
+    val target: String,
+    val exists: Boolean,
+    val metamodule: Boolean,
+    /** a file with the same name in the other panel, offered as the replacement */
+    val replacement: FileEntry?,
+)
+
 data class SearchUi(val root: String, val running: Boolean = true, val results: List<FileEntry> = emptyList())
 
 /** The Properties dialog: [measure] fills in after the tree was walked. */
@@ -102,6 +116,11 @@ data class FilesUiState(
     val checksum: ChecksumUi? = null,
     val apkInfo: ApkInfoUi? = null,
     val search: SearchUi? = null,
+    val override: OverrideUi? = null,
+    /** running apps offered by "Browse as an app": (pid, uid, process) */
+    val processes: List<Triple<Int, Int, String>>? = null,
+    /** pid → process name of the apps browsed as */
+    val appNames: Map<Int, String> = emptyMap(),
 ) {
     val activePanel get() = panels[active]
     val otherPanel get() = panels[1 - active]
@@ -432,6 +451,101 @@ class FilesViewModel : ViewModel() {
         navigateActive(FsPath.parent(entry.path))
     }
 
+    // --- systemless overrides (needs a metamodule to mount modules) ---
+
+    fun showOverride(entry: FileEntry) {
+        viewModelScope.launch {
+            try {
+                val target = Systemless.target(entry.path)
+                val other = _uiState.value.otherPanel.entries.firstOrNull { it.name == entry.name && !it.isDir && it.path != entry.path }
+                val ui = OverrideUi(
+                    entry = entry,
+                    target = target,
+                    exists = CamFileClient.stat(target) != null,
+                    metamodule = CamFileClient.stat(Systemless.METAMODULE_LINK) != null,
+                    replacement = other,
+                )
+                _uiState.update { it.copy(override = ui) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+        }
+    }
+
+    fun hideOverride() = _uiState.update { it.copy(override = null) }
+
+    /** Copies the system file into the module (once) and opens the copy in the editor. */
+    fun overrideEdit() {
+        val o = _uiState.value.override ?: return
+        hideOverride()
+        viewModelScope.launch {
+            try {
+                prepareOverride(o.target)
+                if (o.exists) {
+                    events.send(FilesEvent.Edit(o.target))
+                } else {
+                    runOp(FileOp(OpKind.COPY, listOf(o.entry.path), FsPath.parent(o.target))) {
+                        viewModelScope.launch { events.send(FilesEvent.Edit(o.target)) }
+                    }
+                }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+        }
+    }
+
+    /** Puts the same-named file from the other panel in place of the system one. */
+    fun overrideReplace() {
+        val o = _uiState.value.override ?: return
+        val replacement = o.replacement ?: return
+        hideOverride()
+        viewModelScope.launch {
+            try {
+                prepareOverride(o.target)
+                runOp(FileOp(OpKind.COPY, listOf(replacement.path), FsPath.parent(o.target), preserve = false))
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+        }
+    }
+
+    fun overrideRemove() {
+        val o = _uiState.value.override ?: return
+        hideOverride()
+        runOp(FileOp(OpKind.DELETE, listOf(o.target)))
+    }
+
+    private suspend fun prepareOverride(target: String) {
+        mkdirs(FsPath.parent(target))
+        val prop = FsPath.child(Systemless.MODULE, "module.prop")
+        if (CamFileClient.stat(prop) == null) CamFileClient.write(prop) { it.write(Systemless.MODULE_PROP.toByteArray()) }
+    }
+
+    private suspend fun mkdirs(path: String) {
+        if (path == "/" || CamFileClient.stat(path) != null) return
+        mkdirs(FsPath.parent(path))
+        CamFileClient.mkdir(path)
+    }
+
+    // --- browse as an app (/proc/<pid>/root) ---
+
+    fun chooseApp() {
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(processes = CamFileClient.appProcesses()) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+        }
+    }
+
+    fun hideProcesses() = _uiState.update { it.copy(processes = null) }
+
+    fun viewAsApp(pid: Int, name: String) {
+        _uiState.update { it.copy(processes = null, appNames = it.appNames + (pid to name)) }
+        navigateActive(AppView.root(pid))
+    }
+
     fun hideProperties() = _uiState.update { it.copy(properties = null) }
 
     private suspend fun reloadProperties(path: String) {
@@ -518,27 +632,38 @@ class FilesViewModel : ViewModel() {
         viewModelScope.launch { runCatching { handle.resolve(choice, applyAll) } }
     }
 
-    private fun runOp(op: FileOp) {
+    /** [then] runs after the operation finished without error. */
+    private fun runOp(op: FileOp, then: (() -> Unit)? = null) {
         if (_uiState.value.op != null) return
         _uiState.update { it.copy(op = OpUi(op.kind)) }
+        // a foreground service keeps the app, and the root process running the job, alive
+        FileOpProgress.update(FileOpProgress.State(op.kind, 0, 0, ""))
+        FileOpProgress.onCancel = { cancelOp() }
+        FileOpService.start(camApp)
         viewModelScope.launch {
             val handle = try {
                 CamFileClient.startOp(op)
             } catch (e: FsException) {
+                FileOpProgress.update(null)
                 _uiState.update { it.copy(op = null, message = FilesMessage.Failed(e.errno, e.message)) }
                 return@launch
             }
             opHandle = handle
             handle.events.collect { event ->
                 when (event) {
-                    is CamFileClient.OpEvent.Progress -> _uiState.update {
-                        it.copy(op = it.op?.copy(done = event.done, total = event.total, current = event.current))
+                    is CamFileClient.OpEvent.Progress -> {
+                        FileOpProgress.update(FileOpProgress.State(op.kind, event.done, event.total, event.current))
+                        _uiState.update {
+                            it.copy(op = it.op?.copy(done = event.done, total = event.total, current = event.current))
+                        }
                     }
 
                     is CamFileClient.OpEvent.Conflict -> _uiState.update { it.copy(op = it.op?.copy(conflict = event)) }
 
                     is CamFileClient.OpEvent.Done -> {
                         opHandle = null
+                        FileOpProgress.onCancel = null
+                        FileOpProgress.update(null)
                         val message = when {
                             event.ok -> FilesMessage.Finished(op.kind, event.items, event.skipped)
                             event.cancelled -> FilesMessage.Cancelled
@@ -552,6 +677,7 @@ class FilesViewModel : ViewModel() {
                             )
                         }
                         refresh()
+                        if (event.ok) then?.invoke()
                     }
                 }
             }

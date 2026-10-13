@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.InstallMobile
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Unarchive
@@ -70,6 +71,7 @@ import cam.su.kernel.files.FileMode
 import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.OpKind
 import cam.su.kernel.files.SortBy
+import cam.su.kernel.files.Systemless
 import cam.su.kernel.ui.component.glass.GlassDialog
 import cam.su.kernel.ui.component.glass.LocalGlassOverlayBackdrop
 import cam.su.kernel.ui.viewmodel.FilesUiState
@@ -232,6 +234,8 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
     // Miuix overlay dialogs keep the content lambda they were shown with, so these read the
     // live state inside it rather than values captured here.
     if (state.checksum != null) ChecksumDialog(vm)
+    if (state.override != null) OverrideDialog(vm)
+    if (state.processes != null) ProcessDialog(vm)
     if (state.apkInfo != null) ApkInfoDialog(vm)
 
     FilesDialog(show = state.busy, title = null, onDismiss = null) {
@@ -354,6 +358,14 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                     GridCell(Icons.Rounded.InstallMobile, stringResource(R.string.files_install), onClick = {
                         close()
                         vm.install(entry)
+                    }),
+                )
+            }
+            if (single && !inArchive && !entry.isDir && Systemless.canOverride(entry.path)) {
+                add(
+                    GridCell(Icons.Rounded.Layers, stringResource(R.string.files_override), onClick = {
+                        close()
+                        vm.showOverride(entry)
                     }),
                 )
             }
@@ -502,6 +514,60 @@ private fun ChecksumDialog(vm: FilesViewModel) {
             Text(stringResource(R.string.files_tap_to_copy), fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary)
         }
         TextButton(text = stringResource(R.string.files_close), onClick = vm::hideChecksum, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+    }
+}
+
+/** Systemless override of one system file through the cam_file_override module. */
+@Composable
+private fun OverrideDialog(vm: FilesViewModel) {
+    FilesDialog(show = true, title = stringResource(R.string.files_override), onDismiss = vm::hideOverride) {
+        val live by vm.uiState.collectAsState()
+        val o = live.override ?: return@FilesDialog
+        Text(o.entry.path, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.MiddleEllipsis)
+        Text(
+            stringResource(if (o.exists) R.string.files_override_active else R.string.files_override_none),
+            fontSize = 12.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        if (!o.metamodule) {
+            Text(stringResource(R.string.files_override_no_metamodule), fontSize = 13.sp, color = colorScheme.error, modifier = Modifier.padding(top = 10.dp))
+        } else {
+            Spacer(Modifier.height(6.dp))
+            ListAction(stringResource(R.string.files_override_edit), onClick = vm::overrideEdit)
+            o.replacement?.let { r ->
+                ListAction(stringResource(R.string.files_override_replace, r.path), onClick = vm::overrideReplace)
+            }
+            if (o.exists) ListAction(stringResource(R.string.files_override_remove), onClick = vm::overrideRemove)
+            Text(stringResource(R.string.files_override_reboot), fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary, modifier = Modifier.padding(top = 6.dp))
+        }
+        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideOverride, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+    }
+}
+
+/** "Browse as an app": pick a running app process. */
+@Composable
+private fun ProcessDialog(vm: FilesViewModel) {
+    FilesDialog(show = true, title = stringResource(R.string.files_view_as_app), onDismiss = vm::hideProcesses) {
+        val live by vm.uiState.collectAsState()
+        val processes = live.processes ?: return@FilesDialog
+        Text(stringResource(R.string.files_view_as_app_summary), fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary)
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 420.dp).padding(top = 8.dp)) {
+            items(processes.size) { i ->
+                val (pid, uid, name) = processes[i]
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { vm.viewAsApp(pid, name) }
+                        .padding(vertical = 6.dp),
+                ) {
+                    Text(name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("pid $pid · uid $uid", fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary)
+                }
+            }
+        }
+        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideProcesses, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
     }
 }
 

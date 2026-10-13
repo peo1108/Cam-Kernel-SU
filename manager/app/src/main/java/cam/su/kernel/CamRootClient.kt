@@ -79,7 +79,10 @@ object CamRootClient {
             }
             val intent = Intent(camApp, CamRootService::class.java)
             val task = RootService.bindOrTask(intent, Shell.EXECUTOR, connection)
-            task?.let { CamCli.SHELL.execTask(it) }
+            // Started from the global mount namespace shell: libsu runs every RootService of
+            // the app in one root process, and the Files tab must see what init sees, not the
+            // app's own view (app data isolation hides other apps under /data/data).
+            task?.let { CamCli.GLOBAL_MNT_SHELL.execTask(it) }
         }
     }
 }

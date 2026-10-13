@@ -48,6 +48,11 @@ class ArchivesTest {
         assertEquals("/sd", Archives.parent("/sd/a.zip!/"))
         assertEquals("/sd", PanelNav("/sd/a.zip!/").parent)
         assertNull(PanelNav("/").parent)
+        // "!/" only splits after an archive name: a folder may be called "Wow!"
+        assertFalse(Archives.isInside("/sdcard/Wow!/x"))
+        assertEquals("/sdcard/Wow!", PanelNav("/sdcard/Wow!/x").parent)
+        assertEquals("/sd/Wow!/a.zip" to "f", Archives.split("/sd/Wow!/a.zip!/f"))
+        assertEquals("/sd/Wow!", PanelNav("/sd/Wow!/a.zip!/").parent)
     }
 
     @Test

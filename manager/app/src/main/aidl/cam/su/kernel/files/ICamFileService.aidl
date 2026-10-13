@@ -17,7 +17,8 @@ interface ICamFileService {
     ParcelableListSlice<FileEntry> listArchive(String archive, String inner);
     // one file inside an archive, as openRead
     ParcelFileDescriptor openArchiveEntry(String archive, String inner);
-    // zip archives edited in place (rewritten through a temp file); tar is read-only
+    // zip archives edited in place (rewritten through a temp file); tar is read-only.
+    // Rename and mkdir fail with EEXIST when the name is taken.
     void archiveRename(String archive, String from, String to);
     void archiveMkdir(String archive, String inner);
     // replaces (or adds) the file at inner with what source carries, read to EOF
@@ -65,4 +66,7 @@ interface ICamFileService {
     void cancelOp(int id);
     // choice: ConflictChoice ordinal (OVERWRITE, SKIP, RENAME)
     void resolveConflict(int id, int choice, boolean applyAll);
+
+    // stops the measure and checksums calls running now (their dialog was closed)
+    void cancelReads();
 }

@@ -737,6 +737,11 @@
     <string name="files_error_nospc">Hết dung lượng</string>
     <string name="files_error_notempty">Thư mục không trống</string>
     <string name="files_error_other">Lỗi (errno %1$d)</string>
+    <string name="files_error_io">Lỗi đọc hoặc ghi</string>
+    <string name="files_error_fbig">Tệp quá lớn</string>
+    <string name="files_error_xdev">Khác phân vùng</string>
+    <string name="files_error_xdev_hint">Không đổi tên sang phân vùng khác được: nhập một thư mục làm đích để di chuyển vào đó</string>
+    <string name="files_op_busy">Đang có thao tác khác chạy</string>
     <string name="files_header_counts">Thư mục: %1$d  Tệp: %2$d</string>
     <string name="files_header_selected">Đã chọn: %1$d</string>
     <string name="files_header_disk">Ổ: %1$s/%2$s</string>
@@ -840,7 +845,7 @@
     <string name="editor_save">Lưu</string>
     <string name="editor_ro_archive">chỉ đọc: nằm trong tệp nén</string>
     <string name="editor_ro_binary">chỉ đọc: tệp nhị phân</string>
-    <string name="editor_ro_large">chỉ đọc: trên 4 MB</string>
+    <string name="editor_ro_large">chỉ đọc: trên 128 KB</string>
     <string name="editor_lines">%1$d dòng</string>
     <string name="editor_find">Tìm</string>
     <string name="editor_replace_with">Thay bằng</string>

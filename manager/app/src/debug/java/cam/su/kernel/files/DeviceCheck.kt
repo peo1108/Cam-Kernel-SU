@@ -127,6 +127,75 @@ object DeviceCheck {
                 File("$base/dst").list()!!.none { it == "big.bin" || it.endsWith(RootFs.TMP_SUFFIX) }
             }
         }
+        check("fifos and devices are refused at once, never waited on") {
+            sh("mkfifo $base/fifo")
+            val t0 = System.nanoTime()
+            val refused = listOf("$base/fifo", "/dev/zero").all { p ->
+                try {
+                    fs.openRead(p)
+                    false
+                } catch (e: FsException) {
+                    e.errno == Errno.EINVAL
+                }
+            }
+            // O_NONBLOCK: even opened directly, a fifo with no writer ends instead of hanging
+            val ends = OsBackend.openRead("$base/fifo").use { it.read() } == -1
+            refused && ends && System.nanoTime() - t0 < 2_000_000_000L
+        }
+        check("hex read at a big offset seeks") {
+            val t0 = System.nanoTime()
+            val bytes = fs.readRange("$base/big.bin", 60L * 1024 * 1024, 16)
+            val ms = (System.nanoTime() - t0) / 1_000_000
+            println("     16 bytes at 60 MB in $ms ms")
+            bytes.size == 16 && ms < 200
+        }
+        check("zip edit streams a big stored entry and refuses a taken name") {
+            val zip = "$base/edit.zip"
+            val big = File("$base/big.bin")
+            val crc = java.util.zip.CRC32()
+            big.inputStream().use { input ->
+                val buffer = ByteArray(1 shl 20)
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    crc.update(buffer, 0, n)
+                }
+            }
+            java.util.zip.ZipOutputStream(java.io.FileOutputStream(zip)).use { out ->
+                out.putNextEntry(
+                    java.util.zip.ZipEntry("lib/big.so").apply {
+                        method = java.util.zip.ZipEntry.STORED
+                        size = big.length()
+                        compressedSize = big.length()
+                        this.crc = crc.value
+                    },
+                )
+                big.inputStream().use { it.copyTo(out, 1 shl 20) }
+                out.closeEntry()
+                out.putNextEntry(java.util.zip.ZipEntry("a.txt"))
+                out.write("a".toByteArray())
+                out.closeEntry()
+            }
+            val t0 = System.nanoTime()
+            ZipEditor(OsBackend).apply(zip, ZipEditor.Edits(renames = mapOf("a.txt" to "b.txt")))
+            println("     64 MB zip rewritten in ${(System.nanoTime() - t0) / 1_000_000} ms")
+            val names = java.util.zip.ZipFile(zip).use { z -> z.entries().asSequence().map { it.name to it.method }.toList() }
+            val taken = try {
+                ZipEditor(OsBackend).apply(zip, ZipEditor.Edits(renames = mapOf("b.txt" to "lib/big.so")))
+                false
+            } catch (e: FsException) {
+                e.errno == Errno.EEXIST
+            }
+            names == listOf("lib/big.so" to java.util.zip.ZipEntry.STORED, "b.txt" to java.util.zip.ZipEntry.DEFLATED) && taken &&
+                File(base).list()!!.none { it.endsWith(RootFs.TMP_SUFFIX) }
+        }
+        check("measuring / stops when cancelled") {
+            val t0 = System.nanoTime()
+            val deadline = t0 + 300_000_000L
+            fs.measure("/") { System.nanoTime() > deadline }
+            System.nanoTime() - t0 < 1_500_000_000L
+        }
+
         check("delete tree does not follow links") {
             FileOpEngine(OsBackend, quiet).run(FileOp(OpKind.DELETE, listOf("$base/tree")))
             !File("$base/tree").exists() && File("$outside/keep").readText() == "precious\n"

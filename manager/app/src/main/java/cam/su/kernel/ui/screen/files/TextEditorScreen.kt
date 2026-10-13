@@ -26,6 +26,9 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
@@ -68,18 +71,22 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.R
+import cam.su.kernel.files.Archives
 import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.Highlighter
 import cam.su.kernel.files.SpanKind
+import cam.su.kernel.files.TextRows
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassIconButton
 import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.theme.isInDarkTheme
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
@@ -118,11 +125,16 @@ fun TextEditorScreen(path: String) {
 
     val vScroll = rememberScrollState()
     val hScroll = rememberScrollState()
+    val viewerState = rememberLazyListState()
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     var viewport by remember { mutableStateOf(0) }
 
     /** Brings [offset] into view, a third down the screen. */
     fun reveal(offset: Int) {
+        vm.rows?.let { rows ->
+            scope.launch { viewerState.scrollToItem((rows.rowOf(offset) - 3).coerceAtLeast(0)) }
+            return
+        }
         val l = layout ?: return
         val box = l.getCursorRect(offset.coerceIn(0, l.layoutInput.text.length))
         scope.launch {
@@ -203,6 +215,7 @@ fun TextEditorScreen(path: String) {
                 vm.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { InfiniteProgressIndicator() }
                 vm.limit == EditorLimit.TOO_LARGE -> Message(stringResource(R.string.editor_too_large))
                 vm.loadError != null -> Message(errnoText(context, vm.loadError!!))
+                vm.rows != null -> TextViewer(vm, vm.rows!!, fontSize, viewerState)
                 else -> BoxWithConstraints(Modifier.fillMaxSize()) {
                     viewport = with(LocalDensity.current) { maxHeight.roundToPx() }
                     EditorBody(vm, fontSize, wrap, vScroll, hScroll, viewport, onLayout = { layout = it })
@@ -217,9 +230,18 @@ fun TextEditorScreen(path: String) {
             menu = false
             goToLine = true
         }
-        MenuRow(stringResource(if (wrap) R.string.editor_wrap_off else R.string.editor_wrap_on)) {
-            menu = false
-            wrap = !wrap
+        // the row viewer always wraps
+        if (vm.rows == null) {
+            MenuRow(stringResource(if (wrap) R.string.editor_wrap_off else R.string.editor_wrap_on)) {
+                menu = false
+                wrap = !wrap
+            }
+        }
+        if (!Archives.isInside(path)) {
+            MenuRow(stringResource(R.string.files_hex)) {
+                menu = false
+                navigator.push(Route.HexViewer(path))
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
             Text(stringResource(R.string.editor_font_size), modifier = Modifier.weight(1f))
@@ -302,7 +324,7 @@ private fun Message(text: String) {
 @Composable
 private fun StatusLine(vm: TextEditorViewModel) {
     val doc = vm.doc ?: return
-    val lines = vm.value.text.count { it == '\n' } + 1
+    val lines = vm.lineCount
     val reason = when (vm.limit) {
         EditorLimit.ARCHIVE -> stringResource(R.string.editor_ro_archive)
         EditorLimit.BINARY -> stringResource(R.string.editor_ro_binary)
@@ -379,6 +401,61 @@ private class HighlightTransformation(
     }
 }
 
+/**
+ * Big and binary files, read-only: a lazy list of [TextRows], so only the rows on screen are laid
+ * out (a text field lays out the whole text, which takes seconds for megabytes). The current
+ * search match is marked.
+ */
+@Composable
+private fun TextViewer(vm: TextEditorViewModel, rows: TextRows, fontSize: Float, state: LazyListState) {
+    val text = vm.value.text
+    val selection = vm.value.selection
+    val style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = fontSize.sp, lineHeight = (fontSize * 1.45f).sp, color = colorScheme.onSurface)
+    val gutterStyle = style.copy(color = colorScheme.onSurfaceVariantSummary, fontSize = (fontSize - 1).sp, textAlign = TextAlign.End)
+    val mark = colorScheme.primary.copy(alpha = 0.35f)
+    val digits = rows.lineCount.toString().length
+    val measurer = rememberTextMeasurer()
+    val gutterWidth = with(LocalDensity.current) {
+        (measurer.measure("0".repeat(digits), gutterStyle).size.width + 12.dp.toPx()).toDp()
+    }
+    LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 240.dp)) {
+        items(rows.size) { row ->
+            val start = rows.start(row)
+            val end = rows.end(row)
+            val line = rows.line(row)
+            Row {
+                androidx.compose.foundation.text.BasicText(
+                    text = if (line > 0) line.toString() else "",
+                    style = gutterStyle,
+                    modifier = Modifier
+                        .width(gutterWidth)
+                        .background(colorScheme.onSurface.copy(alpha = 0.04f))
+                        .padding(end = 6.dp),
+                )
+                val content = remember(text, start, end, selection, mark) {
+                    val from = selection.min.coerceIn(start, end)
+                    val to = selection.max.coerceIn(start, end)
+                    if (from < to) {
+                        AnnotatedString(
+                            text.substring(start, end),
+                            spanStyles = listOf(AnnotatedString.Range(SpanStyle(background = mark), from - start, to - start)),
+                        )
+                    } else {
+                        AnnotatedString(text.substring(start, end))
+                    }
+                }
+                androidx.compose.foundation.text.BasicText(
+                    text = content,
+                    style = style,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp, end = 12.dp),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun EditorBody(
     vm: TextEditorViewModel,
@@ -394,45 +471,58 @@ private fun EditorBody(
         if (vm.highlight) HighlightTransformation(vm.lang, colors) else VisualTransformation.None
     }
     val style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = fontSize.sp, lineHeight = (fontSize * 1.45f).sp, color = colorScheme.onSurface)
-    val measurer = rememberTextMeasurer()
+    // a screenful of line numbers is measured per frame: keep them all cached
+    val measurer = rememberTextMeasurer(cacheSize = 256)
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val text = vm.value.text
     val lineStarts = remember(text) {
-        buildList {
-            add(0)
-            text.forEachIndexed { i, c -> if (c == '\n') add(i + 1) }
+        var starts = IntArray(256)
+        var n = 0
+        starts[n++] = 0
+        for (i in text.indices) {
+            if (text[i] != '\n') continue
+            if (n == starts.size) starts = starts.copyOf(n * 2)
+            starts[n++] = i + 1
         }
+        starts.copyOf(n)
     }
     val digits = lineStarts.size.toString().length
     val gutterColor = colorScheme.onSurfaceVariantSummary
     val gutterStyle = style.copy(color = gutterColor, fontSize = (fontSize - 1).sp)
     val gutterWidth = with(LocalDensity.current) { (measurer.measure("0".repeat(digits), gutterStyle).size.width + 16.dp.toPx()).toDp() }
 
+    val gutterBackground = colorScheme.onSurface.copy(alpha = 0.04f)
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(vScroll),
-    ) {
-        // Line numbers, drawn only for what is on screen so long files stay smooth.
-        Box(
-            modifier = Modifier
-                .width(gutterWidth)
-                .height(with(LocalDensity.current) { (layout?.size?.height ?: 0).toDp() })
-                .background(colorScheme.onSurface.copy(alpha = 0.04f))
-                .drawBehind {
-                    val l = layout ?: return@drawBehind
-                    val top = vScroll.value
-                    val bottom = top + viewport
-                    for ((index, start) in lineStarts.withIndex()) {
-                        if (start > l.layoutInput.text.length) break
-                        val y = l.getLineTop(l.getLineForOffset(start))
-                        if (y < top - 100) continue
-                        if (y > bottom) break
+            .verticalScroll(vScroll)
+            // Line numbers, drawn only for what is on screen so long files stay smooth. Drawn on
+            // the row rather than in a box as tall as the text: Compose cannot represent a size
+            // over 262143 px, which a few thousand lines reach (it crashed the app).
+            .drawBehind {
+                val gutter = gutterWidth.toPx()
+                drawRect(gutterBackground, size = androidx.compose.ui.geometry.Size(gutter, size.height))
+                val l = layout ?: return@drawBehind
+                val top = vScroll.value
+                val bottom = top + viewport
+                val length = l.layoutInput.text.length
+                // start at the first line on screen instead of walking every line above it
+                val firstShown = l.getLineStart(l.getLineForVerticalPosition((top - 100).coerceAtLeast(0).toFloat()))
+                var index = lineStarts.binarySearch(firstShown).let { if (it >= 0) it else (-it - 2).coerceAtLeast(0) }
+                while (index < lineStarts.size) {
+                    val start = lineStarts[index]
+                    if (start > length) break
+                    val y = l.getLineTop(l.getLineForOffset(start))
+                    if (y > bottom) break
+                    if (y >= top - 100) {
                         val label = measurer.measure((index + 1).toString(), gutterStyle)
-                        drawText(label, topLeft = Offset(size.width - label.size.width - 6.dp.toPx(), y))
+                        drawText(label, topLeft = Offset(gutter - label.size.width - 6.dp.toPx(), y))
                     }
-                },
-        )
+                    index++
+                }
+            },
+    ) {
+        Spacer(Modifier.width(gutterWidth))
         Box(
             modifier = Modifier
                 .weight(1f)

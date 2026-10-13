@@ -50,6 +50,78 @@ data class TextDoc(
     }
 }
 
+/**
+ * Rows of the read-only viewer used for big and binary files: one per line, and a long line cut
+ * every [width] characters, so no row is ever laid out whole when it is megabytes long.
+ */
+class TextRows(private val text: String, width: Int = ROW_WIDTH) {
+    private val starts: IntArray
+
+    /** 1-based line number of each row; 0 for the rest of a cut line. */
+    private val lines: IntArray
+
+    init {
+        require(width > 1)
+        var s = IntArray(256)
+        var l = IntArray(256)
+        var n = 0
+        fun add(start: Int, line: Int) {
+            if (n == s.size) {
+                s = s.copyOf(n * 2)
+                l = l.copyOf(n * 2)
+            }
+            s[n] = start
+            l[n] = line
+            n++
+        }
+        var line = 1
+        var pos = 0
+        while (true) {
+            val nl = text.indexOf('\n', pos).let { if (it < 0) text.length else it }
+            var start = pos
+            add(start, line)
+            while (nl - start > width) {
+                var cut = start + width
+                // never between the two halves of a surrogate pair
+                if (Character.isHighSurrogate(text[cut - 1])) cut--
+                start = cut
+                add(start, 0)
+            }
+            if (nl >= text.length) break
+            pos = nl + 1
+            line++
+        }
+        starts = s.copyOf(n)
+        lines = l.copyOf(n)
+    }
+
+    val size: Int get() = starts.size
+
+    /** Lines in the text (the viewer's status line). */
+    val lineCount: Int get() = lines.last { it > 0 }
+
+    fun start(row: Int) = starts[row]
+
+    /** End of [row], its newline left out. */
+    fun end(row: Int): Int = when {
+        row + 1 >= starts.size -> text.length
+        lines[row + 1] == 0 -> starts[row + 1]
+        else -> starts[row + 1] - 1
+    }
+
+    fun line(row: Int) = lines[row]
+
+    /** The row holding [offset]. */
+    fun rowOf(offset: Int): Int {
+        val i = starts.binarySearch(offset.coerceIn(0, text.length))
+        return if (i >= 0) i else (-i - 2).coerceAtLeast(0)
+    }
+
+    companion object {
+        const val ROW_WIDTH = 2000
+    }
+}
+
 /** One colored run for the editor. */
 data class Span(val start: Int, val end: Int, val kind: SpanKind)
 

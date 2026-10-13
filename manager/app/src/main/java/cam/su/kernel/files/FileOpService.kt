@@ -12,8 +12,10 @@ import androidx.core.app.NotificationCompat
 import cam.su.kernel.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +27,12 @@ object FileOpProgress {
 
     private val _state = MutableStateFlow<State?>(null)
     val state: StateFlow<State?> = _state.asStateFlow()
+
+    /**
+     * Where jobs are followed: not a ViewModel's scope, so a job still ends (its notification
+     * goes away, the root side is told) when the screen that started it is gone.
+     */
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     /** Set by whoever started the job; the notification's Cancel calls it. */
     @Volatile
@@ -42,6 +50,8 @@ object FileOpProgress {
 class FileOpService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var manager: NotificationManager
+    private var follower: Job? = null
+    private var lastStartId = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -54,18 +64,30 @@ class FileOpService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // every start counts, the Cancel action's too: stopSelfResult() wants the latest id
+        lastStartId = startId
         if (intent?.action == ACTION_CANCEL) {
             FileOpProgress.onCancel?.invoke()
+            // a Cancel from a notification the job outlived must not leave a service running
+            if (follower?.isActive != true) stopSelfResult(startId)
             return START_NOT_STICKY
         }
+        // startForegroundService() must always be answered with startForeground(), even when the
+        // job already ended by the time the service runs
         startForeground(NOTIFICATION_ID, build(FileOpProgress.state.value), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        scope.launch {
-            FileOpProgress.state.collect { state ->
-                if (state == null) {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
-                } else {
-                    manager.notify(NOTIFICATION_ID, build(state))
+        if (follower?.isActive != true) {
+            follower = scope.launch {
+                // a StateFlow skips to its latest value while the pause below runs: the
+                // notification shade drops updates sent too often
+                FileOpProgress.state.collect { state ->
+                    if (state == null) {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        // only when no newer job asked for the service meanwhile
+                        if (stopSelfResult(lastStartId)) cancel()
+                    } else {
+                        manager.notify(NOTIFICATION_ID, build(state))
+                        delay(NOTIFY_INTERVAL_MS)
+                    }
                 }
             }
         }
@@ -112,6 +134,7 @@ class FileOpService : Service() {
         private const val CHANNEL_ID = "file_ops"
         private const val NOTIFICATION_ID = 0xF11E
         private const val ACTION_CANCEL = "cam.su.kernel.action.CANCEL_FILE_OP"
+        private const val NOTIFY_INTERVAL_MS = 500L
 
         fun start(context: Context) {
             runCatching { context.startForegroundService(Intent(context, FileOpService::class.java)) }

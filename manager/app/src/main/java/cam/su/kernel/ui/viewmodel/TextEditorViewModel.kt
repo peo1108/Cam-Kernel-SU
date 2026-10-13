@@ -1,6 +1,7 @@
 package cam.su.kernel.ui.viewmodel
 
 import android.os.SystemClock
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,12 +11,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cam.su.kernel.files.Archives
 import cam.su.kernel.files.CamFileClient
+import cam.su.kernel.files.Errno
+import cam.su.kernel.files.FileChanges
 import cam.su.kernel.files.FsException
 import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.Highlighter
 import cam.su.kernel.files.TextDoc
+import cam.su.kernel.files.TextRows
 import cam.su.kernel.files.TextSearch
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Why a file is open read-only (or not at all). */
 enum class EditorLimit { NONE, ARCHIVE, BINARY, LARGE, TOO_LARGE }
@@ -48,8 +54,15 @@ class TextEditorViewModel : ViewModel() {
     var lang by mutableStateOf(Highlighter.Lang.PLAIN)
         private set
 
+    /** Set for big and binary files: shown by the row viewer instead of one text field. */
+    var rows by mutableStateOf<TextRows?>(null)
+        private set
+
     val readOnly get() = limit != EditorLimit.NONE
-    val modified get() = doc != null && value.text != saved
+
+    // derived: read by the title, the back handler and the save button on every frame
+    val modified by derivedStateOf { doc != null && value.text != saved }
+    val lineCount by derivedStateOf { rows?.lineCount ?: (value.text.count { it == '\n' } + 1) }
     val highlight get() = value.text.length <= HIGHLIGHT_LIMIT
 
     private val undo = ArrayDeque<TextFieldValue>()
@@ -65,28 +78,37 @@ class TextEditorViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val inArchive = Archives.isInside(file)
-                val size = if (inArchive) 0L else CamFileClient.stat(file)?.size ?: run {
-                    loadError = cam.su.kernel.files.Errno.ENOENT
-                    return@launch
+                if (!inArchive) {
+                    val entry = CamFileClient.stat(file) ?: run {
+                        loadError = Errno.ENOENT
+                        return@launch
+                    }
+                    // a link's own size is the length of its target's name
+                    if (entry.contentSize > MAX_OPEN) {
+                        limit = EditorLimit.TOO_LARGE
+                        return@launch
+                    }
                 }
-                if (size > MAX_OPEN) {
-                    limit = EditorLimit.TOO_LARGE
-                    return@launch
-                }
-                val bytes = CamFileClient.readBytes(file)
-                val text = TextDoc.decode(bytes)
-                limit = when {
+                // capped as it is read too: an archive entry, or a /proc file that says 0 bytes
+                val bytes = CamFileClient.readBytes(file, MAX_OPEN)
+                val text = withContext(Dispatchers.Default) { TextDoc.decode(bytes) }
+                val readOnlyBecause = when {
                     // zips are edited in place; tar archives are read-only
                     inArchive && !Archives.isZip(Archives.split(file).first) -> EditorLimit.ARCHIVE
                     TextDoc.looksBinary(bytes) -> EditorLimit.BINARY
                     bytes.size > MAX_EDIT -> EditorLimit.LARGE
                     else -> EditorLimit.NONE
                 }
+                // one text field cannot lay out megabytes (or binary with no line breaks) smoothly
+                if (readOnlyBecause == EditorLimit.LARGE || readOnlyBecause == EditorLimit.BINARY) {
+                    rows = withContext(Dispatchers.Default) { TextRows(text.text) }
+                }
+                limit = readOnlyBecause
                 doc = text
                 saved = text.text
                 value = TextFieldValue(text.text)
             } catch (e: FsException) {
-                loadError = e.errno
+                if (e.errno == Errno.EFBIG) limit = EditorLimit.TOO_LARGE else loadError = e.errno
             } finally {
                 loading = false
             }
@@ -165,10 +187,11 @@ class TextEditorViewModel : ViewModel() {
         saving = true
         viewModelScope.launch {
             try {
-                val bytes = current.encode(text)
+                val bytes = withContext(Dispatchers.Default) { current.encode(text) }
                 if (Archives.isInside(path)) CamFileClient.archiveWrite(path, bytes) else CamFileClient.write(path) { it.write(bytes) }
                 saved = text
                 message = EditorMessage.Saved
+                FileChanges.notify(path)
                 then()
             } catch (e: FsException) {
                 message = EditorMessage.Failed(e.errno, e.message)
@@ -179,9 +202,16 @@ class TextEditorViewModel : ViewModel() {
     }
 
     private companion object {
-        const val MAX_OPEN = 16L * 1024 * 1024
-        const val MAX_EDIT = 4 * 1024 * 1024
-        const val HIGHLIGHT_LIMIT = 512 * 1024
+        const val MAX_OPEN = 16 * 1024 * 1024
+
+        /**
+         * Above this a file opens read-only in the row viewer: one text field relayouts the whole
+         * text on every keystroke (900 KB took over a second a frame on a Y700).
+         */
+        const val MAX_EDIT = 128 * 1024
+
+        /** The highlighter runs on every keystroke over the whole text. */
+        const val HIGHLIGHT_LIMIT = 100_000
         const val UNDO_GAP_MS = 700L
         const val UNDO_DEPTH = 200
     }

@@ -17,7 +17,8 @@ object FileSort {
         val byName = Comparator<FileEntry> { a, b -> NaturalOrder.compare(a.name, b.name) }
         val order: Comparator<FileEntry> = when (options.by) {
             SortBy.NAME -> byName
-            SortBy.SIZE -> compareBy<FileEntry> { it.size }.then(byName)
+            // a link sorts by the size it shows: its file's, not the length of the link
+            SortBy.SIZE -> compareBy<FileEntry> { it.contentSize }.then(byName)
             SortBy.TIME -> compareBy<FileEntry> { it.mtime }.then(byName)
             SortBy.TYPE -> compareBy<FileEntry> { extension(it) }.then(byName)
         }
@@ -179,9 +180,11 @@ object FileKinds {
 
     fun of(entry: FileEntry): FileKind {
         if (entry.isDir) return FileKind.FOLDER
+        // devices, fifos, sockets: nothing to open
+        if (entry.type == FileEntry.TYPE_OTHER || entry.isLink && entry.linkBroken) return FileKind.OTHER
         byExtension[extension(entry.name)]?.let { return it }
         // Extensionless files under the usual script/config folders are text.
-        return if (extension(entry.name).isEmpty() && entry.size < 1024 * 1024) FileKind.TEXT else FileKind.OTHER
+        return if (extension(entry.name).isEmpty() && entry.contentSize < 1024 * 1024) FileKind.TEXT else FileKind.OTHER
     }
 
     fun mime(entry: FileEntry): String = when (of(entry)) {

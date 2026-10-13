@@ -20,6 +20,27 @@ class TextDocTest {
     }
 
     @Test
+    fun viewerRowsCutLongLinesAndKeepLineNumbers() {
+        val text = "ab\nxxxxx\n\nend"
+        val rows = TextRows(text, width = 2)
+        val shown = (0 until rows.size).map { rows.line(it) to text.substring(rows.start(it), rows.end(it)) }
+        assertEquals(
+            listOf(1 to "ab", 2 to "xx", 0 to "xx", 0 to "x", 3 to "", 4 to "en", 0 to "d"),
+            shown,
+        )
+        assertEquals(4, rows.lineCount)
+        assertEquals(2, rows.rowOf(6)) // the second "xx"
+        assertEquals(0, rows.rowOf(0))
+        assertEquals(6, rows.rowOf(text.length))
+        // an emoji is never cut in half
+        val emoji = "a😀b"
+        val cut = TextRows(emoji, width = 2)
+        assertEquals(listOf("a", "😀", "b"), (0 until cut.size).map { emoji.substring(cut.start(it), cut.end(it)) })
+        // a text ending with a newline has an empty last line, as editors show it
+        assertEquals(3, TextRows("a\nb\n").lineCount)
+    }
+
+    @Test
     fun lfStaysLf() {
         val doc = TextDoc.decode("x\ny\n".toByteArray())
         assertFalse(doc.crlf || doc.bom)

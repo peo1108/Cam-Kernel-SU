@@ -111,7 +111,47 @@ class ZipEditorTest {
     }
 
     @Test
+    fun renameOntoATakenNameFailsAndKeepsTheArchive() {
+        val before = fake.data("/data/m.zip").copyOf()
+        for (renames in listOf(mapOf("module.prop" to "resources.arsc"), mapOf("resources.arsc" to "module.prop"))) {
+            try {
+                ZipEditor(fake).apply("/data/m.zip", ZipEditor.Edits(renames = renames))
+                fail("expected EEXIST for $renames")
+            } catch (e: FsException) {
+                assertEquals(Errno.EEXIST, e.errno)
+            }
+            assertTrue(before.contentEquals(fake.data("/data/m.zip")))
+        }
+        assertTrue(fake.names("/data").none { it.endsWith(RootFs.TMP_SUFFIX) })
+    }
+
+    @Test
+    fun anEmptyDeleteIsNotTheWholeArchive() {
+        ZipEditor(fake).apply("/data/m.zip", ZipEditor.Edits(deletes = setOf("", "/")))
+        assertEquals(setOf("module.prop", "system/", "system/bin/tool", "resources.arsc"), entries().keys)
+    }
+
+    @Test
+    fun reportsProgressWhileRewriting() {
+        var last = -1L to -1L
+        val listener = object : OpListener {
+            override fun onProgress(done: Long, total: Long, current: String) {
+                last = done to total
+            }
+
+            override fun onConflict(src: String, dst: String, srcIsDir: Boolean, dstIsDir: Boolean) = Resolution(ConflictChoice.OVERWRITE)
+        }
+        ZipEditor(fake, listener).apply("/data/m.zip", ZipEditor.Edits(deletes = setOf("system")))
+        assertTrue(last.second > 0 && last.first == last.second)
+    }
+
+    @Test
     fun helpers() {
+        assertTrue(ZipEditor.taken(listOf("system/", "system/bin/tool"), "system"))
+        // a folder that only exists as a path prefix is taken too
+        assertTrue(ZipEditor.taken(listOf("system/bin/tool"), "system/bin/"))
+        assertTrue(!ZipEditor.taken(listOf("system/bin/tool"), "sys"))
+        assertTrue(!ZipEditor.taken(listOf("a"), ""))
         assertTrue(ZipEditor.under("a/b/c", "a/b"))
         assertTrue(!ZipEditor.under("a/bc", "a/b"))
         assertEquals("x/c", ZipEditor.rename("a/b/c", mapOf("a/b" to "x")))

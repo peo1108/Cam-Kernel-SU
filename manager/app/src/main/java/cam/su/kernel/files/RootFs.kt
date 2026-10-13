@@ -73,9 +73,11 @@ class RootFs(private val fs: FsBackend) {
 
     /**
      * [bytes, files, folders] under [path], not crossing symlinks; the folder itself is not
-     * counted. Entries that cannot be read are skipped, like `du` does.
+     * counted. Entries that cannot be read are skipped, like `du` does, and so are /proc, /sys
+     * and /dev below [path] (their sizes are not disk use: /proc/kcore claims terabytes).
+     * Stops early, with what it counted so far, when [cancelled] says so.
      */
-    fun measure(path: String): LongArray {
+    fun measure(path: String, cancelled: () -> Boolean = { false }): LongArray {
         val root = FsPath.normalize(path)
         var bytes = 0L
         var files = 0L
@@ -84,7 +86,7 @@ class RootFs(private val fs: FsBackend) {
         val rootSt = fs.lstat(root)
         if (!FileMode.isDir(rootSt.mode)) return longArrayOf(rootSt.size, 1, 0)
         pending.addLast(root)
-        while (pending.isNotEmpty()) {
+        while (pending.isNotEmpty() && !cancelled()) {
             val dir = pending.removeLast()
             val names = try {
                 fs.list(dir)
@@ -100,7 +102,7 @@ class RootFs(private val fs: FsBackend) {
                 }
                 if (FileMode.isDir(st.mode)) {
                     dirs++
-                    pending.addLast(child)
+                    if (child !in PSEUDO) pending.addLast(child)
                 } else {
                     files++
                     if (FileMode.isRegular(st.mode)) bytes += st.size
@@ -111,11 +113,12 @@ class RootFs(private val fs: FsBackend) {
     }
 
     /** MD5, SHA-1 and SHA-256 in one pass, lowercase hex. */
-    fun checksums(path: String): List<String> {
+    fun checksums(path: String, cancelled: () -> Boolean = { false }): List<String> {
         val digests = listOf("MD5", "SHA-1", "SHA-256").map { java.security.MessageDigest.getInstance(it) }
         openRead(path).use { input ->
             val buffer = ByteArray(256 * 1024)
             while (true) {
+                if (cancelled()) throw OpCancelledException()
                 val n = input.read(buffer)
                 if (n < 0) break
                 digests.forEach { it.update(buffer, 0, n) }
@@ -170,9 +173,7 @@ class RootFs(private val fs: FsBackend) {
                     continue
                 }
                 // pseudo file systems are endless or slow to read; skip their content
-                if (FileMode.isDir(st.mode)) {
-                    if (path != "/proc" && path != "/sys" && path != "/dev") pending.addLast(path)
-                }
+                if (FileMode.isDir(st.mode) && path !in PSEUDO) pending.addLast(path)
                 if (!nameRegex.containsMatchIn(name)) continue
                 if (needle != null && (!FileMode.isRegular(st.mode) || !contains(path, needle))) continue
                 runCatching { entry(path) }.getOrNull()?.let { found += it }
@@ -209,10 +210,12 @@ class RootFs(private val fs: FsBackend) {
         return -1
     }
 
+    /** A regular file, or a link to one; devices, fifos and sockets may never end or never start. */
     fun openRead(path: String): InputStream {
         val p = FsPath.normalize(path)
         val st = fs.stat(p)
         if (FileMode.isDir(st.mode)) throw FsException(Errno.EISDIR, p)
+        if (!FileMode.isRegular(st.mode)) throw FsException(Errno.EINVAL, p, "not a regular file: $p")
         return fs.openRead(p)
     }
 
@@ -270,6 +273,7 @@ class RootFs(private val fs: FsBackend) {
         var linkTarget: String? = null
         var broken = false
         var targetIsDir = false
+        var targetSize = 0L
         if (type == FileEntry.TYPE_LINK) {
             linkTarget = runCatching { fs.readlink(path) }.getOrNull()
             val target = try {
@@ -279,6 +283,7 @@ class RootFs(private val fs: FsBackend) {
             }
             broken = target == null
             targetIsDir = target != null && FileMode.isDir(target.mode)
+            if (target != null && FileMode.isRegular(target.mode)) targetSize = target.size
         }
         return FileEntry(
             name = FsPath.name(path).ifEmpty { "/" },
@@ -295,6 +300,7 @@ class RootFs(private val fs: FsBackend) {
             linkTarget = linkTarget,
             linkBroken = broken,
             targetIsDir = targetIsDir,
+            targetSize = targetSize,
         )
     }
 
@@ -333,5 +339,8 @@ class RootFs(private val fs: FsBackend) {
     companion object {
         const val TMP_SUFFIX = ".camtmp"
         private const val DEFAULT_FILE_MODE = 0x1A4 // 0644
+
+        /** Kernel views, not disk: walks below another folder do not go in. */
+        private val PSEUDO = setOf("/proc", "/sys", "/dev")
     }
 }

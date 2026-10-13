@@ -153,15 +153,16 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
         )
 
         is FilesDialogState.Tools -> FilesDialog(show = true, title = stringResource(R.string.files_tools), onDismiss = close) {
+            val readable = dialog.entry.isReadableFile()
             ListAction(stringResource(R.string.files_tool_symlink)) {
                 vm.symlinkInOther(dialog.entry.path)
                 close()
             }
-            ListAction(stringResource(R.string.files_tool_checksum), enabled = !dialog.entry.isDir) {
+            ListAction(stringResource(R.string.files_tool_checksum), enabled = readable) {
                 close()
                 vm.showChecksum(dialog.entry)
             }
-            ListAction(stringResource(R.string.files_hex), enabled = !dialog.entry.isDir) {
+            ListAction(stringResource(R.string.files_hex), enabled = readable) {
                 close()
                 vm.hex(dialog.entry)
             }
@@ -209,9 +210,12 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
                 close()
                 vm.edit(dialog.entry)
             }
-            ListAction(stringResource(R.string.files_hex)) {
-                close()
-                vm.hex(dialog.entry)
+            // the hex viewer reads ranges of a file on disk; an entry inside an archive has none
+            if (!Archives.isInside(dialog.entry.path)) {
+                ListAction(stringResource(R.string.files_hex)) {
+                    close()
+                    vm.hex(dialog.entry)
+                }
             }
             ListAction(stringResource(R.string.files_other_app)) {
                 close()
@@ -332,13 +336,13 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                 )
             }
             add(
-                GridCell(Icons.Rounded.Share, stringResource(R.string.files_share), enabled = entries.any { !it.isDir }, onClick = {
+                GridCell(Icons.Rounded.Share, stringResource(R.string.files_share), enabled = entries.any { it.isReadableFile() }, onClick = {
                     close()
                     vm.share(entries)
                 }),
             )
             add(
-                GridCell(Icons.Rounded.Check, stringResource(R.string.files_open_with), enabled = single && !entry.isDir, onClick = {
+                GridCell(Icons.Rounded.Check, stringResource(R.string.files_open_with), enabled = single && entry.isReadableFile(), onClick = {
                     onDialog(FilesDialogState.OpenAs(entry))
                 }),
             )
@@ -412,6 +416,9 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
         }
     }
 }
+
+/** A file whose bytes can be read: not a folder, device, fifo, socket or broken link. */
+private fun FileEntry.isReadableFile() = !isDir && type != FileEntry.TYPE_OTHER && !(isLink && linkBroken)
 
 private class GridCell(
     val icon: ImageVector,

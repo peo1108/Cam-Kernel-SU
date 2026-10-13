@@ -21,12 +21,18 @@ data class FileEntry(
     val linkTarget: String? = null,
     val linkBroken: Boolean = false,
     val targetIsDir: Boolean = false,
+    /** Size of the file a link points to (0 for links to anything else). */
+    val targetSize: Long = 0,
 ) : Parcelable {
     val isDir: Boolean
         get() = type == TYPE_DIR || (type == TYPE_LINK && targetIsDir)
 
     val isLink: Boolean
         get() = type == TYPE_LINK
+
+    /** What reading it gives: the target's size for a link. */
+    val contentSize: Long
+        get() = if (isLink) targetSize else size
 
     companion object {
         const val TYPE_FILE = 0

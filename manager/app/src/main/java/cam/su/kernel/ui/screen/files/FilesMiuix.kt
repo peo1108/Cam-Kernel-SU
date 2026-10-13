@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.files
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -71,6 +72,7 @@ import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -163,6 +165,8 @@ fun FilesPagerMiuix(
     val wide = shouldShowSplitPane()
     var dialog by remember { mutableStateOf<FilesDialogState?>(null) }
     var drawer by remember { mutableStateOf(false) }
+    // composed after FilesPager's handler, so it wins while the drawer is open
+    BackHandler(enabled = drawer) { drawer = false }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -345,7 +349,8 @@ private fun Panel(
     val panel = state.panels[index]
     val active = index == state.active
     val selecting = panel.selection.isNotEmpty()
-    val listState = rememberPanelListState(panel.nav.path)
+    // keyed on what the rows show: the old folder stays up until the new one is listed
+    val listState = rememberPanelListState(panel.loadedPath ?: panel.nav.path)
 
     Box(
         modifier = Modifier
@@ -387,6 +392,8 @@ private fun Panel(
                         when {
                             selecting -> vm.toggleSelection(index, entry.path)
                             entry.isDir -> vm.navigate(index, entry.path)
+                            // a device, fifo or socket has nothing to open: its menu instead
+                            entry.type == FileEntry.TYPE_OTHER -> onMenu(entry)
                             // MT: an APK asks Install / View; other archives open like folders
                             !inArchive && FileKinds.of(entry) == FileKind.APK -> onApk(entry)
                             !inArchive && Archives.canBrowse(entry.name) -> vm.browseArchive(index, entry)
@@ -425,19 +432,25 @@ private fun Panel(
     }
 }
 
-/** Scrolled back to where it was when a folder is reopened. */
+private class PanelScroll(var path: String) {
+    val positions = HashMap<String, Pair<Int, Int>>()
+}
+
+/**
+ * Scrolled back to where it was when a folder is reopened. Applied in the same frame as the new
+ * rows (requestScrollToItem before the next measure), so the list never shows the new folder
+ * at the old one's position first.
+ */
 @Composable
 private fun rememberPanelListState(path: String): LazyListState {
-    val positions = remember { HashMap<String, Pair<Int, Int>>() }
     val listState = rememberLazyListState()
-    val current = remember { mutableStateOf(path) }
-    LaunchedEffect(path) {
-        val previous = current.value
-        if (previous != path) {
-            positions[previous] = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-            current.value = path
-            val (item, offset) = positions[path] ?: (0 to 0)
-            listState.scrollToItem(item, offset)
+    val scroll = remember { PanelScroll(path) }
+    SideEffect {
+        if (scroll.path != path) {
+            scroll.positions[scroll.path] = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+            val (item, offset) = scroll.positions[path] ?: (0 to 0)
+            listState.requestScrollToItem(item, offset)
+            scroll.path = path
         }
     }
     return listState
@@ -467,7 +480,8 @@ private fun FileRow(entry: FileEntry, selected: Boolean, onOpen: () -> Unit, onM
     val details = buildString {
         // folders only implied by paths inside an archive have no date
         if (entry.mtime > 0) append(dateFormat.format(Date(entry.mtime))).append("  ")
-        if (!entry.isDir) append(FileFormat.size(entry.size))
+        // a link to a file shows the file's size, not the length of the link
+        if (!entry.isDir) append(FileFormat.size(entry.contentSize))
         if (entry.isLink) append("  → ").append(entry.linkTarget ?: "?")
     }
     Row(

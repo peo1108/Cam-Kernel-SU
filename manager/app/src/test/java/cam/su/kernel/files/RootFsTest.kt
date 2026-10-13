@@ -263,6 +263,51 @@ class RootFsTest {
     }
 
     @Test
+    fun measureLeavesKernelViewsOutAndStopsWhenCancelled() {
+        fake.dir("/proc")
+        fake.file("/proc/kcore", "x".repeat(1000)) // claims terabytes on a device
+        fake.file("/data/adb/f", "12")
+        // "/" counts /data but not what is in /proc (the folder itself still counts)
+        assertEquals(listOf(2L, 1L, 3L), fs.measure("/").toList())
+        // measured on its own, /proc is walked
+        assertEquals(listOf(1000L, 1L, 0L), fs.measure("/proc").toList())
+        assertEquals(listOf(0L, 0L, 0L), fs.measure("/data") { true }.toList())
+    }
+
+    @Test
+    fun onlyRegularFilesAreRead() {
+        fake.device("/data/adb/zero")
+        fake.link("/data/adb/z", "/data/adb/zero")
+        fake.dir("/data/adb/d")
+        assertErrno(Errno.EINVAL) { fs.openRead("/data/adb/zero") }
+        assertErrno(Errno.EINVAL) { fs.openRead("/data/adb/z") }
+        assertErrno(Errno.EISDIR) { fs.openRead("/data/adb/d") }
+        assertErrno(Errno.EINVAL) { fs.checksums("/data/adb/zero") }
+        assertEquals(FileEntry.TYPE_OTHER, fs.stat("/data/adb/zero")!!.type)
+        assertEquals(FileKind.OTHER, FileKinds.of(fs.stat("/data/adb/zero")!!))
+    }
+
+    @Test
+    fun linksCarryTheirTargetSize() {
+        fake.file("/data/adb/big", "x".repeat(300))
+        fake.link("/data/adb/l", "big")
+        val link = fs.stat("/data/adb/l")!!
+        assertEquals(3L, link.size) // the link itself: "big"
+        assertEquals(300L, link.contentSize)
+        assertEquals(300L, fs.stat("/data/adb/big")!!.contentSize)
+    }
+
+    @Test
+    fun checksumsStopWhenCancelled() {
+        fake.file("/data/adb/abc", "abc")
+        try {
+            fs.checksums("/data/adb/abc") { true }
+            fail("expected cancel")
+        } catch (_: OpCancelledException) {
+        }
+    }
+
+    @Test
     fun checksumsAndRanges() {
         fake.file("/data/adb/abc", "abc")
         assertEquals(

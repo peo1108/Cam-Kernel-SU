@@ -752,6 +752,11 @@
     <string name="files_error_nospc">No space left</string>
     <string name="files_error_notempty">Folder not empty</string>
     <string name="files_error_other">Error (errno %1$d)</string>
+    <string name="files_error_io">Read or write error</string>
+    <string name="files_error_fbig">File too large</string>
+    <string name="files_error_xdev">On another file system</string>
+    <string name="files_error_xdev_hint">A rename cannot cross file systems: type a folder as the target to move it there</string>
+    <string name="files_op_busy">Another operation is still running</string>
     <string name="files_header_counts">Folders: %1$d  Files: %2$d</string>
     <string name="files_header_selected">Selected: %1$d</string>
     <string name="files_header_disk">Disk: %1$s/%2$s</string>
@@ -855,7 +860,7 @@
     <string name="editor_save">Save</string>
     <string name="editor_ro_archive">read only: inside an archive</string>
     <string name="editor_ro_binary">read only: binary file</string>
-    <string name="editor_ro_large">read only: over 4 MB</string>
+    <string name="editor_ro_large">read only: over 128 KB</string>
     <string name="editor_lines">%1$d lines</string>
     <string name="editor_find">Find</string>
     <string name="editor_replace_with">Replace with</string>

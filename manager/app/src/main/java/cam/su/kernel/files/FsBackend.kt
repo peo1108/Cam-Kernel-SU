@@ -9,12 +9,14 @@ object Errno {
     const val EPERM = 1
     const val ENOENT = 2
     const val EIO = 5
+    const val EAGAIN = 11
     const val EACCES = 13
     const val EEXIST = 17
     const val EXDEV = 18
     const val ENOTDIR = 20
     const val EISDIR = 21
     const val EINVAL = 22
+    const val EFBIG = 27
     const val ENOSPC = 28
     const val EROFS = 30
     const val ENOTEMPTY = 39

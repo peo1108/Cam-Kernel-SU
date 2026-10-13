@@ -82,7 +82,9 @@ class ArchiveOps(
             }
         }
         writeFile(target) { output ->
-            val zip = ZipOutputStream(output)
+            // the deflater writes 512 bytes at a time: one syscall each without a buffer
+            val buffered = java.io.BufferedOutputStream(output, 256 * 1024)
+            val zip = ZipOutputStream(buffered)
             for ((path, name) in work) {
                 checkCancel()
                 zip.putNextEntry(ZipEntry(name).apply { time = fs.lstat(path).mtime })
@@ -93,6 +95,7 @@ class ArchiveOps(
                 zip.closeEntry()
             }
             zip.finish()
+            buffered.flush()
         }
         emit("", force = true)
         return OpResult(items, skipped)

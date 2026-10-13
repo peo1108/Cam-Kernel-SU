@@ -29,12 +29,24 @@ object Archives {
     private val ZIP = setOf("zip", "jar", "apk", "apks", "xapk", "apkm", "aar")
     private val TAR = setOf("tar", "tgz", "txz", "gz", "xz")
 
-    fun isInside(path: String) = SEP in path
+    fun isInside(path: String) = separator(path) >= 0
 
     /** [archive, inner]; inner is "" at the archive's root. */
     fun split(path: String): Pair<String, String> {
-        val i = path.indexOf(SEP)
+        val i = separator(path)
+        require(i >= 0) { "not inside an archive: $path" }
         return path.substring(0, i) to path.substring(i + SEP.length).trim('/')
+    }
+
+    /** The first "!/" that follows an archive name; a folder may be called "Wow!" too. */
+    private fun separator(path: String): Int {
+        var from = 0
+        while (true) {
+            val i = path.indexOf(SEP, from)
+            if (i < 0) return -1
+            if (canBrowse(path.substring(0, i).substringAfterLast('/'))) return i
+            from = i + 1
+        }
     }
 
     fun join(archive: String, inner: String) = "$archive$SEP${inner.trim('/')}"
@@ -107,7 +119,18 @@ object Archives {
     )
 
     private class ZipReader(file: File) : ArchiveReader {
-        private val zip = ZipFile(file)
+        // Old Windows zips store names in a local code page, which is not valid UTF-8: they
+        // still open, read byte for byte as Latin-1 (names look odd but every entry works).
+        private val zip = try {
+            ZipFile(file)
+        } catch (e: Exception) {
+            if (e !is java.util.zip.ZipException && e !is IllegalArgumentException) throw e
+            try {
+                ZipFile(file, Charsets.ISO_8859_1)
+            } catch (_: Exception) {
+                throw e
+            }
+        }
         override val entries: List<ArchiveEntry> = zip.entries().asSequence()
             .map { ArchiveEntry(it.name.trim('/'), it.isDirectory, it.size.coerceAtLeast(0), it.time.coerceAtLeast(0)) }
             .filter { it.name.isNotEmpty() }

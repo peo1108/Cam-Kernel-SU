@@ -71,7 +71,8 @@ fun HexViewerScreen(path: String) {
     val listState = rememberLazyListState()
     var goTo by remember { mutableStateOf(false) }
 
-    LaunchedEffect(path) { size = runCatching { CamFileClient.stat(path)?.size }.getOrNull() ?: 0L }
+    // contentSize: for a link, the size of the file it points to
+    LaunchedEffect(path) { size = runCatching { CamFileClient.stat(path)?.contentSize }.getOrNull() ?: 0L }
     // load the chunks under the visible rows
     LaunchedEffect(path, size) {
         if (size <= 0) return@LaunchedEffect
@@ -161,13 +162,22 @@ fun HexViewerScreen(path: String) {
 fun parseOffset(text: String): Long? =
     if (text.startsWith("0x", ignoreCase = true)) text.drop(2).toLongOrNull(16) else text.toLongOrNull()
 
+private val HEX_DIGITS = "0123456789ABCDEF".toCharArray()
+
+/** [digits] uppercase hex digits of [value]; String.format per byte is too slow for a fling. */
+private fun StringBuilder.appendHex(value: Long, digits: Int): StringBuilder {
+    for (shift in (digits - 1) * 4 downTo 0 step 4) append(HEX_DIGITS[((value shr shift) and 0xF).toInt()])
+    return this
+}
+
 @Composable
 private fun HexRow(offset: Long, bytes: ByteArray?) {
-    val hex = StringBuilder()
-    val ascii = StringBuilder()
+    val hex = StringBuilder(ROW * 3 + 2)
+    val ascii = StringBuilder(ROW)
     for (i in 0 until ROW) {
         val b = bytes?.getOrNull(i)
-        hex.append(if (b == null) "  " else "%02X".format(b)).append(if (i == 7) "  " else " ")
+        if (b == null) hex.append("  ") else hex.appendHex(b.toLong() and 0xFF, 2)
+        hex.append(if (i == 7) "  " else " ")
         ascii.append(
             when {
                 b == null -> ' '
@@ -177,7 +187,8 @@ private fun HexRow(offset: Long, bytes: ByteArray?) {
         )
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("%08X".format(offset), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = colorScheme.primary)
+        val digits = maxOf(8, (64 - java.lang.Long.numberOfLeadingZeros(offset) + 3) / 4)
+        Text(StringBuilder(digits).appendHex(offset, digits).toString(), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = colorScheme.primary)
         Text("  $hex ", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         Text(ascii.toString(), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary)
     }

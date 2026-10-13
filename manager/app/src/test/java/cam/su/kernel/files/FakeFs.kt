@@ -21,6 +21,9 @@ class FakeFs : FsBackend {
 
     class Link(val target: String) : Node(0x1FF)
 
+    /** A character device (or fifo, socket): no data of its own. */
+    class Special : Node(0x1B6)
+
     val root = Dir()
 
     /** Context the "kernel" gives new files, like a type transition would. */
@@ -46,6 +49,8 @@ class FakeFs : FsBackend {
     fun link(path: String, target: String): Link = put(path, Link(target))
 
     fun bytes(path: String, data: ByteArray, perm: Int = 0x1A4): Regular = put(path, Regular(data, perm))
+
+    fun device(path: String): Special = put(path, Special())
 
     fun data(path: String) = (node(path, follow = true) as Regular).data
 
@@ -174,11 +179,13 @@ class FakeFs : FsBackend {
             is Dir -> FileMode.S_IFDIR
             is Regular -> FileMode.S_IFREG
             is Link -> FileMode.S_IFLNK
+            is Special -> 0x2000 // S_IFCHR
         }
         val size = when (node) {
             is Regular -> node.data.size.toLong()
             is Link -> node.target.length.toLong()
             is Dir -> 4096L
+            is Special -> 0L
         }
         return StatInfo(type or node.perm, node.uid, node.gid, size, mtime = 0)
     }

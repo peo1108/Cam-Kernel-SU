@@ -115,6 +115,7 @@ private fun messageText(context: Context, message: FilesMessage): String = when 
 
     FilesMessage.Cancelled -> context.getString(R.string.files_cancelled)
     FilesMessage.Done -> context.getString(R.string.files_done_short)
+    FilesMessage.Busy -> context.getString(R.string.files_op_busy)
     is FilesMessage.Text -> message.text
     is FilesMessage.Failed -> buildString {
         append(errnoText(context, message.errno))
@@ -133,6 +134,9 @@ fun errnoText(context: Context, errno: Int): String = when (errno) {
     Errno.EROFS -> context.getString(R.string.files_error_rofs)
     Errno.ENOSPC -> context.getString(R.string.files_error_nospc)
     Errno.ENOTEMPTY -> context.getString(R.string.files_error_notempty)
+    Errno.EIO -> context.getString(R.string.files_error_io)
+    Errno.EFBIG -> context.getString(R.string.files_error_fbig)
+    Errno.EXDEV -> context.getString(R.string.files_error_xdev)
     else -> context.getString(R.string.files_error_other, errno)
 }
 

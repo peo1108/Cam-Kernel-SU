@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
+import android.os.RemoteException
 import android.util.Log
 import cam.su.kernel.camApp
 import cam.su.kernel.ui.util.CamCli
@@ -124,19 +125,34 @@ object CamFileClient {
     suspend fun setContext(path: String, context: String, recursive: Boolean = false) =
         call { it.setContext(path, context, recursive) }
 
-    /** Whole file; meant for the editor, which caps the size before calling. */
-    suspend fun readBytes(path: String): ByteArray = call { s ->
+    /**
+     * Whole file, for the editor. Fails with EFBIG past [maxBytes]: a size that stat cannot
+     * tell (an entry in a tar, a /proc file that says 0) must not fill the app's memory.
+     */
+    suspend fun readBytes(path: String, maxBytes: Int): ByteArray = call { s ->
         val pipe = if (Archives.isInside(path)) {
             Archives.split(path).let { (archive, inner) -> s.openArchiveEntry(archive, inner) }
         } else {
             s.openRead(path)
         }
         pipe.use { pfd ->
-            val bytes = FileInputStream(pfd.fileDescriptor).readBytes()
+            val input = FileInputStream(pfd.fileDescriptor)
+            val out = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                out.write(buffer, 0, n)
+                // closing our end stops the root side's writer
+                if (out.size() > maxBytes) throw FsException(Errno.EFBIG, path, "larger than $maxBytes bytes")
+            }
             pfd.checkError()
-            bytes
+            out.toByteArray()
         }
     }
+
+    /** Stops the measure and checksum calls running now. */
+    suspend fun cancelReads() = call { it.cancelReads() }
 
     /** Copies the root-only file at [path] to [target] (app storage), for viewers and sharing. */
     suspend fun copyToLocal(path: String, target: java.io.File) = call { s ->
@@ -179,6 +195,13 @@ object CamFileClient {
     /** Starts [op] in the root process; follow it through [OpHandle.events]. */
     suspend fun startOp(op: FileOp): OpHandle {
         val events = Channel<OpEvent>(Channel.UNLIMITED)
+        var remote: IBinder? = null
+        // The root process dying (killed, crashed) never sends onDone: end the job here instead
+        // of leaving its dialog and notification up forever.
+        val death = IBinder.DeathRecipient {
+            events.trySend(OpEvent.Done(0, 0, Errno.EIO, "root service died"))
+            events.close()
+        }
         val callback = object : IFileOpCallback.Stub() {
             override fun onProgress(id: Int, done: Long, total: Long, current: String) {
                 events.trySend(OpEvent.Progress(done, total, current))
@@ -191,10 +214,19 @@ object CamFileClient {
             override fun onDone(id: Int, items: Int, skipped: Int, errno: Int, error: String?) {
                 events.trySend(OpEvent.Done(items, skipped, errno, error))
                 events.close()
+                runCatching { remote?.unlinkToDeath(death, 0) }
             }
         }
-        val id = call {
-            it.startOp(op.kind.ordinal, op.sources.toTypedArray(), op.destDir, op.preserve, callback)
+        val id = call { s ->
+            val binder = s.asBinder()
+            binder.linkToDeath(death, 0)
+            remote = binder
+            try {
+                s.startOp(op.kind.ordinal, op.sources.toTypedArray(), op.destDir, op.preserve, callback)
+            } catch (e: Exception) {
+                runCatching { binder.unlinkToDeath(death, 0) }
+                throw e
+            }
         }
         return OpHandle(id, events.receiveAsFlow())
     }
@@ -217,12 +249,29 @@ object CamFileClient {
         }
     }
 
+    /**
+     * Anything a call can throw ends as [FsException], which every caller handles: the root
+     * process dying (DeadObjectException), a failed pipe (IOException), or a remote exception
+     * that is not one of ours.
+     */
     private suspend fun <T> call(block: (ICamFileService) -> T): T = withContext(Dispatchers.IO) {
         val s = service ?: connect() ?: throw FsException(Errno.EACCES, detail = "no root")
         try {
             block(s)
+        } catch (e: FsException) {
+            throw e
         } catch (e: IllegalStateException) {
-            throw FsException.fromRemote(e) ?: e
+            throw FsException.fromRemote(e) ?: FsException(Errno.EIO, detail = e.message ?: e.javaClass.simpleName)
+        } catch (e: RemoteException) {
+            Log.w(TAG, "CamFileService call failed", e)
+            // a dead binder is dropped; the next call binds again (and restarts the root process)
+            if (!s.asBinder().isBinderAlive) bound = null
+            throw FsException(Errno.EIO, detail = "root service: ${e.javaClass.simpleName}")
+        } catch (e: java.io.IOException) {
+            throw FsException(Errno.EIO, detail = e.message ?: e.javaClass.simpleName)
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "CamFileService call failed", e)
+            throw FsException(Errno.EIO, detail = e.message ?: e.javaClass.simpleName)
         }
     }
 

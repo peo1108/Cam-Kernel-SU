@@ -25,6 +25,9 @@ class CamFileService : RootService() {
     private val fs = RootFs(OsBackend)
     private val nextOpId = AtomicInteger(1)
     private val searchCancelled = AtomicBoolean(false)
+
+    /** Bumped by cancelReads(): a measure or checksum started before it stops. */
+    private val readGeneration = AtomicInteger()
     private val ops = ConcurrentHashMap<Int, RunningOp>()
 
     private class RunningOp {
@@ -40,12 +43,18 @@ class CamFileService : RootService() {
 
     override fun onBind(intent: Intent): IBinder = Stub()
 
+    /**
+     * Every failure goes back as an errno. A RuntimeException that binder cannot carry (a bad
+     * archive makes ZipFile throw several kinds) would otherwise be rethrown in this process.
+     */
     private inline fun <T> call(block: () -> T): T = try {
         block()
     } catch (e: FsException) {
         throw e.toRemote()
     } catch (e: IOException) {
-        throw FsException(Errno.EIO, detail = e.message).toRemote()
+        throw FsException(Errno.EIO, detail = e.message ?: e.javaClass.simpleName).toRemote()
+    } catch (e: RuntimeException) {
+        throw FsException(Errno.EIO, detail = e.message ?: e.javaClass.simpleName).toRemote()
     }
 
     private inner class Stub : ICamFileService.Stub() {
@@ -56,7 +65,10 @@ class CamFileService : RootService() {
 
         override fun statFs(path: String): LongArray = call { fs.statFs(path) }
 
-        override fun checksums(path: String): Array<String> = call { fs.checksums(path).toTypedArray() }
+        override fun checksums(path: String): Array<String> = call {
+            val generation = readGeneration.get()
+            fs.checksums(path) { readGeneration.get() != generation }.toTypedArray()
+        }
 
         override fun readRange(path: String, offset: Long, length: Int): ByteArray =
             call { fs.readRange(path, offset, length.coerceIn(0, 1024 * 1024)) }
@@ -95,10 +107,12 @@ class CamFileService : RootService() {
         }
 
         override fun archiveRename(archive: String, from: String, to: String) = call {
+            checkFree(archive, to)
             editZip(archive) { ZipEditor.Edits(renames = mapOf(from.trim('/') to to.trim('/'))) }
         }
 
         override fun archiveMkdir(archive: String, inner: String) = call {
+            checkFree(archive, inner)
             editZip(archive) { ZipEditor.Edits(mkdirs = listOf(inner)) }
         }
 
@@ -114,7 +128,14 @@ class CamFileService : RootService() {
 
         override fun installPackage(path: String): String = call { ApkInstaller.install(FsPath.normalize(path), OsBackend) }
 
-        override fun measure(path: String): LongArray = call { fs.measure(path) }
+        override fun measure(path: String): LongArray = call {
+            val generation = readGeneration.get()
+            fs.measure(path) { readGeneration.get() != generation }
+        }
+
+        override fun cancelReads() {
+            readGeneration.incrementAndGet()
+        }
 
         override fun mkdir(path: String) = call { fs.mkdir(path) }
 
@@ -202,17 +223,27 @@ class CamFileService : RootService() {
         ZipEditor(OsBackend).apply(path, edits())
     }
 
+    /** EEXIST when [inner] is a file or folder in [archive] already (read from its index, no rewrite). */
+    private fun checkFree(archive: String, inner: String) {
+        val path = FsPath.normalize(archive)
+        if (!Archives.isZip(path)) throw FsException(Errno.EROFS, path, "only zip archives can be edited")
+        val names = Archives.open(File(path)).use { reader -> reader.entries.map { it.name } }
+        if (ZipEditor.taken(names, inner)) throw FsException(Errno.EEXIST, inner.trim('/'))
+    }
+
     /** Streams [input] into a reliable pipe from a thread; returns the read end. */
     private fun pipeFrom(input: java.io.InputStream, onDone: () -> Unit): ParcelFileDescriptor {
         val (readEnd, writeEnd) = ParcelFileDescriptor.createReliablePipe()
         thread(name = "cam-file-read") {
             try {
-                input.use { it.copyTo(FileOutputStream(writeEnd.fileDescriptor)) }
+                input.use { it.copyTo(FileOutputStream(writeEnd.fileDescriptor), 256 * 1024) }
                 writeEnd.close()
-            } catch (e: IOException) {
-                runCatching { writeEnd.closeWithError(e.message ?: "read failed") }
+            } catch (e: Exception) {
+                // not only IOException: a broken archive throws others, and an uncaught one
+                // here would take the whole root process (and CamRootService) down
+                runCatching { writeEnd.closeWithError(e.message ?: e.javaClass.simpleName) }
             } finally {
-                onDone()
+                runCatching { onDone() }
             }
         }
         return readEnd

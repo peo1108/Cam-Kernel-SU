@@ -4,12 +4,15 @@ import android.content.Context
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cam.su.kernel.R
 import cam.su.kernel.camApp
 import cam.su.kernel.files.AppView
 import cam.su.kernel.files.Archives
 import cam.su.kernel.files.Systemless
 import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.ConflictChoice
+import cam.su.kernel.files.Errno
+import cam.su.kernel.files.FileChanges
 import cam.su.kernel.files.FileEntry
 import cam.su.kernel.files.FileOp
 import cam.su.kernel.files.FileOpProgress
@@ -22,6 +25,7 @@ import cam.su.kernel.files.PanelNav
 import cam.su.kernel.files.SelectionOps
 import cam.su.kernel.files.SortBy
 import cam.su.kernel.files.SortOptions
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +35,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 data class PanelUi(
@@ -42,8 +47,11 @@ data class PanelUi(
     val selection: Set<String> = emptySet(),
     /** [total, available] bytes of the file system the folder is on. */
     val disk: LongArray? = null,
+    /** The folder [entries] were listed from; it trails [nav] while the next one loads. */
+    val loadedPath: String? = null,
 ) {
-    val folders get() = entries.count { it.isDir }
+    // counted once per state, not on every recomposition of the header
+    val folders by lazy(LazyThreadSafetyMode.PUBLICATION) { entries.count { it.isDir } }
     val files get() = entries.size - folders
 }
 
@@ -55,8 +63,8 @@ data class OpUi(
     val conflict: CamFileClient.OpEvent.Conflict? = null,
 )
 
-/** MD5, SHA-1, SHA-256 of [entry]; null while computing. */
-data class ChecksumUi(val entry: FileEntry, val values: List<String>? = null)
+/** MD5, SHA-1, SHA-256 of [entry]; null while computing. [token] tells one opening from the next. */
+data class ChecksumUi(val entry: FileEntry, val token: Int, val values: List<String>? = null)
 
 /** What an APK says about itself, read from a cached copy. */
 data class ApkInfoUi(
@@ -83,8 +91,8 @@ data class OverrideUi(
 
 data class SearchUi(val root: String, val running: Boolean = true, val results: List<FileEntry> = emptyList())
 
-/** The Properties dialog: [measure] fills in after the tree was walked. */
-data class PropertiesUi(val entry: FileEntry, val measure: LongArray? = null)
+/** The Properties dialog: [measure] fills in after the tree was walked. [token] tells one opening from the next. */
+data class PropertiesUi(val entry: FileEntry, val token: Int = 0, val measure: LongArray? = null)
 
 sealed interface FilesMessage {
     data class Finished(val kind: OpKind, val items: Int, val skipped: Int) : FilesMessage
@@ -92,6 +100,9 @@ sealed interface FilesMessage {
     data class Failed(val errno: Int, val detail: String?) : FilesMessage
     data object Done : FilesMessage
     data class Text(val text: String) : FilesMessage
+
+    /** Another copy/move/delete is still running: one at a time. */
+    data object Busy : FilesMessage
 }
 
 /** One-shot work for the screen: hand a cached copy of a root file to another app. */
@@ -152,6 +163,15 @@ class FilesViewModel : ViewModel() {
     val uiState: StateFlow<FilesUiState> = _uiState.asStateFlow()
 
     private var started = false
+    private var sortJob: Job? = null
+
+    /** Tells a dialog's opening from the next one, so a late answer for an old one is dropped. */
+    private var dialogToken = 0
+
+    init {
+        // the editor saved a file: whichever panel shows it reloads
+        viewModelScope.launch { FileChanges.changed.collect { if (started) refresh() } }
+    }
 
     /** Loads both panels the first time the tab is shown. */
     fun start() {
@@ -233,11 +253,14 @@ class FilesViewModel : ViewModel() {
         val state = _uiState.value
         val (a, b) = state.panels
         raw.reverse()
+        loadJobs.forEach { it?.cancel() }
         _uiState.update { it.copy(panels = listOf(b, a)) }
         prefs.edit {
             putString(KEY_PATH_0, b.nav.path)
             putString(KEY_PATH_1, a.nav.path)
         }
+        // a listing still on its way was for the other side: ask again
+        _uiState.value.panels.forEachIndexed { i, p -> if (p.loading) load(i) }
     }
 
     /** System back: drop the selection, else go up; false at "/" so the tab can be left. */
@@ -308,7 +331,10 @@ class FilesViewModel : ViewModel() {
     fun create(name: String, folder: Boolean) = simple(refreshActive = true) {
         val dir = _uiState.value.activePanel.nav.path
         if (Archives.isInside(dir)) {
-            val path = Archives.join(Archives.split(dir).first, (Archives.split(dir).second + "/" + name).trim('/'))
+            val (archive, inner) = Archives.split(dir)
+            val path = Archives.join(archive, "$inner/$name".trim('/'))
+            // archiveWrite replaces what is there (the editor saves with it): a new file must not
+            if (CamFileClient.listDir(dir).any { it.name == name }) throw FsException(Errno.EEXIST, path)
             if (folder) CamFileClient.archiveMkdir(path) else CamFileClient.archiveWrite(path, ByteArray(0))
             return@simple
         }
@@ -325,11 +351,23 @@ class FilesViewModel : ViewModel() {
         CamFileClient.rename(path, FsPath.child(FsPath.parent(path), newName))
     }
 
-    /** Long-pressed Move: to a path typed by hand (a folder, or a new full name). */
+    /**
+     * Long-pressed Move: to a path typed by hand. Into a folder it is the move job (any file
+     * system, conflicts asked, progress); to a new full name it is a rename.
+     */
     fun moveTo(path: String, target: String) = simple(refreshActive = true) {
-        val dest = target.trim().let { if (it.startsWith("/")) it else FsPath.child(FsPath.parent(path), it) }
-        val existing = CamFileClient.stat(dest)
-        CamFileClient.rename(path, if (existing?.isDir == true) FsPath.child(dest, FsPath.name(path)) else dest)
+        val dest = FsPath.normalize(target.trim().let { if (it.startsWith("/")) it else FsPath.child(FsPath.parent(path), it) })
+        if (CamFileClient.stat(dest)?.isDir == true) {
+            runOp(FileOp(OpKind.MOVE, listOf(path), dest))
+            return@simple
+        }
+        try {
+            CamFileClient.rename(path, dest)
+        } catch (e: FsException) {
+            // rename(2) cannot cross file systems; a folder as the target can
+            if (e.errno == Errno.EXDEV) throw FsException(Errno.EXDEV, dest, camApp.getString(R.string.files_error_xdev_hint))
+            throw e
+        }
     }
 
     fun symlinkInOther(path: String) = simple(refreshActive = true) {
@@ -352,10 +390,15 @@ class FilesViewModel : ViewModel() {
     }
 
     fun showProperties(entry: FileEntry) {
-        _uiState.update { it.copy(properties = PropertiesUi(entry)) }
+        val token = ++dialogToken
+        _uiState.update { it.copy(properties = PropertiesUi(entry, token)) }
         viewModelScope.launch {
-            val measure = runCatching { CamFileClient.measure(entry.path) }.getOrNull() ?: return@launch
-            _uiState.update { s -> s.copy(properties = s.properties?.takeIf { it.entry.path == entry.path }?.copy(measure = measure)) }
+            val measure = try {
+                CamFileClient.measure(entry.path)
+            } catch (_: FsException) {
+                return@launch
+            }
+            _uiState.update { s -> s.copy(properties = s.properties?.let { if (it.token == token) it.copy(measure = measure) else it }) }
         }
     }
 
@@ -368,18 +411,30 @@ class FilesViewModel : ViewModel() {
     }
 
     fun showChecksum(entry: FileEntry) {
-        _uiState.update { it.copy(checksum = ChecksumUi(entry)) }
+        val token = ++dialogToken
+        _uiState.update { it.copy(checksum = ChecksumUi(entry, token)) }
         viewModelScope.launch {
             try {
                 val values = CamFileClient.checksums(entry.path)
-                _uiState.update { s -> s.copy(checksum = s.checksum?.takeIf { it.entry.path == entry.path }?.copy(values = values)) }
+                _uiState.update { s -> s.copy(checksum = s.checksum?.let { if (it.token == token) it.copy(values = values) else it }) }
             } catch (e: FsException) {
+                // closed meanwhile (that cancelled it): nothing to report
+                if (_uiState.value.checksum?.token != token) return@launch
                 _uiState.update { it.copy(checksum = null, message = FilesMessage.Failed(e.errno, e.message)) }
             }
         }
     }
 
-    fun hideChecksum() = _uiState.update { it.copy(checksum = null) }
+    fun hideChecksum() {
+        val computing = _uiState.value.checksum?.values == null
+        _uiState.update { it.copy(checksum = null) }
+        if (computing) cancelReads()
+    }
+
+    /** A closed Properties or Checksum dialog stops its walk or hash on the root side. */
+    private fun cancelReads() {
+        viewModelScope.launch { runCatching { CamFileClient.cancelReads() } }
+    }
 
     /** Reads the APK (or the base APK inside a bundle) like the installer would, without installing. */
     fun showApkInfo(entry: FileEntry) {
@@ -557,7 +612,11 @@ class FilesViewModel : ViewModel() {
         navigateActive(AppView.root(pid))
     }
 
-    fun hideProperties() = _uiState.update { it.copy(properties = null) }
+    fun hideProperties() {
+        val measuring = _uiState.value.properties?.measure == null
+        _uiState.update { it.copy(properties = null) }
+        if (measuring) cancelReads()
+    }
 
     private suspend fun reloadProperties(path: String) {
         if (_uiState.value.properties?.entry?.path != path) return
@@ -567,7 +626,8 @@ class FilesViewModel : ViewModel() {
     /** Opens a file with another app: root files are copied to the cache first. */
     fun openWith(entry: FileEntry, mime: String) = cached(listOf(entry)) { files -> FilesEvent.Open(files.single(), mime) }
 
-    fun share(entries: List<FileEntry>) = cached(entries.filter { !it.isDir }) { FilesEvent.Share(it) }
+    fun share(entries: List<FileEntry>) =
+        cached(entries.filter { !it.isDir && it.type != FileEntry.TYPE_OTHER && !(it.isLink && it.linkBroken) }) { FilesEvent.Share(it) }
 
     private fun cached(entries: List<FileEntry>, event: (List<File>) -> FilesEvent) {
         if (entries.isEmpty()) return
@@ -643,29 +703,36 @@ class FilesViewModel : ViewModel() {
         runOp(FileOp(OpKind.DELETE, sources))
     }
 
+    // FileOpProgress.scope, not viewModelScope: the notification's Cancel works after the screen is gone
     fun cancelOp() {
         val handle = opHandle ?: return
-        viewModelScope.launch { runCatching { handle.cancel() } }
+        FileOpProgress.scope.launch { runCatching { handle.cancel() } }
     }
 
     fun resolveConflict(choice: ConflictChoice, applyAll: Boolean) {
         val handle = opHandle ?: return
         _uiState.update { it.copy(op = it.op?.copy(conflict = null)) }
-        viewModelScope.launch { runCatching { handle.resolve(choice, applyAll) } }
+        FileOpProgress.scope.launch { runCatching { handle.resolve(choice, applyAll) } }
     }
 
     /** [then] runs after the operation finished without error. */
     private fun runOp(op: FileOp, then: (() -> Unit)? = null) {
-        if (_uiState.value.op != null) return
+        if (_uiState.value.op != null || FileOpProgress.state.value != null) {
+            _uiState.update { it.copy(message = FilesMessage.Busy) }
+            return
+        }
         _uiState.update { it.copy(op = OpUi(op.kind)) }
         // a foreground service keeps the app, and the root process running the job, alive
         FileOpProgress.update(FileOpProgress.State(op.kind, 0, 0, ""))
         FileOpProgress.onCancel = { cancelOp() }
         FileOpService.start(camApp)
-        viewModelScope.launch {
+        // followed outside viewModelScope: the job must still end (notification, refresh) if
+        // this screen goes away while it runs
+        FileOpProgress.scope.launch {
             val handle = try {
                 CamFileClient.startOp(op)
             } catch (e: FsException) {
+                FileOpProgress.onCancel = null
                 FileOpProgress.update(null)
                 _uiState.update { it.copy(op = null, message = FilesMessage.Failed(e.errno, e.message)) }
                 return@launch
@@ -749,19 +816,23 @@ class FilesViewModel : ViewModel() {
             } catch (e: FsException) {
                 Result.failure(e)
             }
-            val disk = runCatching { CamFileClient.statFs(path) }.getOrNull()
-            if (_uiState.value.panels[panel].nav.path != path) return@launch
-            raw[panel] = result.getOrDefault(emptyList())
+            val disk = if (Archives.isInside(path)) null else runCatching { CamFileClient.statFs(path) }.getOrNull()
+            val list = result.getOrDefault(emptyList())
             val sort = _uiState.value.sort
+            // thousands of names sort in tens of milliseconds: not on the main thread
+            val sorted = withContext(Dispatchers.Default) { FileSort.apply(list, sort) }
+            if (_uiState.value.panels[panel].nav.path != path) return@launch
+            raw[panel] = list
+            val entries = if (_uiState.value.sort == sort) sorted else FileSort.apply(list, _uiState.value.sort)
+            val paths = entries.mapTo(HashSet()) { it.path }
             updatePanel(panel) { p ->
-                val entries = FileSort.apply(raw[panel], sort)
-                val paths = entries.mapTo(HashSet()) { it.path }
                 p.copy(
                     entries = entries,
                     loading = false,
                     errorErrno = (result.exceptionOrNull() as? FsException)?.errno,
                     selection = p.selection.filterTo(HashSet()) { it in paths },
                     disk = disk,
+                    loadedPath = path,
                 )
             }
         }
@@ -773,11 +844,21 @@ class FilesViewModel : ViewModel() {
             putBoolean(KEY_SORT_DESC, sort.descending)
             putBoolean(KEY_SHOW_HIDDEN, sort.showHidden)
         }
-        _uiState.update { state ->
-            state.copy(
-                sort = sort,
-                panels = state.panels.mapIndexed { i, p -> p.copy(entries = FileSort.apply(raw[i], sort)) },
-            )
+        _uiState.update { it.copy(sort = sort) }
+        sortJob?.cancel()
+        val lists = raw.copyOf()
+        sortJob = viewModelScope.launch {
+            val sorted = withContext(Dispatchers.Default) { lists.map { FileSort.apply(it, sort) } }
+            _uiState.update { state ->
+                state.copy(
+                    panels = state.panels.mapIndexed { i, p ->
+                        // a listing that arrived meanwhile was already sorted the new way
+                        if (raw[i] !== lists[i]) return@mapIndexed p
+                        val paths = sorted[i].mapTo(HashSet()) { it.path }
+                        p.copy(entries = sorted[i], selection = p.selection.filterTo(HashSet()) { it in paths })
+                    },
+                )
+            }
         }
     }
 

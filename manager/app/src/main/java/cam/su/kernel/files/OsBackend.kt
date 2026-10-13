@@ -2,12 +2,16 @@ package cam.su.kernel.files
 
 import android.system.ErrnoException
 import android.system.Os
+import android.system.OsConstants.EAGAIN
+import android.system.OsConstants.ESPIPE
 import android.system.OsConstants.O_CLOEXEC
 import android.system.OsConstants.O_CREAT
 import android.system.OsConstants.O_EXCL
+import android.system.OsConstants.O_NONBLOCK
 import android.system.OsConstants.O_RDONLY
 import android.system.OsConstants.O_TRUNC
 import android.system.OsConstants.O_WRONLY
+import android.system.OsConstants.SEEK_CUR
 import android.system.StructStat
 import java.io.File
 import java.io.FileDescriptor
@@ -83,8 +87,10 @@ object OsBackend : FsBackend {
         longArrayOf(st.f_blocks * st.f_frsize, st.f_bavail * st.f_frsize)
     }
 
+    // O_NONBLOCK: files that only produce data as it comes (/proc/kmsg, trace_pipe) end at what
+    // is there instead of waiting forever; regular files on disk ignore the flag.
     override fun openRead(path: String): InputStream =
-        FdInputStream(os(path) { Os.open(path, O_RDONLY or O_CLOEXEC, 0) }, path)
+        FdInputStream(os(path) { Os.open(path, O_RDONLY or O_NONBLOCK or O_CLOEXEC, 0) }, path)
 
     override fun openWrite(path: String): OutputStream =
         FdOutputStream(os(path) { Os.open(path, O_WRONLY or O_TRUNC or O_CLOEXEC, 0) }, path)
@@ -99,8 +105,25 @@ object OsBackend : FsBackend {
 
         override fun read(b: ByteArray, off: Int, len: Int): Int {
             if (len == 0) return 0
-            val n = os(path) { Os.read(fd, b, off, len) }
+            val n = try {
+                Os.read(fd, b, off, len)
+            } catch (e: ErrnoException) {
+                if (e.errno == EAGAIN) return -1 // nothing more for now: the end of what there is
+                throw FsException(e.errno, path, "${e.message}: $path")
+            }
             return if (n == 0) -1 else n
+        }
+
+        /** Seeks instead of reading what is skipped (the hex viewer jumps around big files). */
+        override fun skip(n: Long): Long {
+            if (n <= 0) return 0
+            return try {
+                Os.lseek(fd, n, SEEK_CUR)
+                n
+            } catch (e: ErrnoException) {
+                if (e.errno != ESPIPE) throw FsException(e.errno, path, "${e.message}: $path")
+                super.skip(n)
+            }
         }
 
         override fun close() {

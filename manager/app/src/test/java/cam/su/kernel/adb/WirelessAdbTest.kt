@@ -10,6 +10,16 @@ import java.net.InetAddress
 class WirelessAdbTest {
 
     @Test
+    fun turnOffRequestsMadeBeforeAReEnableAreStale() {
+        // boot cleanup queued at 100, user turned ADB on again at 200: leave it on
+        assertTrue(WirelessAdb.isStale(requestedAt = 100, enabledAt = 200))
+        // timer scheduled right after enabling: it runs
+        assertFalse(WirelessAdb.isStale(requestedAt = 201, enabledAt = 200))
+        // request from an older build without the timestamp: dropped
+        assertTrue(WirelessAdb.isStale(requestedAt = 0, enabledAt = 0))
+    }
+
+    @Test
     fun onWhenAdbdRunsOnAPort() {
         val status = WirelessAdbStatus.parse(listOf("5555", "running", "1"))
         assertEquals(5555, status.port)

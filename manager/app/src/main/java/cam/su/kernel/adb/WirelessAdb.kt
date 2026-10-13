@@ -56,6 +56,8 @@ object WirelessAdb {
     private const val PREFS = "wireless_adb"
     private const val KEY_ENABLED_ADB = "enabledAdb"
     private const val KEY_TIMEOUT = "timeoutMinutes"
+    private const val KEY_ENABLED_AT = "enabledAt"
+    internal const val INPUT_REQUESTED_AT = "requestedAt"
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -63,6 +65,22 @@ object WirelessAdb {
     fun enabledAdb(context: Context): Boolean = prefs(context).getBoolean(KEY_ENABLED_ADB, false)
 
     fun timeoutMinutes(context: Context): Int = prefs(context).getInt(KEY_TIMEOUT, 30)
+
+    /** When wireless ADB was last turned on from the app (wall clock ms); 0 if never. */
+    fun enabledAt(context: Context): Long = prefs(context).getLong(KEY_ENABLED_AT, 0)
+
+    /**
+     * A turn-off request made at [requestedAt] is stale when ADB was turned on again after it:
+     * a timer or boot cleanup queued earlier must not end a session started later. WorkManager
+     * runs overdue work when the app process starts (after an update, a force stop or a reboot),
+     * which used to cut ADB the moment the app was reopened. Requests from before this field
+     * existed carry 0 and are dropped.
+     */
+    fun isStale(requestedAt: Long, enabledAt: Long): Boolean = requestedAt <= 0 || enabledAt > requestedAt
+
+    internal fun offRequest(): androidx.work.OneTimeWorkRequest.Builder =
+        OneTimeWorkRequestBuilder<WirelessAdbOffWorker>()
+            .setInputData(androidx.work.workDataOf(INPUT_REQUESTED_AT to System.currentTimeMillis()))
 
     /** Blocking (root shell). */
     fun status(): WirelessAdbStatus {
@@ -82,6 +100,7 @@ object WirelessAdb {
             commands += "settings put global adb_enabled 1"
         }
         commands += "setprop ctl.restart adbd"
+        prefs(context).edit(commit = true) { putLong(KEY_ENABLED_AT, System.currentTimeMillis()) }
         getRootShell().newJob().add(*commands.toTypedArray()).exec()
         schedule(context, timeoutMinutes(context))
         return waitFor(on = true)
@@ -116,7 +135,7 @@ object WirelessAdb {
             work.cancelUniqueWork(WORK_NAME)
             return
         }
-        val request = OneTimeWorkRequestBuilder<WirelessAdbOffWorker>()
+        val request = offRequest()
             .setInitialDelay(minutes.toLong(), TimeUnit.MINUTES)
             .build()
         work.enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
@@ -151,6 +170,8 @@ object WirelessAdb {
 /** Turns wireless ADB off when its time is up. */
 class WirelessAdbOffWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
+        val requestedAt = inputData.getLong(WirelessAdb.INPUT_REQUESTED_AT, 0)
+        if (WirelessAdb.isStale(requestedAt, WirelessAdb.enabledAt(applicationContext))) return Result.success()
         WirelessAdb.disable(applicationContext)
         return Result.success()
     }
@@ -172,7 +193,7 @@ class WirelessAdbBootReceiver : BroadcastReceiver() {
         work.enqueueUniqueWork(
             WirelessAdb.WORK_NAME,
             ExistingWorkPolicy.REPLACE,
-            OneTimeWorkRequestBuilder<WirelessAdbOffWorker>().build(),
+            WirelessAdb.offRequest().build(),
         )
     }
 }

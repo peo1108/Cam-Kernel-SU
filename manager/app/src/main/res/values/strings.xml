@@ -276,6 +276,12 @@
     <string name="current_device_kmi">This device KMI</string>
     <string name="settings_enable_blur">Blur</string>
     <string name="settings_enable_blur_summary">Enable blur effect for top and bottom bars.</string>
+    <string name="settings_nav_bar_position">Navigation bar position</string>
+    <string name="settings_nav_bar_position_summary">Down the side in landscape gives pages their height back</string>
+    <string name="settings_nav_bar_auto">Auto (right in landscape)</string>
+    <string name="settings_nav_bar_bottom">Always at the bottom</string>
+    <string name="settings_nav_bar_left">Left</string>
+    <string name="settings_nav_bar_right">Right</string>
     <string name="settings_floating_bottom_bar">Floating bottom bar</string>
     <string name="settings_floating_bottom_bar_summary">Use Apple style floating bottom bar.</string>
     <string name="settings_enable_glass">Liquid glass</string>

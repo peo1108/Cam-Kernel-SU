@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.settings
 
+import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -94,7 +95,7 @@ fun SettingPagerMiuix(
             }
         },
         popupHost = { },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
+        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current),
     ) { innerPadding ->
         Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
             LazyColumn(

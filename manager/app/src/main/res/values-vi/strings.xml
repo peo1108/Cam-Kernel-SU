@@ -251,6 +251,12 @@
     <string name="settings_color_style">Kiểu màu sắc</string>
     <string name="settings_enable_blur">Mờ</string>
     <string name="settings_enable_blur_summary">Kích hoạt hiệu ứng làm mờ cho thanh tiêu đề và thanh điều hướng.</string>
+    <string name="settings_nav_bar_position">Vị trí thanh điều hướng</string>
+    <string name="settings_nav_bar_position_summary">Khi xoay ngang, đặt thanh ở cạnh để trang có thêm chiều cao</string>
+    <string name="settings_nav_bar_auto">Tự động (ngang thì bên phải)</string>
+    <string name="settings_nav_bar_bottom">Luôn ở dưới</string>
+    <string name="settings_nav_bar_left">Bên trái</string>
+    <string name="settings_nav_bar_right">Bên phải</string>
     <string name="settings_floating_bottom_bar">Thanh điều hướng nổi</string>
     <string name="settings_floating_bottom_bar_summary">Sử dụng thanh điều hướng nổi kiểu Apple.</string>
     <string name="settings_enable_glass">Liquid Glass</string>

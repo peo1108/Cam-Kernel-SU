@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.superuser
 
+import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassListCard
@@ -291,7 +292,7 @@ fun SuperUserPagerMiuix(
             }
         },
         popupHost = { },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
+        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current)
     ) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current
         val lazyListState = rememberLazyListState()

@@ -26,6 +26,7 @@ data class ColorPaletteScreenActions(
     val onSetColorSpec: (String) -> Unit,
     val onSetEnableBlur: (Boolean) -> Unit,
     val onSetEnableFloatingBottomBar: (Boolean) -> Unit,
+    val onSetNavBarPosition: (Int) -> Unit,
     val onSetEnableFloatingBottomBarBlur: (Boolean) -> Unit,
     val onSetEnableNavigationBadge: (Boolean) -> Unit,
     val onSetEnablePredictiveBack: (Boolean) -> Unit,

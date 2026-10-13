@@ -122,6 +122,9 @@ val LocalEnableBlur = staticCompositionLocalOf { false }
 
 val LocalEnableFloatingBottomBar = staticCompositionLocalOf { false }
 
+/** SettingsRepository.navBarPosition: auto (landscape: right), bottom, left, right. */
+val LocalNavBarPosition = staticCompositionLocalOf { 0 }
+
 val LocalEnableFloatingBottomBarBlur = staticCompositionLocalOf { false }
 
 val LocalEnableNavigationBadge = staticCompositionLocalOf { true }

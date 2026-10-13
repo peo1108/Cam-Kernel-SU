@@ -104,6 +104,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("enable_floating_bottom_bar", true)
         set(value) = prefs.edit { putBoolean("enable_floating_bottom_bar", value) }
 
+    override var navBarPosition: Int
+        get() = prefs.getInt("nav_bar_position", 0).coerceIn(0, 3)
+        set(value) = prefs.edit { putInt("nav_bar_position", value.coerceIn(0, 3)) }
+
     override var enableFloatingBottomBarBlur: Boolean
         get() = prefs.getBoolean("enable_floating_bottom_bar_blur", false)
         set(value) = prefs.edit { putBoolean("enable_floating_bottom_bar_blur", value) }

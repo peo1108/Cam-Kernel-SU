@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.module
 
+import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassDialog
@@ -412,7 +413,7 @@ fun ModulePagerMiuix(
                 },
             )
         },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
+        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current)
     ) { innerPadding ->
         if (uiState.magiskInstalled) {
             Box(

@@ -9,6 +9,7 @@ data class CamActivityUiState(
     val pageScale: Float,
     val enableBlur: Boolean,
     val enableFloatingBottomBar: Boolean,
+    val navBarPosition: Int = 0,
     val enableFloatingBottomBarBlur: Boolean,
     val enableNavigationBadge: Boolean,
     val enableSwipeDismiss: Boolean,

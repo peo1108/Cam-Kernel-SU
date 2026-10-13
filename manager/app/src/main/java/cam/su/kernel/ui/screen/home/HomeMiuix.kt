@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.home
 
+import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -123,7 +124,7 @@ fun HomePagerMiuix(
             )
         },
         popupHost = { },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
+        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current)
     ) { innerPadding ->
         Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
             LazyColumn(

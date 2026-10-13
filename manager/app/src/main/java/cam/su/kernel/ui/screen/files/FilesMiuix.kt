@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.files
 
+import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
@@ -207,13 +208,14 @@ fun FilesPagerMiuix(
                 }
             },
             popupHost = { },
-            contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
+            contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current),
         ) { innerPadding ->
             Box(modifier = (if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier).fillMaxSize()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = innerPadding.calculateTopPadding(), bottom = bottomInnerPadding),
+                        .padding(top = innerPadding.calculateTopPadding(), bottom = bottomInnerPadding)
+                        .windowInsetsPadding(LocalNavSideInsets.current),
                 ) {
                     HeaderStats(state.activePanel, state.appNames)
                     if (!wide) PanelSwitcher(state, vm)

@@ -34,6 +34,9 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
@@ -85,6 +88,13 @@ import cam.su.kernel.ui.component.search.MainSearchState
 import cam.su.kernel.ui.component.bottombar.MainPagerState
 import cam.su.kernel.ui.component.bottombar.NavigationBadgeState
 import cam.su.kernel.ui.component.bottombar.SideRail
+import cam.su.kernel.ui.component.bottombar.NavSide
+import cam.su.kernel.ui.component.bottombar.SideBarMiuix
+import cam.su.kernel.ui.component.bottombar.SideSearchDock
+import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
+import cam.su.kernel.ui.component.bottombar.SideBarColumnWidth
+import cam.su.kernel.ui.component.bottombar.rememberNavSide
+import cam.su.kernel.ui.theme.LocalNavBarPosition
 import cam.su.kernel.ui.component.bottombar.rememberMainPagerState
 import cam.su.kernel.ui.component.bottombar.useNavigationRail
 import cam.su.kernel.ui.navigation3.IntentDispatcher
@@ -229,6 +239,7 @@ class CamActivity : ComponentActivity() {
                 // The UI is always liquid glass.
                 LocalEnableBlur provides true,
                 LocalEnableFloatingBottomBar provides uiState.enableFloatingBottomBar,
+                LocalNavBarPosition provides uiState.navBarPosition,
                 // The floating bar's glass uses AGSL shaders (API 33+).
                 LocalEnableFloatingBottomBarBlur provides (
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU || uiState.enableFloatingBottomBarBlur
@@ -336,7 +347,8 @@ class CamActivity : ComponentActivity() {
                         SlimeLayer(
                             page = if (onMain) "main_$selectedMainPage" else route ?: "none",
                             home = (onMain && selectedMainPage == 0) || route == Route.Home,
-                            floorInset = if (onMain && uiState.enableFloatingBottomBar) 92.dp else 10.dp,
+                            // the floating bar at the bottom is the slimes' floor; down a side it is not
+                            floorInset = if (onMain && uiState.enableFloatingBottomBar && rememberNavSide() == NavSide.Bottom) 92.dp else 10.dp,
                             enabled = uiState.roamingSlimes,
                             maxCount = uiState.roamingSlimeCount,
                             nightNap = uiState.slimeNightNap,
@@ -374,10 +386,11 @@ fun MainScreen(
     val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
     val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
     val useNavigationRail = useNavigationRail(enableFloatingBottomBar)
+    val navSide = rememberNavSide(legacyRail = useNavigationRail)
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { MainPagerConfig.PAGE_COUNT })
     val mainPagerState = rememberMainPagerState(
         pagerState = pagerState,
-        animatePageChanges = !useNavigationRail,
+        animatePageChanges = navSide == NavSide.Bottom,
     )
     val isFullFeatured = Cam.isFullFeatured()
     val pagerMode = PagerInterceptionMode.entries.getOrElse(pagerInterceptionMode) {
@@ -536,20 +549,59 @@ fun MainScreen(
             }
         }
 
-        if (useNavigationRail) {
-            val startInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
-                .only(WindowInsetsSides.Start)
+        if (navSide != NavSide.Bottom) {
+            // The bar down a side: the pages get the whole height and give the bar its column,
+            // so their floating buttons (Files' toolbar, Module's +) stay clear of it.
+            val left = navSide == NavSide.Left
+            val sideInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
+                .only(if (left) WindowInsetsSides.Start else WindowInsetsSides.End)
             val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
+            val bar = @Composable {
+                if (enableFloatingBottomBar) {
+                    SideBarMiuix(
+                        backdrop = barBackdrop,
+                        navigationBadge = navigationBadge,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .windowInsetsPadding(sideInsets),
+                    )
+                } else {
+                    SideRail(navigationBadge)
+                }
+            }
 
             Scaffold(containerColor = Color.Transparent) { _ ->
-                Row {
-                    SideRail(navigationBadge)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .consumeWindowInsets(startInsets)
-                    ) {
-                        pagerContent(navBarBottomPadding)
+                if (enableFloatingBottomBar) {
+                    // The glass bar floats over the edge of the pages; they keep only their bodies
+                    // clear of it, so top bar buttons and floating buttons share its column.
+                    val column = if (left) {
+                        WindowInsets(left = SideBarColumnWidth)
+                    } else {
+                        WindowInsets(right = SideBarColumnWidth)
+                    }
+                    Box(Modifier.fillMaxSize()) {
+                        CompositionLocalProvider(LocalNavSideInsets provides column) {
+                            pagerContent(navBarBottomPadding)
+                        }
+                        Box(Modifier.align(if (left) Alignment.CenterStart else Alignment.CenterEnd)) { bar() }
+                        SideSearchDock(
+                            barBackdrop,
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .windowInsetsPadding(column),
+                        )
+                    }
+                } else {
+                    Row {
+                        if (left) bar()
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .consumeWindowInsets(sideInsets)
+                        ) {
+                            pagerContent(navBarBottomPadding)
+                        }
+                        if (!left) bar()
                     }
                 }
             }

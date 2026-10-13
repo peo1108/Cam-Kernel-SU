@@ -45,6 +45,7 @@ import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Style
+import androidx.compose.material.icons.rounded.ViewSidebar
 import androidx.compose.material.icons.rounded.Swipe
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.Wallpaper
@@ -313,6 +314,27 @@ fun ColorPaletteScreenMiuix(
                             onCheckedChange = {
                                 actions.onSetEnableFloatingBottomBar(it)
                             }
+                        )
+                        // Landscape tablets: the bar down the side gives the pages their height back
+                        GlassDropdownPreference(
+                            title = stringResource(R.string.settings_nav_bar_position),
+                            summary = stringResource(R.string.settings_nav_bar_position_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.ViewSidebar,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(R.string.settings_nav_bar_position),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            items = listOf(
+                                stringResource(R.string.settings_nav_bar_auto),
+                                stringResource(R.string.settings_nav_bar_bottom),
+                                stringResource(R.string.settings_nav_bar_left),
+                                stringResource(R.string.settings_nav_bar_right),
+                            ),
+                            selectedIndex = uiState.navBarPosition,
+                            onSelectedIndexChange = { actions.onSetNavBarPosition(it) },
                         )
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_navigation_badge),

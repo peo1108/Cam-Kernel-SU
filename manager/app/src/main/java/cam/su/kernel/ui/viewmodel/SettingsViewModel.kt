@@ -49,6 +49,7 @@ class SettingsViewModel(
             val pagerInterceptionMode = repo.pagerInterceptionMode
             val enableBlur = repo.enableBlur
             val enableFloatingBottomBar = repo.enableFloatingBottomBar
+            val navBarPosition = repo.navBarPosition
             val enableFloatingBottomBarBlur = repo.enableFloatingBottomBarBlur
             val enableNavigationBadge = repo.enableNavigationBadge
             val glassBackgroundType = repo.glassBackgroundType
@@ -118,6 +119,7 @@ class SettingsViewModel(
                     pagerInterceptionMode = pagerInterceptionMode,
                     enableBlur = enableBlur,
                     enableFloatingBottomBar = enableFloatingBottomBar,
+                    navBarPosition = navBarPosition,
                     enableFloatingBottomBarBlur = enableFloatingBottomBarBlur,
                     enableNavigationBadge = enableNavigationBadge,
                     glassBackgroundType = glassBackgroundType,
@@ -233,6 +235,11 @@ class SettingsViewModel(
     fun setEnableBlur(enabled: Boolean) {
         repo.enableBlur = enabled
         _uiState.update { it.copy(enableBlur = enabled) }
+    }
+
+    fun setNavBarPosition(position: Int) {
+        repo.navBarPosition = position
+        _uiState.update { it.copy(navBarPosition = position) }
     }
 
     fun setEnableFloatingBottomBar(enabled: Boolean) {

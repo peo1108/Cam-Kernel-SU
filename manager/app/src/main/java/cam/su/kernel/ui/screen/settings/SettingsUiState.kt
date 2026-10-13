@@ -21,6 +21,7 @@ data class SettingsUiState(
     val pagerInterceptionMode: Int = 1,
     val enableBlur: Boolean = true,
     val enableFloatingBottomBar: Boolean = true,
+    val navBarPosition: Int = 0,
     val enableFloatingBottomBarBlur: Boolean = false,
     val enableNavigationBadge: Boolean = true,
     val glassBackgroundType: Int = 0,

@@ -17,6 +17,9 @@ interface SettingsRepository {
     var pagerInterceptionMode: Int
     var enableBlur: Boolean
     var enableFloatingBottomBar: Boolean
+
+    /** Where the main navigation bar sits: NavBarPosition ordinal (auto, bottom, left, right). */
+    var navBarPosition: Int
     var enableFloatingBottomBarBlur: Boolean
     var glassBackgroundType: Int
     var glassBackgroundBlur: Float

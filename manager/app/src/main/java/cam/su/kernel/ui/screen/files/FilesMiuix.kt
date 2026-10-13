@@ -151,6 +151,10 @@ sealed interface FilesDialogState {
     data object EditPath : FilesDialogState
     data class OpenAs(val entry: FileEntry) : FilesDialogState
     data object Search : FilesDialogState
+    data class ConfirmBackup(val partition: cam.su.kernel.files.Partition) : FilesDialogState
+
+    /** Flashing asks twice: [last] is the second time. */
+    data class ConfirmFlash(val image: FileEntry, val partition: cam.su.kernel.files.Partition, val last: Boolean = false) : FilesDialogState
 }
 
 @Composable
@@ -684,6 +688,12 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 item {
                     DrawerItem(Icons.Rounded.Apps, stringResource(R.string.files_view_as_app), stringResource(R.string.files_view_as_app_summary), onClick = {
                         vm.chooseApp()
+                        onClose()
+                    })
+                }
+                item {
+                    DrawerItem(Icons.Rounded.Storage, stringResource(R.string.files_partitions), stringResource(R.string.files_partitions_summary), onClick = {
+                        vm.showPartitions()
                         onClose()
                     })
                 }

@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.InstallMobile
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.runtime.Composable
@@ -232,6 +233,19 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
 
         FilesDialogState.Search -> SearchDialog(vm, close)
 
+        is FilesDialogState.ConfirmBackup -> Confirm(
+            title = stringResource(R.string.files_backup_title),
+            text = stringResource(
+                R.string.files_backup_confirm,
+                dialog.partition.name,
+                FileFormat.size(dialog.partition.size),
+                cam.su.kernel.files.Partitions.BACKUP_DIR,
+            ),
+            onDismiss = close,
+        ) { vm.backupPartition(dialog.partition.name) }
+
+        is FilesDialogState.ConfirmFlash -> FlashConfirmDialog(dialog, vm, onDialog)
+
         FilesDialogState.Sort -> SortDialog(state, vm, close)
         is FilesDialogState.Permissions -> PermissionsDialog(dialog.entry, vm, close)
         is FilesDialogState.Owner -> OwnerDialog(dialog.entry, vm, close)
@@ -248,6 +262,7 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
     if (state.override != null) OverrideDialog(vm)
     if (state.processes != null) ProcessDialog(vm)
     if (state.apkInfo != null) ApkInfoDialog(vm)
+    if (state.partitions != null) PartitionsDialog(vm, onDialog)
 
     FilesDialog(show = state.busy, title = null, onDismiss = null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -374,6 +389,14 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                     GridCell(Icons.Rounded.PlayArrow, stringResource(R.string.files_run), onClick = {
                         close()
                         vm.runScript(entry)
+                    }),
+                )
+            }
+            if (single && !inArchive && entry.isReadableFile() && FileKinds.extension(entry.name) == "img") {
+                add(
+                    GridCell(Icons.Rounded.SystemUpdateAlt, stringResource(R.string.files_flash), onClick = {
+                        close()
+                        vm.showPartitions(entry)
                     }),
                 )
             }
@@ -595,6 +618,118 @@ private fun ProcessDialog(vm: FilesViewModel) {
             }
         }
         TextButton(text = stringResource(R.string.files_close), onClick = vm::hideProcesses, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+    }
+}
+
+/** Partitions under by-name: tap one to back it up, or (with an image picked) to flash it there. */
+@Composable
+private fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit) {
+    val title = vm.uiState.collectAsState().value.partitions?.image?.let { stringResource(R.string.files_flash_pick, it.name) }
+        ?: stringResource(R.string.files_partitions)
+    FilesDialog(show = true, title = title, onDismiss = vm::hidePartitions) {
+        val live by vm.uiState.collectAsState()
+        val ui = live.partitions ?: return@FilesDialog
+        val image = ui.image
+        val flashable = ui.list.filter { cam.su.kernel.files.Partitions.canFlash(it.name) }
+        val suggested = image?.let { cam.su.kernel.files.Partitions.guess(it.name, ui.list, ui.slot) }
+        // flashing only ever offers the boot chain; a backup can be of anything
+        val shown = when {
+            image != null -> listOfNotNull(suggested) + flashable.filter { it != suggested }
+            ui.all -> ui.list
+            else -> flashable
+        }
+        // short enough that "Show all" and Close stay on screen under it
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 320.dp)) {
+            items(shown.size) { i ->
+                val p = shown[i]
+                val active = ui.slot.isNotEmpty() && p.name.endsWith(ui.slot)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            vm.hidePartitions()
+                            onDialog(if (image != null) FilesDialogState.ConfirmFlash(image, p) else FilesDialogState.ConfirmBackup(p))
+                        }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(p.name, fontSize = 15.sp, fontWeight = if (active) androidx.compose.ui.text.font.FontWeight.SemiBold else null)
+                        Text(FileFormat.size(p.size), fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary)
+                    }
+                    val tag = when {
+                        p == suggested -> stringResource(R.string.files_partition_suggested)
+                        active -> stringResource(R.string.files_partition_active)
+                        else -> null
+                    }
+                    tag?.let { Text(it, fontSize = 11.sp, color = colorScheme.primary) }
+                }
+            }
+        }
+        if (image == null && !ui.all && ui.list.size > shown.size) {
+            ListAction(stringResource(R.string.files_partitions_all, ui.list.size), onClick = vm::showAllPartitions)
+        }
+        TextButton(text = stringResource(R.string.files_close), onClick = vm::hidePartitions, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+    }
+}
+
+/** Two steps: what gets written where, then a last warning with a red Flash. */
+@Composable
+private fun FlashConfirmDialog(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit) {
+    val close = { onDialog(null) }
+    val tooBig = dialog.image.contentSize > dialog.partition.size
+    val title = stringResource(if (dialog.last) R.string.files_flash_last_title else R.string.files_flash)
+    // overlay dialogs keep the content they were shown with: each step is a dialog of its own
+    androidx.compose.runtime.key(dialog.last) { FlashConfirmBody(dialog, title, tooBig, vm, onDialog, close) }
+}
+
+@Composable
+private fun FlashConfirmBody(
+    dialog: FilesDialogState.ConfirmFlash,
+    title: String,
+    tooBig: Boolean,
+    vm: FilesViewModel,
+    onDialog: (FilesDialogState?) -> Unit,
+    close: () -> Unit,
+) {
+    FilesDialog(show = true, title = title, onDismiss = close) {
+        if (!dialog.last) {
+            Text(
+                stringResource(
+                    R.string.files_flash_confirm,
+                    dialog.image.name,
+                    FileFormat.size(dialog.image.contentSize),
+                    dialog.partition.name,
+                    FileFormat.size(dialog.partition.size),
+                ),
+            )
+            if (tooBig) Text(stringResource(R.string.files_flash_too_big), color = colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+            Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                TextButton(text = stringResource(android.R.string.cancel), onClick = close, modifier = Modifier.weight(1f))
+                TextButton(
+                    text = stringResource(android.R.string.ok),
+                    enabled = !tooBig,
+                    onClick = { onDialog(dialog.copy(last = true)) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+        } else {
+            Text(stringResource(R.string.files_flash_last_message), color = colorScheme.error)
+            Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                TextButton(text = stringResource(android.R.string.cancel), onClick = close, modifier = Modifier.weight(1f))
+                TextButton(
+                    text = stringResource(R.string.files_flash_go),
+                    onClick = {
+                        close()
+                        vm.flashPartition(dialog.image, dialog.partition.name)
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColors(color = colorScheme.error, textColor = colorScheme.onError),
+                )
+            }
+        }
     }
 }
 

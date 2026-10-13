@@ -170,6 +170,12 @@ class CamFileService : RootService() {
             id
         }
 
+        override fun partitions(): Array<String> = call {
+            PartitionOps.list().map { "${it.name}\t${it.size}" }.toTypedArray()
+        }
+
+        override fun slotSuffix(): String = PartitionOps.slot()
+
         override fun stopScript(id: Int) {
             scripts[id]?.stop()
         }
@@ -311,6 +317,12 @@ class CamFileService : RootService() {
                             .extract(reader, op.sources.map { Archives.split(it).second }, op.destDir ?: throw FsException(Errno.EINVAL))
                     }
                 }
+
+                OpKind.BACKUP -> PartitionOps(listener, cancelled)
+                    .backup(op.sources.single(), op.destDir ?: throw FsException(Errno.EINVAL))
+
+                OpKind.FLASH -> PartitionOps(listener, cancelled)
+                    .flash(op.sources.single(), op.destDir ?: throw FsException(Errno.EINVAL))
 
                 OpKind.COMPRESS -> ArchiveOps(OsBackend, listener, cancelled)
                     .compress(op.sources, op.destDir ?: throw FsException(Errno.EINVAL))

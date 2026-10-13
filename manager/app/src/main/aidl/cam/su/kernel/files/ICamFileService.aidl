@@ -76,4 +76,9 @@ interface ICamFileService {
     int runScript(String path, IScriptCallback callback);
     // ends the script and everything it started
     void stopScript(int id);
+
+    // every partition under by-name as "name\tsize in bytes"
+    String[] partitions();
+    // ro.boot.slot_suffix ("_a", "_b"; "" without A/B)
+    String slotSuffix();
 }

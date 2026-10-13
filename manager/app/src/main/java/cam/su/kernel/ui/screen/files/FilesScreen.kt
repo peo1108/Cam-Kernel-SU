@@ -149,5 +149,7 @@ fun opTitle(context: Context, kind: OpKind): String = context.getString(
         OpKind.DELETE -> R.string.files_op_delete
         OpKind.EXTRACT -> R.string.files_op_extract
         OpKind.COMPRESS -> R.string.files_op_compress
+        OpKind.BACKUP -> R.string.files_op_backup
+        OpKind.FLASH -> R.string.files_op_flash
     },
 )

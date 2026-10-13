@@ -151,6 +151,15 @@ object CamFileClient {
         }
     }
 
+    /** Every partition under by-name, and the slot suffix the phone booted ("" without A/B). */
+    suspend fun partitions(): Pair<List<Partition>, String> = call { s ->
+        val list = s.partitions().mapNotNull { line ->
+            val parts = line.split('\t')
+            parts.getOrNull(1)?.toLongOrNull()?.let { Partition(parts[0], it) }
+        }
+        list to s.slotSuffix()
+    }
+
     /** Stops the measure and checksum calls running now. */
     suspend fun cancelReads() = call { it.cancelReads() }
 

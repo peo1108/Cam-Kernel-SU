@@ -89,6 +89,17 @@ data class OverrideUi(
     val replacement: FileEntry?,
 )
 
+/**
+ * The partition list: to back one up ([image] null), or to pick where [image] gets flashed.
+ * [all] shows every partition, not just the boot chain.
+ */
+data class PartitionsUi(
+    val list: List<cam.su.kernel.files.Partition>,
+    val slot: String,
+    val image: FileEntry? = null,
+    val all: Boolean = false,
+)
+
 data class SearchUi(val root: String, val running: Boolean = true, val results: List<FileEntry> = emptyList())
 
 /** The Properties dialog: [measure] fills in after the tree was walked. [token] tells one opening from the next. */
@@ -133,6 +144,7 @@ data class FilesUiState(
     val processes: List<Triple<Int, Int, String>>? = null,
     /** pid → process name of the apps browsed as */
     val appNames: Map<Int, String> = emptyMap(),
+    val partitions: PartitionsUi? = null,
 ) {
     val activePanel get() = panels[active]
     val otherPanel get() = panels[1 - active]
@@ -611,6 +623,47 @@ class FilesViewModel : ViewModel() {
     }
 
     fun hideProcesses() = _uiState.update { it.copy(processes = null) }
+
+    // --- partitions: back up any, flash the boot chain ---
+
+    /** The partition list; with [image], to choose where it gets flashed. */
+    fun showPartitions(image: FileEntry? = null) {
+        _uiState.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            try {
+                val (list, slot) = CamFileClient.partitions()
+                if (list.isEmpty()) throw FsException(Errno.ENOENT, detail = "/dev/block/by-name")
+                _uiState.update { it.copy(partitions = PartitionsUi(cam.su.kernel.files.Partitions.ordered(list, slot), slot, image)) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            } finally {
+                _uiState.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    fun showAllPartitions() = _uiState.update { it.copy(partitions = it.partitions?.copy(all = true)) }
+
+    fun hidePartitions() = _uiState.update { it.copy(partitions = null) }
+
+    /** Into /sdcard/CamBackup/<name>_<time>.img; the active panel opens there when it is done. */
+    fun backupPartition(name: String) {
+        hidePartitions()
+        val dest = cam.su.kernel.files.Partitions.backupPath(name, System.currentTimeMillis())
+        viewModelScope.launch {
+            try {
+                mkdirs(FsPath.parent(dest))
+                runOp(FileOp(OpKind.BACKUP, listOf(name), dest)) { navigateActive(FsPath.parent(dest)) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+        }
+    }
+
+    fun flashPartition(image: FileEntry, name: String) {
+        hidePartitions()
+        runOp(FileOp(OpKind.FLASH, listOf(image.path), name))
+    }
 
     fun viewAsApp(pid: Int, name: String) {
         _uiState.update { it.copy(processes = null, appNames = it.appNames + (pid to name)) }

@@ -127,6 +127,8 @@ class FileOpService : Service() {
         OpKind.DELETE -> R.string.files_op_delete
         OpKind.EXTRACT -> R.string.files_op_extract
         OpKind.COMPRESS -> R.string.files_op_compress
+        OpKind.BACKUP -> R.string.files_op_backup
+        OpKind.FLASH -> R.string.files_op_flash
         null -> R.string.files
     }
 

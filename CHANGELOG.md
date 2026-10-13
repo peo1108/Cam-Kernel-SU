@@ -2,6 +2,19 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.1.6 - 2026-10-13
+- Tab Tệp mới: quản lý file bằng root kiểu MT Manager, hai panel, ngay trong app
+### Tính năng mới
+- Tab **Tệp** (giữa Tính năng và Cài đặt): hai panel, sao chép / di chuyển / xoá / đổi tên, quyền, owner, SELinux context, bookmark, tìm kiếm theo tên và nội dung, checksum, xem hex
+- Mở file nén như thư mục (zip, apk, tar.gz...), giải nén, nén, sửa trực tiếp trong zip (thêm, xoá, đổi tên, sửa file bên trong)
+- Trình sửa văn bản có tô màu (shell, prop, xml, json), tìm / thay thế, đi tới dòng, hoàn tác; file lớn hoặc nhị phân mở ở chế độ chỉ đọc vẫn cuộn mượt
+- Cài APK và bộ split (apks, xapk, apkm) bằng root, xem thông tin APK; cài zip làm module ngay từ tab Tệp
+- Ghi đè file hệ thống kiểu systemless (cần metamodule), xem file như một app đang chạy nhìn thấy
+- Thao tác dài chạy nền với thông báo tiến trình và nút Huỷ
+### Sửa lỗi
+- ADB không dây không còn bị tắt khi app được cập nhật hoặc mở lại sau khi buộc dừng (Android 15+)
+- App được biên dịch sẵn sau khi cài / cập nhật nên lần mở đầu không còn giật
+
 ## 1.1.5 - 2026-10-13
 - Cập nhật theo KernelSU mới nhất: thêm tuỳ chọn chỉ cho Shell lấy root qua ADB
 ### Tính năng mới

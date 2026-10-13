@@ -94,7 +94,7 @@
 
 ### Task 1: `ICamFileService` và `CamFileService`
 
-**Files:** Create `manager/app/src/main/aidl/cam/su/kernel/files/ICamFileService.aidl`, `IFileOpCallback.aidl`, `FileEntry.aidl`; `manager/app/src/main/java/cam/su/kernel/files/FileEntry.kt` (Parcelable), `CamFileService.kt`, `CamFileClient.kt`, `RootFs.kt`. Modify `AndroidManifest.xml` nếu libsu yêu cầu khai báo service.
+**Files:** Create `manager/app/src/main/aidl/cam/su/kernel/files/ICamFileService.aidl`, `FileEntry.aidl`; `manager/app/src/main/java/cam/su/kernel/files/FileEntry.kt` (Parcelable), `FsBackend.kt`, `FsPath.kt`, `AndroidIds.kt`, `RootFs.kt`, `OsBackend.kt`, `CamFileService.kt`, `CamFileClient.kt`. RootService của libsu không cần khai báo trong manifest (như `CamRootService`).
 
 **Interfaces:**
 - `FileEntry(name, path, type: FILE|DIR|LINK|OTHER, linkTarget: String?, linkBroken, size, mtime, mode, uid, gid, ownerName, groupName, context: String?)`.
@@ -105,19 +105,21 @@
   - `void chmod(String path, int mode, boolean recursive)`, `void chown(String path, int uid, int gid, boolean recursive)`, `void setContext(String path, String ctx, boolean recursive)`.
   - `ParcelFileDescriptor openRead(String path)` — pipe, root service ghi vào.
   - `ParcelFileDescriptor openWrite(String path)` — pipe; khi đóng thì ghi nguyên tử, giữ metadata (Global Constraints).
-  - `int startOp(in Bundle op, IFileOpCallback cb)` (copy/move/delete/extract/compress; trả id), `void cancelOp(int id)`.
-- `IFileOpCallback` (`oneway`): `onProgress(id, doneBytes, totalBytes, currentPath)`, `onConflict(id, src, dst)` → trả lời bằng `resolveConflict(id, choice, applyAll)`, `onDone(id, errorMessage?)`.
-- Lỗi trả về dạng `ServiceSpecificException` với `errno`, phía app đổi thành chuỗi dễ hiểu.
+  - Thao tác dài (`startOp`/`cancelOp` + `IFileOpCallback`) chuyển sang Task 2, cùng engine.
+- Lỗi: SDK của dự án không có `ServiceSpecificException`, nên root service ném `IllegalStateException("cam-errno:<n>|…")` (`FsException.toRemote`), client đổi lại thành `FsException` (`fromRemote`).
+- Đã làm (2026-10-13): `openRead` trả đầu đọc của reliable pipe; `writeFile(path, in ParcelFileDescriptor)` đọc tới EOF rồi mới ghi nguyên tử, `checkError()` trước khi rename. Tên uid/gid tính bằng `AndroidIds` (bảng AID của bionic), không gọi `getpwuid`.
 - `CamFileClient` giống `CamRootClient` (một binding, `StateFlow`), API suspend chạy trên `Dispatchers.IO`.
 
-- [ ] Viết AIDL + `FileEntry` Parcelable
-- [ ] `RootFs`: lớp thuần Kotlin bọc `Os`, dùng chung cho service và test
-- [ ] `CamFileService` + `CamFileClient`
-- [ ] Test `RootFsTest` (list, stat, symlink gãy, ghi nguyên tử giữ mode)
+- [x] Viết AIDL + `FileEntry` Parcelable
+- [x] `RootFs` trên interface `FsBackend` (`OsBackend` trên máy, `FakeFs` trong test)
+- [x] `CamFileService` + `CamFileClient`
+- [x] Test `RootFsTest`, `FsPathTest`, `AndroidIdsTest` (28 test)
 
 ### Task 2: Engine thao tác file
 
-**Files:** Create `files/FileOpEngine.kt`, `files/ConflictPolicy.kt`. Test `FileOpEngineTest.kt`.
+**Files:** Create `files/FileOpEngine.kt`, `files/ConflictPolicy.kt`, `aidl/.../files/IFileOpCallback.aidl`. Modify `ICamFileService.aidl` (`int startOp(in Bundle op, IFileOpCallback cb)`, `void cancelOp(int id)`, `void resolveConflict(int id, int choice, boolean applyAll)`). Test `FileOpEngineTest.kt`.
+
+- `IFileOpCallback` (`oneway`): `onProgress(id, doneBytes, totalBytes, currentPath)`, `onConflict(id, src, dst)`, `onDone(id, errorMessage?)`.
 
 - Copy/move/delete đệ quy không đi theo symlink; kiểm tra copy vào chính nó; move dùng `rename` trước, `EXDEV` thì chép + xoá.
 - Tổng dung lượng tính trước (một lượt `lstat`) để có phần trăm.

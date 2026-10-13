@@ -176,6 +176,12 @@ class CamFileService : RootService() {
 
         override fun slotSuffix(): String = PartitionOps.slot()
 
+        override fun openFd(path: String): ParcelFileDescriptor = call {
+            val file = FsPath.normalize(path)
+            if (!FileMode.isRegular(OsBackend.stat(file).mode)) throw FsException(Errno.EINVAL, file, "not a regular file: $file")
+            ParcelFileDescriptor.open(File(file), ParcelFileDescriptor.MODE_READ_ONLY)
+        }
+
         override fun stopScript(id: Int) {
             scripts[id]?.stop()
         }

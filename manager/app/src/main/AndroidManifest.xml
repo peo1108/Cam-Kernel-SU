@@ -89,6 +89,13 @@
                 android:resource="@xml/filepaths" />
         </provider>
 
+        <!-- Files tab: hands other apps a root opened file without copying it -->
+        <provider
+            android:name=".files.RootFileProvider"
+            android:authorities="${applicationId}.rootfiles"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <service
             android:name=".jailbreak.CamJailbreakService"
             android:directBootAware="true"

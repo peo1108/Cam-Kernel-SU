@@ -118,8 +118,8 @@ sealed interface FilesMessage {
 
 /** One-shot work for the screen: hand a cached copy of a root file to another app. */
 sealed interface FilesEvent {
-    data class Open(val file: File, val mime: String) : FilesEvent
-    data class Share(val files: List<File>) : FilesEvent
+    data class Open(val uri: android.net.Uri, val mime: String) : FilesEvent
+    data class Share(val uris: List<android.net.Uri>) : FilesEvent
     /** A module zip to hand to the Flash screen. */
     data class Flash(val file: File) : FilesEvent
     data class Edit(val path: String) : FilesEvent
@@ -681,13 +681,40 @@ class FilesViewModel : ViewModel() {
         CamFileClient.stat(path)?.let { fresh -> _uiState.update { it.copy(properties = it.properties?.copy(entry = fresh)) } }
     }
 
-    /** Opens a file with another app: root files are copied to the cache first. */
-    fun openWith(entry: FileEntry, mime: String) = cached(listOf(entry)) { files -> FilesEvent.Open(files.single(), mime) }
+    /**
+     * Opens a file with another app. Shared storage and system files are handed over as the
+     * descriptor root opened (RootFileProvider: instant, seekable, nothing copied); the rest is
+     * copied to the cache first.
+     */
+    fun openWith(entry: FileEntry, mime: String) = handOver(listOf(entry)) { uris -> FilesEvent.Open(uris.single(), mime) }
 
     fun share(entries: List<FileEntry>) =
-        cached(entries.filter { !it.isDir && it.type != FileEntry.TYPE_OTHER && !(it.isLink && it.linkBroken) }) { FilesEvent.Share(it) }
+        handOver(entries.filter { !it.isDir && it.type != FileEntry.TYPE_OTHER && !(it.isLink && it.linkBroken) }) { FilesEvent.Share(it) }
 
-    private fun cached(entries: List<FileEntry>, event: (List<File>) -> FilesEvent) {
+    private fun handOver(entries: List<FileEntry>, event: (List<android.net.Uri>) -> FilesEvent) {
+        if (entries.isEmpty()) return
+        if (entries.all(cam.su.kernel.files.RootFileProvider::canStream)) {
+            viewModelScope.launch { events.send(event(entries.map(cam.su.kernel.files.RootFileProvider::uriFor))) }
+            return
+        }
+        cached(entries, copyAll = false) { files ->
+            event(
+                entries.zip(files).map { (e, f) ->
+                    if (cam.su.kernel.files.RootFileProvider.canStream(e)) {
+                        cam.su.kernel.files.RootFileProvider.uriFor(e)
+                    } else {
+                        androidx.core.content.FileProvider.getUriForFile(camApp, "${camApp.packageName}.fileprovider", f)
+                    }
+                },
+            )
+        }
+    }
+
+    /**
+     * Copies [entries] into the cache; [event] gets a file per entry. Without [copyAll], entries
+     * that are streamed instead are not copied (their file stays empty and unused).
+     */
+    private fun cached(entries: List<FileEntry>, copyAll: Boolean = true, event: (List<File>) -> FilesEvent) {
         if (entries.isEmpty()) return
         _uiState.update { it.copy(busy = true) }
         viewModelScope.launch {
@@ -696,7 +723,9 @@ class FilesViewModel : ViewModel() {
                     deleteRecursively()
                     mkdirs()
                 }
-                val files = entries.map { e -> File(dir, e.name).also { CamFileClient.copyToLocal(e.path, it) } }
+                val files = entries.map { e ->
+                    File(dir, e.name).also { if (copyAll || !cam.su.kernel.files.RootFileProvider.canStream(e)) CamFileClient.copyToLocal(e.path, it) }
+                }
                 events.send(event(files))
             } catch (e: FsException) {
                 _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }

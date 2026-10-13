@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.R
@@ -28,7 +27,6 @@ import cam.su.kernel.ui.screen.flash.FlashIt
 import cam.su.kernel.ui.viewmodel.FilesEvent
 import cam.su.kernel.ui.viewmodel.FilesMessage
 import cam.su.kernel.ui.viewmodel.FilesViewModel
-import java.io.File
 
 @Composable
 fun FilesPager(
@@ -65,10 +63,7 @@ fun FilesPager(
     LaunchedEffect(viewModel) {
         viewModel.eventFlow.collect { event ->
             when (event) {
-                is FilesEvent.Open -> startChooser(
-                    context,
-                    Intent(Intent.ACTION_VIEW).setDataAndType(uriOf(context, event.file), event.mime),
-                )
+                is FilesEvent.Open -> startChooser(context, Intent(Intent.ACTION_VIEW).setDataAndType(event.uri, event.mime))
 
                 is FilesEvent.Edit -> navigator.push(Route.TextEditor(event.path))
 
@@ -79,7 +74,7 @@ fun FilesPager(
                 is FilesEvent.Flash -> navigator.push(Route.Flash(FlashIt.FlashModules(listOf(Uri.fromFile(event.file)))))
 
                 is FilesEvent.Share -> {
-                    val uris = event.files.map { uriOf(context, it) }
+                    val uris = event.uris
                     val intent = if (uris.size == 1) {
                         Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris.single())
                     } else {
@@ -95,9 +90,6 @@ fun FilesPager(
 
     FilesPagerMiuix(uiState, viewModel, bottomInnerPadding)
 }
-
-private fun uriOf(context: Context, file: File) =
-    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 
 private fun startChooser(context: Context, intent: Intent) {
     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

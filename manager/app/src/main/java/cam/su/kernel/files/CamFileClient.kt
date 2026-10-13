@@ -160,6 +160,9 @@ object CamFileClient {
         list to s.slotSuffix()
     }
 
+    /** A seekable read-only descriptor of the file at [path], opened by root. */
+    suspend fun openFd(path: String): ParcelFileDescriptor = call { it.openFd(path) }
+
     /** Stops the measure and checksum calls running now. */
     suspend fun cancelReads() = call { it.cancelReads() }
 

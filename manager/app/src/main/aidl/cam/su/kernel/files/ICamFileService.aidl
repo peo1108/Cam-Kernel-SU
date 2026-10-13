@@ -81,4 +81,7 @@ interface ICamFileService {
     String[] partitions();
     // ro.boot.slot_suffix ("_a", "_b"; "" without A/B)
     String slotSuffix();
+
+    // the regular file at path opened read-only: a real, seekable descriptor (RootFileProvider)
+    ParcelFileDescriptor openFd(String path);
 }

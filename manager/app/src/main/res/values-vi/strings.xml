@@ -846,4 +846,20 @@
     <string name="editor_replace_with">Thay bằng</string>
     <string name="editor_replace">Thay</string>
     <string name="editor_replace_all">Tất cả</string>
+    <string name="files_search">Tìm kiếm</string>
+    <string name="files_search_in">Trong %1$s</string>
+    <string name="files_search_name">Tên (dùng được * và ?)</string>
+    <string name="files_search_content">Có chứa chữ (không bắt buộc)</string>
+    <string name="files_search_stop">Dừng</string>
+    <string name="files_searching">Đang tìm…</string>
+    <string name="files_search_found">Tìm thấy %1$d (tối đa 500)</string>
+    <string name="files_hex">Xem hex</string>
+    <string name="files_apk_info">Thông tin APK</string>
+    <string name="files_apk_version">Phiên bản</string>
+    <string name="files_apk_sdk">SDK</string>
+    <string name="files_apk_signer">Chữ ký SHA-256</string>
+    <string name="files_apk_permissions">Quyền</string>
+    <string name="files_tap_to_copy">Chạm vào một giá trị để sao chép</string>
+    <string name="hex_go_to">Đi tới offset</string>
+    <string name="hex_offset_hint">Offset (0x1A2B hoặc 6699)</string>
 </resources>

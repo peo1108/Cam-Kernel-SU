@@ -51,6 +51,24 @@ data class OpUi(
     val conflict: CamFileClient.OpEvent.Conflict? = null,
 )
 
+/** MD5, SHA-1, SHA-256 of [entry]; null while computing. */
+data class ChecksumUi(val entry: FileEntry, val values: List<String>? = null)
+
+/** What an APK says about itself, read from a cached copy. */
+data class ApkInfoUi(
+    val label: String,
+    val packageName: String,
+    val versionName: String?,
+    val versionCode: Long,
+    val minSdk: Int,
+    val targetSdk: Int,
+    val signer: String?,
+    val permissions: List<String>,
+    val icon: android.graphics.drawable.Drawable?,
+)
+
+data class SearchUi(val root: String, val running: Boolean = true, val results: List<FileEntry> = emptyList())
+
 /** The Properties dialog: [measure] fills in after the tree was walked. */
 data class PropertiesUi(val entry: FileEntry, val measure: LongArray? = null)
 
@@ -69,6 +87,7 @@ sealed interface FilesEvent {
     /** A module zip to hand to the Flash screen. */
     data class Flash(val file: File) : FilesEvent
     data class Edit(val path: String) : FilesEvent
+    data class Hex(val path: String) : FilesEvent
 }
 
 data class FilesUiState(
@@ -80,6 +99,9 @@ data class FilesUiState(
     val properties: PropertiesUi? = null,
     val bookmarks: List<String> = emptyList(),
     val busy: Boolean = false,
+    val checksum: ChecksumUi? = null,
+    val apkInfo: ApkInfoUi? = null,
+    val search: SearchUi? = null,
 ) {
     val activePanel get() = panels[active]
     val otherPanel get() = panels[1 - active]
@@ -311,6 +333,105 @@ class FilesViewModel : ViewModel() {
         viewModelScope.launch { events.send(FilesEvent.Edit(entry.path)) }
     }
 
+    fun hex(entry: FileEntry) {
+        viewModelScope.launch { events.send(FilesEvent.Hex(entry.path)) }
+    }
+
+    fun showChecksum(entry: FileEntry) {
+        _uiState.update { it.copy(checksum = ChecksumUi(entry)) }
+        viewModelScope.launch {
+            try {
+                val values = CamFileClient.checksums(entry.path)
+                _uiState.update { s -> s.copy(checksum = s.checksum?.takeIf { it.entry.path == entry.path }?.copy(values = values)) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(checksum = null, message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+        }
+    }
+
+    fun hideChecksum() = _uiState.update { it.copy(checksum = null) }
+
+    /** Reads the APK (or the base APK inside a bundle) like the installer would, without installing. */
+    fun showApkInfo(entry: FileEntry) {
+        _uiState.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            try {
+                val source = if (Archives.isApkBundle(entry.name)) {
+                    val inside = CamFileClient.listDir(Archives.join(entry.path, "")).filter { it.name.endsWith(".apk", true) }
+                    (inside.firstOrNull { it.name.equals("base.apk", true) } ?: inside.firstOrNull())?.path
+                        ?: throw FsException(cam.su.kernel.files.Errno.ENOENT, entry.path)
+                } else {
+                    entry.path
+                }
+                val file = File(camApp.cacheDir, "apk_info.apk")
+                CamFileClient.copyToLocal(source, file)
+                val info = readApk(file) ?: throw FsException(cam.su.kernel.files.Errno.EINVAL, entry.name, "not a valid APK")
+                _uiState.update { it.copy(apkInfo = info) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            } finally {
+                _uiState.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    fun hideApkInfo() = _uiState.update { it.copy(apkInfo = null) }
+
+    @Suppress("DEPRECATION")
+    private fun readApk(file: File): ApkInfoUi? {
+        val pm = camApp.packageManager
+        val flags = android.content.pm.PackageManager.GET_PERMISSIONS or android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+        val info = pm.getPackageArchiveInfo(file.absolutePath, flags) ?: return null
+        val app = info.applicationInfo ?: return null
+        app.sourceDir = file.absolutePath
+        app.publicSourceDir = file.absolutePath
+        val signer = info.signingInfo?.apkContentsSigners?.firstOrNull()?.toByteArray()?.let { cert ->
+            java.security.MessageDigest.getInstance("SHA-256").digest(cert).joinToString(":") { "%02X".format(it) }
+        }
+        return ApkInfoUi(
+            label = app.loadLabel(pm).toString(),
+            packageName = info.packageName,
+            versionName = info.versionName,
+            versionCode = info.longVersionCode,
+            minSdk = app.minSdkVersion,
+            targetSdk = app.targetSdkVersion,
+            signer = signer,
+            permissions = info.requestedPermissions?.toList().orEmpty(),
+            icon = runCatching { app.loadIcon(pm) }.getOrNull(),
+        )
+    }
+
+    /** MT's search: from the active folder down, by name and optionally by content. */
+    fun search(pattern: String, content: String) {
+        val root = _uiState.value.activePanel.nav.path
+        if (Archives.isInside(root)) return
+        _uiState.update { it.copy(search = SearchUi(root)) }
+        viewModelScope.launch {
+            val results = try {
+                CamFileClient.search(root, pattern, content.ifEmpty { null }, SEARCH_LIMIT)
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+                emptyList()
+            }
+            _uiState.update { s -> s.copy(search = s.search?.copy(running = false, results = results)) }
+        }
+    }
+
+    fun stopSearch() {
+        viewModelScope.launch { runCatching { CamFileClient.cancelSearch() } }
+    }
+
+    fun closeSearch() {
+        if (_uiState.value.search?.running == true) stopSearch()
+        _uiState.update { it.copy(search = null) }
+    }
+
+    /** A search hit: its folder opens in the active panel. */
+    fun reveal(entry: FileEntry) {
+        closeSearch()
+        navigateActive(FsPath.parent(entry.path))
+    }
+
     fun hideProperties() = _uiState.update { it.copy(properties = null) }
 
     private suspend fun reloadProperties(path: String) {
@@ -528,6 +649,8 @@ class FilesViewModel : ViewModel() {
         const val KEY_SORT_DESC = "sort_desc"
         const val KEY_SHOW_HIDDEN = "show_hidden"
         const val KEY_BOOKMARKS = "bookmarks"
+
+        const val SEARCH_LIMIT = 500
 
         val DEFAULT_BOOKMARKS = listOf(
             "/data/adb/modules",

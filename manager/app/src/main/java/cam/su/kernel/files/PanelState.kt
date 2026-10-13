@@ -217,3 +217,20 @@ object SelectionOps {
         }.map { it.path }
     }
 }
+
+/** File name patterns for search: `*` and `?` wildcards; a plain word matches anywhere in the name. */
+object SearchPattern {
+    fun toRegex(pattern: String): Regex {
+        val p = pattern.trim()
+        if (p.isEmpty()) return Regex("")
+        if ('*' !in p && '?' !in p) return Regex(Regex.escape(p), RegexOption.IGNORE_CASE)
+        val body = p.map {
+            when (it) {
+                '*' -> ".*"
+                '?' -> "."
+                else -> Regex.escape(it.toString())
+            }
+        }.joinToString("")
+        return Regex("^$body$", RegexOption.IGNORE_CASE)
+    }
+}

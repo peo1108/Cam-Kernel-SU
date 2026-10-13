@@ -58,6 +58,15 @@ object CamFileClient {
 
     suspend fun statFs(path: String): LongArray = call { it.statFs(path) }
 
+    suspend fun checksums(path: String): List<String> = call { it.checksums(path).toList() }
+
+    suspend fun readRange(path: String, offset: Long, length: Int): ByteArray = call { it.readRange(path, offset, length) }
+
+    suspend fun search(root: String, pattern: String, content: String?, limit: Int): List<FileEntry> =
+        call { it.search(root, pattern, content, limit).list }
+
+    suspend fun cancelSearch() = call { it.cancelSearch() }
+
     suspend fun measure(path: String): LongArray = call { it.measure(path) }
 
     suspend fun mkdir(path: String) = call { it.mkdir(path) }

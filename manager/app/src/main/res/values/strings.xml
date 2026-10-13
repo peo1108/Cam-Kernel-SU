@@ -861,4 +861,20 @@
     <string name="editor_replace_with">Replace with</string>
     <string name="editor_replace">Replace</string>
     <string name="editor_replace_all">All</string>
+    <string name="files_search">Search</string>
+    <string name="files_search_in">In %1$s</string>
+    <string name="files_search_name">Name (* and ? allowed)</string>
+    <string name="files_search_content">Containing text (optional)</string>
+    <string name="files_search_stop">Stop</string>
+    <string name="files_searching">Searching…</string>
+    <string name="files_search_found">%1$d found (up to 500)</string>
+    <string name="files_hex">Hex viewer</string>
+    <string name="files_apk_info">APK info</string>
+    <string name="files_apk_version">Version</string>
+    <string name="files_apk_sdk">SDK</string>
+    <string name="files_apk_signer">Signer SHA-256</string>
+    <string name="files_apk_permissions">Permissions</string>
+    <string name="files_tap_to_copy">Tap a value to copy it</string>
+    <string name="hex_go_to">Go to offset</string>
+    <string name="hex_offset_hint">Offset (0x1A2B or 6699)</string>
 </resources>

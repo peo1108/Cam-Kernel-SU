@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +49,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -150,7 +155,14 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
                 vm.symlinkInOther(dialog.entry.path)
                 close()
             }
-            ListAction(stringResource(R.string.files_tool_checksum), enabled = false) {}
+            ListAction(stringResource(R.string.files_tool_checksum), enabled = !dialog.entry.isDir) {
+                close()
+                vm.showChecksum(dialog.entry)
+            }
+            ListAction(stringResource(R.string.files_hex), enabled = !dialog.entry.isDir) {
+                close()
+                vm.hex(dialog.entry)
+            }
         }
 
         is FilesDialogState.ApkOpen -> FilesDialog(show = true, title = stringResource(R.string.files_open_with), onDismiss = close) {
@@ -161,6 +173,10 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
             ListAction(stringResource(R.string.files_view)) {
                 close()
                 vm.browseArchive(dialog.panel, dialog.entry)
+            }
+            ListAction(stringResource(R.string.files_apk_info)) {
+                close()
+                vm.showApkInfo(dialog.entry)
             }
             ListAction(stringResource(R.string.files_other_app)) {
                 close()
@@ -191,11 +207,17 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
                 close()
                 vm.edit(dialog.entry)
             }
+            ListAction(stringResource(R.string.files_hex)) {
+                close()
+                vm.hex(dialog.entry)
+            }
             ListAction(stringResource(R.string.files_other_app)) {
                 close()
                 vm.openWith(dialog.entry, "*/*")
             }
         }
+
+        FilesDialogState.Search -> SearchDialog(vm, close)
 
         FilesDialogState.Sort -> SortDialog(state, vm, close)
         is FilesDialogState.Permissions -> PermissionsDialog(dialog.entry, vm, close)
@@ -209,6 +231,9 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
 
     // Miuix overlay dialogs keep the content lambda they were shown with, so these read the
     // live state inside it rather than values captured here.
+    if (state.checksum != null) ChecksumDialog(vm)
+    if (state.apkInfo != null) ApkInfoDialog(vm)
+
     FilesDialog(show = state.busy, title = null, onDismiss = null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             InfiniteProgressIndicator()
@@ -445,6 +470,138 @@ private fun PropRow(label: Int, value: String) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
         Text(stringResource(label), fontSize = 14.sp, modifier = Modifier.widthIn(min = 96.dp).padding(end = 8.dp), color = colorScheme.onSurfaceVariantSummary)
         Text(value, fontSize = 14.sp)
+    }
+}
+
+@Composable
+private fun ChecksumDialog(vm: FilesViewModel) {
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    FilesDialog(show = true, title = stringResource(R.string.files_tool_checksum), onDismiss = vm::hideChecksum) {
+        val live by vm.uiState.collectAsState()
+        val sums = live.checksum ?: return@FilesDialog
+        Text(sums.entry.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
+        val values = sums.values
+        if (values == null) {
+            Row(Modifier.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                InfiniteProgressIndicator()
+                Text(stringResource(R.string.files_computing), modifier = Modifier.padding(start = 12.dp))
+            }
+        } else {
+            listOf("MD5", "SHA-1", "SHA-256").zip(values).forEach { (name, value) ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { clipboard.setText(androidx.compose.ui.text.AnnotatedString(value)) }
+                        .padding(vertical = 8.dp),
+                ) {
+                    Text(name, fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary)
+                    Text(value, fontSize = 13.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                }
+            }
+            Text(stringResource(R.string.files_tap_to_copy), fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary)
+        }
+        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideChecksum, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+    }
+}
+
+@Composable
+private fun ApkInfoDialog(vm: FilesViewModel) {
+    FilesDialog(show = true, title = stringResource(R.string.files_apk_info), onDismiss = vm::hideApkInfo) {
+        val live by vm.uiState.collectAsState()
+        val apk = live.apkInfo ?: return@FilesDialog
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            apk.icon?.let { icon ->
+                androidx.compose.foundation.Image(
+                    bitmap = icon.toBitmap(96, 96).asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            Column {
+                Text(apk.label, fontSize = 16.sp)
+                Text(apk.packageName, fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary)
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        PropRow(R.string.files_apk_version, "${apk.versionName ?: "?"} (${apk.versionCode})")
+        PropRow(R.string.files_apk_sdk, "min ${apk.minSdk} · target ${apk.targetSdk}")
+        apk.signer?.let { PropRow(R.string.files_apk_signer, it) }
+        PropRow(R.string.files_apk_permissions, apk.permissions.size.toString())
+        Column(Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
+            apk.permissions.forEach { Text(it.removePrefix("android.permission."), fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary) }
+        }
+        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideApkInfo, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+    }
+}
+
+/** MT's search: name with * and ?, optional content; results open their folder. */
+@Composable
+private fun SearchDialog(vm: FilesViewModel, close: () -> Unit) {
+    var pattern by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+    val dismiss = {
+        vm.closeSearch()
+        close()
+    }
+    FilesDialog(show = true, title = stringResource(R.string.files_search), onDismiss = dismiss) {
+        val live by vm.uiState.collectAsState()
+        val search = live.search
+        val plain = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password)
+        Text(
+            stringResource(R.string.files_search_in, live.activePanel.nav.path),
+            fontSize = 12.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+            maxLines = 1,
+            overflow = TextOverflow.StartEllipsis,
+        )
+        Spacer(Modifier.height(6.dp))
+        TextField(value = pattern, onValueChange = { pattern = it }, label = stringResource(R.string.files_search_name), singleLine = true, keyboardOptions = plain, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(6.dp))
+        TextField(value = content, onValueChange = { content = it }, label = stringResource(R.string.files_search_content), singleLine = true, keyboardOptions = plain, modifier = Modifier.fillMaxWidth())
+        Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextButton(text = stringResource(R.string.files_close), onClick = dismiss, modifier = Modifier.weight(1f))
+            if (search?.running == true) {
+                TextButton(text = stringResource(R.string.files_search_stop), onClick = vm::stopSearch, modifier = Modifier.weight(1f))
+            } else {
+                TextButton(
+                    text = stringResource(R.string.files_search),
+                    enabled = pattern.isNotBlank() || content.isNotEmpty(),
+                    onClick = { vm.search(pattern, content) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
+        }
+        when {
+            search == null -> Unit
+            search.running -> Row(Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                InfiniteProgressIndicator()
+                Text(stringResource(R.string.files_searching), modifier = Modifier.padding(start = 12.dp))
+            }
+            else -> {
+                Text(stringResource(R.string.files_search_found, search.results.size), fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp))
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 360.dp)) {
+                    items(search.results.size) { i ->
+                        val hit = search.results[i]
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    vm.reveal(hit)
+                                    close()
+                                }
+                                .padding(vertical = 6.dp),
+                        ) {
+                            Text(hit.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
+                            Text(FsPath.parent(hit.path), fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.StartEllipsis)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

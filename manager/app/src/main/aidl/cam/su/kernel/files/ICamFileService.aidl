@@ -20,6 +20,14 @@ interface ICamFileService {
     // pm install of an .apk or a split bundle; returns pm's answer ("Success" or the failure)
     String installPackage(String path);
 
+    // MD5, SHA-1, SHA-256 (lowercase hex)
+    String[] checksums(String path);
+    // up to length bytes from offset (hex viewer)
+    byte[] readRange(String path, long offset, int length);
+    // name pattern (* ? wildcards) and optional content; stops at limit or cancelSearch()
+    ParcelableListSlice<FileEntry> search(String root, String pattern, String content, int limit);
+    void cancelSearch();
+
     // [total, available] bytes of the file system holding path
     long[] statFs(String path);
     // [bytes, files, folders] under path, not crossing symlinks

@@ -263,6 +263,43 @@ class RootFsTest {
     }
 
     @Test
+    fun checksumsAndRanges() {
+        fake.file("/data/adb/abc", "abc")
+        assertEquals(
+            listOf(
+                "900150983cd24fb0d6963f7d28e17f72",
+                "a9993e364706816aba3e25717850c26c9cd0d89d",
+                "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            ),
+            fs.checksums("/data/adb/abc"),
+        )
+        fake.file("/data/adb/r", "0123456789")
+        assertEquals("345", String(fs.readRange("/data/adb/r", 3, 3)))
+        assertEquals("89", String(fs.readRange("/data/adb/r", 8, 10)))
+        assertEquals(0, fs.readRange("/data/adb/r", 50, 4).size)
+    }
+
+    @Test
+    fun searchByNameAndContent() {
+        fake.dir("/data/adb/m")
+        fake.dir("/data/adb/m/sub")
+        fake.file("/data/adb/m/module.prop", "id=cam")
+        fake.file("/data/adb/m/sub/service.sh", "echo needle here")
+        fake.file("/data/adb/m/sub/other.sh", "nothing")
+        fake.dir("/outside")
+        fake.file("/outside/service.sh", "needle")
+        fake.link("/data/adb/m/out", "/outside")
+        // a match split across the 256 KB read boundary
+        fake.file("/data/adb/m/big.bin", "x".repeat(256 * 1024 - 3) + "needle" + "y".repeat(10))
+
+        assertEquals(setOf("service.sh", "other.sh"), fs.search("/data/adb/m", "*.sh", null, 100).map { it.name }.toSet())
+        assertEquals(listOf("module.prop"), fs.search("/data/adb/m", "MODULE", null, 100).map { it.name })
+        assertEquals(listOf("module.prop"), fs.search("/data/adb/m", "mod?le.prop", null, 100).map { it.name })
+        assertEquals(setOf("service.sh", "big.bin"), fs.search("/data/adb/m", "", "needle", 100).map { it.name }.toSet())
+        assertEquals(1, fs.search("/data/adb/m", "", null, 1).size)
+    }
+
+    @Test
     fun errnoSurvivesBinder() {
         val back = FsException.fromRemote(FsException(Errno.EEXIST, "/data/a").toRemote())!!
         assertEquals(Errno.EEXIST, back.errno)

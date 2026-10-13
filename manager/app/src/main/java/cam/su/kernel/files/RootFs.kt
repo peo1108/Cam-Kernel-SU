@@ -110,6 +110,105 @@ class RootFs(private val fs: FsBackend) {
         return longArrayOf(bytes, files, dirs)
     }
 
+    /** MD5, SHA-1 and SHA-256 in one pass, lowercase hex. */
+    fun checksums(path: String): List<String> {
+        val digests = listOf("MD5", "SHA-1", "SHA-256").map { java.security.MessageDigest.getInstance(it) }
+        openRead(path).use { input ->
+            val buffer = ByteArray(256 * 1024)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                digests.forEach { it.update(buffer, 0, n) }
+            }
+        }
+        return digests.map { d -> d.digest().joinToString("") { "%02x".format(it) } }
+    }
+
+    /** Up to [length] bytes from [offset], for the hex viewer. */
+    fun readRange(path: String, offset: Long, length: Int): ByteArray {
+        openRead(path).use { input ->
+            var skipped = 0L
+            while (skipped < offset) {
+                val n = input.skip(offset - skipped)
+                if (n <= 0) return ByteArray(0)
+                skipped += n
+            }
+            val out = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(minOf(length, 64 * 1024))
+            while (out.size() < length) {
+                val n = input.read(buffer, 0, minOf(buffer.size, length - out.size()))
+                if (n < 0) break
+                out.write(buffer, 0, n)
+            }
+            return out.toByteArray()
+        }
+    }
+
+    /**
+     * Files under [root] whose name matches [pattern] (`*` and `?` wildcards, case-insensitive,
+     * a plain word matches anywhere) and, when [content] is set, that contain it. Symlinks are
+     * listed but not followed. Stops at [limit] results or when [cancelled] says so.
+     */
+    fun search(root: String, pattern: String, content: String?, limit: Int, cancelled: () -> Boolean = { false }): List<FileEntry> {
+        val nameRegex = SearchPattern.toRegex(pattern)
+        val needle = content?.takeIf { it.isNotEmpty() }?.toByteArray()
+        val found = mutableListOf<FileEntry>()
+        val pending = ArrayDeque(listOf(FsPath.normalize(root)))
+        while (pending.isNotEmpty() && found.size < limit && !cancelled()) {
+            val dir = pending.removeLast()
+            val names = try {
+                fs.list(dir)
+            } catch (_: FsException) {
+                continue
+            }
+            for (name in names) {
+                if (found.size >= limit || cancelled()) break
+                val path = FsPath.child(dir, name)
+                val st = try {
+                    fs.lstat(path)
+                } catch (_: FsException) {
+                    continue
+                }
+                // pseudo file systems are endless or slow to read; skip their content
+                if (FileMode.isDir(st.mode)) {
+                    if (path != "/proc" && path != "/sys" && path != "/dev") pending.addLast(path)
+                }
+                if (!nameRegex.containsMatchIn(name)) continue
+                if (needle != null && (!FileMode.isRegular(st.mode) || !contains(path, needle))) continue
+                runCatching { entry(path) }.getOrNull()?.let { found += it }
+            }
+        }
+        return found
+    }
+
+    private fun contains(path: String, needle: ByteArray): Boolean = try {
+        fs.openRead(path).use { scan(it, needle) }
+    } catch (_: FsException) {
+        false
+    }
+
+    private fun scan(input: InputStream, needle: ByteArray): Boolean {
+        val buffer = ByteArray(256 * 1024 + needle.size)
+        var keep = 0
+        while (true) {
+            val n = input.read(buffer, keep, buffer.size - keep)
+            if (n < 0) return false
+            val end = keep + n
+            if (indexOf(buffer, end, needle) >= 0) return true
+            // carry the tail over so a match across two reads is not missed
+            keep = minOf(needle.size - 1, end)
+            System.arraycopy(buffer, end - keep, buffer, 0, keep)
+        }
+    }
+
+    private fun indexOf(data: ByteArray, end: Int, needle: ByteArray): Int {
+        outer@ for (i in 0..end - needle.size) {
+            for (j in needle.indices) if (data[i + j] != needle[j]) continue@outer
+            return i
+        }
+        return -1
+    }
+
     fun openRead(path: String): InputStream {
         val p = FsPath.normalize(path)
         val st = fs.stat(p)

@@ -24,6 +24,7 @@ class CamFileService : RootService() {
 
     private val fs = RootFs(OsBackend)
     private val nextOpId = AtomicInteger(1)
+    private val searchCancelled = AtomicBoolean(false)
     private val ops = ConcurrentHashMap<Int, RunningOp>()
 
     private class RunningOp {
@@ -54,6 +55,18 @@ class CamFileService : RootService() {
         override fun stat(path: String): FileEntry? = call { fs.stat(path) }
 
         override fun statFs(path: String): LongArray = call { fs.statFs(path) }
+
+        override fun checksums(path: String): Array<String> = call { fs.checksums(path).toTypedArray() }
+
+        override fun readRange(path: String, offset: Long, length: Int): ByteArray =
+            call { fs.readRange(path, offset, length.coerceIn(0, 1024 * 1024)) }
+
+        override fun search(root: String, pattern: String, content: String?, limit: Int): ParcelableListSlice<FileEntry> = call {
+            searchCancelled.set(false)
+            ParcelableListSlice(fs.search(root, pattern, content, limit) { searchCancelled.get() })
+        }
+
+        override fun cancelSearch() = searchCancelled.set(true)
 
         override fun listArchive(archive: String, inner: String): ParcelableListSlice<FileEntry> = call {
             Archives.open(File(FsPath.normalize(archive))).use { ParcelableListSlice(Archives.list(it, archive, inner)) }

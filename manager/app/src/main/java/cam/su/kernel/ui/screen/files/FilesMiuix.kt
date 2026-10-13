@@ -147,6 +147,7 @@ sealed interface FilesDialogState {
     data class Compress(val sources: List<String>, val name: String) : FilesDialogState
     data object EditPath : FilesDialogState
     data class OpenAs(val entry: FileEntry) : FilesDialogState
+    data object Search : FilesDialogState
 }
 
 @Composable
@@ -176,7 +177,9 @@ fun FilesPagerMiuix(
                                 Icon(Icons.Rounded.Menu, contentDescription = null, tint = colorScheme.onSurface)
                             }
                         },
-                        actions = { OverflowMenu(state, vm, onSort = { dialog = FilesDialogState.Sort }) },
+                        actions = {
+                            OverflowMenu(state, vm, onSort = { dialog = FilesDialogState.Sort }, onSearch = { dialog = FilesDialogState.Search })
+                        },
                     )
                     // MT: tapping the path lets you type another one
                     Box(
@@ -255,7 +258,7 @@ private fun HeaderStats(panel: PanelUi) {
 }
 
 @Composable
-private fun OverflowMenu(state: FilesUiState, vm: FilesViewModel, onSort: () -> Unit) {
+private fun OverflowMenu(state: FilesUiState, vm: FilesViewModel, onSort: () -> Unit, onSearch: () -> Unit) {
     GlassButtonGroup {
         Box {
             var show by remember { mutableStateOf(false) }
@@ -271,6 +274,7 @@ private fun OverflowMenu(state: FilesUiState, vm: FilesViewModel, onSort: () -> 
                 ListPopupColumn {
                     val items: List<Pair<String, () -> Unit>> = listOf(
                         stringResource(R.string.files_refresh) to { vm.refresh() },
+                        stringResource(R.string.files_search) to onSearch,
                         stringResource(R.string.files_select_all) to { vm.selectAll() },
                         stringResource(R.string.files_menu_sort) to onSort,
                         (stringResource(R.string.files_show_hidden) + if (state.sort.showHidden) "  ✓" else "") to { vm.toggleHidden() },

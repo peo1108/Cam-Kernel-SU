@@ -10,6 +10,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.core.content.FileProvider
@@ -40,6 +44,14 @@ fun FilesPager(
         if (isCurrentPage) viewModel.start()
     }
 
+    // back from the editor (or another app): the folder may have changed
+    var resumedOnce by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(isCurrentPage) {
+        if (resumedOnce && isCurrentPage) viewModel.refresh()
+        resumedOnce = true
+        onPauseOrDispose { }
+    }
+
     // MT: back drops the selection, then goes up; at "/" the tab lets go.
     val canGoBack = uiState.activePanel.selection.isNotEmpty() || uiState.activePanel.nav.parent != null
     BackHandler(enabled = isCurrentPage && canGoBack) { viewModel.back() }
@@ -57,6 +69,8 @@ fun FilesPager(
                     context,
                     Intent(Intent.ACTION_VIEW).setDataAndType(uriOf(context, event.file), event.mime),
                 )
+
+                is FilesEvent.Edit -> navigator.push(Route.TextEditor(event.path))
 
                 is FilesEvent.Flash -> navigator.push(Route.Flash(FlashIt.FlashModules(listOf(Uri.fromFile(event.file)))))
 

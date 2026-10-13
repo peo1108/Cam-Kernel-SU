@@ -106,6 +106,7 @@ import cam.su.kernel.ui.screen.modulerepo.ModuleRepoDetailScreen
 import cam.su.kernel.ui.screen.modulerepo.ModuleRepoScreen
 import cam.su.kernel.ui.screen.features.FeaturesPager
 import cam.su.kernel.ui.screen.files.FilesPager
+import cam.su.kernel.ui.screen.files.TextEditorScreen
 import cam.su.kernel.ui.component.bottombar.BottomBarDestination
 import cam.su.kernel.ui.screen.settings.SettingPager
 import cam.su.kernel.ui.screen.sulog.SulogScreen
@@ -280,6 +281,8 @@ class CamActivity : ComponentActivity() {
                                 GlassPage { HidingCheckScreen(key.uid.takeIf { it != Route.HidingCheck.DEVICE }, key.scanNow) }
                             }
                             entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage { ModuleRepoScreen() } }
+                            // no swipe to close: a stray swipe while typing must not drop the edits
+                            entry<Route.TextEditor>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { TextEditorScreen(key.path) } }
                             entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }
                             entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage { InstallScreen() } }
                             entry<Route.Flash>(swipeDismiss = if (flashBackEnabled) swipeDismiss else NavSwipeDirection.None) { key ->

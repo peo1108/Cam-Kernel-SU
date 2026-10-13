@@ -141,6 +141,9 @@ object DeviceCheck {
         }
         check("sdcard listing has entries") { fs.listDir("/sdcard").isNotEmpty() }
         check("/proc listing works") { fs.listDir("/proc").any { it.name == "self" && it.isLink } }
+        check("highlighter regexes compile on ICU") {
+            Highlighter.Lang.entries.all { lang -> Highlighter.spans("a=\"1\" # \${x} [s] <a b='c'/> {\"k\": 2}", lang).size >= 0 }
+        }
 
         sh("rm -rf $base $outside $fuse")
         println(if (failures == 0) "ALL PASS" else "$failures FAILED")

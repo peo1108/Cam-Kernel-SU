@@ -68,6 +68,7 @@ sealed interface FilesEvent {
     data class Share(val files: List<File>) : FilesEvent
     /** A module zip to hand to the Flash screen. */
     data class Flash(val file: File) : FilesEvent
+    data class Edit(val path: String) : FilesEvent
 }
 
 data class FilesUiState(
@@ -304,6 +305,10 @@ class FilesViewModel : ViewModel() {
             val measure = runCatching { CamFileClient.measure(entry.path) }.getOrNull() ?: return@launch
             _uiState.update { s -> s.copy(properties = s.properties?.takeIf { it.entry.path == entry.path }?.copy(measure = measure)) }
         }
+    }
+
+    fun edit(entry: FileEntry) {
+        viewModelScope.launch { events.send(FilesEvent.Edit(entry.path)) }
     }
 
     fun hideProperties() = _uiState.update { it.copy(properties = null) }

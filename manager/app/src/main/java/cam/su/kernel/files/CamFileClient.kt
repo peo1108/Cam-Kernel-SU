@@ -79,7 +79,12 @@ object CamFileClient {
 
     /** Whole file; meant for the editor, which caps the size before calling. */
     suspend fun readBytes(path: String): ByteArray = call { s ->
-        s.openRead(path).use { pfd ->
+        val pipe = if (Archives.isInside(path)) {
+            Archives.split(path).let { (archive, inner) -> s.openArchiveEntry(archive, inner) }
+        } else {
+            s.openRead(path)
+        }
+        pipe.use { pfd ->
             val bytes = FileInputStream(pfd.fileDescriptor).readBytes()
             pfd.checkError()
             bytes

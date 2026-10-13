@@ -146,6 +146,7 @@ sealed interface FilesDialogState {
     data class ApkOpen(val panel: Int, val entry: FileEntry) : FilesDialogState
     data class Compress(val sources: List<String>, val name: String) : FilesDialogState
     data object EditPath : FilesDialogState
+    data class OpenAs(val entry: FileEntry) : FilesDialogState
 }
 
 @Composable
@@ -211,6 +212,7 @@ fun FilesPagerMiuix(
                                         index, state, vm, wide,
                                         onMenu = { entry -> dialog = FilesDialogState.Menu(index, entry) },
                                         onApk = { entry -> dialog = FilesDialogState.ApkOpen(index, entry) },
+                                        onOpenAs = { entry -> dialog = FilesDialogState.OpenAs(entry) },
                                     )
                                 }
                             }
@@ -323,7 +325,15 @@ private fun PanelSwitcher(state: FilesUiState, vm: FilesViewModel) {
 }
 
 @Composable
-private fun Panel(index: Int, state: FilesUiState, vm: FilesViewModel, wide: Boolean, onMenu: (FileEntry) -> Unit, onApk: (FileEntry) -> Unit) {
+private fun Panel(
+    index: Int,
+    state: FilesUiState,
+    vm: FilesViewModel,
+    wide: Boolean,
+    onMenu: (FileEntry) -> Unit,
+    onApk: (FileEntry) -> Unit,
+    onOpenAs: (FileEntry) -> Unit,
+) {
     val panel = state.panels[index]
     val active = index == state.active
     val selecting = panel.selection.isNotEmpty()
@@ -372,6 +382,9 @@ private fun Panel(index: Int, state: FilesUiState, vm: FilesViewModel, wide: Boo
                             // MT: an APK asks Install / View; other archives open like folders
                             !inArchive && FileKinds.of(entry) == FileKind.APK -> onApk(entry)
                             !inArchive && Archives.canBrowse(entry.name) -> vm.browseArchive(index, entry)
+                            // MT: text opens in its editor; unknown files ask how to open them
+                            FileKinds.of(entry) == FileKind.TEXT -> vm.edit(entry)
+                            FileKinds.of(entry) == FileKind.OTHER || FileKinds.of(entry) == FileKind.DISK_IMAGE -> onOpenAs(entry)
                             else -> vm.openWith(entry, FileKinds.mime(entry))
                         }
                     },

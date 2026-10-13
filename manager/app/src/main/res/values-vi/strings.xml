@@ -825,4 +825,25 @@
     <string name="files_path">Đường dẫn</string>
     <string name="files_extract">Giải nén</string>
     <string name="files_extract_confirm">Giải nén %1$s vào %2$s?</string>
+    <string name="files_text_editor">Trình sửa văn bản</string>
+    <string name="editor_saved">Đã lưu</string>
+    <string name="editor_not_found">Không tìm thấy</string>
+    <string name="editor_replaced">Đã thay %1$d chỗ</string>
+    <string name="editor_too_large">Tệp quá lớn để mở ở đây (trên 16 MB). Hãy mở bằng ứng dụng khác.</string>
+    <string name="editor_go_to_line">Đi tới dòng</string>
+    <string name="editor_wrap_on">Xuống dòng mềm</string>
+    <string name="editor_wrap_off">Không xuống dòng mềm</string>
+    <string name="editor_font_size">Cỡ chữ</string>
+    <string name="editor_unsaved_title">Chưa lưu thay đổi</string>
+    <string name="editor_unsaved_message">Lưu thay đổi trước khi thoát?</string>
+    <string name="editor_discard">Bỏ</string>
+    <string name="editor_save">Lưu</string>
+    <string name="editor_ro_archive">chỉ đọc: nằm trong tệp nén</string>
+    <string name="editor_ro_binary">chỉ đọc: tệp nhị phân</string>
+    <string name="editor_ro_large">chỉ đọc: trên 4 MB</string>
+    <string name="editor_lines">%1$d dòng</string>
+    <string name="editor_find">Tìm</string>
+    <string name="editor_replace_with">Thay bằng</string>
+    <string name="editor_replace">Thay</string>
+    <string name="editor_replace_all">Tất cả</string>
 </resources>

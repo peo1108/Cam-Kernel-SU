@@ -840,4 +840,25 @@
     <string name="files_path">Path</string>
     <string name="files_extract">Extract</string>
     <string name="files_extract_confirm">Extract %1$s into %2$s?</string>
+    <string name="files_text_editor">Text editor</string>
+    <string name="editor_saved">Saved</string>
+    <string name="editor_not_found">Not found</string>
+    <string name="editor_replaced">Replaced %1$d</string>
+    <string name="editor_too_large">This file is too large to open here (over 16 MB). Use Open with another app.</string>
+    <string name="editor_go_to_line">Go to line</string>
+    <string name="editor_wrap_on">Wrap lines</string>
+    <string name="editor_wrap_off">Do not wrap lines</string>
+    <string name="editor_font_size">Font size</string>
+    <string name="editor_unsaved_title">Unsaved changes</string>
+    <string name="editor_unsaved_message">Save the changes before leaving?</string>
+    <string name="editor_discard">Discard</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_ro_archive">read only: inside an archive</string>
+    <string name="editor_ro_binary">read only: binary file</string>
+    <string name="editor_ro_large">read only: over 4 MB</string>
+    <string name="editor_lines">%1$d lines</string>
+    <string name="editor_find">Find</string>
+    <string name="editor_replace_with">Replace with</string>
+    <string name="editor_replace">Replace</string>
+    <string name="editor_replace_all">All</string>
 </resources>

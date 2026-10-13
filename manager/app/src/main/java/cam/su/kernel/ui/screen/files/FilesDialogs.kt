@@ -186,6 +186,17 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
             buttons = listOf(stringResource(android.R.string.ok) to { path: String -> vm.goToPath(path) }),
         )
 
+        is FilesDialogState.OpenAs -> FilesDialog(show = true, title = stringResource(R.string.files_open_with), onDismiss = close) {
+            ListAction(stringResource(R.string.files_text_editor)) {
+                close()
+                vm.edit(dialog.entry)
+            }
+            ListAction(stringResource(R.string.files_other_app)) {
+                close()
+                vm.openWith(dialog.entry, "*/*")
+            }
+        }
+
         FilesDialogState.Sort -> SortDialog(state, vm, close)
         is FilesDialogState.Permissions -> PermissionsDialog(dialog.entry, vm, close)
         is FilesDialogState.Owner -> OwnerDialog(dialog.entry, vm, close)
@@ -294,8 +305,7 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
             )
             add(
                 GridCell(Icons.Rounded.Check, stringResource(R.string.files_open_with), enabled = single && !entry.isDir, onClick = {
-                    close()
-                    vm.openWith(entry, "*/*")
+                    onDialog(FilesDialogState.OpenAs(entry))
                 }),
             )
             if (!inArchive) {

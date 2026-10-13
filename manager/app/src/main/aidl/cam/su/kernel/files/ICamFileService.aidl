@@ -86,6 +86,10 @@ interface ICamFileService {
     // ro.boot.slot_suffix ("_a", "_b"; "" without A/B)
     String slotSuffix();
 
+    // the trash, newest first, as "root	id	original path	deleted at (ms)	size	isDir";
+    // items older than Trash.KEEP_DAYS are removed by this call
+    String[] trashList();
+
     // the regular file at path opened read-only: a real, seekable descriptor (RootFileProvider)
     ParcelFileDescriptor openFd(String path);
 

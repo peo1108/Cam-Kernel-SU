@@ -183,6 +183,13 @@ object CamFileClient {
     /** A seekable read-only descriptor of the file at [path], opened by root. */
     suspend fun openFd(path: String): ParcelFileDescriptor = call { it.openFd(path) }
 
+    suspend fun trashList(): List<TrashItem> = call { s ->
+        s.trashList().mapNotNull { line ->
+            val p = line.split('	')
+            if (p.size < 6) null else TrashItem(p[0], p[1], p[2], p[3].toLong(), p[4].toLong(), p[5].toBoolean())
+        }
+    }
+
     /** Stops the measure and checksum calls running now. */
     suspend fun cancelReads() = call { it.cancelReads() }
 

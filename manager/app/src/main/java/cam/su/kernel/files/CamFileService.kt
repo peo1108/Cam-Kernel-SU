@@ -192,6 +192,10 @@ class CamFileService : RootService() {
 
         override fun slotSuffix(): String = PartitionOps.slot()
 
+        override fun trashList(): Array<String> = call {
+            Trash(OsBackend).list().map { "${it.root}	${it.id}	${it.original}	${it.deletedAt}	${it.size}	${it.isDir}" }.toTypedArray()
+        }
+
         override fun watch(dirs: Array<String>, callback: IWatchCallback) = call {
             stopWatchers()
             synchronized(watchers) {
@@ -370,6 +374,12 @@ class CamFileService : RootService() {
                             .extract(reader, op.sources.map { Archives.split(it).second }, op.destDir ?: throw FsException(Errno.EINVAL))
                     }
                 }
+
+                OpKind.TRASH -> Trash(OsBackend).put(op.sources, listener, cancelled)
+
+                OpKind.RESTORE -> Trash(OsBackend).restore(op.sources.single(), listener, cancelled)
+
+                OpKind.PURGE -> Trash(OsBackend).purge(op.sources, listener, cancelled)
 
                 OpKind.BACKUP -> PartitionOps(listener, cancelled)
                     .backup(op.sources.single(), op.destDir ?: throw FsException(Errno.EINVAL))

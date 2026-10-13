@@ -123,11 +123,7 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
             ) { vm.copy(dialog.sources, dialog.move, dialog.dest) }
         }
 
-        is FilesDialogState.ConfirmDelete -> Confirm(
-            title = stringResource(R.string.files_delete_title, dialog.sources.size),
-            text = stringResource(R.string.files_delete_message),
-            onDismiss = close,
-        ) { vm.delete(dialog.sources) }
+        is FilesDialogState.ConfirmDelete -> DeleteDialog(dialog.sources, vm, close)
 
         is FilesDialogState.Rename -> NameDialog(
             title = stringResource(R.string.files_rename),
@@ -263,6 +259,7 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
     if (state.processes != null) ProcessDialog(vm)
     if (state.apkInfo != null) ApkInfoDialog(vm)
     if (state.partitions != null) PartitionsDialog(vm, onDialog)
+    if (state.trash != null) TrashDialog(vm)
 
     FilesDialog(show = state.busy, title = null, onDismiss = null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -620,6 +617,75 @@ private fun ProcessDialog(vm: FilesViewModel) {
         TextButton(text = stringResource(R.string.files_close), onClick = vm::hideProcesses, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
     }
 }
+
+/** Delete: to the trash (kept 7 days) unless "for good" is ticked. */
+@Composable
+private fun DeleteDialog(sources: List<String>, vm: FilesViewModel, close: () -> Unit) {
+    val canTrash = remember(sources) { vm.canTrash(sources) }
+    var forGood by remember { mutableStateOf(false) }
+    FilesDialog(show = true, title = stringResource(R.string.files_delete_title, sources.size), onDismiss = close) {
+        val toTrash = canTrash && !forGood
+        Text(
+            stringResource(if (toTrash) R.string.files_delete_trash_note else R.string.files_delete_permanent_note),
+            color = if (toTrash) colorScheme.onSurface else colorScheme.error,
+        )
+        if (canTrash) CheckRow(stringResource(R.string.files_delete_forever), forGood) { forGood = it }
+        DialogButtons(close, stringResource(R.string.files_delete)) { vm.delete(sources, permanent = forGood) }
+    }
+}
+
+private val trashDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT)
+
+/** The trash: what was deleted in the last days, put back or removed for good. */
+@Composable
+private fun TrashDialog(vm: FilesViewModel) {
+    FilesDialog(show = true, title = stringResource(R.string.files_trash), onDismiss = vm::hideTrash) {
+        val live by vm.uiState.collectAsState()
+        val items = live.trash ?: return@FilesDialog
+        Text(stringResource(R.string.files_trash_summary), fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary)
+        if (items.isEmpty()) {
+            Text(stringResource(R.string.files_trash_empty), modifier = Modifier.padding(vertical = 20.dp))
+        }
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 340.dp).padding(top = 6.dp)) {
+            items(items.size) { i ->
+                val item = items[i]
+                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    KindTile(if (item.isDir) FileKind.FOLDER else FileKinds.of(fileEntryOf(item)), link = false)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(item.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
+                        Text(
+                            "${FsPath.parent(item.original)} · ${trashDate.format(Date(item.deletedAt))} · ${FileFormat.size(item.size)}",
+                            fontSize = 11.sp,
+                            color = colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.StartEllipsis,
+                        )
+                    }
+                    TextButton(text = stringResource(R.string.files_trash_restore), onClick = { vm.restoreTrash(item) })
+                    Spacer(Modifier.width(6.dp))
+                    TextButton(text = stringResource(R.string.files_trash_purge), onClick = { vm.purgeTrash(listOf(item)) })
+                }
+            }
+        }
+        Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextButton(text = stringResource(R.string.files_close), onClick = vm::hideTrash, modifier = Modifier.weight(1f))
+            TextButton(
+                text = stringResource(R.string.files_trash_purge_all),
+                enabled = items.isNotEmpty(),
+                onClick = { vm.purgeTrash(items) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.textButtonColors(color = colorScheme.error, textColor = colorScheme.onError),
+            )
+        }
+    }
+}
+
+/** Just enough of a FileEntry for a trash row's icon. */
+private fun fileEntryOf(item: cam.su.kernel.files.TrashItem) = FileEntry(
+    name = item.name, path = item.path, type = FileEntry.TYPE_FILE, size = item.size, mtime = item.deletedAt,
+    mode = 0, uid = 0, gid = 0, owner = "", group = "", context = null,
+)
 
 /** Partitions under by-name: tap one to back it up, or (with an image picked) to flash it there. */
 @Composable

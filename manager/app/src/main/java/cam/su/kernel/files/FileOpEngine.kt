@@ -7,9 +7,10 @@ import java.io.OutputStream
 /**
  * EXTRACT: sources are paths inside one archive. COMPRESS: destDir is the zip to write.
  * BACKUP: sources is one partition name, destDir the image file. FLASH: sources is one image,
- * destDir the partition name.
+ * destDir the partition name. TRASH: sources go to the trash. RESTORE / PURGE: sources are trash
+ * folders (Trash), put back or removed for good.
  */
-enum class OpKind { COPY, MOVE, DELETE, EXTRACT, COMPRESS, BACKUP, FLASH }
+enum class OpKind { COPY, MOVE, DELETE, EXTRACT, COMPRESS, BACKUP, FLASH, TRASH, RESTORE, PURGE }
 
 /**
  * One copy/move/delete. [preserve] also carries owner and SELinux label over (mode bits are
@@ -67,7 +68,7 @@ class FileOpEngine(
         val sources = op.sources.map(FsPath::normalize).distinct()
         if (op.kind != OpKind.COPY) sources.forEach(::checkNotProtected)
         when (op.kind) {
-            OpKind.EXTRACT, OpKind.COMPRESS, OpKind.BACKUP, OpKind.FLASH ->
+            OpKind.EXTRACT, OpKind.COMPRESS, OpKind.BACKUP, OpKind.FLASH, OpKind.TRASH, OpKind.RESTORE, OpKind.PURGE ->
                 throw FsException(Errno.EINVAL, detail = "archive and partition jobs run elsewhere")
 
             OpKind.DELETE -> {

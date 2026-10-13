@@ -841,6 +841,17 @@
     <string name="files_op_compress">Đang nén</string>
     <string name="files_op_backup">Đang sao lưu phân vùng</string>
     <string name="files_op_flash">Đang flash</string>
+    <string name="files_op_trash">Đang chuyển vào thùng rác</string>
+    <string name="files_op_restore">Đang khôi phục</string>
+    <string name="files_trash">Thùng rác</string>
+    <string name="files_trash_summary">File đã xoá được giữ 7 ngày</string>
+    <string name="files_trash_empty">Thùng rác trống</string>
+    <string name="files_trash_restore">Khôi phục</string>
+    <string name="files_trash_purge">Xoá hẳn</string>
+    <string name="files_trash_purge_all">Dọn sạch thùng rác</string>
+    <string name="files_delete_forever">Xoá vĩnh viễn (không vào thùng rác)</string>
+    <string name="files_delete_trash_note">Sẽ chuyển vào thùng rác, giữ 7 ngày.</string>
+    <string name="files_delete_permanent_note">Xoá vĩnh viễn: không khôi phục được.</string>
     <string name="files_partitions">Phân vùng</string>
     <string name="files_partitions_summary">Sao lưu phân vùng, flash image boot</string>
     <string name="files_partitions_all">Hiện tất cả (%1$d)</string>

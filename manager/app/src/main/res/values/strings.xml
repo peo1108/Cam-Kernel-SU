@@ -856,6 +856,17 @@
     <string name="files_op_compress">Compressing</string>
     <string name="files_op_backup">Backing up a partition</string>
     <string name="files_op_flash">Flashing</string>
+    <string name="files_op_trash">Moving to the trash</string>
+    <string name="files_op_restore">Restoring</string>
+    <string name="files_trash">Trash</string>
+    <string name="files_trash_summary">Deleted files are kept 7 days</string>
+    <string name="files_trash_empty">The trash is empty</string>
+    <string name="files_trash_restore">Restore</string>
+    <string name="files_trash_purge">Delete</string>
+    <string name="files_trash_purge_all">Empty the trash</string>
+    <string name="files_delete_forever">Delete for good (skip the trash)</string>
+    <string name="files_delete_trash_note">Moved to the trash, kept 7 days.</string>
+    <string name="files_delete_permanent_note">Deleted for good: this cannot be undone.</string>
     <string name="files_partitions">Partitions</string>
     <string name="files_partitions_summary">Back up any partition, flash boot images</string>
     <string name="files_partitions_all">Show all (%1$d)</string>

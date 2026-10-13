@@ -147,6 +147,8 @@ data class FilesUiState(
     /** pid → process name of the apps browsed as */
     val appNames: Map<Int, String> = emptyMap(),
     val partitions: PartitionsUi? = null,
+    /** The trash dialog's list; null while it is closed. */
+    val trash: List<cam.su.kernel.files.TrashItem>? = null,
 ) {
     val activePanel get() = panels[active]
     val otherPanel get() = panels[1 - active]
@@ -827,9 +829,48 @@ class FilesViewModel : ViewModel() {
     /** Long-pressed Copy: a copy next to the original ("name (1)"). */
     fun copyHere(sources: List<String>) = copy(sources, move = false, destDir = FsPath.parent(sources.first()))
 
-    fun delete(sources: List<String>) {
+    /**
+     * Delete: into the trash, unless [permanent] is asked for, or the items are inside an archive
+     * (the archive is rewritten) or already in the trash.
+     */
+    fun delete(sources: List<String>, permanent: Boolean = false) {
         if (sources.isEmpty()) return
-        runOp(FileOp(OpKind.DELETE, sources))
+        runOp(FileOp(if (permanent || !canTrash(sources)) OpKind.DELETE else OpKind.TRASH, sources))
+    }
+
+    /** Whether Delete on [sources] can go to the trash at all (the dialog says so). */
+    fun canTrash(sources: List<String>): Boolean {
+        val trash = cam.su.kernel.files.Trash(cam.su.kernel.files.OsBackend)
+        return sources.isNotEmpty() && !Archives.isInside(sources.first()) && sources.none(trash::isInTrash)
+    }
+
+    // --- trash ---
+
+    fun showTrash() {
+        _uiState.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            try {
+                val list = CamFileClient.trashList()
+                _uiState.update { it.copy(trash = list) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            } finally {
+                _uiState.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    fun hideTrash() = _uiState.update { it.copy(trash = null) }
+
+    fun restoreTrash(item: cam.su.kernel.files.TrashItem) {
+        hideTrash()
+        runOp(FileOp(OpKind.RESTORE, listOf(item.dir))) { showTrash() }
+    }
+
+    fun purgeTrash(items: List<cam.su.kernel.files.TrashItem>) {
+        if (items.isEmpty()) return
+        hideTrash()
+        runOp(FileOp(OpKind.PURGE, items.map { it.dir })) { showTrash() }
     }
 
     // FileOpProgress.scope, not viewModelScope: the notification's Cancel works after the screen is gone

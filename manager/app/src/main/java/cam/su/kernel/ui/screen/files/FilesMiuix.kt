@@ -54,6 +54,7 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Audiotrack
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Flip
 import androidx.compose.material.icons.rounded.Folder
@@ -709,6 +710,12 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 item {
                     DrawerItem(Icons.Rounded.Terminal, stringResource(R.string.terminal), stringResource(R.string.terminal_summary), onClick = {
                         vm.openTerminal()
+                        onClose()
+                    })
+                }
+                item {
+                    DrawerItem(Icons.Rounded.Delete, stringResource(R.string.files_trash), stringResource(R.string.files_trash_summary), onClick = {
+                        vm.showTrash()
                         onClose()
                     })
                 }

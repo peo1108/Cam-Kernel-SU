@@ -290,6 +290,11 @@
     <string name="sulog_filter_root_execve">Root execve</string>
     <string name="settings_adb_root">ADB Root</string>
     <string name="settings_adb_root_summary">Chạy tiến trình nền adbd với quyền Root.</string>
+    <string name="settings_shell_su_adb_only">Chỉ cho Shell lấy root qua ADB</string>
+    <string name="settings_shell_su_adb_only_summary">Kiểm tra thêm khi Shell được cấp root: chỉ tiến trình do adbd hoặc tiến trình root của SU Kernel (ví dụ module ADB) tạo ra mới dùng được, để app chiếm được quyền shell không leo lên root</string>
+    <string name="install_block_modules">Chặn module kernel (rủi ro)</string>
+    <string name="install_block_modules_warning">Không cho các module kernel trong danh sách nạp lúc khởi động. Chặn nhầm module mà hệ thống cần có thể làm máy treo ở logo hoặc bootloop (ví dụ mkp của MediaTek trên một số máy). Chỉ bật khi biết chắc các module này chặn được trên máy bạn. Muốn cứu máy thì flash lại boot / init_boot gốc bằng fastboot.</string>
+    <string name="install_block_modules_list">Module cần chặn</string>
     <string name="menu_sort">Sắp xếp</string>
     <string name="sort_by_name">Tên ứng dụng</string>
     <string name="sort_by_package_name">Tên gói</string>

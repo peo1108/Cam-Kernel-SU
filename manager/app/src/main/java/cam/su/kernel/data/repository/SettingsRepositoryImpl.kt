@@ -278,6 +278,15 @@ class SettingsRepositoryImpl : SettingsRepository {
             false
         }
 
+    override suspend fun getShellSuAdbOnlyStatus(): String = getFeatureStatus("shell_su_adb_only")
+
+    override suspend fun getShellSuAdbOnlyPersistValue(): Long? = getFeaturePersistValue("shell_su_adb_only")
+
+    override suspend fun getShellSuAdbOnlyValue(): Long? = getFeatureValue("shell_su_adb_only")
+
+    override fun setShellSuAdbOnlyEnabled(enabled: Boolean): Boolean =
+        execCamd("feature set shell_su_adb_only ${if (enabled) 1 else 0}", true)
+
     override fun isDefaultUmountModules(): Boolean = Cam.isDefaultUmountModules()
 
     override fun setDefaultUmountModules(enabled: Boolean): Boolean = Cam.setDefaultUmountModules(enabled)

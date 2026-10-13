@@ -51,6 +51,7 @@ camsu-objs += supercall/supercall.o
 camsu-objs += feature/adb_root.o
 
 camsu-objs += feature/selinux_hide.o
+camsu-objs += feature/shell_su_adb_only.o
 
 ifdef KBUILD_EXTMOD
 ifeq ($(CONFIG_KSU_DISABLE_POLICY),y)

@@ -67,11 +67,15 @@ fun InstallScreen() {
     var enableAdb by rememberSaveable { mutableStateOf(false) }
     var forceBackup by rememberSaveable { mutableStateOf(false) }
     var seedPickerShown by rememberSaveable { mutableStateOf(false) }
+    var blockModulesEnabled by rememberSaveable { mutableStateOf(false) }
     var blockModules by rememberSaveable { mutableStateOf("") }
     var blockModulesPrefilled by rememberSaveable { mutableStateOf(false) }
+    // Blocking a module the device needs can bootloop it, so nothing is
+    // blocked unless the user explicitly opts in.
+    val effectiveBlockModules = if (blockModulesEnabled) blockModules else ""
 
     // Pre-fill the block list with the known anti-root modules actually loaded
-    // on this device, once. The user can still edit or clear it.
+    // on this device, once. It only takes effect once the user opts in.
     LaunchedEffect(Unit) {
         if (!blockModulesPrefilled) {
             blockModulesPrefilled = true
@@ -137,7 +141,7 @@ fun InstallScreen() {
 
     val blockModulesInvalidMessage = stringResource(R.string.install_block_modules_invalid)
     val onInstall = {
-        if (!isBlockModulesValid(blockModules)) {
+        if (!isBlockModulesValid(effectiveBlockModules)) {
             showMessage(blockModulesInvalidMessage)
         } else {
             seedPickerShown = true
@@ -157,7 +161,7 @@ fun InstallScreen() {
                             enableAdb = enableAdb,
                             backup = forceBackup,
                             seeds = seeds,
-                            blockModules = blockModules,
+                            blockModules = effectiveBlockModules,
                         )
                         else -> FlashIt.FlashBoot(
                             boot = if (method is InstallMethod.SelectFile) method.uri else null,
@@ -168,7 +172,7 @@ fun InstallScreen() {
                             enableAdb = enableAdb,
                             backup = method is InstallMethod.SelectFile && forceBackup,
                             seeds = seeds,
-                            blockModules = blockModules,
+                            blockModules = effectiveBlockModules,
                         )
                     }
                 )
@@ -274,8 +278,9 @@ fun InstallScreen() {
         enableAdb = enableAdb,
         forceBackup = forceBackup,
         canForceBackup = installMethod is InstallMethod.SelectFile,
+        blockModulesEnabled = blockModulesEnabled,
         blockModules = blockModules,
-        blockModulesValid = isBlockModulesValid(blockModules),
+        blockModulesValid = isBlockModulesValid(effectiveBlockModules),
     )
     val actions = InstallScreenActions(
         onBack = dropUnlessResumed { navigator.pop() },
@@ -325,6 +330,9 @@ fun InstallScreen() {
         },
         onSelectForceBackup = {
             forceBackup = it
+        },
+        onSelectBlockModules = {
+            blockModulesEnabled = it
         },
         onBlockModulesChange = {
             blockModules = it

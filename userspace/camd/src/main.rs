@@ -53,7 +53,6 @@ mod profile;
 mod resetprop;
 #[cfg(target_os = "android")]
 mod restorecon;
-mod rkp_block;
 mod seed;
 #[cfg(target_os = "android")]
 mod sepolicy;

@@ -19,9 +19,6 @@ mod android {
     /// boot_id of the boot that last ran the service stage
     pub const SERVICES_STARTED_PATH: &str = concatcp!(WORKING_DIR, ".services_started");
     pub const HIDE_BOOTLOADER_FLAG: &str = concatcp!(WORKING_DIR, ".hide_bootloader");
-    pub const BLOCK_RKP_FLAG: &str = concatcp!(WORKING_DIR, ".block_rkp");
-    /// flock held by the single running Duck-foreground watcher
-    pub const BLOCK_RKP_LOCK: &str = concatcp!(WORKING_DIR, ".block_rkp.lock");
     /// the installed copy of a module, kept when an update replaces it
     pub const MODULE_BACKUP_DIR: &str = concatcp!(WORKING_DIR, "module_backup/");
 

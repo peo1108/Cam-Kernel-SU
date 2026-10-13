@@ -2,12 +2,15 @@
 //! Cam paths. While the running kernel is still a KernelSU one (it execs
 //! /data/adb/ksud and reads /data/adb/ksu), links are left at the old names;
 //! once a kernel with the cam domain runs, those links are removed again.
+//! It also clears what removed Cam features left on the device.
 
 use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::path::Path;
+use std::process::{Command, Stdio};
 
+use const_format::concatcp;
 use log::{info, warn};
 
 use crate::{defs, restorecon};
@@ -21,6 +24,12 @@ const LEGACY_PREINIT_DIRS: [(&str, &str); 2] = [
 const LEGACY_RC_NAME: &str = ".ksurc";
 const LEGACY_BACKUP_PREFIX: &str = "ksu_backup_";
 
+// Block RKP (1.1.3 to 1.1.5-beta.1) was removed: its flag kept a watcher from an older camd
+// running, and that watcher inserted this DROP rule while Duck Detector was on top.
+const BLOCK_RKP_FLAG: &str = concatcp!(defs::WORKING_DIR, ".block_rkp");
+const BLOCK_RKP_LOCK: &str = concatcp!(defs::WORKING_DIR, ".block_rkp.lock");
+const BLOCK_RKP_RULE: [&str; 8] = ["-w", "-D", "OUTPUT", "!", "-o", "lo", "-j", "DROP"];
+
 /// Safe to call on every start: once the data is moved it only adds or drops the links.
 pub fn migrate() {
     let keep_links = !restorecon::kernel_has_cam_domain();
@@ -31,6 +40,33 @@ pub fn migrate() {
         move_and_link(old, new, keep_links);
     }
     move_and_link(LEGACY_DAEMON_PATH, defs::DAEMON_PATH, keep_links);
+    remove_block_rkp();
+}
+
+/// Drop what Block RKP left behind. A watcher still running from the old camd sees the
+/// flag gone on its next poll and exits; the rule is pulled here too, in case that
+/// watcher was killed while it held the network cut.
+fn remove_block_rkp() {
+    if fs::remove_file(BLOCK_RKP_FLAG).is_err() {
+        return;
+    }
+    let _ = fs::remove_file(BLOCK_RKP_LOCK);
+    for bin in ["iptables", "ip6tables"] {
+        // bounded, in case -D keeps succeeding
+        for _ in 0..16 {
+            let removed = Command::new(bin)
+                .args(BLOCK_RKP_RULE)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .is_ok_and(|s| s.success());
+            if !removed {
+                break;
+            }
+        }
+    }
+    info!("legacy: removed block rkp");
 }
 
 fn move_and_link(old: &str, new: &str, keep_link: bool) {

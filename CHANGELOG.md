@@ -8,6 +8,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Cài đặt → "Chỉ cho Shell lấy root qua ADB" (mặc định tắt): khi Shell được cấp root, chỉ phiên `adb shell` thật hoặc tiến trình đã có root (ví dụ module ADB) mới dùng được, app chiếm được quyền shell qua lỗi hệ thống không leo lên root được
 ### Thay đổi
 - Cài đặt (cài vào boot): "Chặn module kernel" giờ phải tự tick mới có tác dụng. Trước đây danh sách được điền sẵn và áp luôn, trên một số máy MediaTek chặn nhầm `mkp` làm máy bootloop
+- Bỏ công tắc "Chặn RKP". Máy đang bật sẽ được tự tắt khi mở app lần đầu sau cập nhật, mạng trở lại bình thường mà không cần khởi động lại
 
 ## 1.1.4 - 2026-10-13
 - "Chặn RKP" nay chỉ ngắt mạng khi bạn mở Duck Detector, thoát ra là mạng trở lại ngay

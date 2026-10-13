@@ -274,11 +274,6 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
             checked = status.enabled,
             onCheckedChange = actions.onSetHideBootloader,
         )
-        SwitchPreference(
-            title = stringResource(R.string.features_block_rkp),
-            checked = state.blockRkp,
-            onCheckedChange = actions.onSetBlockRkp,
-        )
         CheckSection(stringResource(R.string.features_bootloader_props), status.props)
         CheckSection(stringResource(R.string.features_bootloader_bootconfig), status.bootconfig, rootOnly = true)
 

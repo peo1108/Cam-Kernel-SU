@@ -17,11 +17,9 @@ import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.ui.screen.features.FeaturesUiState
 import cam.su.kernel.ui.util.checkAttestationReport
 import cam.su.kernel.ui.util.clearBootGuard
-import cam.su.kernel.ui.util.getBlockRkpEnabled
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.getHideBootloaderStatus
 import cam.su.kernel.ui.util.listModuleConflicts
-import cam.su.kernel.ui.util.setBlockRkp as writeBlockRkp
 import cam.su.kernel.ui.util.setBootGuardConfig
 import cam.su.kernel.ui.util.setHideBootloader as writeHideBootloader
 import cam.su.kernel.ui.util.toggleModule
@@ -48,7 +46,6 @@ class FeaturesViewModel(
                 getBootGuardStatus() to if (detection) listModuleConflicts() else emptyList()
             }
             val hideBootloader = withContext(Dispatchers.IO) { getHideBootloaderStatus() }
-            val blockRkp = withContext(Dispatchers.IO) { getBlockRkpEnabled() }
             // the saved result only: the check itself runs on its own page, when asked
             val (hidingScan, ignored) = withContext(Dispatchers.IO) {
                 hidingHistory.load().first to hidingHistory.ignored
@@ -59,7 +56,6 @@ class FeaturesViewModel(
                 it.copy(
                     bootGuard = bootGuard,
                     hideBootloader = hideBootloader,
-                    blockRkp = blockRkp,
                     allConflicts = conflicts,
                     conflictDetection = detection,
                     conflictWarnOnFlash = settingsRepo.conflictWarnOnFlash,
@@ -125,17 +121,6 @@ class FeaturesViewModel(
                 getHideBootloaderStatus()
             }
             _uiState.update { it.copy(hideBootloader = status) }
-        }
-    }
-
-    fun setBlockRkp(enabled: Boolean) {
-        _uiState.update { it.copy(blockRkp = enabled) }
-        viewModelScope.launch {
-            val stored = withContext(Dispatchers.IO) {
-                writeBlockRkp(enabled)
-                getBlockRkpEnabled()
-            }
-            _uiState.update { it.copy(blockRkp = stored) }
         }
     }
 

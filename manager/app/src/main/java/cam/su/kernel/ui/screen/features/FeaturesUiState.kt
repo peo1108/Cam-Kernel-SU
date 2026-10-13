@@ -19,8 +19,6 @@ data class FeaturesUiState(
     val conflictIncludeProps: Boolean = true,
     val scanning: Boolean = false,
     val hideBootloader: HideBootloaderStatus = HideBootloaderStatus.Empty,
-    /** deny network for the RKP/keybox path and Duck Detector */
-    val blockRkp: Boolean = false,
     /** null until checked, or when the certificate could not be read */
     val attestation: AttestationInfo? = null,
     val attestationChecked: Boolean = false,
@@ -58,7 +56,6 @@ data class FeaturesActions(
     val onSetConflictIncludeProps: (Boolean) -> Unit,
     val onRescanConflicts: () -> Unit,
     val onSetHideBootloader: (Boolean) -> Unit,
-    val onSetBlockRkp: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
     val onOpenHidingCheck: () -> Unit,
     val onSetWirelessAdb: (Boolean) -> Unit,

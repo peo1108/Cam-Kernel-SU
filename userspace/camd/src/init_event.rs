@@ -309,10 +309,6 @@ pub fn on_boot_completed() {
     // the framework sets some of them (sys.oem_unlock_allowed) once it is up
     crate::hide_bootloader::apply_if_enabled();
 
-    // the watcher process and its firewall rule are both gone after a reboot, so
-    // respawn the Duck-foreground watcher here if the feature is still enabled.
-    crate::rkp_block::apply_if_enabled();
-
     let path = Path::new(defs::BOOT_GUARD_PATH);
     let mut state = boot_guard::load(path);
     boot_guard::on_boot_completed(&mut state);

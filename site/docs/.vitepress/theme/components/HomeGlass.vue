@@ -165,11 +165,30 @@ function orbUp() {
   orb.value.dragging = false
 }
 
-onMounted(() => {
+/* Electric strands crawling along the emblem's triangle (glass/electric.ts). */
+const zap = ref<HTMLElement | null>(null)
+let stopZap: (() => void) | undefined
+
+onMounted(async () => {
   placeOrb()
   addEventListener('resize', placeOrb)
+  if (!zap.value) return
+  const { startElectric } = await import('../glass/electric')
+  if (!zap.value) return
+  stopZap = startElectric(zap.value, {
+    src: '/emblem-edge.svg',
+    frame: true,
+    color: '#dcfffd',
+    glowColor: '#2de2e6',
+    intensity: 0.9,
+    glow: 0.85,
+    thickness: 1.4,
+  })
 })
-onBeforeUnmount(() => removeEventListener('resize', placeOrb))
+onBeforeUnmount(() => {
+  removeEventListener('resize', placeOrb)
+  stopZap?.()
+})
 </script>
 
 <template>
@@ -214,6 +233,7 @@ onBeforeUnmount(() => removeEventListener('resize', placeOrb))
               fetchpriority="high"
               draggable="false"
             />
+            <span ref="zap" class="zap" aria-hidden="true" />
             <span class="sheen" aria-hidden="true" />
             <span class="glare" aria-hidden="true" />
           </figure>
@@ -402,6 +422,14 @@ onBeforeUnmount(() => removeEventListener('resize', placeOrb))
   background: #000;
   box-shadow: 0 24px 50px -24px rgba(var(--lg-accent-2), 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
   user-select: none;
+}
+
+/* Canvas for the electric strands, over the emblem picture (same box as the img). */
+.zap {
+  position: absolute;
+  inset: 12px;
+  border-radius: 30px;
+  overflow: hidden;
 }
 
 /* A band of light sweeping across, like a reflection on glass. */

@@ -84,4 +84,7 @@ interface ICamFileService {
 
     // the regular file at path opened read-only: a real, seekable descriptor (RootFileProvider)
     ParcelFileDescriptor openFd(String path);
+
+    // a size x size WebP for a row: photo, APK icon or video frame; null for anything else
+    byte[] thumbnail(String path, int size);
 }

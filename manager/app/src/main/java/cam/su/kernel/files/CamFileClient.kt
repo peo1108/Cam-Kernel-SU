@@ -160,6 +160,9 @@ object CamFileClient {
         list to s.slotSuffix()
     }
 
+    /** A [size] px square WebP for a row, or null when the file has no picture to show. */
+    suspend fun thumbnail(path: String, size: Int): ByteArray? = call { it.thumbnail(path, size) }
+
     /** A seekable read-only descriptor of the file at [path], opened by root. */
     suspend fun openFd(path: String): ParcelFileDescriptor = call { it.openFd(path) }
 

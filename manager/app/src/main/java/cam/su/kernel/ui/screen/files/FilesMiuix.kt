@@ -104,6 +104,7 @@ import cam.su.kernel.files.FileFormat
 import cam.su.kernel.files.FileKind
 import cam.su.kernel.files.FileKinds
 import cam.su.kernel.files.FsPath
+import cam.su.kernel.files.Thumbnails
 import cam.su.kernel.ui.component.ListPopupDefaults
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassCard
@@ -507,7 +508,11 @@ private fun FileRow(entry: FileEntry, selected: Boolean, onOpen: () -> Unit, onM
             .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        KindTile(FileKinds.of(entry), link = entry.isLink, broken = entry.linkBroken)
+        // photos, APK icons and video frames, loaded as the row shows up
+        val thumb by androidx.compose.runtime.produceState(Thumbnails.cached(entry), entry.path, entry.mtime, entry.contentSize) {
+            if (value == null && Thumbnails.wants(entry)) value = Thumbnails.load(entry)
+        }
+        KindTile(FileKinds.of(entry), link = entry.isLink, broken = entry.linkBroken, thumb = thumb)
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -553,15 +558,24 @@ private fun kindIcon(kind: FileKind): ImageVector = when (kind) {
 
 /** MT's rounded square icon, colored by kind; a link badge for symlinks. */
 @Composable
-fun KindTile(kind: FileKind, link: Boolean, broken: Boolean = false) {
+fun KindTile(kind: FileKind, link: Boolean, broken: Boolean = false, thumb: androidx.compose.ui.graphics.ImageBitmap? = null) {
     Box(
         modifier = Modifier
             .size(30.dp)
             .clip(RoundedCornerShape(7.dp))
-            .background(if (broken) colorScheme.error else kindColor(kind)),
+            .background(if (broken) colorScheme.error else if (thumb != null && kind == FileKind.APK) Color.Transparent else kindColor(kind)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(kindIcon(kind), contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        if (thumb != null) {
+            androidx.compose.foundation.Image(
+                bitmap = thumb,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Icon(kindIcon(kind), contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        }
         if (link) {
             Icon(
                 Icons.Rounded.Link,

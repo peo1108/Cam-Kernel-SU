@@ -30,6 +30,7 @@ class CamFileService : RootService() {
     private val readGeneration = AtomicInteger()
     private val ops = ConcurrentHashMap<Int, RunningOp>()
     private val scripts = ConcurrentHashMap<Int, ScriptRunner>()
+    private val thumbnailer by lazy { Thumbnailer(this) }
 
     private class RunningOp {
         val cancelled = AtomicBoolean(false)
@@ -175,6 +176,10 @@ class CamFileService : RootService() {
         }
 
         override fun slotSuffix(): String = PartitionOps.slot()
+
+        override fun thumbnail(path: String, size: Int): ByteArray? = call {
+            thumbnailer.make(FsPath.normalize(path), size.coerceIn(16, 512))
+        }
 
         override fun openFd(path: String): ParcelFileDescriptor = call {
             val file = FsPath.normalize(path)

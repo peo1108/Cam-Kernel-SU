@@ -134,10 +134,12 @@
 
 **Files:** Create `ui/screen/files/FilesScreen.kt`, `FilesMiuix.kt`, `FilePanel.kt`, `Breadcrumb.kt`, `ui/viewmodel/FilesViewModel.kt`, `files/PanelState.kt` (lịch sử, selection, sort — Kotlin thuần). Modify `BottomBarMiuix.kt` (thêm `Files` vào `BottomBarDestination` giữa `Features` và `Setting`), `CamActivity.kt` (trang 4 = Files, 5 = Setting), `CamActivityViewModel.kt` (`PAGE_COUNT = 6`), `strings.xml` ×2.
 
-- [ ] Thêm tab, dời index, kiểm mục 6, 7 của Review Focus
-- [ ] `PanelState` + test (back/forward, giữ vị trí cuộn, sắp xếp tên/kích thước/thời gian/loại, thư mục lên đầu, ẩn file chấm)
-- [ ] UI panel: dòng file, breadcrumb, kéo để làm mới, chọn nhiều, chuyển panel (dọc/ngang), chặn vuốt pager chính (mục 8)
-- [ ] Trạng thái không có root: thông báo giống các tab khác, không crash
+- [x] Thêm tab, dời index, kiểm mục 6, 7 của Review Focus
+- [x] `PanelState` + test (back/forward, giữ vị trí cuộn, sắp xếp tên/kích thước/thời gian/loại, thư mục lên đầu, ẩn file chấm)
+- [x] UI panel: dòng file, breadcrumb, chọn nhiều, chuyển panel (dọc/ngang), chặn vuốt pager chính (mục 8). Kéo để làm mới chưa làm (có nút làm mới trên thanh tiêu đề)
+- [x] Không có root: danh sách báo "Không có quyền", không crash
+- Làm sớm một phần Task 4/5 để thử engine trên máy: thanh chọn nhiều (Sao chép/Di chuyển/Xoá sang panel kia), hộp xác nhận xoá, hộp tiến độ có Hủy, hộp trùng tên. Nhấn giữ hiện là chọn; lưới thao tác vẫn là Task 4.
+- Thử trên máy 2026-10-13 (Lenovo TB323FU, Android 16): `DeviceCheck` (bản debug, `app_process` root) 17/17; UI hai panel ngang, màn kiểu điện thoại (wm size 1080x2340), copy 300 MB /data→/sdcard, giữ cả hai, move khác phân vùng có ghi đè, xoá cây có symlink ra ngoài, hủy ở hộp trùng tên, xoá /config bị chặn. Lỗi tìm ra: FUSE /sdcard không có symlink (ENOSYS) và move khác phân vùng xoá mất mục bị bỏ qua, đã sửa (`3ddfc9fc`).
 
 ### Task 4: Lưới thao tác và các dialog
 

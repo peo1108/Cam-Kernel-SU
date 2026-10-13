@@ -25,5 +25,8 @@ class UpdateInstallerTest {
         val reopen = script.indexOf("am start -n cam.su.kernel/.ui.CamActivity")
         val check = script.indexOf("grep -q Success '/data/x/ota/result' &&")
         assertTrue(check in 0 until reopen)
+        // compiled before it is reopened, so the first launch is not interpreted
+        val compile = script.indexOf("cmd package compile -m speed-profile -f cam.su.kernel")
+        assertTrue(compile in check until reopen)
     }
 }

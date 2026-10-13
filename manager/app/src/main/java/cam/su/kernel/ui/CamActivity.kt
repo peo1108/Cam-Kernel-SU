@@ -106,6 +106,7 @@ import cam.su.kernel.ui.screen.modulerepo.ModuleRepoDetailScreen
 import cam.su.kernel.ui.screen.modulerepo.ModuleRepoScreen
 import cam.su.kernel.ui.screen.features.FeaturesPager
 import cam.su.kernel.ui.screen.files.FilesPager
+import cam.su.kernel.update.AppCompile
 import cam.su.kernel.ui.screen.files.TextEditorScreen
 import cam.su.kernel.ui.screen.files.HexViewerScreen
 import cam.su.kernel.ui.component.bottombar.BottomBarDestination
@@ -179,6 +180,7 @@ class CamActivity : ComponentActivity() {
         lifecycleScope.launch {
             if (CamRootClient.connect() && Cam.isFullFeatured()) {
                 withContext(Dispatchers.IO) { install() }
+                AppCompile.ensureCompiled(applicationContext, lifecycleScope)
             }
             camInitDone.value = true
         }
@@ -449,6 +451,8 @@ fun MainScreen(
     val barBackdrop: Backdrop = if (barBackground != null) rememberCombinedBackdrop(barBackground, backdrop) else backdrop
 
     val settledPage = mainPagerState.pagerState.settledPage
+    var filesVisited by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(settledPage) { if (settledPage == BottomBarDestination.Files.ordinal) filesVisited = true }
     // The Files tab uses sideways swipes to switch its panels; leave it through the bar.
     val pagerSwipe = userScrollEnabled && settledPage != BottomBarDestination.Files.ordinal
     LaunchedEffect(settledPage) {
@@ -518,7 +522,8 @@ fun MainScreen(
                         1 -> if (contentReady || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
                         2 -> if (contentReady || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
                         3 -> if (contentReady || isCurrentPage) FeaturesPager(bottomInnerPadding, isCurrentPage)
-                        4 -> if (contentReady || isCurrentPage) FilesPager(bottomInnerPadding, isCurrentPage)
+                        // Files is heavy (two lists, dialogs) and rarely the first page: build it on first visit
+                        4 -> if (filesVisited || isCurrentPage) FilesPager(bottomInnerPadding, isCurrentPage)
                         5 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
                     }
                 }

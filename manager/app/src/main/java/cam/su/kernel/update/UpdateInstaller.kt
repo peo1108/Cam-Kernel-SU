@@ -79,13 +79,15 @@ internal fun sha256Hex(file: File): String {
  * Root install, run detached (setsid) by [UpdateInstaller]. KernelSU's su stays in the app's
  * cgroup, and Android kills that whole cgroup when it replaces the app, so the script moves
  * itself to the root cgroup first. The APK goes through stdin so system_server never has to
- * open a file in the app's private directory.
+ * open a file in the app's private directory. Before reopening the app it is compiled
+ * ([AppCompile]), so the first launch after an update does not run from the APK.
  */
 internal fun rootInstallScript(apk: File, size: Long, result: File): String =
     "echo $$ > /sys/fs/cgroup/cgroup.procs 2>/dev/null; " +
         "echo $$ > /acct/cgroup.procs 2>/dev/null; " +
         "cat '${apk.invariantSeparatorsPath}' | pm install -r -S $size > '${result.invariantSeparatorsPath}' 2>&1; " +
-        "grep -q Success '${result.invariantSeparatorsPath}' && am start -n cam.su.kernel/.ui.CamActivity\n"
+        "grep -q Success '${result.invariantSeparatorsPath}' && " +
+        "{ ${AppCompile.command("cam.su.kernel")} >/dev/null 2>&1; am start -n cam.su.kernel/.ui.CamActivity; }\n"
 
 /** Downloads, verifies and installs a Manager update; one at a time, process-wide. */
 object UpdateInstaller {

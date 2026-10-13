@@ -51,6 +51,7 @@ class FileOpEngine(
     private var items = 0
     private var skipped = 0
     private var preserve = true
+    private val skippedPaths = HashSet<String>()
     private var fileChoice: ConflictChoice? = null
     private var dirChoice: ConflictChoice? = null
     private var lastEmit = 0L
@@ -123,7 +124,14 @@ class FileOpEngine(
 
             FileMode.isLink(st.mode) -> {
                 if (existing != null) fs.remove(dst)
-                fs.symlink(fs.readlink(src), dst)
+                try {
+                    fs.symlink(fs.readlink(src), dst)
+                } catch (e: FsException) {
+                    // FUSE storage (/sdcard) has no symlinks: the link is skipped, not the whole job.
+                    if (e.errno !in NO_LINKS) throw e
+                    skip(src, st)
+                    return
+                }
                 if (preserve) bestEffort { fs.lchown(dst, st.uid, st.gid) }
             }
 
@@ -215,10 +223,22 @@ class FileOpEngine(
         } catch (e: FsException) {
             if (e.errno != Errno.EXDEV) throw e
         }
-        // Another file system: copy everything, and only then drop the source.
+        // Another file system: copy everything, and only then drop what was copied.
         copyNode(src, st, Target(dst, null))
-        deleteTree(src, counted = false)
-        return true
+        return deleteMoved(src)
+    }
+
+    /** Deletes [path] except what the copy skipped (and the folders holding it); false when something stayed. */
+    private fun deleteMoved(path: String): Boolean {
+        checkCancel()
+        if (path in skippedPaths) return false
+        val st = fs.lstat(path)
+        var clean = true
+        if (FileMode.isDir(st.mode)) {
+            for (name in fs.list(path)) clean = deleteMoved(FsPath.child(path, name)) && clean
+        }
+        if (clean) fs.remove(path)
+        return clean
     }
 
     // --- delete ---
@@ -262,6 +282,7 @@ class FileOpEngine(
 
     private fun skip(path: String, st: StatInfo) {
         skipped++
+        skippedPaths += path
         done += if (FileMode.isDir(st.mode)) treeSize(path) else if (FileMode.isRegular(st.mode)) st.size else 0
         emit(path)
     }
@@ -331,5 +352,6 @@ class FileOpEngine(
     private companion object {
         const val BUFFER_SIZE = 256 * 1024
         const val EMIT_INTERVAL_NS = 100_000_000L
+        val NO_LINKS = setOf(Errno.ENOSYS, Errno.EPERM, Errno.EOPNOTSUPP)
     }
 }

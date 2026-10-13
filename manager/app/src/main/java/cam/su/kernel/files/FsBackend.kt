@@ -19,6 +19,8 @@ object Errno {
     const val EROFS = 30
     const val ENOTEMPTY = 39
     const val ELOOP = 40
+    const val ENOSYS = 38
+    const val EOPNOTSUPP = 95
 }
 
 class FsException(val errno: Int, val path: String? = null, detail: String? = null) :

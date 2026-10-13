@@ -215,6 +215,38 @@ class FileOpEngineTest {
     }
 
     @Test
+    fun moveToStorageWithoutLinksKeepsTheLinksInSource() {
+        fake.mounts = listOf("/sdcard")
+        fake.noLinks = listOf("/sdcard")
+        fake.dir("/data/src/m")
+        fake.dir("/data/src/m/sub")
+        fake.file("/data/src/m/a", "abc")
+        fake.file("/data/src/m/sub/b", "b")
+        fake.link("/data/src/m/sub/l", "b")
+
+        val result = run(OpKind.MOVE, "/data/src/m", dest = "/sdcard")
+
+        assertEquals(1, result.skipped)
+        assertEquals("abc", fake.text("/sdcard/m/a"))
+        assertEquals("b", fake.text("/sdcard/m/sub/b"))
+        assertFalse(exists("/sdcard/m/sub/l"))
+        // only what was copied is gone from the source
+        assertEquals(listOf("sub"), fake.names("/data/src/m"))
+        assertEquals(listOf("l"), fake.names("/data/src/m/sub"))
+    }
+
+    @Test
+    fun copyToStorageWithoutLinksSkipsThem() {
+        fake.noLinks = listOf("/sdcard")
+        fake.file("/data/src/a", "a")
+        fake.link("/data/src/l", "a")
+        val result = run(OpKind.COPY, "/data/src/a", "/data/src/l", dest = "/sdcard")
+        assertEquals(1, result.items)
+        assertEquals(1, result.skipped)
+        assertEquals(listOf("a"), fake.names("/sdcard"))
+    }
+
+    @Test
     fun failedCopyAcrossFileSystemsKeepsSource() {
         fake.mounts = listOf("/sdcard")
         fake.dir("/data/src/m")

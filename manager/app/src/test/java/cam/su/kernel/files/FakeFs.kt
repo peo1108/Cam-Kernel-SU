@@ -29,6 +29,9 @@ class FakeFs : FsBackend {
     /** Paths that are other file systems: rename(2) across them fails with EXDEV. */
     var mounts = listOf<String>()
 
+    /** File systems without symlinks (FUSE /sdcard): symlink(2) fails with ENOSYS. */
+    var noLinks = listOf<String>()
+
     /** Reading these fails halfway through. */
     var failRead = setOf<String>()
 
@@ -88,6 +91,7 @@ class FakeFs : FsBackend {
     }
 
     override fun symlink(target: String, link: String) {
+        if (noLinks.any { FsPath.isSameOrInside(link, it) }) throw FsException(Errno.ENOSYS, link)
         create(link, Link(target))
     }
 

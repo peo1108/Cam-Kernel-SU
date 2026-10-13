@@ -106,10 +106,17 @@ object DeviceCheck {
             println("     64 MB to FUSE in $ms ms")
             File("$fuse/big.bin").length() == 64L * 1024 * 1024
         }
-        check("move /data -> /sdcard falls back to copy (EXDEV)") {
+        check("move /data -> /sdcard copies, keeps the link FUSE refuses") {
             sh("mkdir -p $base/mv; echo x > $base/mv/f; ln -s f $base/mv/l")
-            FileOpEngine(OsBackend, quiet).run(FileOp(OpKind.MOVE, listOf("$base/mv"), fuse))
-            !File("$base/mv").exists() && File("$fuse/mv/f").readText() == "x\n"
+            val result = FileOpEngine(OsBackend, quiet).run(FileOp(OpKind.MOVE, listOf("$base/mv"), fuse))
+            result.skipped == 1 && File("$fuse/mv/f").readText() == "x\n" &&
+                File("$base/mv").list()!!.toList() == listOf("l")
+        }
+        check("move inside /data renames") {
+            sh("mkdir -p $base/mv2/sub; echo y > $base/mv2/sub/f; mkdir -p $base/dst2")
+            val inode = sh("stat -c %i $base/mv2").trim()
+            FileOpEngine(OsBackend, quiet).run(FileOp(OpKind.MOVE, listOf("$base/mv2"), "$base/dst2"))
+            sh("stat -c %i $base/dst2/mv2").trim() == inode && !File("$base/mv2").exists()
         }
         check("cancel leaves no partial file") {
             var calls = 0

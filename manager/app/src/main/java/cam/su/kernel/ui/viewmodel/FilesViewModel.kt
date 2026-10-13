@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -181,9 +182,42 @@ class FilesViewModel : ViewModel() {
     /** Tells a dialog's opening from the next one, so a late answer for an old one is dropped. */
     private var dialogToken = 0
 
+    /** The folders inotify watches now (both panels, archives left out). */
+    private var watched = emptyList<String>()
+    private val reloadJobs = arrayOfNulls<Job>(2)
+
     init {
         // the editor saved a file: whichever panel shows it reloads
         viewModelScope.launch { FileChanges.changed.collect { if (started) refresh() } }
+        // Another app (or a shell) changed a folder a panel shows. A copy of hundreds of files
+        // sends hundreds of events: one reload per panel, 400 ms after the first.
+        viewModelScope.launch {
+            CamFileClient.dirChanges.collect { dir ->
+                _uiState.value.panels.forEachIndexed { i, p ->
+                    if (p.nav.path == dir && reloadJobs[i]?.isActive != true) {
+                        reloadJobs[i] = viewModelScope.launch {
+                            delay(RELOAD_DELAY_MS)
+                            load(i)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** Points inotify at the two panels' folders when they changed. */
+    private fun updateWatch() {
+        val dirs = _uiState.value.panels.map { it.nav.path }.filter { !Archives.isInside(it) }.distinct()
+        if (dirs == watched) return
+        watched = dirs
+        viewModelScope.launch {
+            try {
+                CamFileClient.watch(dirs)
+            } catch (_: FsException) {
+                // asked again with the next listing (the root service may be restarting)
+                watched = emptyList()
+            }
+        }
     }
 
     /** Loads both panels the first time the tab is shown. */
@@ -910,6 +944,7 @@ class FilesViewModel : ViewModel() {
             val sorted = withContext(Dispatchers.Default) { FileSort.apply(list, sort) }
             if (_uiState.value.panels[panel].nav.path != path) return@launch
             raw[panel] = list
+            updateWatch()
             val entries = if (_uiState.value.sort == sort) sorted else FileSort.apply(list, _uiState.value.sort)
             val paths = entries.mapTo(HashSet()) { it.path }
             updatePanel(panel) { p ->
@@ -967,6 +1002,7 @@ class FilesViewModel : ViewModel() {
         const val KEY_BOOKMARKS = "bookmarks"
 
         const val SEARCH_LIMIT = 500
+        const val RELOAD_DELAY_MS = 400L
 
         val DEFAULT_BOOKMARKS = listOf(
             "/data/adb/modules",

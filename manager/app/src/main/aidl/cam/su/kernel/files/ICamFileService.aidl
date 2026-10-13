@@ -4,6 +4,7 @@ package cam.su.kernel.files;
 import cam.su.kernel.files.FileEntry;
 import cam.su.kernel.files.IFileOpCallback;
 import cam.su.kernel.files.IScriptCallback;
+import cam.su.kernel.files.IWatchCallback;
 import rikka.parcelablelist.ParcelableListSlice;
 
 // Served by CamFileService (uid 0) for the Files tab. Paths are absolute.
@@ -87,4 +88,7 @@ interface ICamFileService {
 
     // a size x size WebP for a row: photo, APK icon or video frame; null for anything else
     byte[] thumbnail(String path, int size);
+
+    // watches exactly these folders (inotify), replacing what was watched before; empty stops
+    void watch(in String[] dirs, IWatchCallback callback);
 }

@@ -160,6 +160,23 @@ object CamFileClient {
         list to s.slotSuffix()
     }
 
+    private val _dirChanges = kotlinx.coroutines.flow.MutableSharedFlow<String>(
+        extraBufferCapacity = 64,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Folders passed to [watch] whose content changed (by anyone: another app, a shell, us). */
+    val dirChanges: kotlinx.coroutines.flow.SharedFlow<String> = _dirChanges
+
+    private val watchCallback = object : IWatchCallback.Stub() {
+        override fun onChanged(dir: String) {
+            _dirChanges.tryEmit(dir)
+        }
+    }
+
+    /** Watches exactly [dirs] from now on (inotify in the root process). */
+    suspend fun watch(dirs: List<String>) = call { it.watch(dirs.toTypedArray(), watchCallback) }
+
     /** A [size] px square WebP for a row, or null when the file has no picture to show. */
     suspend fun thumbnail(path: String, size: Int): ByteArray? = call { it.thumbnail(path, size) }
 

@@ -32,6 +32,21 @@ class CamFileService : RootService() {
     private val scripts = ConcurrentHashMap<Int, ScriptRunner>()
     private val thumbnailer by lazy { Thumbnailer(this) }
 
+    /** inotify on the folders the two panels show (watch()). */
+    private val watchers = mutableListOf<android.os.FileObserver>()
+
+    private fun stopWatchers() = synchronized(watchers) {
+        watchers.forEach { it.stopWatching() }
+        watchers.clear()
+    }
+
+    private companion object {
+        const val WATCH_MASK = android.os.FileObserver.CREATE or android.os.FileObserver.DELETE or
+            android.os.FileObserver.MOVED_FROM or android.os.FileObserver.MOVED_TO or
+            android.os.FileObserver.CLOSE_WRITE or android.os.FileObserver.ATTRIB or
+            android.os.FileObserver.DELETE_SELF or android.os.FileObserver.MOVE_SELF
+    }
+
     private class RunningOp {
         val cancelled = AtomicBoolean(false)
         val answers = LinkedBlockingQueue<Resolution>()
@@ -176,6 +191,25 @@ class CamFileService : RootService() {
         }
 
         override fun slotSuffix(): String = PartitionOps.slot()
+
+        override fun watch(dirs: Array<String>, callback: IWatchCallback) = call {
+            stopWatchers()
+            synchronized(watchers) {
+                for (dir in dirs.map(FsPath::normalize).distinct()) {
+                    if (!File(dir).isDirectory) continue
+                    watchers += object : android.os.FileObserver(File(dir), WATCH_MASK) {
+                        override fun onEvent(event: Int, path: String?) {
+                            try {
+                                callback.onChanged(dir)
+                            } catch (_: android.os.RemoteException) {
+                                // the app is gone: nobody to tell any more
+                                stopWatchers()
+                            }
+                        }
+                    }.also { it.startWatching() }
+                }
+            }
+        }
 
         override fun thumbnail(path: String, size: Int): ByteArray? = call {
             thumbnailer.make(FsPath.normalize(path), size.coerceIn(16, 512))

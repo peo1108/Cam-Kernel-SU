@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -93,6 +94,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
+import cam.su.kernel.files.Archives
 import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.FileEntry
 import cam.su.kernel.files.FileFormat
@@ -141,6 +143,9 @@ sealed interface FilesDialogState {
     data class Permissions(val entry: FileEntry) : FilesDialogState
     data class Owner(val entry: FileEntry) : FilesDialogState
     data class Context(val entry: FileEntry) : FilesDialogState
+    data class ApkOpen(val panel: Int, val entry: FileEntry) : FilesDialogState
+    data class Compress(val sources: List<String>, val name: String) : FilesDialogState
+    data object EditPath : FilesDialogState
 }
 
 @Composable
@@ -161,8 +166,9 @@ fun FilesPagerMiuix(
             containerColor = Color.Transparent,
             topBar = {
                 BlurredBar(backdrop) {
+                    Box {
                     SmallTopAppBar(
-                        title = state.activePanel.nav.path.let { if (it == "/") it else "$it/" },
+                        title = state.activePanel.nav.path.let { if (it.endsWith("/")) it else "$it/" },
                         color = barColor,
                         navigationIcon = {
                             GlassIconButton(onClick = { drawer = true }) {
@@ -171,6 +177,17 @@ fun FilesPagerMiuix(
                         },
                         actions = { OverflowMenu(state, vm, onSort = { dialog = FilesDialogState.Sort }) },
                     )
+                    // MT: tapping the path lets you type another one
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(horizontal = 96.dp)
+                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                                dialog = FilesDialogState.EditPath
+                            },
+                    )
+                    }
                 }
             },
             popupHost = { },
@@ -190,7 +207,11 @@ fun FilesPagerMiuix(
                             if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(colorScheme.dividerLine))
                             Box(modifier = Modifier.weight(1f)) {
                                 key(index) {
-                                    Panel(index, state, vm, wide, onMenu = { entry -> dialog = FilesDialogState.Menu(index, entry) })
+                                    Panel(
+                                        index, state, vm, wide,
+                                        onMenu = { entry -> dialog = FilesDialogState.Menu(index, entry) },
+                                        onApk = { entry -> dialog = FilesDialogState.ApkOpen(index, entry) },
+                                    )
                                 }
                             }
                         }
@@ -302,7 +323,7 @@ private fun PanelSwitcher(state: FilesUiState, vm: FilesViewModel) {
 }
 
 @Composable
-private fun Panel(index: Int, state: FilesUiState, vm: FilesViewModel, wide: Boolean, onMenu: (FileEntry) -> Unit) {
+private fun Panel(index: Int, state: FilesUiState, vm: FilesViewModel, wide: Boolean, onMenu: (FileEntry) -> Unit, onApk: (FileEntry) -> Unit) {
     val panel = state.panels[index]
     val active = index == state.active
     val selecting = panel.selection.isNotEmpty()
@@ -344,9 +365,13 @@ private fun Panel(index: Int, state: FilesUiState, vm: FilesViewModel, wide: Boo
                     selected = entry.path in panel.selection,
                     onOpen = {
                         vm.setActive(index)
+                        val inArchive = Archives.isInside(entry.path)
                         when {
                             selecting -> vm.toggleSelection(index, entry.path)
                             entry.isDir -> vm.navigate(index, entry.path)
+                            // MT: an APK asks Install / View; other archives open like folders
+                            !inArchive && FileKinds.of(entry) == FileKind.APK -> onApk(entry)
+                            !inArchive && Archives.canBrowse(entry.name) -> vm.browseArchive(index, entry)
                             else -> vm.openWith(entry, FileKinds.mime(entry))
                         }
                     },
@@ -419,8 +444,9 @@ private val dateFormat = SimpleDateFormat("yy-MM-dd HH:mm", Locale.ROOT)
 private fun FileRow(entry: FileEntry, selected: Boolean, onOpen: () -> Unit, onMenu: () -> Unit, onSwipe: () -> Unit) {
     val swipeThreshold = with(LocalDensity.current) { 48.dp.toPx() }
     val details = buildString {
-        append(dateFormat.format(Date(entry.mtime)))
-        if (!entry.isDir) append("  ").append(FileFormat.size(entry.size))
+        // folders only implied by paths inside an archive have no date
+        if (entry.mtime > 0) append(dateFormat.format(Date(entry.mtime))).append("  ")
+        if (!entry.isDir) append(FileFormat.size(entry.size))
         if (entry.isLink) append("  → ").append(entry.linkTarget ?: "?")
     }
     Row(

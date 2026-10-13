@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -17,6 +18,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.R
 import cam.su.kernel.files.Errno
 import cam.su.kernel.files.OpKind
+import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.su.kernel.ui.navigation3.Route
+import cam.su.kernel.ui.screen.flash.FlashIt
 import cam.su.kernel.ui.viewmodel.FilesEvent
 import cam.su.kernel.ui.viewmodel.FilesMessage
 import cam.su.kernel.ui.viewmodel.FilesViewModel
@@ -30,6 +34,7 @@ fun FilesPager(
     val viewModel = viewModel<FilesViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val navigator = LocalNavigator.current
 
     LaunchedEffect(isCurrentPage) {
         if (isCurrentPage) viewModel.start()
@@ -52,6 +57,8 @@ fun FilesPager(
                     context,
                     Intent(Intent.ACTION_VIEW).setDataAndType(uriOf(context, event.file), event.mime),
                 )
+
+                is FilesEvent.Flash -> navigator.push(Route.Flash(FlashIt.FlashModules(listOf(Uri.fromFile(event.file)))))
 
                 is FilesEvent.Share -> {
                     val uris = event.files.map { uriOf(context, it) }
@@ -92,6 +99,7 @@ private fun messageText(context: Context, message: FilesMessage): String = when 
 
     FilesMessage.Cancelled -> context.getString(R.string.files_cancelled)
     FilesMessage.Done -> context.getString(R.string.files_done_short)
+    is FilesMessage.Text -> message.text
     is FilesMessage.Failed -> buildString {
         append(errnoText(context, message.errno))
         message.detail?.let { append("\n").append(it) }
@@ -117,5 +125,7 @@ fun opTitle(context: Context, kind: OpKind): String = context.getString(
         OpKind.COPY -> R.string.files_op_copy
         OpKind.MOVE -> R.string.files_op_move
         OpKind.DELETE -> R.string.files_op_delete
+        OpKind.EXTRACT -> R.string.files_op_extract
+        OpKind.COMPRESS -> R.string.files_op_compress
     },
 )

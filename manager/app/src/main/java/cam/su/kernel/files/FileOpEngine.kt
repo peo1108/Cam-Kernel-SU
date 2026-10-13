@@ -4,7 +4,8 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
-enum class OpKind { COPY, MOVE, DELETE }
+/** EXTRACT: sources are paths inside one archive. COMPRESS: destDir is the zip to write. */
+enum class OpKind { COPY, MOVE, DELETE, EXTRACT, COMPRESS }
 
 /**
  * One copy/move/delete. [preserve] also carries owner and SELinux label over (mode bits are
@@ -62,6 +63,8 @@ class FileOpEngine(
         val sources = op.sources.map(FsPath::normalize).distinct()
         if (op.kind != OpKind.COPY) sources.forEach(::checkNotProtected)
         when (op.kind) {
+            OpKind.EXTRACT, OpKind.COMPRESS -> throw FsException(Errno.EINVAL, detail = "archive jobs run in ArchiveOps")
+
             OpKind.DELETE -> {
                 total = sources.sumOf(::countEntries)
                 sources.forEach { deleteTree(it, counted = true) }

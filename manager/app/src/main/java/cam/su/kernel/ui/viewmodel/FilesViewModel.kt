@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cam.su.kernel.camApp
+import cam.su.kernel.files.Archives
 import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.ConflictChoice
 import cam.su.kernel.files.FileEntry
@@ -58,12 +59,15 @@ sealed interface FilesMessage {
     data object Cancelled : FilesMessage
     data class Failed(val errno: Int, val detail: String?) : FilesMessage
     data object Done : FilesMessage
+    data class Text(val text: String) : FilesMessage
 }
 
 /** One-shot work for the screen: hand a cached copy of a root file to another app. */
 sealed interface FilesEvent {
     data class Open(val file: File, val mime: String) : FilesEvent
     data class Share(val files: List<File>) : FilesEvent
+    /** A module zip to hand to the Flash screen. */
+    data class Flash(val file: File) : FilesEvent
 }
 
 data class FilesUiState(
@@ -131,6 +135,37 @@ class FilesViewModel : ViewModel() {
     fun navigate(panel: Int, path: String) = setNav(panel, _uiState.value.panels[panel].nav.go(path))
 
     fun navigateActive(path: String) = navigate(_uiState.value.active, path)
+
+    /** The path typed into the address bar: a folder, a file (its folder opens) or a path in an archive. */
+    fun goToPath(input: String) {
+        val raw = input.trim().let { if (it.length > 1) it.trimEnd('/') else it }
+        if (Archives.isInside(raw + "/")) {
+            navigateActive(if (Archives.isInside(raw)) raw else "$raw/")
+            return
+        }
+        viewModelScope.launch {
+            val path = try {
+                FsPath.normalize(raw)
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, raw)) }
+                return@launch
+            }
+            val entry = try {
+                CamFileClient.stat(path)
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, path)) }
+                return@launch
+            }
+            when {
+                entry == null -> _uiState.update { it.copy(message = FilesMessage.Failed(cam.su.kernel.files.Errno.ENOENT, path)) }
+                entry.isDir -> navigateActive(path)
+                else -> navigateActive(FsPath.parent(path))
+            }
+        }
+    }
+
+    /** Into an archive as if it were a folder. */
+    fun browseArchive(panel: Int, entry: FileEntry) = navigate(panel, Archives.join(entry.path, ""))
 
     fun goUp(panel: Int = _uiState.value.active) {
         _uiState.value.panels[panel].nav.parent?.let { navigate(panel, it) }
@@ -306,8 +341,37 @@ class FilesViewModel : ViewModel() {
 
     fun copy(sources: List<String>, move: Boolean, destDir: String = _uiState.value.otherPanel.nav.path) {
         if (sources.isEmpty()) return
+        // Out of an archive, copying is extracting (archives are read-only here).
+        if (Archives.isInside(sources.first())) return extract(sources, destDir)
         runOp(FileOp(if (move) OpKind.MOVE else OpKind.COPY, sources, destDir))
     }
+
+    /** [sources] are paths inside one archive, or archives themselves (extracted whole). */
+    fun extract(sources: List<String>, destDir: String = _uiState.value.otherPanel.nav.path) {
+        val inside = sources.map { if (Archives.isInside(it)) it else Archives.join(it, "") }
+        inside.groupBy { Archives.split(it).first }.values.forEach { runOp(FileOp(OpKind.EXTRACT, it, destDir)) }
+    }
+
+    fun compress(sources: List<String>, zipName: String) {
+        if (sources.isEmpty()) return
+        runOp(FileOp(OpKind.COMPRESS, sources, FsPath.child(FsPath.parent(sources.first()), zipName)))
+    }
+
+    /** Installs an APK or split bundle as root (pm install session). */
+    fun install(entry: FileEntry) {
+        _uiState.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            val message = try {
+                FilesMessage.Text(CamFileClient.installPackage(entry.path))
+            } catch (e: FsException) {
+                FilesMessage.Failed(e.errno, e.message)
+            }
+            _uiState.update { it.copy(busy = false, message = message) }
+        }
+    }
+
+    /** "Install as module": the Flash screen installs it like one picked in the Module tab. */
+    fun flashModule(entry: FileEntry) = cached(listOf(entry)) { FilesEvent.Flash(it.single()) }
 
     /** Long-pressed Copy: a copy next to the original ("name (1)"). */
     fun copyHere(sources: List<String>) = copy(sources, move = false, destDir = FsPath.parent(sources.first()))

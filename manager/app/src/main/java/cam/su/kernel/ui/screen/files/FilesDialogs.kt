@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
+import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Check
@@ -28,7 +29,9 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.InstallMobile
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.runtime.Composable
@@ -46,13 +49,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
+import cam.su.kernel.files.Archives
 import cam.su.kernel.files.ConflictChoice
 import cam.su.kernel.files.FileEntry
 import cam.su.kernel.files.FileFormat
+import cam.su.kernel.files.FileKind
+import cam.su.kernel.files.FileKinds
 import cam.su.kernel.files.FileMode
 import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.OpKind
@@ -65,6 +73,7 @@ import cam.su.kernel.ui.viewmodel.OpUi
 import cam.su.kernel.ui.viewmodel.PropertiesUi
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -83,9 +92,24 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
         is FilesDialogState.ConfirmCopy -> {
             val what = dialog.sources.singleOrNull()?.let { FsPath.name(it) } ?: stringResource(R.string.files_n_items, dialog.sources.size)
             val dest = dialog.dest.let { if (it == "/") it else "$it/" }
+            val extracting = Archives.isInside(dialog.sources.first())
             Confirm(
-                title = stringResource(if (dialog.move) R.string.files_move else R.string.files_copy),
-                text = stringResource(if (dialog.move) R.string.files_move_confirm else R.string.files_copy_confirm, what, dest),
+                title = stringResource(
+                    when {
+                        extracting -> R.string.files_extract
+                        dialog.move -> R.string.files_move
+                        else -> R.string.files_copy
+                    },
+                ),
+                text = stringResource(
+                    when {
+                        extracting -> R.string.files_extract_confirm
+                        dialog.move -> R.string.files_move_confirm
+                        else -> R.string.files_copy_confirm
+                    },
+                    what,
+                    dest,
+                ),
                 onDismiss = close,
             ) { vm.copy(dialog.sources, dialog.move, dialog.dest) }
         }
@@ -129,6 +153,39 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
             ListAction(stringResource(R.string.files_tool_checksum), enabled = false) {}
         }
 
+        is FilesDialogState.ApkOpen -> FilesDialog(show = true, title = stringResource(R.string.files_open_with), onDismiss = close) {
+            ListAction(stringResource(R.string.files_install)) {
+                close()
+                vm.install(dialog.entry)
+            }
+            ListAction(stringResource(R.string.files_view)) {
+                close()
+                vm.browseArchive(dialog.panel, dialog.entry)
+            }
+            ListAction(stringResource(R.string.files_other_app)) {
+                close()
+                vm.openWith(dialog.entry, "application/vnd.android.package-archive")
+            }
+        }
+
+        is FilesDialogState.Compress -> NameDialog(
+            title = stringResource(R.string.files_compress),
+            initial = dialog.name,
+            allowInitial = true,
+            onDismiss = close,
+            buttons = listOf(stringResource(android.R.string.ok) to { name: String -> vm.compress(dialog.sources, name) }),
+        )
+
+        FilesDialogState.EditPath -> NameDialog(
+            title = stringResource(R.string.files_go_to),
+            initial = state.activePanel.nav.path,
+            label = stringResource(R.string.files_path),
+            validate = { it.trim().startsWith("/") },
+            allowInitial = true,
+            onDismiss = close,
+            buttons = listOf(stringResource(android.R.string.ok) to { path: String -> vm.goToPath(path) }),
+        )
+
         FilesDialogState.Sort -> SortDialog(state, vm, close)
         is FilesDialogState.Permissions -> PermissionsDialog(dialog.entry, vm, close)
         is FilesDialogState.Owner -> OwnerDialog(dialog.entry, vm, close)
@@ -141,6 +198,13 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
 
     // Miuix overlay dialogs keep the content lambda they were shown with, so these read the
     // live state inside it rather than values captured here.
+    FilesDialog(show = state.busy, title = null, onDismiss = null) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            InfiniteProgressIndicator()
+            Text(stringResource(R.string.processing), modifier = Modifier.padding(start = 12.dp))
+        }
+    }
+
     state.op?.let { op ->
         OpDialog(show = op.conflict == null, vm = vm)
         if (op.conflict != null) ConflictDialog(vm)
@@ -182,44 +246,91 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
             overflow = TextOverflow.MiddleEllipsis,
             modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
         )
-        val cells = listOf(
-            GridCell(Icons.Rounded.ContentCopy, stringResource(R.string.files_copy_to), dot = true,
-                onClick = { onDialog(FilesDialogState.ConfirmCopy(targets, move = false, dest = other)) },
-                onLongClick = {
-                    vm.copyHere(targets)
-                    close()
-                }),
-            GridCell(Icons.AutoMirrored.Rounded.DriveFileMove, stringResource(R.string.files_move_to), dot = true,
-                onClick = { onDialog(FilesDialogState.ConfirmCopy(targets, move = true, dest = other)) },
-                onLongClick = if (single) ({ onDialog(FilesDialogState.MoveTarget(entry)) }) else null),
-            GridCell(Icons.Rounded.Delete, stringResource(R.string.files_delete),
-                onClick = { onDialog(FilesDialogState.ConfirmDelete(targets)) }),
-            GridCell(Icons.Rounded.Edit, stringResource(R.string.files_rename), enabled = single,
-                onClick = { onDialog(FilesDialogState.Rename(entry)) }),
-            GridCell(Icons.Rounded.Build, stringResource(R.string.files_tools), enabled = single,
-                onClick = { onDialog(FilesDialogState.Tools(entry)) }),
-            GridCell(Icons.Rounded.Unarchive, stringResource(R.string.files_compress), enabled = false, onClick = {}),
-            GridCell(Icons.Rounded.Info, stringResource(R.string.files_properties), enabled = single,
-                onClick = {
-                    close()
-                    vm.showProperties(entry)
-                }),
-            GridCell(Icons.Rounded.Share, stringResource(R.string.files_share), enabled = entries.any { !it.isDir },
-                onClick = {
+        val inArchive = Archives.isInside(entry.path)
+        val kind = FileKinds.of(entry)
+        val archiveFile = !inArchive && !entry.isDir && Archives.canBrowse(entry.name)
+        val cells = buildList {
+            add(
+                GridCell(
+                    Icons.Rounded.ContentCopy,
+                    stringResource(if (inArchive) R.string.files_extract_to else R.string.files_copy_to),
+                    dot = !inArchive,
+                    onClick = { onDialog(FilesDialogState.ConfirmCopy(targets, move = false, dest = other)) },
+                    onLongClick = if (inArchive) null else ({
+                        vm.copyHere(targets)
+                        close()
+                    }),
+                ),
+            )
+            if (!inArchive) {
+                add(
+                    GridCell(
+                        Icons.AutoMirrored.Rounded.DriveFileMove, stringResource(R.string.files_move_to), dot = true,
+                        onClick = { onDialog(FilesDialogState.ConfirmCopy(targets, move = true, dest = other)) },
+                        onLongClick = if (single) ({ onDialog(FilesDialogState.MoveTarget(entry)) }) else null,
+                    ),
+                )
+                add(GridCell(Icons.Rounded.Delete, stringResource(R.string.files_delete), onClick = { onDialog(FilesDialogState.ConfirmDelete(targets)) }))
+                add(GridCell(Icons.Rounded.Edit, stringResource(R.string.files_rename), enabled = single, onClick = { onDialog(FilesDialogState.Rename(entry)) }))
+                add(GridCell(Icons.Rounded.Build, stringResource(R.string.files_tools), enabled = single, onClick = { onDialog(FilesDialogState.Tools(entry)) }))
+                add(
+                    GridCell(Icons.Rounded.Archive, stringResource(R.string.files_compress), onClick = {
+                        val base = if (single) entry.name else FsPath.name(FsPath.parent(entry.path)).ifEmpty { "archive" }
+                        onDialog(FilesDialogState.Compress(targets, "$base.zip"))
+                    }),
+                )
+                add(
+                    GridCell(Icons.Rounded.Info, stringResource(R.string.files_properties), enabled = single, onClick = {
+                        close()
+                        vm.showProperties(entry)
+                    }),
+                )
+            }
+            add(
+                GridCell(Icons.Rounded.Share, stringResource(R.string.files_share), enabled = entries.any { !it.isDir }, onClick = {
                     close()
                     vm.share(entries)
                 }),
-            GridCell(Icons.Rounded.Check, stringResource(R.string.files_open_with), enabled = single && !entry.isDir,
-                onClick = {
+            )
+            add(
+                GridCell(Icons.Rounded.Check, stringResource(R.string.files_open_with), enabled = single && !entry.isDir, onClick = {
                     close()
                     vm.openWith(entry, "*/*")
                 }),
-            GridCell(Icons.Rounded.Bookmark, stringResource(R.string.files_menu_add_bookmark),
-                onClick = {
-                    close()
-                    vm.addBookmark(if (entry.isDir) entry.path else FsPath.parent(entry.path))
-                }),
-        )
+            )
+            if (!inArchive) {
+                add(
+                    GridCell(Icons.Rounded.Bookmark, stringResource(R.string.files_menu_add_bookmark), onClick = {
+                        close()
+                        vm.addBookmark(if (entry.isDir) entry.path else FsPath.parent(entry.path))
+                    }),
+                )
+            }
+            if (archiveFile) {
+                add(
+                    GridCell(Icons.Rounded.Unarchive, stringResource(R.string.files_extract_to), onClick = {
+                        close()
+                        vm.extract(targets, other)
+                    }),
+                )
+            }
+            if (single && !inArchive && kind == FileKind.APK) {
+                add(
+                    GridCell(Icons.Rounded.InstallMobile, stringResource(R.string.files_install), onClick = {
+                        close()
+                        vm.install(entry)
+                    }),
+                )
+            }
+            if (single && !inArchive && entry.name.endsWith(".zip", ignoreCase = true)) {
+                add(
+                    GridCell(Icons.Rounded.Extension, stringResource(R.string.files_install_module), onClick = {
+                        close()
+                        vm.flashModule(entry)
+                    }),
+                )
+            }
+        }
         cells.chunked(2).forEach { row ->
             Row {
                 row.forEach { cell ->
@@ -414,13 +525,25 @@ private fun NameDialog(
     title: String,
     initial: String,
     onDismiss: () -> Unit,
+    label: String? = null,
+    allowInitial: Boolean = false,
     validate: (String) -> Boolean = FsPath::isValidName,
     buttons: List<Pair<String, (String) -> Unit>>,
 ) {
     var text by remember { mutableStateOf(initial) }
-    val valid = validate(text) && text != initial
+    val valid = validate(text) && (allowInitial || text != initial)
     FilesDialog(show = true, title = title, onDismiss = onDismiss) {
-        TextField(value = text, onValueChange = { text = it }, label = stringResource(R.string.files_create_name), singleLine = true, modifier = Modifier.fillMaxWidth())
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            label = label ?: stringResource(R.string.files_create_name),
+            singleLine = true,
+            // File names and paths: Vietnamese IMEs (Laban, Gboard Telex) turn "data" into "dât"
+            // even on URI fields; a password-type field switches them to plain input. No visual
+            // transformation is set, so the text stays readable.
+            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+        )
         Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(text = stringResource(android.R.string.cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
             buttons.forEach { (label, action) ->

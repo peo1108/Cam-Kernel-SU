@@ -80,7 +80,12 @@ data class PanelNav(
 
     fun goForward(): PanelNav? = forward.lastOrNull()?.let { PanelNav(it, back + path, forward.dropLast(1)) }
 
-    val parent: String? get() = if (path == "/") null else FsPath.parent(path)
+    val parent: String?
+        get() = when {
+            path == "/" -> null
+            Archives.isInside(path) -> Archives.parent(path)
+            else -> FsPath.parent(path)
+        }
 
     private companion object {
         const val MAX_HISTORY = 100

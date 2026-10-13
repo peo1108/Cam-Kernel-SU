@@ -5,6 +5,7 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import com.topjohnwu.superuser.ipc.RootService
 import rikka.parcelablelist.ParcelableListSlice
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
@@ -30,6 +31,12 @@ class CamFileService : RootService() {
         val answers = LinkedBlockingQueue<Resolution>()
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        // The root process inherits umask 077 from su: new folders would be 0700, files 0600.
+        android.system.Os.umask(0x12) // 022
+    }
+
     override fun onBind(intent: Intent): IBinder = Stub()
 
     private inline fun <T> call(block: () -> T): T = try {
@@ -47,6 +54,23 @@ class CamFileService : RootService() {
         override fun stat(path: String): FileEntry? = call { fs.stat(path) }
 
         override fun statFs(path: String): LongArray = call { fs.statFs(path) }
+
+        override fun listArchive(archive: String, inner: String): ParcelableListSlice<FileEntry> = call {
+            Archives.open(File(FsPath.normalize(archive))).use { ParcelableListSlice(Archives.list(it, archive, inner)) }
+        }
+
+        override fun openArchiveEntry(archive: String, inner: String): ParcelFileDescriptor = call {
+            val reader = Archives.open(File(FsPath.normalize(archive)))
+            val input = try {
+                reader.open(inner.trim('/'))
+            } catch (e: Exception) {
+                reader.close()
+                throw e
+            }
+            pipeFrom(input) { reader.close() }
+        }
+
+        override fun installPackage(path: String): String = call { ApkInstaller.install(FsPath.normalize(path), OsBackend) }
 
         override fun measure(path: String): LongArray = call { fs.measure(path) }
 
@@ -69,17 +93,7 @@ class CamFileService : RootService() {
 
         override fun openRead(path: String): ParcelFileDescriptor = call {
             // Opened here so a missing file or a directory fails the call itself.
-            val input = fs.openRead(path)
-            val (readEnd, writeEnd) = ParcelFileDescriptor.createReliablePipe()
-            thread(name = "cam-file-read") {
-                try {
-                    input.use { it.copyTo(FileOutputStream(writeEnd.fileDescriptor)) }
-                    writeEnd.close()
-                } catch (e: IOException) {
-                    runCatching { writeEnd.closeWithError(e.message ?: "read failed") }
-                }
-            }
-            readEnd
+            pipeFrom(fs.openRead(path)) {}
         }
 
         override fun startOp(
@@ -126,6 +140,22 @@ class CamFileService : RootService() {
         }
     }
 
+    /** Streams [input] into a reliable pipe from a thread; returns the read end. */
+    private fun pipeFrom(input: java.io.InputStream, onDone: () -> Unit): ParcelFileDescriptor {
+        val (readEnd, writeEnd) = ParcelFileDescriptor.createReliablePipe()
+        thread(name = "cam-file-read") {
+            try {
+                input.use { it.copyTo(FileOutputStream(writeEnd.fileDescriptor)) }
+                writeEnd.close()
+            } catch (e: IOException) {
+                runCatching { writeEnd.closeWithError(e.message ?: "read failed") }
+            } finally {
+                onDone()
+            }
+        }
+        return readEnd
+    }
+
     private fun runOp(id: Int, op: FileOp, running: RunningOp, callback: IFileOpCallback) {
         val listener = object : OpListener {
             override fun onProgress(done: Long, total: Long, current: String) {
@@ -141,9 +171,23 @@ class CamFileService : RootService() {
                 throw OpCancelledException()
             }
         }
-        val engine = FileOpEngine(OsBackend, listener) { running.cancelled.get() }
+        val cancelled = { running.cancelled.get() }
         val (result, errno, error) = try {
-            Triple(engine.run(op), 0, null)
+            val result = when (op.kind) {
+                OpKind.EXTRACT -> {
+                    val archive = Archives.split(op.sources.first()).first
+                    Archives.open(File(FsPath.normalize(archive))).use { reader ->
+                        ArchiveOps(OsBackend, listener, cancelled)
+                            .extract(reader, op.sources.map { Archives.split(it).second }, op.destDir ?: throw FsException(Errno.EINVAL))
+                    }
+                }
+
+                OpKind.COMPRESS -> ArchiveOps(OsBackend, listener, cancelled)
+                    .compress(op.sources, op.destDir ?: throw FsException(Errno.EINVAL))
+
+                else -> FileOpEngine(OsBackend, listener, cancelled).run(op)
+            }
+            Triple(result, 0, null)
         } catch (_: OpCancelledException) {
             Triple(null, -1, null)
         } catch (e: FsException) {

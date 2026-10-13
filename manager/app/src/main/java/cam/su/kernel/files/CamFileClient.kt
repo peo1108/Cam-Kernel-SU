@@ -41,7 +41,18 @@ object CamFileClient {
     private val service: ICamFileService?
         get() = bound?.takeIf { it.asBinder().isBinderAlive }
 
-    suspend fun listDir(path: String): List<FileEntry> = call { it.listDir(path).list }
+    /** A folder, or a folder inside an archive (`/a.zip!/dir`). */
+    suspend fun listDir(path: String): List<FileEntry> = call {
+        if (Archives.isInside(path)) {
+            val (archive, inner) = Archives.split(path)
+            it.listArchive(archive, inner).list
+        } else {
+            it.listDir(path).list
+        }
+    }
+
+    /** pm's answer: "Success", or why it failed. */
+    suspend fun installPackage(path: String): String = call { it.installPackage(path) }
 
     suspend fun stat(path: String): FileEntry? = call { it.stat(path) }
 
@@ -77,7 +88,12 @@ object CamFileClient {
 
     /** Copies the root-only file at [path] to [target] (app storage), for viewers and sharing. */
     suspend fun copyToLocal(path: String, target: java.io.File) = call { s ->
-        s.openRead(path).use { pfd ->
+        val pipe = if (Archives.isInside(path)) {
+            Archives.split(path).let { (archive, inner) -> s.openArchiveEntry(archive, inner) }
+        } else {
+            s.openRead(path)
+        }
+        pipe.use { pfd ->
             // the pfd owns the descriptor; checkError() needs it still open
             target.outputStream().use { FileInputStream(pfd.fileDescriptor).copyTo(it) }
             pfd.checkError()

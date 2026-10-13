@@ -829,4 +829,15 @@
     <string name="files_error_link_target">Link target</string>
     <string name="files_tool_checksum">Checksum (MD5/SHA)</string>
     <string name="files_no_app">No app can open this</string>
+    <string name="files_op_extract">Extracting</string>
+    <string name="files_op_compress">Compressing</string>
+    <string name="files_install">Install</string>
+    <string name="files_view">View</string>
+    <string name="files_other_app">Open with another app</string>
+    <string name="files_extract_to">Extract →</string>
+    <string name="files_install_module">Install as module</string>
+    <string name="files_go_to">Go to</string>
+    <string name="files_path">Path</string>
+    <string name="files_extract">Extract</string>
+    <string name="files_extract_confirm">Extract %1$s into %2$s?</string>
 </resources>

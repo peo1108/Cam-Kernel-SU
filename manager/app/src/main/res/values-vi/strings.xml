@@ -814,4 +814,15 @@
     <string name="files_error_link_target">Đích liên kết</string>
     <string name="files_tool_checksum">Checksum (MD5/SHA)</string>
     <string name="files_no_app">Không có ứng dụng nào mở được</string>
+    <string name="files_op_extract">Đang giải nén</string>
+    <string name="files_op_compress">Đang nén</string>
+    <string name="files_install">Cài đặt</string>
+    <string name="files_view">Xem</string>
+    <string name="files_other_app">Mở bằng ứng dụng khác</string>
+    <string name="files_extract_to">Giải nén →</string>
+    <string name="files_install_module">Cài như module</string>
+    <string name="files_go_to">Đi tới</string>
+    <string name="files_path">Đường dẫn</string>
+    <string name="files_extract">Giải nén</string>
+    <string name="files_extract_confirm">Giải nén %1$s vào %2$s?</string>
 </resources>

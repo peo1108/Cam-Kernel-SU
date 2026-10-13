@@ -241,7 +241,8 @@ fun TextEditorScreen(path: String) {
         if (!Archives.isInside(path) && !vm.readOnly && (name.endsWith(".sh") || '.' !in name)) {
             MenuRow(stringResource(R.string.files_run)) {
                 menu = false
-                if (vm.modified) vm.save { navigator.push(Route.Script(path)) } else navigator.push(Route.Script(path))
+                val run = { navigator.push(Route.Terminal(FsPath.parent(path), path)) }
+                if (vm.modified) vm.save(run) else run()
             }
         }
         if (!Archives.isInside(path)) {

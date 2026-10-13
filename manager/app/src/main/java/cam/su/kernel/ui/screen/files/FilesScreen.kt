@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.R
 import cam.su.kernel.files.Errno
+import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.OpKind
 import cam.su.kernel.ui.navigation3.LocalNavigator
 import cam.su.kernel.ui.navigation3.Route
@@ -69,7 +70,10 @@ fun FilesPager(
 
                 is FilesEvent.Hex -> navigator.push(Route.HexViewer(event.path))
 
-                is FilesEvent.Run -> navigator.push(Route.Script(event.path))
+                // a real terminal: colors, prompts that wait for an answer, Ctrl+C
+                is FilesEvent.Run -> navigator.push(Route.Terminal(FsPath.parent(event.path), event.path))
+
+                is FilesEvent.Terminal -> navigator.push(Route.Terminal(event.cwd))
 
                 is FilesEvent.Flash -> navigator.push(Route.Flash(FlashIt.FlashModules(listOf(Uri.fromFile(event.file)))))
 

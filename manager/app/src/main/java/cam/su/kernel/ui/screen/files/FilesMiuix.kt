@@ -69,6 +69,7 @@ import androidx.compose.material.icons.rounded.SdCard
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -702,6 +703,12 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 item {
                     DrawerItem(Icons.Rounded.Apps, stringResource(R.string.files_view_as_app), stringResource(R.string.files_view_as_app_summary), onClick = {
                         vm.chooseApp()
+                        onClose()
+                    })
+                }
+                item {
+                    DrawerItem(Icons.Rounded.Terminal, stringResource(R.string.terminal), stringResource(R.string.terminal_summary), onClick = {
+                        vm.openTerminal()
                         onClose()
                     })
                 }

@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit
  */
 private const val TAG = "CamCli"
 
-private fun getCamDaemonPath(): String {
+internal fun getCamDaemonPath(): String {
     return camApp.applicationInfo.nativeLibraryDir + File.separator + "libcamd.so"
 }
 

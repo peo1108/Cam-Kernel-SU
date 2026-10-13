@@ -126,6 +126,7 @@ sealed interface FilesEvent {
     data class Edit(val path: String) : FilesEvent
     data class Hex(val path: String) : FilesEvent
     data class Run(val path: String) : FilesEvent
+    data class Terminal(val cwd: String) : FilesEvent
 }
 
 data class FilesUiState(
@@ -455,6 +456,13 @@ class FilesViewModel : ViewModel() {
 
     fun hex(entry: FileEntry) {
         viewModelScope.launch { events.send(FilesEvent.Hex(entry.path)) }
+    }
+
+    /** A root terminal in the active panel's folder (an archive's own folder when inside one). */
+    fun openTerminal() {
+        val path = _uiState.value.activePanel.nav.path
+        val dir = if (Archives.isInside(path)) FsPath.parent(Archives.split(path).first) else path
+        viewModelScope.launch { events.send(FilesEvent.Terminal(dir)) }
     }
 
     fun runScript(entry: FileEntry) {

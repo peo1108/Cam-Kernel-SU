@@ -753,6 +753,11 @@
     <string name="script_leave_title">Script đang chạy</string>
     <string name="script_leave_message">Thoát sẽ dừng script và mọi thứ nó đã chạy.</string>
     <string name="script_stop_leave">Dừng và thoát</string>
+    <string name="terminal">Terminal</string>
+    <string name="terminal_leave_title">Terminal đang mở</string>
+    <string name="terminal_summary">Shell root ở thư mục của panel đang chọn</string>
+    <string name="terminal_exited">Shell đã thoát · mã %1$d</string>
+    <string name="terminal_leave_message">Thoát sẽ đóng terminal và dừng mọi thứ đang chạy trong đó.</string>
     <string name="script_input">Nhập (stdin)</string>
     <string name="script_send">Gửi</string>
     <string name="files_header_counts">Thư mục: %1$d  Tệp: %2$d</string>

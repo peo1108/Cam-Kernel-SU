@@ -288,6 +288,8 @@ dependencies {
 
     implementation(libs.commons.compress)
     implementation(libs.xz)
+    // Files tab terminal: a real PTY and ANSI rendering (Apache 2.0, Termux)
+    implementation(libs.termux.terminal.view)
     implementation(libs.protobuf.kotlin.lite)
 }
 

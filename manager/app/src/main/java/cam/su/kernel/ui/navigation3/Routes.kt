@@ -110,6 +110,11 @@ sealed interface Route : NavKey, Parcelable {
     @Serializable
     data class Script(val path: String) : Route
 
+    /** A root terminal in [cwd]; with [script], running it there first. */
+    @Parcelize
+    @Serializable
+    data class Terminal(val cwd: String, val script: String? = null) : Route
+
     @Parcelize
     @Serializable
     data class ExecuteModuleAction(val moduleId: String, val fromShortcut: Boolean = false) : Route

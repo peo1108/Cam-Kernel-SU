@@ -110,6 +110,7 @@ import cam.su.kernel.update.AppCompile
 import cam.su.kernel.ui.screen.files.TextEditorScreen
 import cam.su.kernel.ui.screen.files.HexViewerScreen
 import cam.su.kernel.ui.screen.files.ScriptScreen
+import cam.su.kernel.ui.screen.files.TerminalScreen
 import cam.su.kernel.ui.component.bottombar.BottomBarDestination
 import cam.su.kernel.ui.screen.settings.SettingPager
 import cam.su.kernel.ui.screen.sulog.SulogScreen
@@ -290,6 +291,8 @@ class CamActivity : ComponentActivity() {
                             entry<Route.HexViewer>(swipeDismiss = swipeDismiss) { key -> GlassPage { HexViewerScreen(key.path) } }
                             // no swipe to close: it would stop a running script without asking
                             entry<Route.Script>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { ScriptScreen(key.path) } }
+                            // no swipe to close: horizontal swipes belong to the terminal (and it would end the shell)
+                            entry<Route.Terminal>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { TerminalScreen(key.cwd, key.script) } }
                             entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }
                             entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage { InstallScreen() } }
                             entry<Route.Flash>(swipeDismiss = if (flashBackEnabled) swipeDismiss else NavSwipeDirection.None) { key ->

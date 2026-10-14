@@ -159,13 +159,13 @@ fun GlassMorphPopup(
     LaunchedEffect(state.expanded) {
         if (state.expanded) {
             hostVisible.value = true
-            state.split.animateTo(1f, tween(240, easing = FastOutSlowInEasing))
+            state.split.animateTo(1f, tween(160, easing = FastOutSlowInEasing))
             // the neck has just torn
             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-            state.grow.animateTo(1f, spring(dampingRatio = 0.74f, stiffness = 380f, visibilityThreshold = 0.001f))
+            state.grow.animateTo(1f, spring(dampingRatio = 0.76f, stiffness = 620f, visibilityThreshold = 0.001f))
         } else {
-            state.grow.animateTo(0f, spring(dampingRatio = 1f, stiffness = 700f, visibilityThreshold = 0.001f))
-            state.split.animateTo(0f, tween(180, easing = FastOutSlowInEasing))
+            state.grow.animateTo(0f, spring(dampingRatio = 1f, stiffness = 1000f, visibilityThreshold = 0.001f))
+            state.split.animateTo(0f, tween(130, easing = FastOutSlowInEasing))
             hostVisible.value = false
         }
     }
@@ -202,7 +202,7 @@ private fun MorphLayer(
     )
     // the droplet stays clear glass; the menu it inflates into gets the near-opaque veil
     val veil = colorScheme.surface.copy(alpha = 0.35f * state.grow.value.coerceIn(0f, 1f))
-    val neckColor = colorScheme.surface.copy(alpha = 0.55f)
+    val neckColor = colorScheme.surface.copy(alpha = 0.3f)
     val neck = if (liquid && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) remember { NeckShader() } else null
 
     val anchor = state.anchor.translate(-origin)
@@ -266,7 +266,8 @@ private fun MorphLayer(
                 Box(
                     Modifier
                         .graphicsLayer { alpha = (state.split.value / 0.25f).coerceIn(0f, 1f) }
-                        .overlayGlass(bgShape)
+                        // a clear droplet frosting over into the menu
+                        .overlayGlass(bgShape, frost = lerp(0.12f, 1f, state.grow.value.coerceIn(0f, 1f)))
                         .background(veil, bgShape),
                 )
                 Box(

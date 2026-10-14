@@ -28,12 +28,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 val LocalGlassOverlayBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 @Composable
-internal fun Modifier.overlayGlass(shape: RoundedCornerShape): Modifier {
+internal fun Modifier.overlayGlass(shape: RoundedCornerShape, frost: Float = 1f): Modifier {
     val dark = isInDarkTheme()
+    // frost < 1: clearer glass (a droplet), less tint and blur
     return glassSurface(
         shape = shape,
-        tint = colorScheme.surface.copy(alpha = if (dark) GlassDefaults.overlayTintDark else GlassDefaults.overlayTintLight),
-        blur = GlassDefaults.dialogBlur,
+        tint = colorScheme.surface.copy(alpha = frost * if (dark) GlassDefaults.overlayTintDark else GlassDefaults.overlayTintLight),
+        blur = GlassDefaults.dialogBlur * frost,
         lens = true,
         highlight = { if (dark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight },
         refraction = GlassRefraction(GlassDefaults.dialogLensHeight, GlassDefaults.dialogLensAmount),

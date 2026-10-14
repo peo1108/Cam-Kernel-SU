@@ -11,10 +11,10 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
@@ -62,6 +64,9 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -159,13 +164,22 @@ fun GlassMorphPopup(
     LaunchedEffect(state.expanded) {
         if (state.expanded) {
             hostVisible.value = true
-            state.split.animateTo(1f, tween(160, easing = FastOutSlowInEasing))
-            // the neck has just torn
-            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-            state.grow.animateTo(1f, spring(dampingRatio = 0.76f, stiffness = 620f, visibilityThreshold = 0.001f))
+            // The phases overlap: the droplet starts inflating while it still flies, so there is no stop.
+            coroutineScope {
+                launch {
+                    state.split.animateTo(1f, tween(170, easing = FastOutSlowInEasing))
+                    // the neck has just torn
+                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                }
+                snapshotFlow { state.split.value }.first { it >= 0.55f }
+                state.grow.animateTo(1f, spring(dampingRatio = 0.78f, stiffness = 520f, visibilityThreshold = 0.001f))
+            }
         } else {
-            state.grow.animateTo(0f, spring(dampingRatio = 1f, stiffness = 1000f, visibilityThreshold = 0.001f))
-            state.split.animateTo(0f, tween(130, easing = FastOutSlowInEasing))
+            coroutineScope {
+                launch { state.grow.animateTo(0f, spring(dampingRatio = 1f, stiffness = 900f, visibilityThreshold = 0.001f)) }
+                snapshotFlow { state.grow.value }.first { it <= 0.3f }
+                state.split.animateTo(0f, tween(170, easing = FastOutSlowInEasing))
+            }
             hostVisible.value = false
         }
     }
@@ -181,6 +195,24 @@ fun GlassMorphPopup(
     }
 }
 
+/** One frame of the morph, in the popup host's coordinates. */
+private class MorphFrame(
+    val s: Float,
+    val g: Float,
+    val anchor: Rect,
+    val target: Rect,
+    val c1: Offset,
+    val r1: Float,
+    val c2: Offset,
+    val r2: Float,
+    val current: Rect,
+    val radius: Float,
+)
+
+/**
+ * Animation values are read only in layout and draw (never in composition), so a frame re-places and
+ * redraws the menu without recomposing its rows: that is what keeps the morph smooth.
+ */
 @Composable
 private fun MorphLayer(
     state: MorphPopupState,
@@ -193,48 +225,51 @@ private fun MorphLayer(
     var origin by remember { mutableStateOf(Offset.Zero) }
     var hostSize by remember { mutableStateOf(IntSize.Zero) }
     var contentSize by remember { mutableStateOf(IntSize.Zero) }
-    val s = state.split.value.coerceIn(0f, 1f)
-    val g = state.grow.value
     val textStyles = MiuixTheme.textStyles
     val glassColors = colorScheme.copy(
         surfaceContainer = Color.Transparent,
         tertiaryContainer = colorScheme.tertiaryContainer.copy(alpha = 0.45f),
     )
-    // the droplet stays clear glass; the menu it inflates into gets the near-opaque veil
-    val veil = colorScheme.surface.copy(alpha = 0.35f * state.grow.value.coerceIn(0f, 1f))
+    val veil = colorScheme.surface.copy(alpha = 0.35f)
     val neckColor = colorScheme.surface.copy(alpha = 0.3f)
     val neck = if (liquid && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) remember { NeckShader() } else null
-
-    val anchor = state.anchor.translate(-origin)
     val gap = with(density) { 8.dp.toPx() }
-    val obstacles = MorphObstacles.rects.values.map { it.translate(-origin) }
-    val target = placeMenu(anchor, contentSize, hostSize, obstacles, gap, align)
-
-    // The button's circle (for a row value: a circle at its end) and the droplet budding off it.
-    val r1 = anchor.minDimension / 2f
-    val c1 = Offset(anchor.right - r1, anchor.center.y)
-    val r2 = r1 * lerp(0.3f, 0.55f, s)
-    val corner = target.nearestCorner(c1)
-    val inward = Offset(if (corner.x > target.center.x) -1f else 1f, if (corner.y > target.center.y) -1f else 1f)
-    val dropEnd = corner + inward * r2
-    val toward = (dropEnd - c1).let { it / it.getDistance().coerceAtLeast(1f) }
-    // it buds on the button's rim, not over its icon
-    val dropStart = c1 + toward * r1
-    val c2 = lerp(dropStart, dropEnd, s)
-    val drop = Rect(c2, r2)
-
-    // The droplet inflates into the menu.
-    val current = Rect(
-        lerp(drop.left, target.left, g),
-        lerp(drop.top, target.top, g),
-        lerp(drop.right, target.right, g),
-        lerp(drop.bottom, target.bottom, g),
-    )
     val endRadius = with(density) { GlassDefaults.popupCorner.toPx() }
-    val radius = lerp(r2, endRadius, g.coerceIn(0f, 1f)).coerceAtMost(current.minDimension / 2f).coerceAtLeast(0f)
-    val contentAlpha = ((g - 0.3f) / 0.5f).coerceIn(0f, 1f)
-    val contentShift = with(density) { 6.dp.toPx() } * (1f - g.coerceIn(0f, 1f))
-    val dimAlpha = 0.08f * s
+    val shift = with(density) { 6.dp.toPx() }
+
+    fun frame(): MorphFrame {
+        val s = state.split.value.coerceIn(0f, 1f)
+        val g = state.grow.value
+        val anchor = state.anchor.translate(-origin)
+        val obstacles = MorphObstacles.rects.values.map { it.translate(-origin) }
+        val target = placeMenu(anchor, contentSize, hostSize, obstacles, gap, align)
+        // The button's circle (for a row value: a circle at its end) and the droplet budding off its rim.
+        val r1 = anchor.minDimension / 2f
+        val c1 = Offset(anchor.right - r1, anchor.center.y)
+        val r2 = r1 * lerp(0.3f, 0.55f, s)
+        val corner = target.nearestCorner(c1)
+        val inward = Offset(if (corner.x > target.center.x) -1f else 1f, if (corner.y > target.center.y) -1f else 1f)
+        val dropEnd = corner + inward * r2
+        val toward = (dropEnd - c1).let { it / it.getDistance().coerceAtLeast(1f) }
+        val c2 = lerp(c1 + toward * r1, dropEnd, s)
+        val drop = Rect(c2, r2)
+        // The droplet inflates into the menu.
+        val current = Rect(
+            lerp(drop.left, target.left, g),
+            lerp(drop.top, target.top, g),
+            lerp(drop.right, target.right, g),
+            lerp(drop.bottom, target.bottom, g),
+        )
+        val radius = lerp(r2, endRadius, g.coerceIn(0f, 1f)).coerceIn(0f, current.minDimension / 2f)
+        return MorphFrame(s, g, anchor, target, c1, r1, c2, r2, current, radius)
+    }
+
+    // The glass reads its corner at draw time, so the shape changes without recomposition.
+    val bgShape = remember {
+        RoundedCornerShape(object : CornerSize {
+            override fun toPx(shapeSize: Size, density: Density) = frame().radius
+        })
+    }
 
     Box(
         Modifier
@@ -244,16 +279,18 @@ private fun MorphLayer(
                 hostSize = it.size
             }
             .drawBehind {
+                val f = frame()
                 // light dim everywhere but the button, which now closes the menu
                 val dim = Path().apply {
                     fillType = PathFillType.EvenOdd
                     addRect(Rect(Offset.Zero, size))
-                    addRoundRect(RoundRect(anchor, CornerRadius(r1)))
+                    addRoundRect(RoundRect(f.anchor, CornerRadius(f.r1)))
                 }
-                drawPath(dim, Color.Black.copy(alpha = dimAlpha))
-                // the liquid neck between button and droplet, until it tears
-                if (neck != null && s > 0f && g < 0.05f) {
-                    neck.update(c1, r1, c2, r2, k = r1 * 0.9f, color = neckColor.copy(alpha = neckColor.alpha * (s / 0.25f).coerceAtMost(1f)))
+                drawPath(dim, Color.Black.copy(alpha = 0.08f * f.s))
+                // the liquid neck between button and droplet, fading as the droplet inflates
+                if (neck != null && f.s > 0f && f.g < 0.05f) {
+                    val a = neckColor.alpha * (f.s / 0.25f).coerceAtMost(1f) * (1f - f.g.coerceAtLeast(0f) / 0.05f)
+                    neck.update(f.c1, f.r1, f.c2, f.r2, k = f.r1 * 0.9f, color = neckColor.copy(alpha = a))
                     drawRect(neck.brush)
                 }
             }
@@ -261,14 +298,19 @@ private fun MorphLayer(
     ) {
         Layout(
             content = {
-                val bgShape = RoundedCornerShape(with(density) { radius.toDp() })
-                // iOS menus are nearly opaque: a surface veil over the glass keeps busy rows behind unreadable.
                 Box(
                     Modifier
-                        .graphicsLayer { alpha = (state.split.value / 0.25f).coerceIn(0f, 1f) }
-                        // a clear droplet frosting over into the menu
-                        .overlayGlass(bgShape, frost = lerp(0.12f, 1f, state.grow.value.coerceIn(0f, 1f)))
-                        .background(veil, bgShape),
+                        .graphicsLayer {
+                            // a clear droplet frosting over into the menu: fade the glass, never re-blur it
+                            val f = frame()
+                            alpha = (f.s / 0.25f).coerceIn(0f, 1f) * lerp(0.3f, 1f, f.g.coerceIn(0f, 1f))
+                        }
+                        .overlayGlass(bgShape)
+                        // iOS menus are nearly opaque: a surface veil keeps busy rows behind unreadable
+                        .drawBehind {
+                            val g = state.grow.value.coerceIn(0f, 1f)
+                            drawOutline(bgShape.createOutline(size, layoutDirection, this), veil.copy(alpha = veil.alpha * g))
+                        },
                 )
                 Box(
                     Modifier
@@ -276,10 +318,11 @@ private fun MorphLayer(
                         // Taps between rows must not reach the dismiss layer.
                         .pointerInput(Unit) { detectTapGestures { } }
                         .graphicsLayer {
-                            alpha = contentAlpha
-                            translationY = -contentShift
+                            val f = frame()
+                            alpha = ((f.g - 0.3f) / 0.5f).coerceIn(0f, 1f)
+                            translationY = -shift * (1f - f.g.coerceIn(0f, 1f))
                             clip = true
-                            shape = WindowShape(current.translate(-target.topLeft), radius)
+                            shape = WindowShape(f.current.translate(-f.target.topLeft), f.radius)
                         },
                 ) {
                     // Rows paint surfaceContainer (selected: tertiaryContainer); clear them so the glass shows.
@@ -287,14 +330,15 @@ private fun MorphLayer(
                 }
             },
         ) { measurables, constraints ->
+            val f = frame()
             val loose = Constraints(maxWidth = constraints.maxWidth, maxHeight = constraints.maxHeight)
             val bg = measurables[0].measure(
-                Constraints.fixed(current.width.roundToInt().coerceAtLeast(1), current.height.roundToInt().coerceAtLeast(1)),
+                Constraints.fixed(f.current.width.roundToInt().coerceAtLeast(1), f.current.height.roundToInt().coerceAtLeast(1)),
             )
             val menu = measurables[1].measure(loose)
             layout(constraints.maxWidth, constraints.maxHeight) {
-                if (s > 0f) bg.place(current.left.roundToInt(), current.top.roundToInt())
-                menu.place(target.left.roundToInt(), target.top.roundToInt())
+                if (f.s > 0f) bg.place(f.current.left.roundToInt(), f.current.top.roundToInt())
+                menu.place(f.target.left.roundToInt(), f.target.top.roundToInt())
             }
         }
     }

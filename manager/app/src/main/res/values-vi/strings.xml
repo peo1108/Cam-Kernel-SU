@@ -642,6 +642,17 @@
     <string name="hiding_ok_profile_umount">Mọi app không root đều được umount module</string>
     <string name="hiding_section_attestation">Chứng thực phần cứng</string>
     <string name="hiding_attestation_summary">Do chip ký nên Cam không ẩn được. Đây là lý do có app vẫn từ chối chạy dù các mục trên không lộ gì.</string>
+    <string name="hiding_section_widevine">Widevine DRM</string>
+    <string name="hiding_widevine_summary">Mức DRM mà app xem phim (Netflix, Prime Video, Disney+) đọc để chọn HD hay SD. Giống chứng thực phần cứng, ẩn root không đổi được mức này.</string>
+    <string name="hiding_widevine_check">Kiểm tra Widevine</string>
+    <string name="hiding_widevine_level">Mức bảo mật: %s</string>
+    <string name="hiding_widevine_system_id">System ID: %s</string>
+    <string name="hiding_widevine_version">Phiên bản: %s</string>
+    <string name="hiding_widevine_hdcp">HDCP: %1$s (tối đa %2$s)</string>
+    <string name="hiding_widevine_none">Máy không có Widevine</string>
+    <string name="hiding_widevine_l3_hint">Dưới L1 thì app xem phim chỉ phát SD. Nhiều hãng xoá hoặc khoá keybox Widevine khi mở bootloader: khi đó root hay ẩn root đều không đưa về L1 được, chỉ khoá lại bootloader (nếu hãng còn giữ keybox) hoặc thay keybox.</string>
+    <string name="hiding_widevine_copy">Chép thông tin</string>
+    <string name="hiding_widevine_copied">Đã chép</string>
     <string name="hiding_app_entry">Kiểm tra ẩn root cho app này</string>
     <string name="hiding_app_entry_summary">Xem chính process của app này thấy gì</string>
     <string name="hiding_app_entry_root">App này có quyền root nên thấy module là bình thường</string>

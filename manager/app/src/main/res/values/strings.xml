@@ -657,6 +657,17 @@
     <string name="hiding_ok_profile_umount">Every app without root gets modules unmounted</string>
     <string name="hiding_section_attestation">Hardware attestation</string>
     <string name="hiding_attestation_summary">Signed by the chip, so Cam cannot hide it. It explains apps that refuse to run even when nothing above leaks.</string>
+    <string name="hiding_section_widevine">Widevine DRM</string>
+    <string name="hiding_widevine_summary">The DRM level streaming apps (Netflix, Prime Video, Disney+) read to pick HD or SD. Like the attestation, root hiding cannot change it.</string>
+    <string name="hiding_widevine_check">Check Widevine</string>
+    <string name="hiding_widevine_level">Security level: %s</string>
+    <string name="hiding_widevine_system_id">System ID: %s</string>
+    <string name="hiding_widevine_version">Version: %s</string>
+    <string name="hiding_widevine_hdcp">HDCP: %1$s (max %2$s)</string>
+    <string name="hiding_widevine_none">This device has no Widevine plugin</string>
+    <string name="hiding_widevine_l3_hint">Below L1, streaming apps play SD only. Many makers wipe or lock the Widevine keybox when the bootloader is unlocked: then neither root nor hiding brings L1 back, only relocking the bootloader (if the maker kept the keybox) or a new keybox.</string>
+    <string name="hiding_widevine_copy">Copy the details</string>
+    <string name="hiding_widevine_copied">Copied</string>
     <string name="hiding_app_entry">Check root hiding for this app</string>
     <string name="hiding_app_entry_summary">What this app\'s own processes see</string>
     <string name="hiding_app_entry_root">This app has root, so it sees modules by design</string>

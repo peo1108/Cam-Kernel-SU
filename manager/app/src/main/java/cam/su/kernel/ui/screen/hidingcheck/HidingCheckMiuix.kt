@@ -46,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -180,6 +181,10 @@ fun HidingCheckScreenMiuix(
                     item {
                         SmallTitle(text = stringResource(R.string.hiding_section_attestation))
                         AttestationCard(state, actions)
+                    }
+                    item {
+                        SmallTitle(text = stringResource(R.string.hiding_section_widevine))
+                        WidevineCard(state, actions)
                     }
                 }
 
@@ -595,6 +600,76 @@ private fun AttestationCard(state: HidingCheckUiState, actions: HidingCheckActio
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
     }
+}
+
+/** The Widevine DRM level streaming apps see: L1 plays HD, L3 is SD only. */
+@Composable
+private fun WidevineCard(state: HidingCheckUiState, actions: HidingCheckActions) {
+    val context = LocalContext.current
+    GlassCard(modifier = cardModifier) {
+        Text(
+            text = stringResource(R.string.hiding_widevine_summary),
+            fontSize = 12.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+        )
+        state.widevine?.let { info ->
+            when {
+                !info.supported -> WidevineLine(stringResource(R.string.hiding_widevine_none), ok = false)
+                else -> {
+                    WidevineLine(
+                        stringResource(R.string.hiding_widevine_level, info.securityLevel ?: "?"),
+                        ok = info.isL1,
+                    )
+                    info.systemId?.let { WidevineLine(stringResource(R.string.hiding_widevine_system_id, it), ok = null) }
+                    info.version?.let { WidevineLine(stringResource(R.string.hiding_widevine_version, it), ok = null) }
+                    info.hdcpLevel?.let { hdcp ->
+                        WidevineLine(stringResource(R.string.hiding_widevine_hdcp, hdcp, info.maxHdcpLevel ?: "?"), ok = null)
+                    }
+                    if (!info.isL1) {
+                        Text(
+                            text = stringResource(R.string.hiding_widevine_l3_hint),
+                            fontSize = 12.sp,
+                            color = colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+            TextButton(
+                text = stringResource(R.string.hiding_widevine_copy),
+                onClick = {
+                    context.getSystemService(android.content.ClipboardManager::class.java)
+                        ?.setPrimaryClip(android.content.ClipData.newPlainText("widevine", info.summary()))
+                    cam.su.kernel.ui.component.CamToast.show(context, R.string.hiding_widevine_copied)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            )
+        }
+        TextButton(
+            text = stringResource(
+                if (state.checkingWidevine) R.string.features_attestation_checking else R.string.hiding_widevine_check
+            ),
+            enabled = !state.checkingWidevine,
+            onClick = actions.onCheckWidevine,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
+}
+
+/** [ok] null: a neutral fact. */
+@Composable
+private fun WidevineLine(text: String, ok: Boolean?) {
+    Text(
+        text = "${when (ok) { true -> "✓"; false -> "⚠"; null -> "·" }}  $text",
+        fontSize = 13.sp,
+        color = if (ok == false) colorScheme.error else colorScheme.onSurfaceVariantSummary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
+    )
 }
 
 @Composable

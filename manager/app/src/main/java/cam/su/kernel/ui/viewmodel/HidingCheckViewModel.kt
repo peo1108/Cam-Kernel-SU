@@ -198,6 +198,15 @@ class HidingCheckViewModel(
         }
     }
 
+    fun checkWidevine() {
+        if (_uiState.value.checkingWidevine) return
+        _uiState.update { it.copy(checkingWidevine = true) }
+        viewModelScope.launch {
+            val info = withContext(Dispatchers.IO) { cam.su.kernel.ui.util.checkWidevine() }
+            _uiState.update { it.copy(widevine = info, checkingWidevine = false) }
+        }
+    }
+
     /** Starts the checked app, so its processes are there to look at. */
     fun launchCheckedApp() {
         val app = _uiState.value.app ?: return

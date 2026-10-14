@@ -74,6 +74,9 @@ data class HidingCheckUiState(
     /** the key attestation, once the user asked for it */
     val attestation: AttestationReport? = null,
     val checkingAttestation: Boolean = false,
+    /** the Widevine DRM level, once the user asked for it */
+    val widevine: cam.su.kernel.data.model.WidevineInfo? = null,
+    val checkingWidevine: Boolean = false,
     /** check once after a boot that brings in a module ([cam.su.kernel.hiding.ModuleScanWorker]) */
     val moduleScan: Boolean = false,
 ) {
@@ -179,6 +182,7 @@ data class HidingCheckActions(
     val onCheckUpdates: () -> Unit,
     val onDisableModule: (id: String) -> Unit,
     val onCheckAttestation: () -> Unit,
+    val onCheckWidevine: () -> Unit,
     val onLaunchApp: () -> Unit,
     val onSetModuleScan: (Boolean) -> Unit,
     /** applies one fix ([HidingCheckUiState.actionFor]) and scans again */

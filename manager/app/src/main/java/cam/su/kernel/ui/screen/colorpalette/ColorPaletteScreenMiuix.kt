@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.colorpalette
 
+import cam.su.kernel.ui.component.glass.iosSwitchColors
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -202,7 +203,8 @@ fun ColorPaletteScreenMiuix(
                             checked = uiState.miuixMonet,
                             onCheckedChange = {
                                 actions.onSetMiuixMonet(it)
-                            }
+                            },
+                            switchColors = iosSwitchColors(),
                         )
 
                         AnimatedVisibility(
@@ -313,7 +315,8 @@ fun ColorPaletteScreenMiuix(
                             checked = uiState.enableFloatingBottomBar,
                             onCheckedChange = {
                                 actions.onSetEnableFloatingBottomBar(it)
-                            }
+                            },
+                            switchColors = iosSwitchColors(),
                         )
                         // Landscape tablets: the bar down the side gives the pages their height back
                         GlassDropdownPreference(
@@ -350,7 +353,8 @@ fun ColorPaletteScreenMiuix(
                             checked = uiState.enableNavigationBadge,
                             onCheckedChange = {
                                 actions.onSetEnableNavigationBadge(it)
-                            }
+                            },
+                            switchColors = iosSwitchColors(),
                         )
                     }
 
@@ -374,7 +378,8 @@ fun ColorPaletteScreenMiuix(
                                 checked = uiState.enablePredictiveBack,
                                 onCheckedChange = {
                                     actions.onSetEnablePredictiveBack(it)
-                                }
+                                },
+                                switchColors = iosSwitchColors(),
                             )
                         }
                         SwitchPreference(
@@ -390,6 +395,7 @@ fun ColorPaletteScreenMiuix(
                             },
                             checked = uiState.enableSwipeDismiss,
                             onCheckedChange = actions.onSetEnableSwipeDismiss,
+                            switchColors = iosSwitchColors(),
                         )
                         GlassDropdownPreference(
                             title = stringResource(id = R.string.settings_pager_gesture_mode),
@@ -516,7 +522,8 @@ fun ColorPaletteScreenMiuix(
                                 )
                             },
                             checked = uiState.roamingSlimes,
-                            onCheckedChange = actions.onSetRoamingSlimes
+                            onCheckedChange = actions.onSetRoamingSlimes,
+                            switchColors = iosSwitchColors(),
                         )
                         AnimatedVisibility(visible = uiState.roamingSlimes) {
                             Column {
@@ -550,7 +557,8 @@ fun ColorPaletteScreenMiuix(
                                         )
                                     },
                                     checked = uiState.slimeNightNap,
-                                    onCheckedChange = actions.onSetSlimeNightNap
+                                    onCheckedChange = actions.onSetSlimeNightNap,
+                                    switchColors = iosSwitchColors(),
                                 )
                             }
                         }

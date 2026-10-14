@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.appprofile
 
+import cam.su.kernel.ui.component.glass.iosSwitchColors
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -519,6 +520,7 @@ fun AppProfileEditorBody(
                 title = stringResource(id = R.string.superuser),
                 checked = isRootGranted,
                 onCheckedChange = { onProfileChange(profile.copy(allowSu = it)) },
+                switchColors = iosSwitchColors(),
             )
         }
     }

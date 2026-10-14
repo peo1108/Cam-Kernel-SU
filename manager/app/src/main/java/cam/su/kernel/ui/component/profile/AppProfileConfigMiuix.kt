@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.component.profile
 
+import cam.su.kernel.ui.component.glass.iosSwitchColors
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,7 +50,8 @@ fun AppProfileConfigMiuix(
                         nonRootUseDefault = false
                     )
                 )
-            }
+            },
+            switchColors = iosSwitchColors(),
         )
     }
 }

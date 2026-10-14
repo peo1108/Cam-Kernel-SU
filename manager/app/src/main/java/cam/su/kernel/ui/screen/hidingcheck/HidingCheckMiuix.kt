@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.hidingcheck
 
+import cam.su.kernel.ui.component.glass.iosSwitchColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -231,6 +232,7 @@ fun HidingCheckScreenMiuix(
                                 startAction = { RowIcon(Icons.Rounded.Extension, colorScheme.onBackground) },
                                 checked = state.moduleScan,
                                 onCheckedChange = actions.onSetModuleScan,
+                                switchColors = iosSwitchColors(),
                             )
                         }
                     }
@@ -623,6 +625,7 @@ private fun FixSwitch(
         enabled = fix.available,
         checked = fix.enabled,
         onCheckedChange = { actions.onSetFix(name, it) },
+        switchColors = iosSwitchColors(),
     )
 }
 

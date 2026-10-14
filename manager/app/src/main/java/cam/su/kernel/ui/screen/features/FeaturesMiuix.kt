@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.features
 
+import cam.su.kernel.ui.component.glass.iosSwitchColors
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
@@ -140,6 +141,7 @@ private fun BootGuardCard(state: FeaturesUiState, actions: FeaturesActions) {
             summary = stringResource(R.string.features_boot_guard_enable_summary),
             checked = bootGuard.enabled,
             onCheckedChange = actions.onSetBootGuardEnabled,
+            switchColors = iosSwitchColors(),
         )
         AnimatedVisibility(visible = bootGuard.enabled) {
             Column {
@@ -209,6 +211,7 @@ private fun ConflictCard(state: FeaturesUiState, actions: FeaturesActions) {
             summary = stringResource(R.string.features_conflicts_enable_summary),
             checked = state.conflictDetection,
             onCheckedChange = actions.onSetConflictDetection,
+            switchColors = iosSwitchColors(),
         )
         AnimatedVisibility(visible = state.conflictDetection) {
             Column {
@@ -216,11 +219,13 @@ private fun ConflictCard(state: FeaturesUiState, actions: FeaturesActions) {
                     title = stringResource(R.string.features_conflicts_warn),
                     checked = state.conflictWarnOnFlash,
                     onCheckedChange = actions.onSetConflictWarnOnFlash,
+                    switchColors = iosSwitchColors(),
                 )
                 SwitchPreference(
                     title = stringResource(R.string.features_conflicts_props),
                     checked = state.conflictIncludeProps,
                     onCheckedChange = actions.onSetConflictIncludeProps,
+                    switchColors = iosSwitchColors(),
                 )
                 if (conflicts.isNotEmpty()) {
                     SectionTitle(stringResource(R.string.features_conflicts_count, conflicts.size))
@@ -274,6 +279,7 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
             summary = stringResource(R.string.features_bootloader_enable_summary),
             checked = status.enabled,
             onCheckedChange = actions.onSetHideBootloader,
+            switchColors = iosSwitchColors(),
         )
         CheckSection(stringResource(R.string.features_bootloader_props), status.props)
         CheckSection(stringResource(R.string.features_bootloader_bootconfig), status.bootconfig, rootOnly = true)
@@ -364,6 +370,7 @@ private fun WirelessAdbCard(state: FeaturesUiState, actions: FeaturesActions) {
             checked = adb.on,
             enabled = !state.adbBusy,
             onCheckedChange = actions.onSetWirelessAdb,
+            switchColors = iosSwitchColors(),
         )
         if (adb.on && address != null) {
             val command = "adb connect $address"

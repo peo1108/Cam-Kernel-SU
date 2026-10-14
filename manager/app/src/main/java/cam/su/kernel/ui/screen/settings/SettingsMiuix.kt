@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.settings
 
+import cam.su.kernel.ui.component.glass.iosSwitchColors
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -146,7 +147,8 @@ fun SettingPagerMiuix(
                                 )
                             },
                             checked = uiState.checkUpdate,
-                            onCheckedChange = actions.onSetCheckUpdate
+                            onCheckedChange = actions.onSetCheckUpdate,
+                            switchColors = iosSwitchColors(),
                         )
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_beta_updates),
@@ -161,7 +163,8 @@ fun SettingPagerMiuix(
                             },
                             enabled = uiState.checkUpdate,
                             checked = uiState.betaUpdates,
-                            onCheckedChange = actions.onSetBetaUpdates
+                            onCheckedChange = actions.onSetBetaUpdates,
+                            switchColors = iosSwitchColors(),
                         )
                         CamIsValid {
                             SwitchPreference(
@@ -176,7 +179,8 @@ fun SettingPagerMiuix(
                                     )
                                 },
                                 checked = uiState.checkModuleUpdate,
-                                onCheckedChange = actions.onSetCheckModuleUpdate
+                                onCheckedChange = actions.onSetCheckModuleUpdate,
+                                switchColors = iosSwitchColors(),
                             )
                         }
                     }
@@ -278,7 +282,8 @@ fun SettingPagerMiuix(
                                 },
                                 enabled = uiState.kernelUmountStatus == "supported",
                                 checked = uiState.isKernelUmountEnabled,
-                                onCheckedChange = actions.onSetKernelUmountEnabled
+                                onCheckedChange = actions.onSetKernelUmountEnabled,
+                                switchColors = iosSwitchColors(),
                             )
 
                             val selinuxHideSummary = when (uiState.selinuxHideStatus) {
@@ -300,7 +305,8 @@ fun SettingPagerMiuix(
                                 },
                                 enabled = uiState.selinuxHideStatus == "supported",
                                 checked = uiState.isSelinuxHideEnabled,
-                                onCheckedChange = actions.onSetSelinuxHideEnabled
+                                onCheckedChange = actions.onSetSelinuxHideEnabled,
+                                switchColors = iosSwitchColors(),
                             )
 
                             val sulogSummary = when (uiState.sulogStatus) {
@@ -322,7 +328,8 @@ fun SettingPagerMiuix(
                                 },
                                 enabled = uiState.sulogStatus == "supported",
                                 checked = uiState.isSulogEnabled,
-                                onCheckedChange = actions.onSetSulogEnabled
+                                onCheckedChange = actions.onSetSulogEnabled,
+                                switchColors = iosSwitchColors(),
                             )
 
                             val adbRootSummary = when (uiState.adbRootStatus) {
@@ -344,7 +351,8 @@ fun SettingPagerMiuix(
                                 },
                                 enabled = uiState.adbRootStatus == "supported",
                                 checked = uiState.isAdbRootEnabled,
-                                onCheckedChange = actions.onSetAdbRootEnabled
+                                onCheckedChange = actions.onSetAdbRootEnabled,
+                                switchColors = iosSwitchColors(),
                             )
 
                             val shellSuAdbOnlySummary = when (uiState.shellSuAdbOnlyStatus) {
@@ -366,7 +374,8 @@ fun SettingPagerMiuix(
                                 },
                                 enabled = uiState.shellSuAdbOnlyStatus == "supported",
                                 checked = uiState.isShellSuAdbOnlyEnabled,
-                                onCheckedChange = actions.onSetShellSuAdbOnlyEnabled
+                                onCheckedChange = actions.onSetShellSuAdbOnlyEnabled,
+                                switchColors = iosSwitchColors(),
                             )
                             SwitchPreference(
                                 title = stringResource(id = R.string.settings_soft_reboot),
@@ -381,7 +390,8 @@ fun SettingPagerMiuix(
                                 },
                                 enabled = !uiState.isLateLoadMode,
                                 checked = uiState.isLateLoadMode || uiState.useSoftReboot,
-                                onCheckedChange = actions.onSetUseSoftReboot
+                                onCheckedChange = actions.onSetUseSoftReboot,
+                                switchColors = iosSwitchColors(),
                             )
                         }
 
@@ -402,7 +412,8 @@ fun SettingPagerMiuix(
                                     )
                                 },
                                 checked = uiState.isDefaultUmountModules,
-                                onCheckedChange = actions.onSetDefaultUmountModules
+                                onCheckedChange = actions.onSetDefaultUmountModules,
+                                switchColors = iosSwitchColors(),
                             )
 
                             SwitchPreference(
@@ -417,7 +428,8 @@ fun SettingPagerMiuix(
                                     )
                                 },
                                 checked = uiState.enableWebDebugging,
-                                onCheckedChange = actions.onSetEnableWebDebugging
+                                onCheckedChange = actions.onSetEnableWebDebugging,
+                                switchColors = iosSwitchColors(),
                             )
                             SwitchPreference(
                                 title = stringResource(id = R.string.settings_auto_jailbreak),
@@ -432,7 +444,8 @@ fun SettingPagerMiuix(
                                 },
                                 enabled = uiState.isLateLoadMode,
                                 checked = uiState.autoJailbreak,
-                                onCheckedChange = actions.onSetAutoJailbreak
+                                onCheckedChange = actions.onSetAutoJailbreak,
+                                switchColors = iosSwitchColors(),
                             )
                         }
                     }

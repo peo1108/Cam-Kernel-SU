@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.module
 
+import cam.su.kernel.ui.component.glass.iosSwitchColors
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.MorphIcon
@@ -839,7 +840,8 @@ fun ModuleItem(
                 checked = module.enabled,
                 onCheckedChange = {
                     if (it != module.enabled) onCheckChanged(it)
-                }
+                },
+                colors = iosSwitchColors(),
             )
         }
 

@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -64,10 +68,42 @@ class MorphPopupState {
 @Composable
 fun rememberMorphPopupState(): MorphPopupState = remember { MorphPopupState() }
 
+/**
+ * Buttons of one [GlassButtonGroup] share its glass pill: their menus grow out of the whole pill,
+ * and the pill hides while any of them is open.
+ */
+internal class MorphGroup {
+    val members = mutableStateListOf<MorphPopupState>()
+    var bounds = Rect.Zero
+    val active: Boolean get() = members.any { it.active }
+}
+
+internal val LocalMorphGroup = staticCompositionLocalOf<MorphGroup?> { null }
+
 /** Marks the button a [GlassMorphPopup] grows out of; the button is hidden while the popup stands in for it. */
-fun Modifier.morphAnchor(state: MorphPopupState): Modifier = this
-    .onGloballyPositioned { state.anchor = it.boundsInWindow() }
-    .graphicsLayer { alpha = if (state.active) 0f else 1f }
+@Composable
+fun Modifier.morphAnchor(state: MorphPopupState): Modifier {
+    val group = LocalMorphGroup.current
+    if (group != null) {
+        DisposableEffect(group, state) {
+            state.anchor = group.bounds
+            group.members.add(state)
+            onDispose { group.members.remove(state) }
+        }
+        return this
+    }
+    return this
+        .onGloballyPositioned { state.anchor = it.boundsInWindow() }
+        .graphicsLayer { alpha = if (state.active) 0f else 1f }
+}
+
+/** Applied by [GlassButtonGroup]: tracks the pill for its members' menus and hides it while one is open. */
+internal fun Modifier.morphGroup(group: MorphGroup): Modifier = this
+    .onGloballyPositioned { coordinates ->
+        group.bounds = coordinates.boundsInWindow()
+        group.members.forEach { it.anchor = group.bounds }
+    }
+    .graphicsLayer { alpha = if (group.active) 0f else 1f }
 
 /**
  * iOS style menu: the anchor button itself grows into the glass popup and shrinks back into it on
@@ -98,7 +134,10 @@ fun GlassMorphPopup(
         enableBackHandler = false,
     ) {
         BackHandler(enabled = state.expanded) { onDismissRequest() }
-        MorphLayer(state, onDismissRequest, anchorIcon, content)
+        // The menu is composed at its button's call site; a group there must not claim anchors inside it.
+        CompositionLocalProvider(LocalMorphGroup provides null) {
+            MorphLayer(state, onDismissRequest, anchorIcon, content)
+        }
     }
 }
 

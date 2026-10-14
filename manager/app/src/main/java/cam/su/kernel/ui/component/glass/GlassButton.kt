@@ -149,11 +149,12 @@ fun GlassButtonGroup(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val morphGroup = remember { MorphGroup() }
     Row(
-        modifier = modifier.liquidControl(RoundedCornerShape(percent = 50)),
+        modifier = modifier.morphGroup(morphGroup).liquidControl(RoundedCornerShape(percent = 50)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CompositionLocalProvider(LocalGlassButtonGrouped provides true) {
+        CompositionLocalProvider(LocalGlassButtonGrouped provides true, LocalMorphGroup provides morphGroup) {
             content()
         }
     }

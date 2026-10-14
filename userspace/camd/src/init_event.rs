@@ -14,6 +14,14 @@ pub fn on_post_fs_data() -> Result<()> {
     // before the kernel is told post-fs-data and reads the allowlist
     crate::legacy::migrate();
 
+    // Reaching post-fs-data is all the module rc queue waits for (boot_guard::guarded_module_rc),
+    // so write it afresh before anything below can return early; a boot that ran without the
+    // rc keeps it held back (and its flag) until the boot guard has acted on it.
+    let rc_held_back = crate::module::module_rc_held_back();
+    if !rc_held_back && let Err(e) = crate::module::regenerate_preinit_rc() {
+        warn!("regenerate preinit rc failed: {e}");
+    }
+
     if let Err(e) = ksucalls::ensure_uapi_version_matched() {
         error!("{e:#}, skip on_post_fs_data");
         return Ok(());
@@ -76,7 +84,7 @@ pub fn on_post_fs_data() -> Result<()> {
     });
 
     // before prune and the preinit rc refresh, so a disabled module stays out of both
-    run_boot_guard(&updated);
+    run_boot_guard(&updated, rc_held_back);
 
     if let Err(e) = prune_modules() {
         warn!("prune modules failed: {e}");
@@ -141,18 +149,25 @@ pub fn on_post_fs_data() -> Result<()> {
     Ok(())
 }
 
-fn run_boot_guard(updated: &[String]) {
+fn run_boot_guard(updated: &[String], rc_held_back: bool) {
     let path = Path::new(defs::BOOT_GUARD_PATH);
     let mut state = boot_guard::load(path);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |d| d.as_secs());
-    let decision = boot_guard::on_boot_start(
-        &mut state,
-        updated,
-        &crate::module::enabled_module_ids(),
-        now,
-    );
+    let enabled = crate::module::enabled_module_ids();
+    let decision = if rc_held_back {
+        warn!("boot guard: the last boots died before post-fs-data, module init rc held back");
+        boot_guard::on_rc_held_back(
+            &mut state,
+            updated,
+            &crate::module::init_rc_module_ids(),
+            &enabled,
+            now,
+        )
+    } else {
+        boot_guard::on_boot_start(&mut state, updated, &enabled, now)
+    };
     // persist the count before touching modules, so a crash below still counts
     if let Err(e) = boot_guard::save(path, &state) {
         warn!("boot guard: save state failed: {e}");

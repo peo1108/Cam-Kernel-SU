@@ -553,14 +553,14 @@ pub fn regenerate_preinit_rc() -> Result<()> {
     let tmp_path = tmp_path_buf.as_path();
     let out_path = out_path_buf.as_path();
 
+    let mut body = Vec::new();
     {
-        let mut tmp = File::create(tmp_path)
-            .with_context(|| format!("Failed to create {}", tmp_path.display()))?;
+        let tmp = &mut body;
 
         // collect modules in alphabetical order, with their effective module path in the next boot
         let mut modules: BTreeMap<String, Option<PathBuf>> = BTreeMap::new();
         // collect common initrc first
-        collect_rc_files(Path::new(defs::ADB_DIR).join("initrc.d"), None, &mut tmp)?;
+        collect_rc_files(Path::new(defs::ADB_DIR).join("initrc.d"), None, tmp)?;
         // modules_update/ first so freshly-installed modules win on id collision.
         for src_dir in [defs::MODULE_UPDATE_DIR, defs::MODULE_DIR] {
             let Ok(entries) = std::fs::read_dir(src_dir) else {
@@ -586,11 +586,37 @@ pub fn regenerate_preinit_rc() -> Result<()> {
         }
         for (id, path) in modules {
             if let Some(path) = path {
-                collect_rc_files(path.join(defs::MODULE_INIT_RC_DIR), Some(&id), &mut tmp)?;
+                collect_rc_files(path.join(defs::MODULE_INIT_RC_DIR), Some(&id), tmp)?;
             }
         }
-        tmp.sync_all()?;
     }
+
+    // nothing to guard without an rc, or with the boot guard off
+    let guard = boot_guard::load(Path::new(defs::BOOT_GUARD_PATH));
+    let (rc, queue) = if guard.enabled && !body.is_empty() {
+        boot_guard::guarded_module_rc(preinit_str, &body, guard.threshold)
+    } else {
+        (body, Vec::new())
+    };
+    // the queue before modules.rc: init only shifts it once modules.rc carries the header
+    for n in 1..boot_guard::MAX_THRESHOLD {
+        let path = preinit_dir.join(boot_guard::rc_queue_file(n));
+        match queue.get(n as usize - 1) {
+            Some(data) => {
+                write_synced(&path, data)?;
+                // init reads these at early-init, like the kernel reads modules.rc
+                if let Err(e) = crate::restorecon::lsetfilecon(&path, METADATA_FILE_CON) {
+                    debug!("set context on {} failed: {e}", path.display());
+                }
+            }
+            None => {
+                std::fs::remove_file(&path).ok();
+            }
+        }
+    }
+    write_synced(tmp_path, &rc)?;
+    // the boot that left it has been dealt with, or is about to be (init_event::run_boot_guard)
+    std::fs::remove_file(preinit_dir.join(boot_guard::HELD_BACK_FLAG)).ok();
 
     std::fs::rename(tmp_path, out_path).with_context(|| {
         format!(
@@ -612,8 +638,49 @@ pub fn regenerate_preinit_rc() -> Result<()> {
         defs::PREINIT_DIR_WATCHDOG
     };
     std::fs::remove_file(Path::new(stale_dir).join(defs::MODULES_RC_FILE)).ok();
+    for n in 1..boot_guard::MAX_THRESHOLD {
+        std::fs::remove_file(Path::new(stale_dir).join(boot_guard::rc_queue_file(n))).ok();
+    }
+    std::fs::remove_file(Path::new(stale_dir).join(boot_guard::HELD_BACK_FLAG)).ok();
 
     Ok(())
+}
+
+fn write_synced(path: &Path, data: &[u8]) -> Result<()> {
+    let mut file =
+        File::create(path).with_context(|| format!("Failed to create {}", path.display()))?;
+    file.write_all(data)?;
+    file.sync_all()?;
+    Ok(())
+}
+
+/// Whether this boot ran without the module init rc because the boots before it
+/// never reached post-fs-data (see `boot_guard::guarded_module_rc`).
+pub fn module_rc_held_back() -> bool {
+    Path::new(preinit_ksu_dir())
+        .join(boot_guard::HELD_BACK_FLAG)
+        .exists()
+}
+
+/// Ids of the enabled modules that ship an init rc.
+pub fn init_rc_module_ids() -> Vec<String> {
+    let mut ids = Vec::new();
+    if let Err(e) = foreach_active_module(|path| {
+        let has_rc = std::fs::read_dir(path.join(defs::MODULE_INIT_RC_DIR)).is_ok_and(|dir| {
+            dir.flatten().any(|entry| {
+                entry.path().extension().and_then(|s| s.to_str()) == Some("rc")
+                    && entry.metadata().is_ok_and(|meta| meta.is_file())
+            })
+        });
+        if has_rc && let Some(id) = path.file_name().and_then(|name| name.to_str()) {
+            ids.push(id.to_owned());
+        }
+        Ok(())
+    }) {
+        warn!("list modules with an init rc failed: {e}");
+    }
+    ids.sort();
+    ids
 }
 
 /// Returns the ids of the modules moved into place.
@@ -1068,7 +1135,12 @@ pub fn boot_guard_set(
     let path = Path::new(defs::BOOT_GUARD_PATH);
     let mut state = boot_guard::load(path);
     boot_guard::set_config(&mut state, enabled, threshold, disable_all);
-    boot_guard::save(path, &state)
+    boot_guard::save(path, &state)?;
+    // the module rc queue follows the switch and the threshold
+    if let Err(e) = regenerate_preinit_rc() {
+        warn!("regenerate preinit rc failed: {e}");
+    }
+    Ok(())
 }
 
 pub fn boot_guard_clear() -> Result<()> {

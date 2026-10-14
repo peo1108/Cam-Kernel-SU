@@ -8,7 +8,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Chống bootloop: khi máy khởi động lỗi liên tục, tất cả module được tắt để máy lên chắc chắn, và SU Kernel chỉ ra module nghi gây lỗi kèm lý do (mới cài hoặc cập nhật, có init rc chạy rất sớm, hay log của lần khởi động lỗi nhắc tới nó, có cả dòng log). Một nút bật lại các module còn lại
 - Chống bootloop giờ cứu được cả máy treo rất sớm lúc khởi động do init rc hỏng (của module, hoặc file trong /data/adb/initrc.d): lần khởi động sau bỏ qua các init rc đó để máy lên được, không phải bấm phím vào safe mode
 - Thẻ module báo "Có bản mới" khi thư viện module của Cam có phiên bản mới hơn bản đang cài (cả module không tự khai cách cập nhật); bấm vào để cập nhật
-- Trang Kiểm tra ẩn root: thêm mục Widevine DRM (mức L1/L3 mà app xem phim dùng để chọn HD hay SD, System ID, phiên bản, HDCP), có nút chép thông tin và giải thích khi máy chỉ còn L3
+- Trang Kiểm tra ẩn root: thêm mục Widevine DRM (mức L1/L3 mà app xem phim dùng để chọn HD hay SD, System ID, phiên bản, HDCP). Tự chẩn đoán vì sao máy dưới L1 (xin thử chứng chỉ từ Google để biết keybox còn hợp lệ không, dịch vụ Widevine có chạy không, bootloader khoá hay mở) và có nút "Cấp lại chứng chỉ DRM": lưu file cũ, xoá, xin chứng chỉ mới, tệ hơn thì tự trả lại
 - Sao lưu cấu hình (Cài đặt → Sao lưu cấu hình): quyền root, hồ sơ app, công tắc ẩn root, module đang bật và bookmark tab Tệp vào một file; khôi phục trên máy mới hoặc sau khi flash ROM, xem trước những gì sẽ đổi
 - Trang Kiểm tra ẩn root: mỗi mục có nút sửa ngay ("Bật umount module cho app này", bật umount trong hồ sơ mặc định, bật công tắc đang tắt, mở Tuỳ chọn nhà phát triển) và lời khuyên cụ thể cho mục không tự sửa được
 ### Thay đổi

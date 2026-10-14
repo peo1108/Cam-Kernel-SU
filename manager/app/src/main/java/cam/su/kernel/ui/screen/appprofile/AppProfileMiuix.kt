@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.appprofile
 
-import cam.su.kernel.ui.component.glass.iosSwitchColors
+import cam.su.kernel.ui.component.glass.GlassSwitchPreference
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -96,7 +96,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.MoreCircle
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -508,7 +507,7 @@ fun AppProfileEditorBody(
 
     if (!isSpecialApp) {
         EditorSection(carded, bottom = 12.dp) {
-            SwitchPreference(
+            GlassSwitchPreference(
                 startAction = {
                     Icon(
                         imageVector = Icons.Rounded.Security,
@@ -520,7 +519,6 @@ fun AppProfileEditorBody(
                 title = stringResource(id = R.string.superuser),
                 checked = isRootGranted,
                 onCheckedChange = { onProfileChange(profile.copy(allowSu = it)) },
-                switchColors = iosSwitchColors(),
             )
         }
     }

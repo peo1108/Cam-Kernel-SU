@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.settings
 
-import cam.su.kernel.ui.component.glass.iosSwitchColors
+import cam.su.kernel.ui.component.glass.GlassSwitchPreference
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -60,7 +60,6 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -135,7 +134,7 @@ fun SettingPagerMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        SwitchPreference(
+                        GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_check_update),
                             summary = stringResource(id = R.string.settings_check_update_summary),
                             startAction = {
@@ -148,9 +147,8 @@ fun SettingPagerMiuix(
                             },
                             checked = uiState.checkUpdate,
                             onCheckedChange = actions.onSetCheckUpdate,
-                            switchColors = iosSwitchColors(),
                         )
-                        SwitchPreference(
+                        GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_beta_updates),
                             summary = stringResource(id = R.string.settings_beta_updates_summary),
                             startAction = {
@@ -164,10 +162,9 @@ fun SettingPagerMiuix(
                             enabled = uiState.checkUpdate,
                             checked = uiState.betaUpdates,
                             onCheckedChange = actions.onSetBetaUpdates,
-                            switchColors = iosSwitchColors(),
                         )
                         CamIsValid {
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_module_check_update),
                                 summary = stringResource(id = R.string.settings_check_update_summary),
                                 startAction = {
@@ -180,7 +177,6 @@ fun SettingPagerMiuix(
                                 },
                                 checked = uiState.checkModuleUpdate,
                                 onCheckedChange = actions.onSetCheckModuleUpdate,
-                                switchColors = iosSwitchColors(),
                             )
                         }
                     }
@@ -269,7 +265,7 @@ fun SettingPagerMiuix(
                                 "forced" -> stringResource(id = R.string.feature_status_forced_summary)
                                 else -> stringResource(id = R.string.settings_kernel_umount_summary)
                             }
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_kernel_umount),
                                 summary = umountSummary,
                                 startAction = {
@@ -283,7 +279,6 @@ fun SettingPagerMiuix(
                                 enabled = uiState.kernelUmountStatus == "supported",
                                 checked = uiState.isKernelUmountEnabled,
                                 onCheckedChange = actions.onSetKernelUmountEnabled,
-                                switchColors = iosSwitchColors(),
                             )
 
                             val selinuxHideSummary = when (uiState.selinuxHideStatus) {
@@ -292,7 +287,7 @@ fun SettingPagerMiuix(
                                 "forced" -> stringResource(id = R.string.feature_status_forced_summary)
                                 else -> stringResource(id = R.string.settings_selinux_hide_summary)
                             }
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_selinux_hide),
                                 summary = selinuxHideSummary,
                                 startAction = {
@@ -306,7 +301,6 @@ fun SettingPagerMiuix(
                                 enabled = uiState.selinuxHideStatus == "supported",
                                 checked = uiState.isSelinuxHideEnabled,
                                 onCheckedChange = actions.onSetSelinuxHideEnabled,
-                                switchColors = iosSwitchColors(),
                             )
 
                             val sulogSummary = when (uiState.sulogStatus) {
@@ -315,7 +309,7 @@ fun SettingPagerMiuix(
                                 "forced" -> stringResource(id = R.string.feature_status_forced_summary)
                                 else -> stringResource(id = R.string.settings_sulog_summary)
                             }
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_sulog),
                                 summary = sulogSummary,
                                 startAction = {
@@ -329,7 +323,6 @@ fun SettingPagerMiuix(
                                 enabled = uiState.sulogStatus == "supported",
                                 checked = uiState.isSulogEnabled,
                                 onCheckedChange = actions.onSetSulogEnabled,
-                                switchColors = iosSwitchColors(),
                             )
 
                             val adbRootSummary = when (uiState.adbRootStatus) {
@@ -338,7 +331,7 @@ fun SettingPagerMiuix(
                                 "forced" -> stringResource(id = R.string.feature_status_forced_summary)
                                 else -> stringResource(id = R.string.settings_adb_root_summary)
                             }
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_adb_root),
                                 summary = adbRootSummary,
                                 startAction = {
@@ -352,7 +345,6 @@ fun SettingPagerMiuix(
                                 enabled = uiState.adbRootStatus == "supported",
                                 checked = uiState.isAdbRootEnabled,
                                 onCheckedChange = actions.onSetAdbRootEnabled,
-                                switchColors = iosSwitchColors(),
                             )
 
                             val shellSuAdbOnlySummary = when (uiState.shellSuAdbOnlyStatus) {
@@ -361,7 +353,7 @@ fun SettingPagerMiuix(
                                 "forced" -> stringResource(id = R.string.feature_status_forced_summary)
                                 else -> stringResource(id = R.string.settings_shell_su_adb_only_summary)
                             }
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_shell_su_adb_only),
                                 summary = shellSuAdbOnlySummary,
                                 startAction = {
@@ -375,9 +367,8 @@ fun SettingPagerMiuix(
                                 enabled = uiState.shellSuAdbOnlyStatus == "supported",
                                 checked = uiState.isShellSuAdbOnlyEnabled,
                                 onCheckedChange = actions.onSetShellSuAdbOnlyEnabled,
-                                switchColors = iosSwitchColors(),
                             )
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_soft_reboot),
                                 summary = stringResource(id = R.string.settings_soft_reboot_summary),
                                 startAction = {
@@ -391,7 +382,6 @@ fun SettingPagerMiuix(
                                 enabled = !uiState.isLateLoadMode,
                                 checked = uiState.isLateLoadMode || uiState.useSoftReboot,
                                 onCheckedChange = actions.onSetUseSoftReboot,
-                                switchColors = iosSwitchColors(),
                             )
                         }
 
@@ -400,7 +390,7 @@ fun SettingPagerMiuix(
                                 .padding(top = 12.dp)
                                 .fillMaxWidth(),
                         ) {
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_umount_modules_default),
                                 summary = stringResource(id = R.string.settings_umount_modules_default_summary),
                                 startAction = {
@@ -413,10 +403,9 @@ fun SettingPagerMiuix(
                                 },
                                 checked = uiState.isDefaultUmountModules,
                                 onCheckedChange = actions.onSetDefaultUmountModules,
-                                switchColors = iosSwitchColors(),
                             )
 
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.enable_web_debugging),
                                 summary = stringResource(id = R.string.enable_web_debugging_summary),
                                 startAction = {
@@ -429,9 +418,8 @@ fun SettingPagerMiuix(
                                 },
                                 checked = uiState.enableWebDebugging,
                                 onCheckedChange = actions.onSetEnableWebDebugging,
-                                switchColors = iosSwitchColors(),
                             )
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_auto_jailbreak),
                                 summary = stringResource(id = R.string.settings_auto_jailbreak_summary),
                                 startAction = {
@@ -445,7 +433,6 @@ fun SettingPagerMiuix(
                                 enabled = uiState.isLateLoadMode,
                                 checked = uiState.autoJailbreak,
                                 onCheckedChange = actions.onSetAutoJailbreak,
-                                switchColors = iosSwitchColors(),
                             )
                         }
                     }

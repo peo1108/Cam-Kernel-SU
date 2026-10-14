@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.hidingcheck
 
-import cam.su.kernel.ui.component.glass.iosSwitchColors
+import cam.su.kernel.ui.component.glass.GlassSwitchPreference
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,7 +82,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -226,13 +225,12 @@ fun HidingCheckScreenMiuix(
                     item {
                         SmallTitle(text = stringResource(R.string.hiding_section_auto))
                         GlassCard(modifier = cardModifier) {
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(R.string.module_scan_switch),
                                 summary = stringResource(R.string.module_scan_switch_summary),
                                 startAction = { RowIcon(Icons.Rounded.Extension, colorScheme.onBackground) },
                                 checked = state.moduleScan,
                                 onCheckedChange = actions.onSetModuleScan,
-                                switchColors = iosSwitchColors(),
                             )
                         }
                     }
@@ -618,14 +616,13 @@ private fun FixSwitch(
 ) {
     val fix = state.fix(name)
     val fixes = state.fixes(name)
-    SwitchPreference(
+    GlassSwitchPreference(
         title = title,
         summary = if (fixes > 0 && !fix.enabled) stringResource(R.string.hiding_fix_count, fixes) else summary,
         startAction = { RowIcon(icon, if (fixes > 0 && !fix.enabled) colorScheme.error else colorScheme.onBackground) },
         enabled = fix.available,
         checked = fix.enabled,
         onCheckedChange = { actions.onSetFix(name, it) },
-        switchColors = iosSwitchColors(),
     )
 }
 

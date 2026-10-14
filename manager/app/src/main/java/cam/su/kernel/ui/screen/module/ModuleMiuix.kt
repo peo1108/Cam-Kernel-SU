@@ -3,7 +3,7 @@ package cam.su.kernel.ui.screen.module
 import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.CamToast
-import cam.su.kernel.ui.component.glass.iosSwitchColors
+import cam.su.kernel.ui.component.glass.GlassSwitch
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.MorphIcon
@@ -149,7 +149,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarDuration
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.SnackbarResult
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -830,13 +829,12 @@ fun ModuleItem(
                 )
                 ModuleStatusBadges(module = module, onRestoreBackup = onRestoreBackup, onDisableModule = onDisableModule)
             }
-            Switch(
+            GlassSwitch(
                 enabled = !module.update,
                 checked = module.enabled,
                 onCheckedChange = {
                     if (it != module.enabled) onCheckChanged(it)
                 },
-                colors = iosSwitchColors(),
             )
         }
 

@@ -31,7 +31,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import kotlin.math.abs
 
 /**
- * iOS slider: a thin track filled with the accent up to a large white thumb. [keyPoints] are drawn
+ * iOS 26 slider: a thin track filled with the accent up to a capsule thumb that becomes a glass lens while dragged. [keyPoints] are drawn
  * as dots; within [magnetThreshold] of one the value snaps to it with a haptic tick. Tap the track
  * to jump; vertical drags still scroll the page.
  */
@@ -49,12 +49,11 @@ fun GlassSlider(
     val dark = isInDarkTheme()
     val track = if (dark) Color(0x52787880) else Color(0x29787880)
     val fill = colorScheme.primary
-    val thumb = if (dark) Color(0xFFE5E5EA) else Color.White
     val haptic = LocalHapticFeedback.current
     val onChange by rememberUpdatedState(onValueChange)
     val onFinished by rememberUpdatedState(onValueChangeFinished)
     var dragging by remember { mutableStateOf(false) }
-    val thumbScale by animateFloatAsState(if (dragging) 1.12f else 1f, spring(dampingRatio = 0.6f, stiffness = 500f), label = "thumb")
+    val lens by animateFloatAsState(if (dragging) 1f else 0f, spring(dampingRatio = 0.6f, stiffness = 520f), label = "lens")
     val span = (valueRange.endInclusive - valueRange.start).takeIf { it > 0f } ?: 1f
     val fraction = ((value - valueRange.start) / span).coerceIn(0f, 1f)
     val lastSnap = remember { mutableStateOf<Float?>(null) }
@@ -62,11 +61,11 @@ fun GlassSlider(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(30.dp)
+            .height(36.dp)
             .alpha(if (enabled) 1f else 0.4f)
             .pointerInput(enabled, valueRange, keyPoints, magnetThreshold) {
                 if (!enabled) return@pointerInput
-                val radius = 14.dp.toPx()
+                val radius = 19.dp.toPx()
                 fun set(x: Float) {
                     val f = ((x - radius) / (size.width - 2 * radius)).coerceIn(0f, 1f)
                     var v = valueRange.start + f * span
@@ -100,23 +99,23 @@ fun GlassSlider(
                 }
             },
     ) {
-        val radius = 14.dp.toPx()
-        val trackH = 4.dp.toPx()
+        val radius = 19.dp.toPx()
+        val trackH = 6.dp.toPx()
         val cy = size.height / 2
         val left = radius
         val right = size.width - radius
         val x = left + (right - left) * fraction
-        drawTrack(track, left, right, cy, trackH)
-        drawTrack(fill, left, x, cy, trackH)
-        keyPoints.forEach { k ->
-            val kx = left + (right - left) * ((k - valueRange.start) / span).coerceIn(0f, 1f)
-            drawCircle(if (kx <= x) Color.White.copy(alpha = 0.85f) else fill.copy(alpha = 0.5f), 2.dp.toPx(), Offset(kx, cy))
+        val drawRail: DrawScope.() -> Unit = {
+            drawTrack(track, left, right, cy, trackH)
+            drawTrack(fill, left, x, cy, trackH)
+            keyPoints.forEach { k ->
+                val kx = left + (right - left) * ((k - valueRange.start) / span).coerceIn(0f, 1f)
+                drawCircle(if (kx <= x) Color.White.copy(alpha = 0.85f) else fill.copy(alpha = 0.5f), 2.dp.toPx(), Offset(kx, cy))
+            }
         }
-        val r = radius * thumbScale
-        // soft shadow under the thumb, as on iOS
-        drawCircle(Color.Black.copy(alpha = 0.10f), r + 1.5.dp.toPx(), Offset(x, cy + 1.5.dp.toPx()))
-        drawCircle(Color.Black.copy(alpha = 0.06f), r + 0.5.dp.toPx(), Offset(x, cy))
-        drawCircle(thumb, r, Offset(x, cy))
+        drawRail()
+        // iOS 26: a capsule thumb that turns into a glass lens over the rail while dragged
+        drawCapsuleThumb(Offset(x, cy), 38.dp.toPx(), 24.dp.toPx(), lens, tint = fill, dark = dark, under = drawRail)
     }
 }
 

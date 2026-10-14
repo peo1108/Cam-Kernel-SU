@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.component.profile
 
-import cam.su.kernel.ui.component.glass.iosSwitchColors
+import cam.su.kernel.ui.component.glass.GlassSwitchPreference
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,7 +14,6 @@ import cam.su.kernel.Cam
 import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.miuix.EditText
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 @Composable
 fun AppProfileConfigMiuix(
@@ -34,7 +33,7 @@ fun AppProfileConfigMiuix(
             )
         }
 
-        SwitchPreference(
+        GlassSwitchPreference(
             title = stringResource(R.string.profile_umount_modules),
             summary = stringResource(R.string.profile_umount_modules_summary),
             checked = if (enabled) {
@@ -51,7 +50,6 @@ fun AppProfileConfigMiuix(
                     )
                 )
             },
-            switchColors = iosSwitchColors(),
         )
     }
 }

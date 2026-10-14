@@ -2,7 +2,7 @@ package cam.su.kernel.ui.screen.colorpalette
 
 import cam.su.kernel.ui.component.glass.GlassSlider
 import cam.su.kernel.ui.component.glass.GlassSegmentedControl
-import cam.su.kernel.ui.component.glass.iosSwitchColors
+import cam.su.kernel.ui.component.glass.GlassSwitchPreference
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -97,7 +97,6 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -189,7 +188,7 @@ fun ColorPaletteScreenMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        SwitchPreference(
+                        GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_monet),
                             startAction = {
                                 Icon(
@@ -203,7 +202,6 @@ fun ColorPaletteScreenMiuix(
                             onCheckedChange = {
                                 actions.onSetMiuixMonet(it)
                             },
-                            switchColors = iosSwitchColors(),
                         )
 
                         AnimatedVisibility(
@@ -300,7 +298,7 @@ fun ColorPaletteScreenMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        SwitchPreference(
+                        GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_floating_bottom_bar),
                             summary = stringResource(id = R.string.settings_floating_bottom_bar_summary),
                             startAction = {
@@ -315,7 +313,6 @@ fun ColorPaletteScreenMiuix(
                             onCheckedChange = {
                                 actions.onSetEnableFloatingBottomBar(it)
                             },
-                            switchColors = iosSwitchColors(),
                         )
                         // Landscape tablets: the bar down the side gives the pages their height back
                         GlassDropdownPreference(
@@ -338,7 +335,7 @@ fun ColorPaletteScreenMiuix(
                             selectedIndex = uiState.navBarPosition,
                             onSelectedIndexChange = { actions.onSetNavBarPosition(it) },
                         )
-                        SwitchPreference(
+                        GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_navigation_badge),
                             summary = stringResource(id = R.string.settings_navigation_badge_summary),
                             startAction = {
@@ -353,7 +350,6 @@ fun ColorPaletteScreenMiuix(
                             onCheckedChange = {
                                 actions.onSetEnableNavigationBadge(it)
                             },
-                            switchColors = iosSwitchColors(),
                         )
                     }
 
@@ -363,7 +359,7 @@ fun ColorPaletteScreenMiuix(
                             .fillMaxWidth(),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                            SwitchPreference(
+                            GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_enable_predictive_back),
                                 summary = stringResource(id = R.string.settings_enable_predictive_back_summary),
                                 startAction = {
@@ -378,10 +374,9 @@ fun ColorPaletteScreenMiuix(
                                 onCheckedChange = {
                                     actions.onSetEnablePredictiveBack(it)
                                 },
-                                switchColors = iosSwitchColors(),
                             )
                         }
-                        SwitchPreference(
+                        GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_enable_swipe_dismiss),
                             summary = stringResource(id = R.string.settings_enable_swipe_dismiss_summary),
                             startAction = {
@@ -394,7 +389,6 @@ fun ColorPaletteScreenMiuix(
                             },
                             checked = uiState.enableSwipeDismiss,
                             onCheckedChange = actions.onSetEnableSwipeDismiss,
-                            switchColors = iosSwitchColors(),
                         )
                         GlassDropdownPreference(
                             title = stringResource(id = R.string.settings_pager_gesture_mode),
@@ -505,7 +499,7 @@ fun ColorPaletteScreenMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        SwitchPreference(
+                        GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_slimes),
                             summary = stringResource(id = R.string.settings_slimes_summary),
                             startAction = {
@@ -518,7 +512,6 @@ fun ColorPaletteScreenMiuix(
                             },
                             checked = uiState.roamingSlimes,
                             onCheckedChange = actions.onSetRoamingSlimes,
-                            switchColors = iosSwitchColors(),
                         )
                         AnimatedVisibility(visible = uiState.roamingSlimes) {
                             Column {
@@ -540,7 +533,7 @@ fun ColorPaletteScreenMiuix(
                                     selectedIndex = uiState.roamingSlimeCount,
                                     onSelectedIndexChange = actions.onSetRoamingSlimeCount
                                 )
-                                SwitchPreference(
+                                GlassSwitchPreference(
                                     title = stringResource(id = R.string.settings_slime_night),
                                     summary = stringResource(id = R.string.settings_slime_night_summary),
                                     startAction = {
@@ -553,7 +546,6 @@ fun ColorPaletteScreenMiuix(
                                     },
                                     checked = uiState.slimeNightNap,
                                     onCheckedChange = actions.onSetSlimeNightNap,
-                                    switchColors = iosSwitchColors(),
                                 )
                             }
                         }

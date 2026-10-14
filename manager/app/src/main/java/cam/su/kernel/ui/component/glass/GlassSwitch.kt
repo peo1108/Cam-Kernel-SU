@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import kotlinx.coroutines.delay
 
 internal object IosControlColors {
     val greenLight = Color(0xFF34C759)
@@ -58,7 +59,7 @@ fun GlassSwitch(
     val haptic = LocalHapticFeedback.current
     val onChange by rememberUpdatedState(onCheckedChange)
     var shown by remember { mutableStateOf(checked) }
-    LaunchedEffect(checked) { shown = checked }
+    SettleTo(checked, shown) { shown = it }
     val position by animateFloatAsState(if (shown) 1f else 0f, tween(220, easing = FastOutSlowInEasing), label = "switch")
     Canvas(
         modifier = modifier
@@ -139,6 +140,21 @@ private inline fun DrawScope.scaleAround(factor: Float, pivot: Offset, block: Dr
     withTransform({ scale(factor, factor, pivot) }) { block() }
 }
 
+/**
+ * Follows the caller's [checked]; after a tap flipped the switch ahead of it, gives the setting a
+ * moment to take and falls back if it did not (a refused or failed root call), so it never lies.
+ */
+@Composable
+private fun SettleTo(checked: Boolean, shown: Boolean, set: (Boolean) -> Unit) {
+    LaunchedEffect(checked) { set(checked) }
+    LaunchedEffect(checked, shown) {
+        if (shown != checked) {
+            delay(2500)
+            set(checked)
+        }
+    }
+}
+
 /** Drop-in for miuix SwitchPreference with the iOS switch; the whole row toggles it, at once. */
 @Composable
 fun GlassSwitchPreference(
@@ -151,7 +167,7 @@ fun GlassSwitchPreference(
     enabled: Boolean = true,
 ) {
     var shown by remember { mutableStateOf(checked) }
-    LaunchedEffect(checked) { shown = checked }
+    SettleTo(checked, shown) { shown = it }
     val toggle = { value: Boolean ->
         shown = value
         onCheckedChange(value)

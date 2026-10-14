@@ -38,8 +38,6 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
@@ -56,6 +54,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -83,8 +82,6 @@ class MorphPopupState {
     internal val split = Animatable(0f)
     internal val grow = Animatable(0f)
 
-    /** True from opening until the droplet has merged back into its button. */
-    val active: Boolean get() = expanded || split.value > 0f
 }
 
 @Composable
@@ -160,6 +157,7 @@ fun GlassMorphPopup(
     onDismissRequest: () -> Unit,
     align: MorphAlign = MorphAlign.Corner,
     liquid: Boolean = true,
+    maxHeight: Dp? = null,
     content: @Composable () -> Unit,
 ) {
     val hostVisible = remember { mutableStateOf(false) }
@@ -194,7 +192,7 @@ fun GlassMorphPopup(
         enableBackHandler = false,
     ) {
         BackHandler(enabled = state.expanded) { onDismissRequest() }
-        MorphLayer(state, onDismissRequest, align, liquid, content)
+        MorphLayer(state, onDismissRequest, align, liquid, maxHeight, content)
     }
 }
 
@@ -222,6 +220,7 @@ private fun MorphLayer(
     onDismissRequest: () -> Unit,
     align: MorphAlign,
     liquid: Boolean,
+    maxHeight: Dp?,
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -240,7 +239,12 @@ private fun MorphLayer(
     val endRadius = with(density) { MENU_CORNER.toPx() }
     val shift = with(density) { 6.dp.toPx() }
 
+    // Layout, draw, both layers and the corner all ask for the frame: compute it once per change.
+    var cached: MorphFrame? = null
+    var cacheKey: List<Any>? = null
     fun frame(): MorphFrame {
+        val key = listOf(state.split.value, state.grow.value, state.anchor, origin, contentSize, hostSize, MorphObstacles.rects.values.toList())
+        cached?.let { if (key == cacheKey) return it }
         val s = state.split.value.coerceIn(0f, 1f)
         val g = state.grow.value
         val anchor = state.anchor.translate(-origin)
@@ -264,7 +268,10 @@ private fun MorphLayer(
             lerp(drop.bottom, target.bottom, g),
         )
         val radius = lerp(r2, endRadius, g.coerceIn(0f, 1f)).coerceIn(0f, current.minDimension / 2f)
-        return MorphFrame(s, g, anchor, target, c1, r1, c2, r2, current, radius)
+        return MorphFrame(s, g, anchor, target, c1, r1, c2, r2, current, radius).also {
+            cached = it
+            cacheKey = key
+        }
     }
 
     // The glass reads its corner at draw time, so the shape changes without recomposition.
@@ -283,18 +290,17 @@ private fun MorphLayer(
             }
             .drawBehind {
                 val f = frame()
-                // light dim everywhere but the button, which now closes the menu
-                val dim = Path().apply {
-                    fillType = PathFillType.EvenOdd
-                    addRect(Rect(Offset.Zero, size))
-                    addRoundRect(RoundRect(f.anchor, CornerRadius(f.r1)))
-                }
-                drawPath(dim, Color.Black.copy(alpha = 0.08f * f.s))
+                // no dim: iOS menus leave the page as it is (and a full-screen fill costs a pass a frame)
                 // the liquid neck between button and droplet, fading as the droplet inflates
                 if (neck != null && f.s > 0f && f.g < 0.05f) {
                     val a = neckColor.alpha * (f.s / 0.25f).coerceAtMost(1f) * (1f - f.g.coerceAtLeast(0f) / 0.05f)
-                    neck.update(f.c1, f.r1, f.c2, f.r2, k = f.r1 * 0.9f, color = neckColor.copy(alpha = a))
-                    drawRect(neck.brush)
+                    val k = f.r1 * 0.9f
+                    neck.update(f.c1, f.r1, f.c2, f.r2, k = k, color = neckColor.copy(alpha = a))
+                    // the neck lives between the two circles: shade only that box, not the whole screen
+                    val box = Rect(f.c1, f.r1 + k).let { b ->
+                        Rect(minOf(b.left, f.c2.x - f.r2 - k), minOf(b.top, f.c2.y - f.r2 - k), maxOf(b.right, f.c2.x + f.r2 + k), maxOf(b.bottom, f.c2.y + f.r2 + k))
+                    }
+                    drawRect(neck.brush, topLeft = box.topLeft, size = box.size)
                 }
             }
             .pointerInput(onDismissRequest) { detectTapGestures { onDismissRequest() } },
@@ -308,7 +314,10 @@ private fun MorphLayer(
                             val f = frame()
                             alpha = (f.s / 0.25f).coerceIn(0f, 1f) * lerp(0.3f, 1f, f.g.coerceIn(0f, 1f))
                         }
-                        .overlayGlass(bgShape)
+                        // the glass is re-blurred every frame while it morphs: blur at half size (a quarter
+                        // of the pixels) and skip the edge lens, as iOS menus are flat frosted glass, to
+                        // keep the GPU inside a 144 Hz frame
+                        .overlayGlass(bgShape, downscale = 2, lens = false)
                         // iOS menus are nearly opaque: a surface veil keeps busy rows behind unreadable
                         .drawBehind {
                             val g = state.grow.value.coerceIn(0f, 1f)
@@ -334,7 +343,10 @@ private fun MorphLayer(
             },
         ) { measurables, constraints ->
             val f = frame()
-            val loose = Constraints(maxWidth = constraints.maxWidth, maxHeight = constraints.maxHeight)
+            // a tall menu scrolls inside the screen (or the caller's maxHeight) instead of running off it
+            val room = (constraints.maxHeight - 2 * gap).roundToInt().coerceAtLeast(0)
+            val cap = maxHeight?.let { with(density) { it.roundToPx() } }?.coerceAtMost(room) ?: room
+            val loose = Constraints(maxWidth = constraints.maxWidth, maxHeight = cap)
             val bg = measurables[0].measure(
                 Constraints.fixed(f.current.width.roundToInt().coerceAtLeast(1), f.current.height.roundToInt().coerceAtLeast(1)),
             )

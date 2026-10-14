@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,7 +39,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /*
  * iOS style menu content for GlassListPopup / GlassMorphPopup: rows with a check column, an icon and
- * large text, thin inset separators between groups, and an optional row of icon-over-label actions.
+ * large text, a check at the end of the selected row, and thin inset separators between groups.
  */
 
 /** Destructive rows (delete, reboot to EDL...) are red, as on iOS. */
@@ -121,35 +120,4 @@ fun GlassMenuDivider() {
             .height(0.7.dp)
             .background(colorScheme.onSurface.copy(alpha = 0.12f)),
     )
-}
-
-/** The top row of a context menu: icon over label buttons sharing the width (Copy, Move, Share). */
-@Composable
-fun GlassMenuActions(content: @Composable RowScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), content = content)
-}
-
-@Composable
-fun RowScope.GlassMenuAction(
-    icon: ImageVector,
-    label: String,
-    enabled: Boolean = true,
-    onLongClick: (() -> Unit)? = null,
-    onClick: () -> Unit,
-) {
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .background(if (pressed) colorScheme.onSurface.copy(alpha = 0.08f) else Color.Transparent)
-            .combinedClickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick, onLongClick = onLongClick)
-            .alpha(if (enabled) 1f else 0.35f)
-            .padding(vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(icon, contentDescription = null, tint = colorScheme.onSurface, modifier = Modifier.size(24.dp))
-        Spacer(Modifier.height(6.dp))
-        Text(label, fontSize = 13.sp, color = colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
 }

@@ -106,7 +106,6 @@ import cam.su.kernel.ui.util.ownerNameForUid
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import cam.su.kernel.ui.viewmodel.AppSortType
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider

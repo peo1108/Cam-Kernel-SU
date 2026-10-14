@@ -14,6 +14,7 @@
 mod allow;
 mod assets;
 mod avc_lookup;
+mod boot_evidence;
 mod boot_guard;
 mod boot_patch;
 #[cfg(target_os = "android")]

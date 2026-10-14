@@ -157,43 +157,56 @@ fn run_boot_guard(updated: &[String], rc_held_back: bool) {
         .map_or(0, |d| d.as_secs());
     let enabled = crate::module::enabled_module_ids();
     let decision = if rc_held_back {
-        warn!("boot guard: the last boots died before post-fs-data, module init rc held back");
+        warn!("boot guard: the last boots died before post-fs-data, init rc held back");
         boot_guard::on_rc_held_back(
             &mut state,
             updated,
             &crate::module::init_rc_module_ids(),
+            &crate::module::active_initrc_files(),
             &enabled,
             now,
         )
     } else {
         boot_guard::on_boot_start(&mut state, updated, &enabled, now)
     };
+    if let Decision::Disable { modules, .. } = &decision {
+        // before the modules are disabled: what they put in place is read from their trees
+        let owners = crate::module::module_owners();
+        let evidence = crate::boot_evidence::from_last_boot(&owners, !rc_held_back);
+        boot_guard::add_evidence(&mut state, &evidence, modules);
+    }
     // persist the count before touching modules, so a crash below still counts
     if let Err(e) = boot_guard::save(path, &state) {
         warn!("boot guard: save state failed: {e}");
     }
-    if let Decision::Disable(ids) = decision {
+    if let Decision::Disable { modules, initrc } = decision {
+        let culprits: Vec<&String> = state.culprits.iter().map(|c| &c.id).collect();
         warn!(
-            "boot guard: boot did not complete {} times, disabling {ids:?}",
+            "boot guard: boot did not complete {} times, disabling {modules:?} and initrc.d {initrc:?}, likely cause {culprits:?}",
             state.threshold
         );
-        for id in &ids {
+        for id in &modules {
             if let Err(e) = crate::module::disable_module(id) {
                 warn!("boot guard: disable {id} failed: {e}");
+            }
+        }
+        for name in &initrc {
+            if let Err(e) = crate::module::set_initrc_active(name, false) {
+                warn!("boot guard: turn off initrc.d/{name} failed: {e}");
             }
         }
     }
 }
 
 /// Posts a system notification as the shell user: notifications from uid 0 are dropped.
-fn notify_boot_guard(ids: &[String]) {
+fn notify_boot_guard(notice: &boot_guard::Notice) {
     use std::os::unix::process::CommandExt;
 
     let vietnamese = ["persist.sys.locale", "ro.product.locale"]
         .iter()
         .find_map(|prop| utils::getprop(prop).filter(|v| !v.is_empty()))
         .is_some_and(|locale| locale.starts_with("vi"));
-    let (title, body) = boot_guard::notice_text(ids, vietnamese);
+    let (title, body) = boot_guard::notice_text(notice, vietnamese);
     // the notification service can still be starting right after boot-completed
     for attempt in 0..3 {
         let posted = std::process::Command::new("cmd")
@@ -205,7 +218,7 @@ fn notify_boot_guard(ids: &[String]) {
             .status()
             .is_ok_and(|status| status.success());
         if posted {
-            info!("boot guard: notified about {ids:?}");
+            info!("boot guard: notified about {notice:?}");
             return;
         }
         if attempt < 2 {
@@ -331,8 +344,8 @@ pub fn on_boot_completed() {
     if let Err(e) = boot_guard::save(path, &state) {
         warn!("boot guard: save state failed: {e}");
     }
-    if let Some(ids) = notice {
-        notify_boot_guard(&ids);
+    if let Some(notice) = notice {
+        notify_boot_guard(&notice);
     }
 
     run_stage("boot-completed", ScriptWait::NoWait);

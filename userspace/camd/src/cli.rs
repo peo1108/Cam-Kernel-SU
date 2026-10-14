@@ -336,10 +336,12 @@ enum BootGuard {
         /// boot attempt that triggers the guard (2-5)
         #[arg(long)]
         threshold: Option<u32>,
+    },
 
-        /// what to disable when it triggers
-        #[arg(long, value_parser = ["suspects", "all"])]
-        mode: Option<String>,
+    /// Turn a /data/adb/initrc.d file the boot guard switched off back on
+    InitrcEnable {
+        /// file name in /data/adb/initrc.d
+        name: String,
     },
 }
 
@@ -622,11 +624,8 @@ pub fn run() -> Result<()> {
         Commands::BootGuard { command } => match command {
             BootGuard::Status => module::boot_guard_status(),
             BootGuard::Clear => module::boot_guard_clear(),
-            BootGuard::Set {
-                enabled,
-                threshold,
-                mode,
-            } => module::boot_guard_set(enabled, threshold, mode.map(|m| m == "all")),
+            BootGuard::Set { enabled, threshold } => module::boot_guard_set(enabled, threshold),
+            BootGuard::InitrcEnable { name } => module::boot_guard_initrc_enable(&name),
         },
 
         Commands::Insmod { module, params } => debug::insmod(&module, &params),

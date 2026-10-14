@@ -1120,27 +1120,94 @@ pub fn list_module_conflicts() -> Result<()> {
 pub fn boot_guard_status() -> Result<()> {
     let state = boot_guard::load(Path::new(defs::BOOT_GUARD_PATH));
     let modules_root = Path::new(defs::MODULE_DIR);
-    let status = boot_guard::status_json(&state, &|id| {
-        modules_root.join(id).join(defs::DISABLE_FILE_NAME).exists()
-    });
+    let status = boot_guard::status_json(
+        &state,
+        &|id| modules_root.join(id).join(defs::DISABLE_FILE_NAME).exists(),
+        &|name| !initrc_d_path(name).is_ok_and(|path| is_executable(&path)),
+    );
     println!("{}", serde_json::to_string_pretty(&status)?);
     Ok(())
 }
 
-pub fn boot_guard_set(
-    enabled: Option<bool>,
-    threshold: Option<u32>,
-    disable_all: Option<bool>,
-) -> Result<()> {
+pub fn boot_guard_set(enabled: Option<bool>, threshold: Option<u32>) -> Result<()> {
     let path = Path::new(defs::BOOT_GUARD_PATH);
     let mut state = boot_guard::load(path);
-    boot_guard::set_config(&mut state, enabled, threshold, disable_all);
+    boot_guard::set_config(&mut state, enabled, threshold);
     boot_guard::save(path, &state)?;
     // the module rc queue follows the switch and the threshold
     if let Err(e) = regenerate_preinit_rc() {
         warn!("regenerate preinit rc failed: {e}");
     }
     Ok(())
+}
+
+/// Gives an initrc.d file the boot guard turned off its exec bit back.
+pub fn boot_guard_initrc_enable(name: &str) -> Result<()> {
+    set_initrc_active(name, true)?;
+    let path = Path::new(defs::BOOT_GUARD_PATH);
+    let mut state = boot_guard::load(path);
+    boot_guard::on_initrc_enabled(&mut state, name);
+    boot_guard::save(path, &state)?;
+    regenerate_preinit_rc()
+}
+
+const INITRC_D_DIR: &str = concatcp!(defs::ADB_DIR, "initrc.d");
+
+fn initrc_d_path(name: &str) -> Result<PathBuf> {
+    ensure!(
+        !name.is_empty() && !name.contains('/') && name != "." && name != "..",
+        "Invalid initrc.d file name: {name}"
+    );
+    Ok(Path::new(INITRC_D_DIR).join(name))
+}
+
+/// The /data/adb/initrc.d rc files that go into modules.rc: the executable ones
+/// (`collect_rc_files` uses the exec bit as their switch).
+pub fn active_initrc_files() -> Vec<String> {
+    let Ok(dir) = std::fs::read_dir(INITRC_D_DIR) else {
+        return Vec::new();
+    };
+    let mut names: Vec<String> = dir
+        .flatten()
+        .filter(|entry| {
+            let path = entry.path();
+            path.extension().and_then(|s| s.to_str()) == Some("rc")
+                && entry.metadata().is_ok_and(|meta| meta.is_file())
+                && is_executable(&path)
+        })
+        .filter_map(|entry| entry.file_name().to_str().map(str::to_owned))
+        .collect();
+    names.sort();
+    names
+}
+
+/// Turns an initrc.d rc file on or off through its exec bits.
+pub fn set_initrc_active(name: &str, active: bool) -> Result<()> {
+    let path = initrc_d_path(name)?;
+    let mode = std::fs::metadata(&path)
+        .with_context(|| format!("Failed to stat {}", path.display()))?
+        .permissions()
+        .mode();
+    let mode = if active { mode | 0o111 } else { mode & !0o111 };
+    set_permissions(&path, Permissions::from_mode(mode))
+        .with_context(|| format!("Failed to chmod {}", path.display()))
+}
+
+/// What every enabled module puts in place, for `boot_evidence`.
+pub fn module_owners() -> crate::boot_evidence::Owners {
+    let modules: Vec<(String, Vec<(String, module_conflicts::EntryKind)>)> = enabled_module_ids()
+        .into_iter()
+        .map(|id| {
+            let root = Path::new(MODULE_DIR).join(&id);
+            let entries = if root.join("skip_mount").exists() {
+                Vec::new()
+            } else {
+                module_conflicts::scan_module_tree(&root)
+            };
+            (id, entries)
+        })
+        .collect();
+    crate::boot_evidence::Owners::new(&modules)
 }
 
 pub fn boot_guard_clear() -> Result<()> {

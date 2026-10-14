@@ -1,15 +1,21 @@
-//! Boot guard: disables modules after repeated boots that never reached boot-completed.
+//! Boot guard: disables every module after repeated boots that never reached boot-completed,
+//! and names the ones most likely to blame.
 //!
 //! post-fs-data counts a boot attempt, boot-completed resets the count. When the
-//! count reaches the threshold, the modules installed, updated or re-enabled since
-//! the last good boot are disabled; with none of those left, every enabled module is.
+//! count reaches the threshold, every enabled module is disabled, so the next boot is a
+//! clean one. The modules installed, updated or re-enabled since the last good boot are
+//! reported as the likely cause, with lines of the failed boot's logs that point at a
+//! module (`boot_evidence`), so the user can enable the others again.
 //!
-//! Boots that die before post-fs-data never reach that count; only a module init rc
-//! (spliced into init.rc by the kernel) runs that early. For those, the rc itself
-//! carries a queue that init shifts at early-init (`guarded_module_rc`), so the
-//! boot after `threshold - 1` such failures runs without it.
+//! Boots that die before post-fs-data never reach that count; only an init rc (a module's
+//! `initrc/*.rc`, or a file in /data/adb/initrc.d, spliced into init.rc by the kernel)
+//! runs that early. For those, the rc itself carries a queue that init shifts at
+//! early-init (`guarded_module_rc`), so the boot after `threshold - 1` such failures runs
+//! without it; then every module is disabled, the initrc.d files lose their exec bit, and
+//! the ones with an rc are reported.
 #![cfg_attr(not(target_os = "android"), allow(dead_code))]
 
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::io::Write;
 use std::path::Path;
@@ -22,19 +28,80 @@ pub const BOOT_GUARD_THRESHOLD: u32 = 3;
 pub const MIN_THRESHOLD: u32 = 2;
 pub const MAX_THRESHOLD: u32 = 5;
 
+/// Culprit ids of /data/adb/initrc.d files carry this prefix, so they never clash with a module id.
+pub const INITRC_PREFIX: &str = "initrc.d/";
+
+/// Why a module (or initrc.d file) is named as a likely cause.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Reason {
+    /// installed, updated or enabled again since the last good boot
+    Changed,
+    /// has an init rc, the only module part that runs before post-fs-data
+    InitRc,
+    /// an rc file in /data/adb/initrc.d
+    InitrcD,
+    /// the failed boot's logs name it (`Culprit::evidence`)
+    Log,
+}
+
+impl Reason {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Changed => "changed",
+            Self::InitRc => "init_rc",
+            Self::InitrcD => "initrc_d",
+            Self::Log => "log",
+        }
+    }
+
+    fn parse(name: &str) -> Option<Self> {
+        [Self::Changed, Self::InitRc, Self::InitrcD, Self::Log]
+            .into_iter()
+            .find(|reason| reason.as_str() == name)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Culprit {
+    /// a module id, or `INITRC_PREFIX` + a file name
+    pub id: String,
+    /// sorted, unique
+    pub reasons: Vec<Reason>,
+    /// a log line of the failed boot that names it
+    pub evidence: Option<String>,
+}
+
+impl Culprit {
+    fn new(id: &str, reason: Reason) -> Self {
+        Self {
+            id: id.to_owned(),
+            reasons: vec![reason],
+            evidence: None,
+        }
+    }
+
+    fn add(&mut self, reason: Reason) {
+        if let Err(pos) = self.reasons.binary_search(&reason) {
+            self.reasons.insert(pos, reason);
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BootGuardState {
     pub fail_count: u32,
     /// sorted, unique
     pub suspects: Vec<String>,
-    /// sorted, unique
+    /// modules the guard disabled; sorted, unique
     pub auto_disabled: Vec<String>,
+    /// /data/adb/initrc.d files the guard took the exec bit from; sorted, unique
+    pub initrc_disabled: Vec<String>,
+    /// the likely causes of the last trigger, most likely first
+    pub culprits: Vec<Culprit>,
     pub last_trigger: Option<u64>,
     pub enabled: bool,
     /// boot attempt that triggers, `MIN_THRESHOLD..=MAX_THRESHOLD`
     pub threshold: u32,
-    /// disable every enabled module instead of the suspects first
-    pub disable_all: bool,
     /// a trigger the user has not been notified about yet
     pub notify_pending: bool,
 }
@@ -45,10 +112,11 @@ impl Default for BootGuardState {
             fail_count: 0,
             suspects: Vec::new(),
             auto_disabled: Vec::new(),
+            initrc_disabled: Vec::new(),
+            culprits: Vec::new(),
             last_trigger: None,
             enabled: true,
             threshold: BOOT_GUARD_THRESHOLD,
-            disable_all: false,
             notify_pending: false,
         }
     }
@@ -64,14 +132,14 @@ const fn clamp_threshold(threshold: u32) -> u32 {
     }
 }
 
-const fn mode_name(disable_all: bool) -> &'static str {
-    if disable_all { "all" } else { "suspects" }
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum Decision {
     Continue,
-    Disable(Vec<String>),
+    /// every enabled module, and the initrc.d files to take the exec bit from
+    Disable {
+        modules: Vec<String>,
+        initrc: Vec<String>,
+    },
 }
 
 fn insert_sorted(list: &mut Vec<String>, id: &str) {
@@ -93,7 +161,40 @@ fn string_list(value: &Value) -> Vec<String> {
     out
 }
 
+fn culprits_from(value: &Value) -> Vec<Culprit> {
+    value
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|item| {
+            let mut culprit = Culprit {
+                id: item["id"].as_str()?.to_owned(),
+                reasons: Vec::new(),
+                evidence: item["evidence"].as_str().map(str::to_owned),
+            };
+            for reason in item["reasons"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|r| Reason::parse(r.as_str()?))
+            {
+                culprit.add(reason);
+            }
+            Some(culprit)
+        })
+        .collect()
+}
+
+fn culprit_json(culprit: &Culprit) -> Value {
+    json!({
+        "id": culprit.id,
+        "reasons": culprit.reasons.iter().map(|r| r.as_str()).collect::<Vec<_>>(),
+        "evidence": culprit.evidence,
+    })
+}
+
 /// A missing or unreadable state file is a fresh state: it must never break boot.
+/// Files from before 2026-10-15 carry a `mode` key, which no longer means anything.
 pub fn load(path: &Path) -> BootGuardState {
     let Some(value) = std::fs::read_to_string(path)
         .ok()
@@ -108,13 +209,14 @@ pub fn load(path: &Path) -> BootGuardState {
             .unwrap_or(0),
         suspects: string_list(&value["suspects"]),
         auto_disabled: string_list(&value["autoDisabled"]),
+        initrc_disabled: string_list(&value["initrcDisabled"]),
+        culprits: culprits_from(&value["culprits"]),
         last_trigger: value["lastTrigger"].as_u64(),
         enabled: value["enabled"].as_bool().unwrap_or(true),
         threshold: value["threshold"]
             .as_u64()
             .and_then(|n| u32::try_from(n).ok())
             .map_or(BOOT_GUARD_THRESHOLD, clamp_threshold),
-        disable_all: value["mode"].as_str() == Some("all"),
         notify_pending: value["notifyPending"].as_bool().unwrap_or(false),
     }
 }
@@ -126,10 +228,11 @@ pub fn save(path: &Path, state: &BootGuardState) -> Result<()> {
         "failCount": state.fail_count,
         "suspects": state.suspects,
         "autoDisabled": state.auto_disabled,
+        "initrcDisabled": state.initrc_disabled,
+        "culprits": state.culprits.iter().map(culprit_json).collect::<Vec<_>>(),
         "lastTrigger": state.last_trigger,
         "enabled": state.enabled,
         "threshold": state.threshold,
-        "mode": mode_name(state.disable_all),
         "notifyPending": state.notify_pending,
     });
     let tmp = path.with_extension("json.tmp");
@@ -170,59 +273,118 @@ pub fn on_boot_start(
         state.fail_count = 0;
         return Decision::Continue;
     }
-    trigger(state, enabled, now)
+    let culprits = state
+        .suspects
+        .iter()
+        .filter(|id| enabled.contains(id))
+        .map(|id| Culprit::new(id, Reason::Changed))
+        .collect();
+    trigger(state, enabled, &[], culprits, now)
 }
 
-/// The boots before this one died before post-fs-data, so this one ran without the
-/// module init rc (`guarded_module_rc`). Only modules with an init rc run that early, so
-/// `rc_modules` (the enabled ones that have one) are the ones to disable.
+/// The boots before this one died before post-fs-data, so this one ran without the init rc
+/// (`guarded_module_rc`). Only an init rc runs that early: `rc_modules` (the enabled modules
+/// that have one) and `initrc` (the active files in /data/adb/initrc.d) are the likely
+/// causes. Every module is disabled all the same.
 pub fn on_rc_held_back(
     state: &mut BootGuardState,
     new_suspects: &[String],
     rc_modules: &[String],
+    initrc: &[String],
     enabled: &[String],
     now: u64,
 ) -> Decision {
-    if !state.enabled || rc_modules.is_empty() {
-        // not a module of ours (an initrc.d file, or the boots failed for another reason)
+    if !state.enabled || (rc_modules.is_empty() && initrc.is_empty()) {
+        // no rc of ours: the boots failed for another reason
         return on_boot_start(state, new_suspects, enabled, now);
     }
     for id in new_suspects {
         insert_sorted(&mut state.suspects, id);
     }
-    trigger(state, rc_modules, now)
+    let mut culprits = Vec::new();
+    for id in rc_modules {
+        let mut culprit = Culprit::new(id, Reason::InitRc);
+        if state.suspects.contains(id) {
+            culprit.add(Reason::Changed);
+        }
+        culprits.push(culprit);
+    }
+    for name in initrc {
+        culprits.push(Culprit::new(
+            &format!("{INITRC_PREFIX}{name}"),
+            Reason::InitrcD,
+        ));
+    }
+    trigger(state, enabled, initrc, culprits, now)
 }
 
-/// Disables the suspects among `candidates`, or all of them when none is a suspect.
-fn trigger(state: &mut BootGuardState, candidates: &[String], now: u64) -> Decision {
-    let mut targets: Vec<String> = Vec::new();
-    if !state.disable_all {
-        for id in state.suspects.iter().filter(|id| candidates.contains(id)) {
-            insert_sorted(&mut targets, id);
-        }
-    }
-    if targets.is_empty() {
-        for id in candidates {
-            insert_sorted(&mut targets, id);
-        }
-    }
-    for id in &targets {
+fn trigger(
+    state: &mut BootGuardState,
+    modules: &[String],
+    initrc: &[String],
+    culprits: Vec<Culprit>,
+    now: u64,
+) -> Decision {
+    let mut modules_sorted = Vec::new();
+    for id in modules {
+        insert_sorted(&mut modules_sorted, id);
         insert_sorted(&mut state.auto_disabled, id);
     }
+    let mut initrc_sorted = Vec::new();
+    for name in initrc {
+        insert_sorted(&mut initrc_sorted, name);
+        insert_sorted(&mut state.initrc_disabled, name);
+    }
+    state.culprits = culprits;
+    sort_culprits(&mut state.culprits);
     state.fail_count = 0;
     state.suspects.clear();
     state.last_trigger = Some(now);
     state.notify_pending = true;
-    Decision::Disable(targets)
+    Decision::Disable {
+        modules: modules_sorted,
+        initrc: initrc_sorted,
+    }
+}
+
+/// Log evidence first, then the ones with more reasons.
+fn sort_culprits(culprits: &mut [Culprit]) {
+    culprits.sort_by(|a, b| {
+        (
+            a.evidence.is_none(),
+            std::cmp::Reverse(a.reasons.len()),
+            &a.id,
+        )
+            .cmp(&(
+                b.evidence.is_none(),
+                std::cmp::Reverse(b.reasons.len()),
+                &b.id,
+            ))
+    });
+}
+
+/// Adds what the failed boot's logs say (id -> line) to the last trigger's culprits.
+/// Only ids in `known` count: a module that was not disabled is not to blame.
+pub fn add_evidence(
+    state: &mut BootGuardState,
+    evidence: &BTreeMap<String, String>,
+    known: &[String],
+) {
+    for (id, line) in evidence.iter().filter(|(id, _)| known.contains(id)) {
+        if let Some(culprit) = state.culprits.iter_mut().find(|c| &c.id == id) {
+            culprit.add(Reason::Log);
+            culprit.evidence = Some(line.clone());
+        } else {
+            let mut culprit = Culprit::new(id, Reason::Log);
+            culprit.evidence = Some(line.clone());
+            state.culprits.push(culprit);
+        }
+    }
+    sort_culprits(&mut state.culprits);
 }
 
 /// `None` keeps a setting. Turning the guard off also drops the running count.
-pub const fn set_config(
-    state: &mut BootGuardState,
-    enabled: Option<bool>,
-    threshold: Option<u32>,
-    disable_all: Option<bool>,
-) {
+pub const fn set_config(state: &mut BootGuardState, enabled: Option<bool>, threshold: Option<u32>) {
     if let Some(enabled) = enabled {
         state.enabled = enabled;
         if !enabled {
@@ -232,38 +394,49 @@ pub const fn set_config(
     if let Some(threshold) = threshold {
         state.threshold = clamp_threshold(threshold);
     }
-    if let Some(disable_all) = disable_all {
-        state.disable_all = disable_all;
-    }
 }
 
-/// The modules to tell the user about, once per trigger.
-pub fn take_notice(state: &mut BootGuardState) -> Option<Vec<String>> {
+/// What to tell the user, once per trigger.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Notice {
+    pub disabled: usize,
+    pub culprits: Vec<String>,
+}
+
+pub fn take_notice(state: &mut BootGuardState) -> Option<Notice> {
     if !state.notify_pending {
         return None;
     }
     state.notify_pending = false;
-    Some(state.auto_disabled.clone())
+    Some(Notice {
+        disabled: state.auto_disabled.len() + state.initrc_disabled.len(),
+        culprits: state.culprits.iter().map(|c| c.id.clone()).collect(),
+    })
 }
 
 /// Notification title and body; camd has no resources, so the two languages live here.
-pub fn notice_text(ids: &[String], vietnamese: bool) -> (String, String) {
-    let list = ids.join(", ");
+pub fn notice_text(notice: &Notice, vietnamese: bool) -> (String, String) {
+    let list = notice.culprits.join(", ");
+    let count = notice.disabled;
     if vietnamese {
+        let cause = if list.is_empty() {
+            "Chưa rõ module nào gây lỗi, bật lại từng cái để tìm.".to_owned()
+        } else {
+            format!("Nghi do: {list}")
+        };
         (
             "SU Kernel: chống bootloop".to_owned(),
-            format!(
-                "Đã tắt {} module vì máy khởi động lỗi liên tục: {list}",
-                ids.len()
-            ),
+            format!("Đã tắt tất cả {count} module vì máy khởi động lỗi liên tục. {cause}"),
         )
     } else {
+        let cause = if list.is_empty() {
+            "No module stands out; enable them one at a time to find it.".to_owned()
+        } else {
+            format!("Likely cause: {list}")
+        };
         (
             "SU Kernel: anti bootloop".to_owned(),
-            format!(
-                "Disabled {} module(s) after repeated failed boots: {list}",
-                ids.len()
-            ),
+            format!("Disabled all {count} module(s) after repeated failed boots. {cause}"),
         )
     }
 }
@@ -278,6 +451,11 @@ pub fn on_boot_completed(state: &mut BootGuardState) {
 pub fn on_module_enabled(state: &mut BootGuardState, id: &str) {
     insert_sorted(&mut state.suspects, id);
     state.auto_disabled.retain(|known| known != id);
+}
+
+/// An initrc.d file that got its exec bit back.
+pub fn on_initrc_enabled(state: &mut BootGuardState, name: &str) {
+    state.initrc_disabled.retain(|known| known != name);
 }
 
 /// Written next to `modules.rc` by a boot that ran without the module init rc.
@@ -331,26 +509,49 @@ pub fn guarded_module_rc(dir: &str, body: &[u8], threshold: u32) -> (Vec<u8>, Ve
     (rc, queue)
 }
 
-/// `still_disabled` filters out the modules the user has enabled again since.
-pub fn status_json(state: &BootGuardState, still_disabled: &dyn Fn(&str) -> bool) -> Value {
+/// `module_off` and `initrc_off` filter out what the user has turned back on since.
+pub fn status_json(
+    state: &BootGuardState,
+    module_off: &dyn Fn(&str) -> bool,
+    initrc_off: &dyn Fn(&str) -> bool,
+) -> Value {
     let auto_disabled: Vec<&String> = state
         .auto_disabled
         .iter()
-        .filter(|id| still_disabled(id))
+        .filter(|id| module_off(id))
+        .collect();
+    let initrc_disabled: Vec<&String> = state
+        .initrc_disabled
+        .iter()
+        .filter(|name| initrc_off(name))
+        .collect();
+    let culprits: Vec<Value> = state
+        .culprits
+        .iter()
+        .filter(|c| {
+            c.id.strip_prefix(INITRC_PREFIX).map_or_else(
+                || auto_disabled.contains(&&c.id),
+                |name| initrc_disabled.iter().any(|known| *known == name),
+            )
+        })
+        .map(culprit_json)
         .collect();
     json!({
         "failCount": state.fail_count,
         "threshold": state.threshold,
         "suspects": state.suspects,
         "autoDisabled": auto_disabled,
+        "initrcDisabled": initrc_disabled,
+        "culprits": culprits,
         "lastTrigger": state.last_trigger,
         "enabled": state.enabled,
-        "mode": mode_name(state.disable_all),
     })
 }
 
 pub fn clear_notice(state: &mut BootGuardState) {
     state.auto_disabled.clear();
+    state.initrc_disabled.clear();
+    state.culprits.clear();
     state.last_trigger = None;
 }
 
@@ -360,6 +561,17 @@ mod tests {
 
     fn ids(v: &[&str]) -> Vec<String> {
         v.iter().map(|s| (*s).to_owned()).collect()
+    }
+
+    fn disable(modules: &[&str], initrc: &[&str]) -> Decision {
+        Decision::Disable {
+            modules: ids(modules),
+            initrc: ids(initrc),
+        }
+    }
+
+    fn culprit_ids(s: &BootGuardState) -> Vec<String> {
+        s.culprits.iter().map(|c| c.id.clone()).collect()
     }
 
     #[test]
@@ -377,44 +589,41 @@ mod tests {
     }
 
     #[test]
-    fn trigger_disables_suspects_only() {
+    fn trigger_disables_every_module_and_names_the_changed_ones() {
         let mut s = BootGuardState::default();
         let en = ids(&["a", "b", "c"]);
         on_boot_start(&mut s, &ids(&["b"]), &en, 1);
         on_boot_start(&mut s, &[], &en, 2);
         assert_eq!(
             on_boot_start(&mut s, &[], &en, 3),
-            Decision::Disable(ids(&["b"]))
+            disable(&["a", "b", "c"], &[])
         );
         assert_eq!(s.fail_count, 0);
         assert!(s.suspects.is_empty());
-        assert_eq!(s.auto_disabled, ids(&["b"]));
+        assert_eq!(s.auto_disabled, ids(&["a", "b", "c"]));
         assert_eq!(s.last_trigger, Some(3));
-    }
-
-    #[test]
-    fn no_suspects_disables_all_enabled() {
-        let mut s = BootGuardState {
-            fail_count: 2,
-            ..Default::default()
-        };
         assert_eq!(
-            on_boot_start(&mut s, &[], &ids(&["a", "c"]), 9),
-            Decision::Disable(ids(&["a", "c"]))
+            s.culprits,
+            vec![Culprit {
+                id: "b".into(),
+                reasons: vec![Reason::Changed],
+                evidence: None
+            }]
         );
     }
 
     #[test]
-    fn stale_suspects_fall_back_to_all() {
+    fn no_suspects_names_no_culprit() {
         let mut s = BootGuardState {
             fail_count: 2,
             suspects: ids(&["gone"]),
             ..Default::default()
         };
         assert_eq!(
-            on_boot_start(&mut s, &[], &ids(&["a"]), 9),
-            Decision::Disable(ids(&["a"]))
+            on_boot_start(&mut s, &[], &ids(&["a", "c"]), 9),
+            disable(&["a", "c"], &[])
         );
+        assert!(s.culprits.is_empty());
     }
 
     #[test]
@@ -424,6 +633,86 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(on_boot_start(&mut s, &[], &[], 9), Decision::Continue);
+    }
+
+    #[test]
+    fn evidence_ranks_culprits_and_adds_unchanged_modules() {
+        let mut s = BootGuardState {
+            fail_count: 2,
+            suspects: ids(&["new"]),
+            ..Default::default()
+        };
+        let en = ids(&["new", "old", "other"]);
+        on_boot_start(&mut s, &[], &en, 1);
+        let evidence = BTreeMap::from([
+            (
+                "old".to_owned(),
+                "F DEBUG: #00 pc /system/lib64/libold.so".to_owned(),
+            ),
+            ("never-enabled".to_owned(), "x".to_owned()),
+        ]);
+        add_evidence(&mut s, &evidence, &en);
+        assert_eq!(culprit_ids(&s), ids(&["old", "new"]));
+        assert_eq!(s.culprits[0].reasons, vec![Reason::Log]);
+        assert_eq!(
+            s.culprits[0].evidence.as_deref(),
+            Some("F DEBUG: #00 pc /system/lib64/libold.so")
+        );
+        // evidence on a changed module keeps both reasons
+        add_evidence(
+            &mut s,
+            &BTreeMap::from([("new".to_owned(), "line".to_owned())]),
+            &en,
+        );
+        assert_eq!(culprit_ids(&s), ids(&["new", "old"]));
+        assert_eq!(s.culprits[0].reasons, vec![Reason::Changed, Reason::Log]);
+    }
+
+    #[test]
+    fn held_back_rc_disables_everything_and_names_rc_owners() {
+        let mut s = BootGuardState {
+            suspects: ids(&["new"]),
+            ..Default::default()
+        };
+        let en = ids(&["a", "new", "plain"]);
+        assert_eq!(
+            on_rc_held_back(
+                &mut s,
+                &ids(&["upd"]),
+                &ids(&["a", "new"]),
+                &ids(&["x.rc"]),
+                &en,
+                7
+            ),
+            disable(&["a", "new", "plain"], &["x.rc"])
+        );
+        assert_eq!(culprit_ids(&s), ids(&["new", "a", "initrc.d/x.rc"]));
+        assert_eq!(s.culprits[0].reasons, vec![Reason::Changed, Reason::InitRc]);
+        assert_eq!(s.culprits[2].reasons, vec![Reason::InitrcD]);
+        assert_eq!(s.initrc_disabled, ids(&["x.rc"]));
+        assert!(s.suspects.is_empty());
+        assert_eq!(s.fail_count, 0);
+        assert_eq!(s.last_trigger, Some(7));
+        assert!(s.notify_pending);
+    }
+
+    #[test]
+    fn held_back_rc_with_only_initrc_files() {
+        let mut s = BootGuardState::default();
+        assert_eq!(
+            on_rc_held_back(&mut s, &[], &[], &ids(&["x.rc"]), &[], 1),
+            disable(&[], &["x.rc"])
+        );
+    }
+
+    #[test]
+    fn held_back_rc_without_any_rc_counts_a_normal_boot() {
+        let mut s = BootGuardState::default();
+        assert_eq!(
+            on_rc_held_back(&mut s, &[], &[], &[], &ids(&["a"]), 1),
+            Decision::Continue
+        );
+        assert_eq!(s.fail_count, 1);
     }
 
     #[test]
@@ -444,12 +733,15 @@ mod tests {
     fn enabling_forgets_auto_disabled() {
         let mut s = BootGuardState {
             auto_disabled: ids(&["a", "b"]),
+            initrc_disabled: ids(&["x.rc"]),
             ..Default::default()
         };
         on_module_enabled(&mut s, "a");
         assert_eq!(s.suspects, ids(&["a"]));
         // a later manual disable must not read as the boot guard's doing
         assert_eq!(s.auto_disabled, ids(&["b"]));
+        on_initrc_enabled(&mut s, "x.rc");
+        assert!(s.initrc_disabled.is_empty());
     }
 
     #[test]
@@ -460,10 +752,15 @@ mod tests {
             fail_count: 1,
             suspects: ids(&["a"]),
             auto_disabled: ids(&["b"]),
+            initrc_disabled: ids(&["x.rc"]),
+            culprits: vec![Culprit {
+                id: "b".into(),
+                reasons: vec![Reason::Changed, Reason::Log],
+                evidence: Some("line".into()),
+            }],
             last_trigger: Some(5),
             enabled: false,
             threshold: 4,
-            disable_all: true,
             notify_pending: true,
         };
         save(&p, &s).unwrap();
@@ -484,12 +781,17 @@ mod tests {
     fn load_old_file_keeps_defaults() {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("bootguard.json");
-        std::fs::write(&p, br#"{"failCount":1,"suspects":["a"],"autoDisabled":[]}"#).unwrap();
+        std::fs::write(
+            &p,
+            br#"{"failCount":1,"suspects":["a"],"autoDisabled":[],"mode":"suspects"}"#,
+        )
+        .unwrap();
         let s = load(&p);
         assert_eq!(s.fail_count, 1);
         assert!(s.enabled);
         assert_eq!(s.threshold, BOOT_GUARD_THRESHOLD);
-        assert!(!s.disable_all);
+        assert!(s.culprits.is_empty());
+        assert!(s.initrc_disabled.is_empty());
     }
 
     #[test]
@@ -506,7 +808,7 @@ mod tests {
         assert_eq!(s.fail_count, 0);
         assert_eq!(s.suspects, ids(&["n"]));
         // enabling again starts from zero, so the next boot does not trigger
-        set_config(&mut s, Some(true), None, None);
+        set_config(&mut s, Some(true), None);
         assert_eq!(
             on_boot_start(&mut s, &[], &ids(&["a"]), 2),
             Decision::Continue
@@ -520,10 +822,10 @@ mod tests {
             threshold: 5,
             ..Default::default()
         };
-        set_config(&mut s, None, Some(2), None);
+        set_config(&mut s, None, Some(2));
         assert_eq!(
             on_boot_start(&mut s, &[], &ids(&["a"]), 1),
-            Decision::Disable(ids(&["a"]))
+            disable(&["a"], &[])
         );
     }
 
@@ -537,34 +839,16 @@ mod tests {
         for now in 1..4 {
             assert_eq!(on_boot_start(&mut s, &[], &en, now), Decision::Continue);
         }
-        assert_eq!(
-            on_boot_start(&mut s, &[], &en, 4),
-            Decision::Disable(ids(&["a"]))
-        );
-    }
-
-    #[test]
-    fn disable_all_ignores_suspects() {
-        let mut s = BootGuardState {
-            fail_count: 2,
-            suspects: ids(&["b"]),
-            disable_all: true,
-            ..Default::default()
-        };
-        assert_eq!(
-            on_boot_start(&mut s, &[], &ids(&["a", "b"]), 1),
-            Decision::Disable(ids(&["a", "b"]))
-        );
+        assert_eq!(on_boot_start(&mut s, &[], &en, 4), disable(&["a"], &[]));
     }
 
     #[test]
     fn set_config_clamps_threshold() {
         let mut s = BootGuardState::default();
-        set_config(&mut s, None, Some(1), None);
+        set_config(&mut s, None, Some(1));
         assert_eq!(s.threshold, MIN_THRESHOLD);
-        set_config(&mut s, None, Some(9), Some(true));
+        set_config(&mut s, None, Some(9));
         assert_eq!(s.threshold, MAX_THRESHOLD);
-        assert!(s.disable_all);
     }
 
     #[test]
@@ -572,24 +856,30 @@ mod tests {
         let s = BootGuardState {
             enabled: false,
             threshold: 4,
-            disable_all: true,
             ..Default::default()
         };
-        let v = status_json(&s, &|_| true);
+        let v = status_json(&s, &|_| true, &|_| true);
         assert_eq!(v["enabled"], serde_json::json!(false));
         assert_eq!(v["threshold"], serde_json::json!(4));
-        assert_eq!(v["mode"], serde_json::json!("all"));
+        assert!(v.get("mode").is_none());
     }
 
     #[test]
     fn trigger_queues_one_notice() {
         let mut s = BootGuardState {
             fail_count: 2,
+            suspects: ids(&["b"]),
             ..Default::default()
         };
         assert_eq!(take_notice(&mut s), None);
         on_boot_start(&mut s, &[], &ids(&["a", "b"]), 1);
-        assert_eq!(take_notice(&mut s), Some(ids(&["a", "b"])));
+        assert_eq!(
+            take_notice(&mut s),
+            Some(Notice {
+                disabled: 2,
+                culprits: ids(&["b"])
+            })
+        );
         // shown once
         assert_eq!(take_notice(&mut s), None);
     }
@@ -604,58 +894,81 @@ mod tests {
         };
         on_boot_start(&mut s, &[], &ids(&["a"]), 1);
         save(&p, &s).unwrap();
-        assert_eq!(take_notice(&mut load(&p)), Some(ids(&["a"])));
+        assert_eq!(
+            take_notice(&mut load(&p)),
+            Some(Notice {
+                disabled: 1,
+                culprits: vec![]
+            })
+        );
     }
 
     #[test]
     fn notice_text_follows_language() {
-        let (title, body) = notice_text(&ids(&["a", "b"]), true);
+        let notice = Notice {
+            disabled: 3,
+            culprits: ids(&["a", "b"]),
+        };
+        let (title, body) = notice_text(&notice, true);
         assert_eq!(title, "SU Kernel: chống bootloop");
-        assert_eq!(body, "Đã tắt 2 module vì máy khởi động lỗi liên tục: a, b");
-        let (title, body) = notice_text(&ids(&["a"]), false);
+        assert_eq!(
+            body,
+            "Đã tắt tất cả 3 module vì máy khởi động lỗi liên tục. Nghi do: a, b"
+        );
+        let (title, body) = notice_text(
+            &Notice {
+                disabled: 1,
+                culprits: vec![],
+            },
+            false,
+        );
         assert_eq!(title, "SU Kernel: anti bootloop");
-        assert_eq!(body, "Disabled 1 module(s) after repeated failed boots: a");
+        assert_eq!(
+            body,
+            "Disabled all 1 module(s) after repeated failed boots. No module stands out; enable them one at a time to find it."
+        );
     }
 
     #[test]
-    fn held_back_rc_disables_rc_suspects_first() {
-        let mut s = BootGuardState {
-            suspects: ids(&["new"]),
+    fn status_hides_what_was_turned_back_on() {
+        let s = BootGuardState {
+            auto_disabled: ids(&["a", "b"]),
+            initrc_disabled: ids(&["x.rc", "y.rc"]),
+            culprits: vec![
+                Culprit::new("a", Reason::Changed),
+                Culprit::new("b", Reason::Changed),
+                Culprit::new("initrc.d/x.rc", Reason::InitrcD),
+                Culprit::new("initrc.d/y.rc", Reason::InitrcD),
+            ],
             ..Default::default()
         };
-        let en = ids(&["a", "new", "plain"]);
-        assert_eq!(
-            on_rc_held_back(&mut s, &ids(&["upd"]), &ids(&["a", "new"]), &en, 7),
-            Decision::Disable(ids(&["new"]))
-        );
-        assert_eq!(s.auto_disabled, ids(&["new"]));
-        assert!(s.suspects.is_empty());
-        assert_eq!(s.fail_count, 0);
-        assert_eq!(s.last_trigger, Some(7));
-        assert!(s.notify_pending);
+        let v = status_json(&s, &|id| id == "b", &|name| name == "y.rc");
+        assert_eq!(v["autoDisabled"], serde_json::json!(["b"]));
+        assert_eq!(v["initrcDisabled"], serde_json::json!(["y.rc"]));
+        let shown: Vec<&str> = v["culprits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["id"].as_str().unwrap())
+            .collect();
+        assert_eq!(shown, vec!["b", "initrc.d/y.rc"]);
+        assert_eq!(v["threshold"], serde_json::json!(3));
     }
 
     #[test]
-    fn held_back_rc_without_rc_suspect_disables_every_rc_module() {
+    fn clear_notice_forgets_the_trigger() {
         let mut s = BootGuardState {
-            suspects: ids(&["plain"]),
+            auto_disabled: ids(&["a"]),
+            initrc_disabled: ids(&["x.rc"]),
+            culprits: vec![Culprit::new("a", Reason::Changed)],
+            last_trigger: Some(1),
             ..Default::default()
         };
-        let en = ids(&["a", "b", "plain"]);
-        assert_eq!(
-            on_rc_held_back(&mut s, &[], &ids(&["a", "b"]), &en, 1),
-            Decision::Disable(ids(&["a", "b"]))
+        clear_notice(&mut s);
+        assert!(
+            s.auto_disabled.is_empty() && s.initrc_disabled.is_empty() && s.culprits.is_empty()
         );
-    }
-
-    #[test]
-    fn held_back_rc_counts_a_normal_boot_without_rc_modules() {
-        let mut s = BootGuardState::default();
-        assert_eq!(
-            on_rc_held_back(&mut s, &[], &[], &ids(&["a"]), 1),
-            Decision::Continue
-        );
-        assert_eq!(s.fail_count, 1);
+        assert_eq!(s.last_trigger, None);
     }
 
     type Files = std::collections::HashMap<String, Vec<u8>>;
@@ -780,16 +1093,5 @@ mod tests {
             held.ends_with("on early-init\n    write /metadata/watchdog/cam/modules.rc.held 1\n")
         );
         assert!(!held.contains("BODY"));
-    }
-
-    #[test]
-    fn status_hides_reenabled_modules() {
-        let s = BootGuardState {
-            auto_disabled: ids(&["a", "b"]),
-            ..Default::default()
-        };
-        let v = status_json(&s, &|id| id == "b");
-        assert_eq!(v["autoDisabled"], serde_json::json!(["b"]));
-        assert_eq!(v["threshold"], serde_json::json!(3));
     }
 }

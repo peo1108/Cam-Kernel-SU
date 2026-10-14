@@ -1,9 +1,9 @@
 package cam.su.kernel.ui.component.miuix
 
+import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.ui.component.glass.GlassDialog
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.PaddingValues
@@ -61,7 +61,7 @@ fun SendLogDialog(
             }
             loadingDialog.hide()
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, logSavedText, Toast.LENGTH_SHORT).show()
+                CamToast.show(context, logSavedText)
             }
         }
     }

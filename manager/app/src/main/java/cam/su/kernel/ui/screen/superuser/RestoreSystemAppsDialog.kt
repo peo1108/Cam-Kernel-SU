@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.superuser
 
-import android.widget.Toast
+import cam.su.kernel.ui.component.CamToast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -67,7 +67,7 @@ fun RestoreSystemAppsDialog(show: Boolean, onDismiss: () -> Unit, onRestored: ()
                             .clickable {
                                 scope.launch {
                                     val ok = reinstallSystemApp(pkg, userId)
-                                    Toast.makeText(context, if (ok) restored.format(label) else failed, Toast.LENGTH_SHORT).show()
+                                    CamToast.show(context, if (ok) restored.format(label) else failed)
                                     if (ok) {
                                         apps = apps?.filterNot { it.first == pkg }
                                         onRestored()

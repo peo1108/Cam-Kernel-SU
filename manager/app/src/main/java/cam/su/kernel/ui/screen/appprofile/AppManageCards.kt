@@ -1,11 +1,11 @@
 package cam.su.kernel.ui.screen.appprofile
 
+import cam.su.kernel.ui.component.CamToast
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -597,7 +597,7 @@ private fun copy(context: Context, text: String) {
 }
 
 private fun toast(context: Context, text: String) {
-    Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+    CamToast.show(context, text)
 }
 
 private fun share(context: Context, file: File) {

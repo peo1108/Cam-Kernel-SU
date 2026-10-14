@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.home
 
+import cam.su.kernel.ui.component.CamToast
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -7,7 +8,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -96,7 +96,7 @@ fun HomePager(
                 delay(30_000.milliseconds)
                 withContext(Dispatchers.Main) {
                     loadingDialog.hide()
-                    Toast.makeText(context, R.string.jailbreak_timeout, Toast.LENGTH_LONG).show()
+                    CamToast.show(context, R.string.jailbreak_timeout, long = true)
                 }
             }
         },

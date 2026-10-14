@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.executemoduleaction
 
-import android.widget.Toast
+import cam.su.kernel.ui.component.CamToast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +34,7 @@ fun ExecuteModuleActionScreen(moduleId: String, fromShortcut: Boolean = false) {
 
     fun showMessage(message: String) {
         scope.launch {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            CamToast.show(context, message)
         }
     }
 

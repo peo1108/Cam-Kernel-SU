@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.appprofile
 
-import android.widget.Toast
+import cam.su.kernel.ui.component.CamToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -69,7 +69,7 @@ fun rememberAppProfileEditor(appGroup: GroupedApps, onSaved: () -> Unit = {}): A
 
     fun showMessage(message: String) {
         scope.launch {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            CamToast.show(context, message)
         }
     }
 

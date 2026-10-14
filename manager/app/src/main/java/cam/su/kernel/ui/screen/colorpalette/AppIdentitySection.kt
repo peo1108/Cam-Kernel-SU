@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.colorpalette
 
-import android.widget.Toast
+import cam.su.kernel.ui.component.CamToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -93,7 +93,7 @@ fun AppIdentitySection() {
                 customVersion++
                 icon = AppIdentity.Icon.Custom
             } else {
-                Toast.makeText(context, R.string.app_identity_import_failed, Toast.LENGTH_SHORT).show()
+                CamToast.show(context, R.string.app_identity_import_failed)
             }
         }
     }
@@ -218,11 +218,7 @@ fun AppIdentitySection() {
                 scope.launch {
                     val ok = withContext(Dispatchers.IO) { AppIdentity.apply(context, chosenName, chosenIcon) }
                     applying = false
-                    Toast.makeText(
-                        context,
-                        if (ok) R.string.app_identity_applied else R.string.app_identity_apply_failed,
-                        Toast.LENGTH_LONG,
-                    ).show()
+                    CamToast.show(context, if (ok) R.string.app_identity_applied else R.string.app_identity_apply_failed, long = true)
                 }
             },
             modifier = Modifier

@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.flash
 
-import android.widget.Toast
+import cam.su.kernel.ui.component.CamToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +47,7 @@ fun FlashScreen(flashIt: FlashIt, onBackEnabledChange: (Boolean) -> Unit) {
 
     fun showMessage(message: String) {
         scope.launch {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            CamToast.show(context, message)
         }
     }
 

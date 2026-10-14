@@ -1,7 +1,7 @@
 package cam.su.kernel.ui.component.uninstalldialog
 
+import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.ui.component.glass.GlassDialog
-import android.widget.Toast
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -44,7 +44,7 @@ fun UninstallDialogMiuix(
         RESTORE_STOCK_IMAGE
     )
     val showTodo = {
-        Toast.makeText(context, "TODO", Toast.LENGTH_SHORT).show()
+        CamToast.show(context, "TODO")
     }
     val showConfirmDialog = remember(show) { mutableStateOf(false) }
     val runType = remember(show) { mutableStateOf<UninstallType?>(null) }

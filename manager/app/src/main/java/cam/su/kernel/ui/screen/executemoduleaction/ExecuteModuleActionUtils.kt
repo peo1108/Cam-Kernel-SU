@@ -1,9 +1,9 @@
 package cam.su.kernel.ui.screen.executemoduleaction
 
+import cam.su.kernel.ui.component.CamToast
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
@@ -43,7 +43,7 @@ fun ExecuteModuleActionEffect(
         val modules = repo.getModules().getOrDefault(emptyList())
         val moduleInfo = modules.find { info -> info.id == moduleId }
         if (moduleInfo == null) {
-            Toast.makeText(context, noModule.format(moduleId), Toast.LENGTH_SHORT).show()
+            CamToast.show(context, noModule.format(moduleId))
             onExit()
             return@LaunchedEffect
         }
@@ -52,7 +52,7 @@ fun ExecuteModuleActionEffect(
             return@LaunchedEffect
         }
         if (!moduleInfo.enabled || moduleInfo.update || moduleInfo.remove) {
-            Toast.makeText(context, moduleUnavailable.format(moduleInfo.name), Toast.LENGTH_SHORT).show()
+            CamToast.show(context, moduleUnavailable.format(moduleInfo.name))
             onExit()
             return@LaunchedEffect
         }
@@ -82,11 +82,7 @@ fun ExecuteModuleActionEffect(
             }
         }
         if (actionResult && fromShortcut) {
-            Toast.makeText(
-                context,
-                moduleActionSuccess,
-                Toast.LENGTH_SHORT
-            ).show()
+            CamToast.show(context, moduleActionSuccess)
         }
         onComplete()
     }

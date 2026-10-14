@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.templateeditor
 
-import android.widget.Toast
+import cam.su.kernel.ui.component.CamToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,7 +32,7 @@ fun TemplateEditorScreen(template: TemplateViewModel.TemplateInfo, readOnly: Boo
     val idInvalidError = stringResource(id = R.string.app_profile_template_id_invalid)
 
     fun showToast(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        CamToast.show(context, message)
     }
 
     fun finishEditing() {

@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.util.module
 
+import cam.su.kernel.ui.component.CamToast
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
@@ -8,7 +9,6 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.Settings
 import android.util.Log
-import android.widget.Toast
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -121,7 +121,7 @@ object Shortcut {
 
         if (hasPinned) {
             Log.d(TAG, "$logPrefix: detected existing pinned shortcut, updating only")
-            Toast.makeText(context, context.getString(R.string.module_shortcut_updated), Toast.LENGTH_SHORT).show()
+            CamToast.show(context, context.getString(R.string.module_shortcut_updated))
             return
         }
 
@@ -145,11 +145,7 @@ object Shortcut {
         }
         if (!ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
             Log.w(TAG, "$logPrefix: requestPinShortcut not supported on this launcher")
-            Toast.makeText(
-                context,
-                context.getString(R.string.module_shortcut_not_supported),
-                Toast.LENGTH_LONG
-            ).show()
+            CamToast.show(context, context.getString(R.string.module_shortcut_not_supported), long = true)
             return
         }
 
@@ -165,11 +161,7 @@ object Shortcut {
 
         if (pinned) {
             Log.d(TAG, "$logPrefix: pinned shortcut created successfully for moduleId=$moduleId")
-            Toast.makeText(
-                context,
-                context.getString(R.string.module_shortcut_created),
-                Toast.LENGTH_SHORT
-            ).show()
+            CamToast.show(context, context.getString(R.string.module_shortcut_created))
         } else {
             Log.w(TAG, "$logPrefix: pinned shortcut not created, showing permission hint for moduleId=$moduleId")
             showShortcutPermissionHint(context)
@@ -396,7 +388,7 @@ object Shortcut {
             else -> R.string.module_shortcut_permission_tip_default
         }
         Log.d(TAG, "showShortcutPermissionHint: state=$state, messageRes=$messageRes")
-        Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_LONG).show()
+        CamToast.show(context, context.getString(messageRes), long = true)
         if (state != ShortcutPermissionState.Granted) {
             Log.d(TAG, "showShortcutPermissionHint: state is not Granted, opening app details settings")
             openAppDetailsSettings(context)

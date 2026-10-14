@@ -1,9 +1,9 @@
 package cam.su.kernel.ui.viewmodel
 
+import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.update.UpdateScheduler
 import android.net.Uri
 import android.system.OsConstants
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -282,7 +282,7 @@ class SettingsViewModel(
                 repo.glassImageVersion = System.currentTimeMillis()
                 setGlassBackgroundType(GlassBackgroundType.IMAGE)
             } else {
-                Toast.makeText(camApp, R.string.glass_background_import_failed, Toast.LENGTH_SHORT).show()
+                CamToast.show(camApp, R.string.glass_background_import_failed)
             }
         }
     }
@@ -353,14 +353,12 @@ class SettingsViewModel(
                 0 -> {}
                 -OsConstants.EAGAIN -> {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(camApp, R.string.settings_selinux_hide_reboot_required,
-                            Toast.LENGTH_LONG).show()
+                        CamToast.show(camApp, R.string.settings_selinux_hide_reboot_required, long = true)
                     }
                 }
                 else -> {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(camApp, camApp.getString(R.string.settings_selinux_hide_failed, status),
-                            Toast.LENGTH_LONG).show()
+                        CamToast.show(camApp, camApp.getString(R.string.settings_selinux_hide_failed, status), long = true)
                     }
                 }
             }

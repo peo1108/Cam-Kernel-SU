@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.features
 
+import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.ui.component.glass.iosSwitchColors
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.animation.AnimatedVisibility
@@ -44,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.widget.Toast
 import cam.su.kernel.R
 import cam.su.kernel.adb.WirelessAdb
 import cam.su.kernel.data.model.ConflictKind
@@ -383,7 +383,7 @@ private fun WirelessAdbCard(state: FeaturesUiState, actions: FeaturesActions) {
                 onClick = {
                     context.getSystemService(ClipboardManager::class.java)
                         ?.setPrimaryClip(ClipData.newPlainText("adb", command))
-                    Toast.makeText(context, R.string.features_wireless_adb_copied, Toast.LENGTH_SHORT).show()
+                    CamToast.show(context, R.string.features_wireless_adb_copied)
                 },
             )
         }

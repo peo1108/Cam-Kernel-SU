@@ -1,5 +1,6 @@
 package cam.su.kernel.ui
 
+import cam.su.kernel.ui.component.CamToastHost
 import cam.su.kernel.update.UpdateNotifier
 import cam.su.kernel.update.UpdateSignal
 import androidx.activity.compose.BackHandler
@@ -358,6 +359,7 @@ class CamActivity : ComponentActivity() {
                             Scaffold(containerColor = Color.Transparent) { navDisplay() }
                         }
                     }
+                    CamToastHost()
                     SideEffect { contentReady = true }
                 }
             }

@@ -1,9 +1,9 @@
 package cam.su.kernel.ui.navigation3
 
+import cam.su.kernel.ui.component.CamToast
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -183,11 +183,7 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
         when (action) {
             is PendingAction.InstallModule -> {
                 if (isSafeMode) {
-                    Toast.makeText(
-                        context,
-                        resources.getString(R.string.safe_mode_module_disabled),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    CamToast.show(context, resources.getString(R.string.safe_mode_module_disabled))
                     return@CollectIntentChannel
                 }
                 if (action.requiresConfirmation) {

@@ -1,7 +1,7 @@
 package cam.su.kernel.ui.viewmodel
 
+import cam.su.kernel.ui.component.CamToast
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -155,7 +155,7 @@ class ModuleRepoViewModel(
                     } else {
                         camApp.getString(R.string.network_offline)
                     }
-                    Toast.makeText(camApp, message, Toast.LENGTH_SHORT).show()
+                    CamToast.show(camApp, message)
                     _uiState.update {
                         it.copy(
                             isRefreshing = false,

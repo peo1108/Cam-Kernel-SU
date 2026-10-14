@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.account
 
+import cam.su.kernel.ui.component.CamToast
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ContentValues
@@ -7,7 +8,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Environment
 import android.provider.MediaStore
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -286,7 +286,7 @@ private fun PayRow(label: String, value: String, mono: Boolean = false, onCopy: 
 
 private fun copy(context: Context, label: String, text: String) {
     context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText(label, text))
-    Toast.makeText(context, R.string.early_copied, Toast.LENGTH_SHORT).show()
+    CamToast.show(context, R.string.early_copied)
 }
 
 /** Saves the QR to Pictures/Cam Kernel SU, so a banking app on this phone can scan it from the gallery. */
@@ -301,5 +301,5 @@ private fun saveQr(context: Context, bitmap: Bitmap, code: String) {
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: error("no uri")
         resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } ?: error("no stream")
     }.isSuccess
-    Toast.makeText(context, if (ok) R.string.early_saved else R.string.early_save_failed, Toast.LENGTH_SHORT).show()
+    CamToast.show(context, if (ok) R.string.early_saved else R.string.early_save_failed)
 }

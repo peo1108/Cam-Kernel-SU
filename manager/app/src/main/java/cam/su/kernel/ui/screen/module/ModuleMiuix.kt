@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.module
 
+import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.ui.component.glass.iosSwitchColors
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassFab
@@ -21,7 +22,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -232,7 +232,7 @@ fun ModulePagerMiuix(
     ObserveAsEvents(moduleEvent) { event ->
         when (event) {
             is ModuleEffect.Toast -> {
-                Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                CamToast.show(context, event.message)
             }
 
             is ModuleEffect.SnackBar -> {
@@ -544,7 +544,7 @@ private fun ModuleShortcutDialog(
         val url = shortcutState.buildShortcutUrl() ?: return
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("Cam deep link", url))
-        Toast.makeText(context, resources.getString(R.string.module_shortcut_scheme_copied), Toast.LENGTH_SHORT).show()
+        CamToast.show(context, resources.getString(R.string.module_shortcut_scheme_copied))
     }
 
     GlassDialog(

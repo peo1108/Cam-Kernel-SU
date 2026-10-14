@@ -6,6 +6,7 @@ import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassMenuColumn
 import cam.su.kernel.ui.component.glass.GlassMenuItem
 import cam.su.kernel.ui.component.glass.GlassListPopup
+import cam.su.kernel.ui.component.glass.GlassSegmentedControl
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassListCard
 import cam.su.kernel.ui.component.glass.GlassCard
@@ -114,8 +115,6 @@ import top.yukonga.miuix.kmp.basic.RefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -1100,10 +1099,10 @@ fun ModuleRepoDetailScreenMiuix(
                             .padding(bottom = 6.dp)
                             .deferredTopPadding(dynamicTopPadding)
                     ) {
-                        TabRow(
+                        GlassSegmentedControl(
                             tabs = tabs,
-                            selectedTabIndex = pagerState.currentPage,
-                            onTabSelected = { index ->
+                            selectedIndex = pagerState.currentPage,
+                            onSelect = { index ->
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(
                                         page = index,
@@ -1111,9 +1110,6 @@ fun ModuleRepoDetailScreenMiuix(
                                     )
                                 }
                             },
-                            colors = TabRowDefaults.tabRowColors(
-                                backgroundColor = if (blurActive) Color.Transparent else colorScheme.surface
-                            ),
                             height = tabRowHeight,
                         )
                     }

@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.colorpalette
 
+import cam.su.kernel.ui.component.glass.GlassSegmentedControl
 import cam.su.kernel.ui.component.glass.iosSwitchColors
 import android.annotation.SuppressLint
 import android.os.Build
@@ -91,7 +92,6 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -177,10 +177,10 @@ fun ColorPaletteScreenMiuix(
                         stringResource(id = R.string.settings_theme_mode_light),
                         stringResource(id = R.string.settings_theme_mode_dark),
                     )
-                    TabRow(
+                    GlassSegmentedControl(
                         tabs = themeItems,
-                        selectedTabIndex = (if (uiState.themeMode >= 3) uiState.themeMode - 3 else uiState.themeMode).coerceIn(0, 2),
-                        onTabSelected = { index ->
+                        selectedIndex = (if (uiState.themeMode >= 3) uiState.themeMode - 3 else uiState.themeMode).coerceIn(0, 2),
+                        onSelect = { index ->
                             actions.onSetThemeMode(index)
                         },
                     )

@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import cam.su.kernel.update.UpdateSignal
 import cam.su.kernel.update.UpdateFailure
 import cam.su.kernel.update.UpdateState
-import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassCard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -359,9 +358,7 @@ private fun TopBar(
             color = barColor,
             title = stringResource(R.string.app_name),
             actions = {
-                GlassButtonGroup {
-                    RebootListPopupMiuix()
-                }
+                RebootListPopupMiuix()
             },
             scrollBehavior = scrollBehavior
         )

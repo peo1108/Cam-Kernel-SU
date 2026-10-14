@@ -27,7 +27,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 val LocalGlassOverlayBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 @Composable
-private fun Modifier.overlayGlass(shape: RoundedCornerShape): Modifier {
+internal fun Modifier.overlayGlass(shape: RoundedCornerShape): Modifier {
     val dark = isInDarkTheme()
     return glassSurface(
         shape = shape,

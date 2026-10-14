@@ -9,6 +9,9 @@ use serde_json::{Value, json};
 /// Partitions the installer may move from `system/<p>` to `<module>/<p>`.
 const PARTITIONS: [&str; 4] = ["vendor", "system_ext", "product", "odm"];
 const REPLACE_MARKER: &str = ".replace";
+/// The other way to mark a replaced directory, read by KernelSU's magic mount too.
+#[cfg(target_os = "android")]
+const OPAQUE_XATTR: &str = "trusted.overlay.opaque";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EntryKind {
@@ -60,12 +63,32 @@ const fn is_whiteout(_meta: &std::fs::Metadata) -> bool {
     false
 }
 
+#[cfg(target_os = "android")]
+fn is_opaque(dir: &Path) -> bool {
+    extattr::lgetxattr(dir, OPAQUE_XATTR).is_ok_and(|value| value == b"y")
+}
+
+#[cfg(not(target_os = "android"))]
+const fn is_opaque(_dir: &Path) -> bool {
+    false
+}
+
+/// Whether a directory carries the overlayfs opaque xattr, which modules built for
+/// overlay mounts set instead of a `.replace` file.
+type IsOpaque<'a> = &'a dyn Fn(&Path) -> bool;
+
 /// Never follows symlinks: a link is an entry like a file.
-fn walk(dir: &Path, target: &str, top_level_system: bool, out: &mut Vec<(String, EntryKind)>) {
+fn walk(
+    dir: &Path,
+    target: &str,
+    top_level_system: bool,
+    opaque: IsOpaque,
+    out: &mut Vec<(String, EntryKind)>,
+) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
-    if std::fs::symlink_metadata(dir.join(REPLACE_MARKER)).is_ok() {
+    if std::fs::symlink_metadata(dir.join(REPLACE_MARKER)).is_ok() || opaque(dir) {
         out.push((target.to_owned(), EntryKind::ReplaceDir));
     }
     for entry in entries.flatten() {
@@ -91,7 +114,7 @@ fn walk(dir: &Path, target: &str, top_level_system: bool, out: &mut Vec<(String,
             format!("{target}/{name}")
         };
         if meta.is_dir() {
-            walk(&path, &child, false, out);
+            walk(&path, &child, false, opaque, out);
         } else if is_whiteout(&meta) {
             out.push((child, EntryKind::Whiteout));
         } else {
@@ -103,12 +126,22 @@ fn walk(dir: &Path, target: &str, top_level_system: bool, out: &mut Vec<(String,
 /// Entries of a whole module: `system/` plus partitions moved out of it.
 /// `system/vendor/...` and `<module>/vendor/...` both become `/vendor/...`.
 pub fn scan_module_tree(module_dir: &Path) -> Vec<(String, EntryKind)> {
+    scan_module_tree_with(module_dir, &is_opaque)
+}
+
+fn scan_module_tree_with(module_dir: &Path, opaque: IsOpaque) -> Vec<(String, EntryKind)> {
     let mut out = Vec::new();
-    walk(&module_dir.join("system"), "/system", true, &mut out);
+    walk(
+        &module_dir.join("system"),
+        "/system",
+        true,
+        opaque,
+        &mut out,
+    );
     for partition in PARTITIONS {
         let dir = module_dir.join(partition);
         if std::fs::symlink_metadata(&dir).is_ok_and(|meta| meta.is_dir()) {
-            walk(&dir, &format!("/{partition}"), false, &mut out);
+            walk(&dir, &format!("/{partition}"), false, opaque, &mut out);
         }
     }
     out.sort();
@@ -312,6 +345,26 @@ mod tests {
                 ("/system/etc/hosts".to_owned(), EntryKind::File),
                 ("/system/media/audio".to_owned(), EntryKind::ReplaceDir),
             ]
+        );
+    }
+
+    #[test]
+    fn opaque_dir_counts_as_replace() {
+        let d = tempfile::tempdir().unwrap();
+        let sys = d.path().join("system");
+        std::fs::create_dir_all(sys.join("media/audio/ui")).unwrap();
+        std::fs::write(sys.join("media/audio/ui/x.ogg"), "").unwrap();
+        let audio = sys.join("media/audio");
+        assert_eq!(
+            scan_module_tree_with(d.path(), &|dir| dir == audio),
+            vec![
+                ("/system/media/audio".to_owned(), EntryKind::ReplaceDir),
+                ("/system/media/audio/ui/x.ogg".to_owned(), EntryKind::File),
+            ]
+        );
+        assert_eq!(
+            scan_module_tree_with(d.path(), &|_| false),
+            vec![("/system/media/audio/ui/x.ogg".to_owned(), EntryKind::File)]
         );
     }
 

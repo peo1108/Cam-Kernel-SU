@@ -119,6 +119,7 @@ import cam.su.kernel.ui.screen.features.FeaturesPager
 import cam.su.kernel.ui.screen.files.FilesPager
 import cam.su.kernel.update.AppCompile
 import cam.su.kernel.ui.screen.files.TextEditorScreen
+import cam.su.kernel.ui.screen.files.DiffScreen
 import cam.su.kernel.ui.screen.files.HexViewerScreen
 import cam.su.kernel.ui.screen.files.ScriptScreen
 import cam.su.kernel.ui.screen.files.TerminalScreen
@@ -299,7 +300,8 @@ class CamActivity : ComponentActivity() {
                             }
                             entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage { ModuleRepoScreen() } }
                             // no swipe to close: a stray swipe while typing must not drop the edits
-                            entry<Route.TextEditor>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { TextEditorScreen(key.path) } }
+                            entry<Route.TextEditor>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { TextEditorScreen(key.path, key.line) } }
+                            entry<Route.Diff>(swipeDismiss = swipeDismiss) { key -> GlassPage { DiffScreen(key.left, key.right) } }
                             entry<Route.HexViewer>(swipeDismiss = swipeDismiss) { key -> GlassPage { HexViewerScreen(key.path) } }
                             // no swipe to close: it would stop a running script without asking
                             entry<Route.Script>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { ScriptScreen(key.path) } }

@@ -100,7 +100,12 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
-    data class TextEditor(val path: String) : Route
+    data class TextEditor(val path: String, val line: Int = 0) : Route
+
+    /** Two files' lines side by side: what [right] changed from [left]. */
+    @Parcelize
+    @Serializable
+    data class Diff(val left: String, val right: String) : Route
 
     @Parcelize
     @Serializable

@@ -125,6 +125,7 @@ sealed interface FilesEvent {
     data class Flash(val file: File) : FilesEvent
     data class Edit(val path: String) : FilesEvent
     data class Hex(val path: String) : FilesEvent
+    data class Compare(val left: String, val right: String) : FilesEvent
     data class Run(val path: String) : FilesEvent
     data class Terminal(val cwd: String) : FilesEvent
 }
@@ -458,6 +459,10 @@ class FilesViewModel : ViewModel() {
 
     fun hex(entry: FileEntry) {
         viewModelScope.launch { events.send(FilesEvent.Hex(entry.path)) }
+    }
+
+    fun compare(left: String, right: String) {
+        viewModelScope.launch { events.send(FilesEvent.Compare(left, right)) }
     }
 
     /** A root terminal in the active panel's folder (an archive's own folder when inside one). */

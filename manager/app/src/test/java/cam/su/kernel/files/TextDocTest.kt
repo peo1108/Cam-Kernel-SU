@@ -4,6 +4,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,6 +55,65 @@ class TextDocTest {
         assertEquals("ISO-8859-1", doc.charset)
         assertArrayEquals(bytes, doc.encode(doc.text))
         assertEquals("UTF-8", TextDoc.decode("Tiếng Việt".toByteArray()).charset)
+    }
+
+    @Test
+    fun mixedEndingsKeepEachLinesOwn() {
+        val original = "a\r\nb\nc\r\nd\r\ne".toByteArray()
+        val doc = TextDoc.decode(original)
+        assertEquals(LineEnding.MIXED, doc.eol)
+        assertEquals("a\nb\nc\nd\ne", doc.text)
+        assertArrayEquals(original, doc.encode(doc.text))
+        // b edited keeps its LF; a line added after d gets CRLF (most lines)
+        assertEquals("a\r\nB\nc\r\nd\r\nnew\r\ne", String(doc.encode("a\nB\nc\nd\nnew\ne")))
+        // the old last line had no ending: a line added after it gets the usual one
+        assertEquals("a\r\nb\nc\r\nd\r\ne\r\nmore", String(doc.encode("a\nb\nc\nd\ne\nmore")))
+        // a line moved keeps its ending too
+        assertEquals("b\na\r\nc\r\nd\r\ne", String(doc.encode("b\na\nc\nd\ne")))
+        // or all one way
+        assertEquals("a\nb\nc\nd\ne", String(doc.encode(doc.text, LineEnding.LF)))
+        assertEquals("a\r\nb\r\nc\r\nd\r\ne", String(doc.encode(doc.text, LineEnding.CRLF)))
+    }
+
+    @Test
+    fun reopensInAnotherCharsetAndConverts() {
+        val gbk = "中文=1\n".toByteArray(charset("GBK"))
+        // GBK bytes are not valid UTF-8: the guess falls back to Latin-1
+        assertEquals("ISO-8859-1", TextDoc.decode(gbk).charset)
+        val doc = TextDoc.decode(gbk, "GBK")
+        assertEquals("中文=1\n", doc.text)
+        assertFalse(doc.lossy)
+        assertArrayEquals(gbk, doc.encode(doc.text))
+        assertEquals("中文=1\n", String(doc.encode(doc.text, charset = "UTF-8"), Charsets.UTF_8))
+        // Windows-1258 writes Vietnamese as a base letter and a combining tone mark
+        val vi = "Tiếng Việt".toByteArray(charset("windows-1258"))
+        assertEquals("Tiếng Việt", TextDoc.decode(vi, "windows-1258").text.let { java.text.Normalizer.normalize(it, java.text.Normalizer.Form.NFC) })
+        // typed (precomposed) Vietnamese saves too: the tones become combining marks
+        val typed = TextDoc.decode(vi, "windows-1258").encode("Tiếng Việt")
+        assertArrayEquals(vi, typed)
+        // bytes the charset cannot read are marked lossy
+        assertTrue(TextDoc.decode(byteArrayOf(0xFF.toByte(), 0xFE.toByte(), 0x41), "UTF-8").lossy)
+    }
+
+    @Test
+    fun refusesCharactersTheCharsetCannotWrite() {
+        val doc = TextDoc.decode("a\n".toByteArray(charset("GBK")), "GBK")
+        assertThrows(java.nio.charset.CharacterCodingException::class.java) { doc.encode("Tiếng Việt") }
+        // Latin-1 (the fallback) cannot hold Vietnamese either
+        val latin = TextDoc.decode(byteArrayOf('a'.code.toByte(), 0xFF.toByte()))
+        assertThrows(java.nio.charset.CharacterCodingException::class.java) { latin.encode("ệ") }
+    }
+
+    @Test
+    fun utf16WithBomIsText() {
+        val bytes = byteArrayOf(0xFF.toByte(), 0xFE.toByte()) + "a\r\nb".toByteArray(Charsets.UTF_16LE)
+        val doc = TextDoc.decode(bytes)
+        assertEquals("UTF-16LE", doc.charset)
+        assertTrue(doc.bom && doc.crlf)
+        assertEquals("a\nb", doc.text)
+        assertArrayEquals(bytes, doc.encode(doc.text))
+        assertTrue(TextDoc.isWide(doc.charset))
+        assertTrue("GBK" in TextDoc.charsets() && "windows-1258" in TextDoc.charsets())
     }
 
     @Test

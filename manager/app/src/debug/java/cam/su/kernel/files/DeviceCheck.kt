@@ -213,6 +213,14 @@ object DeviceCheck {
         check("highlighter regexes compile on ICU") {
             Highlighter.Lang.entries.all { lang -> Highlighter.spans("a=\"1\" # \${x} [s] <a b='c'/> {\"k\": 2}", lang).size >= 0 }
         }
+        check("editor charsets exist on Android and round-trip") {
+            val vi = "Ti\u1EBFng Vi\u1EC7t" // typed: one character per letter
+            val saved = TextDoc.decode("a".toByteArray(), "windows-1258").encode(vi)
+            val han = "\u4E2D\u6587"
+            TextDoc.charsets() == TextDoc.CHARSETS &&
+                java.text.Normalizer.normalize(TextDoc.decode(saved, "windows-1258").text, java.text.Normalizer.Form.NFC) == vi &&
+                TextDoc.decode(han.toByteArray(charset("GBK")), "GBK").text == han
+        }
 
         sh("rm -rf $base $outside $fuse")
         println(if (failures == 0) "ALL PASS" else "$failures FAILED")

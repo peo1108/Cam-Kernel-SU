@@ -11,7 +11,7 @@ Chấm lại ngày 2026-10-13 trên `fe4b7b7f` (sau `cam-v1.1.5-beta.1`, 2875 co
 | Ý tưởng và phạm vi | 8,5 | 8,5 | Như cũ. Bỏ Chặn RKP: tính năng cắt mạng cả máy để che một tín hiệu đo, rủi ro cao hơn giá trị |
 | Kiến trúc | 8,5 | 8,5 | Ranh giới vẫn sạch: kernel chỉ nhận lệnh quản trị từ uid 0, Manager đi qua root service, UI chỉ gọi facade `Cam`. Feature mới của upstream (`shell_su_adb_only`) vào không conflict |
 | Chất lượng code | 7,5 | 7,5 | Lệnh camd riêng của Cam vẫn nằm ngoài `CamCli.kt`. TODO: 7, đều của upstream (5 kernel, 2 Manager). Cụm `Arena*`/slime vẫn có file trên 1000 dòng |
-| Kiểm thử | 7,5 | 7,5 | Kernel 29 test (ASan + UBSan), camd 96 (94 chạy trên CI), Manager 241 (tab Tệp có thêm `DeviceCheck` chạy trên máy). Có thêm smoke test chạy tay trên máy (14/14 đạt trên TB323FU); chưa có `androidTest` |
+| Kiểm thử | 7,5 | 7,5 | Kernel 29 test (ASan + UBSan), camd 96 (94 chạy trên CI), Manager 260 (tab Tệp có thêm `DeviceCheck` chạy trên máy). Có thêm smoke test chạy tay trên máy (14/14 đạt trên TB323FU); chưa có `androidTest` |
 | CI và phát hành | 8,5 | 8,5 | Release theo tag `cam-v*`, test chặn trước khi build, kênh beta, tag bất biến; 16 workflow. `expected_size`/`expected_hash` giữ có chủ đích (upstream vẫn dùng) |
 | Tài liệu | 8,5 | 8,5 | `CAM_CHANGES.md` đồng bộ tới merge `8a8058d9`, ghi rõ phần dọn dẹp của Chặn RKP; ví dụ phát hành đã theo số 1.1.x |
 | Bảo mật | 8,0 | 8,0 | Như cũ (ghim Manager theo chứng chỉ trong `packages.xml`, khóa dự phòng, rule ký ECDSA). Thêm tuỳ chọn upstream chặn app chiếm quyền shell leo lên root (mặc định tắt) |
@@ -40,7 +40,7 @@ File lớn nhất của Cam: `ArenaShow.kt` (1332 dòng), `RoamWorld.kt` (1162).
 | Kernel (WSL) | `make -C kernel/tests` | **29 đạt** (ASan + UBSan) |
 | camd (WSL) | `cargo test --target x86_64-unknown-linux-gnu` | 96 test: **94 đạt, 2 fail sẵn** (`embedded_module_uses_release_asset_layout` cần `.ko` chỉ có trên CI; `rejects_conflicting_loading_module_values` lỗi thời từ upstream). CI bỏ qua đúng hai test này |
 | camd | `cargo ndk -t arm64-v8a check` / `clippy` / `cargo fmt` | Sạch |
-| Manager (ổ `K:`) | `gradlew :app:testDebugUnitTest` | 35 lớp, **241 đạt** (thêm tab Tệp) |
+| Manager (ổ `K:`) | `gradlew :app:testDebugUnitTest` | 38 lớp, **260 đạt** (thêm tab Tệp, diff và sửa file lớn) |
 | Trên máy (TB323FU, Android 16) | `scripts/device_smoke.sh` | **14/14 đạt** trên APK CI `1825927c` |
 | `androidTest` | | Không có |
 

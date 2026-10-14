@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
@@ -31,6 +32,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -53,10 +56,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -81,7 +92,10 @@ import cam.su.kernel.R
 import cam.su.kernel.files.Archives
 import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.Highlighter
+import cam.su.kernel.files.LineBuffer
+import cam.su.kernel.files.LineEnding
 import cam.su.kernel.files.SpanKind
+import cam.su.kernel.files.TextDoc
 import cam.su.kernel.files.TextRows
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassIconButton
@@ -107,7 +121,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
-fun TextEditorScreen(path: String) {
+fun TextEditorScreen(path: String, line: Int = 0) {
     val vm = viewModel<TextEditorViewModel>(key = path)
     val navigator = LocalNavigator.current
     val context = LocalContext.current
@@ -122,15 +136,23 @@ fun TextEditorScreen(path: String) {
     var confirmExit by remember { mutableStateOf(false) }
     var goToLine by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
+    // "Reopen with encoding" (true) or "Save with encoding" (false) picker; null while closed
+    var charsetPicker by remember { mutableStateOf<Boolean?>(null) }
+    var eolPicker by remember { mutableStateOf(false) }
 
     val vScroll = rememberScrollState()
     val hScroll = rememberScrollState()
     val viewerState = rememberLazyListState()
+    val lineState = rememberLazyListState()
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     var viewport by remember { mutableStateOf(0) }
 
-    /** Brings [offset] into view, a third down the screen. */
+    /** Brings [offset] into view, a third down the screen; for the line editor [offset] is a row. */
     fun reveal(offset: Int) {
+        if (vm.buffer != null) {
+            scope.launch { lineState.scrollToItem((offset - 3).coerceAtLeast(0)) }
+            return
+        }
         vm.rows?.let { rows ->
             scope.launch { viewerState.scrollToItem((rows.rowOf(offset) - 3).coerceAtLeast(0)) }
             return
@@ -143,6 +165,15 @@ fun TextEditorScreen(path: String) {
         }
     }
 
+    // opened at a line (from the compare screen): go there once the text is laid out
+    var jumped by rememberSaveable { mutableStateOf(line <= 0) }
+    LaunchedEffect(vm.loading, layout != null) {
+        if (jumped || vm.loading || vm.doc == null) return@LaunchedEffect
+        if (vm.buffer == null && vm.rows == null && layout == null) return@LaunchedEffect
+        jumped = true
+        reveal(vm.goToLine(line))
+    }
+
     val leave = { if (vm.modified) confirmExit = true else navigator.pop() }
     BackHandler(enabled = vm.modified) { confirmExit = true }
 
@@ -151,6 +182,7 @@ fun TextEditorScreen(path: String) {
         val text = when (msg) {
             EditorMessage.Saved -> context.getString(R.string.editor_saved)
             EditorMessage.NotFound -> context.getString(R.string.editor_not_found)
+            is EditorMessage.Unmappable -> context.getString(R.string.editor_unmappable, msg.charset)
             is EditorMessage.Failed -> errnoText(context, msg.errno) + (msg.detail?.let { "\n$it" } ?: "")
         }
         Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
@@ -203,8 +235,8 @@ fun TextEditorScreen(path: String) {
                     readOnly = vm.readOnly,
                     onQuery = { query = it },
                     onReplacement = { replacement = it },
-                    onFind = { forward -> vm.find(query, forward)?.let { reveal(it.first) } ?: run { vm.message = EditorMessage.NotFound } },
-                    onReplace = { vm.replace(query, replacement)?.let { reveal(it.first) } },
+                    onFind = { forward -> vm.find(query, forward)?.let { reveal(it) } ?: run { vm.message = EditorMessage.NotFound } },
+                    onReplace = { vm.replace(query, replacement)?.let { reveal(it) } },
                     onReplaceAll = {
                         val n = vm.replaceAll(query, replacement)
                         Toast.makeText(context, context.getString(R.string.editor_replaced, n), Toast.LENGTH_SHORT).show()
@@ -216,6 +248,7 @@ fun TextEditorScreen(path: String) {
                 vm.limit == EditorLimit.TOO_LARGE -> Message(stringResource(R.string.editor_too_large))
                 vm.loadError != null -> Message(errnoText(context, vm.loadError!!))
                 vm.rows != null -> TextViewer(vm, vm.rows!!, fontSize, viewerState)
+                vm.buffer != null -> LineEditor(vm, vm.buffer!!, fontSize, lineState)
                 else -> BoxWithConstraints(Modifier.fillMaxSize()) {
                     viewport = with(LocalDensity.current) { maxHeight.roundToPx() }
                     EditorBody(vm, fontSize, wrap, vScroll, hScroll, viewport, onLayout = { layout = it })
@@ -230,8 +263,8 @@ fun TextEditorScreen(path: String) {
             menu = false
             goToLine = true
         }
-        // the row viewer always wraps
-        if (vm.rows == null) {
+        // the row viewer and the line editor always wrap
+        if (vm.rows == null && vm.buffer == null) {
             MenuRow(stringResource(if (wrap) R.string.editor_wrap_off else R.string.editor_wrap_on)) {
                 menu = false
                 wrap = !wrap
@@ -245,6 +278,22 @@ fun TextEditorScreen(path: String) {
                 if (vm.modified) vm.save(run) else run()
             }
         }
+        if (vm.doc != null) {
+            MenuRow(stringResource(R.string.editor_reopen_encoding)) {
+                menu = false
+                charsetPicker = true
+            }
+        }
+        if (vm.doc != null && !vm.readOnly) {
+            MenuRow(stringResource(R.string.editor_save_encoding)) {
+                menu = false
+                charsetPicker = false
+            }
+            MenuRow(stringResource(R.string.editor_line_ending)) {
+                menu = false
+                eolPicker = true
+            }
+        }
         if (!Archives.isInside(path)) {
             MenuRow(stringResource(R.string.files_hex)) {
                 menu = false
@@ -256,6 +305,44 @@ fun TextEditorScreen(path: String) {
             TextButton(text = "A−", onClick = { fontSize = (fontSize - 1).coerceAtLeast(9f) })
             Text("${fontSize.toInt()}", modifier = Modifier.padding(horizontal = 12.dp))
             TextButton(text = "A+", onClick = { fontSize = (fontSize + 1).coerceAtMost(24f) })
+        }
+    }
+
+    charsetPicker?.let { reopen ->
+        val current = if (reopen) vm.doc?.charset else vm.saveCharset
+        FilesDialog(
+            show = true,
+            title = stringResource(if (reopen) R.string.editor_reopen_encoding else R.string.editor_save_encoding),
+            onDismiss = { charsetPicker = null },
+        ) {
+            if (reopen && vm.textModified) {
+                Text(stringResource(R.string.editor_reopen_discards), color = colorScheme.error, fontSize = 13.sp)
+            }
+            Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
+                for (charset in remember { TextDoc.charsets() }) {
+                    MenuRow(if (charset == current) "$charset  ✓" else charset) {
+                        charsetPicker = null
+                        if (reopen) vm.reopen(charset) else vm.convertTo(charset)
+                    }
+                }
+            }
+        }
+    }
+
+    FilesDialog(show = eolPicker, title = stringResource(R.string.editor_line_ending), onDismiss = { eolPicker = false }) {
+        val choices = listOfNotNull(LineEnding.MIXED.takeIf { vm.doc?.eol == it }, LineEnding.LF, LineEnding.CRLF)
+        for (eol in choices) {
+            val label = stringResource(
+                when (eol) {
+                    LineEnding.MIXED -> R.string.editor_eol_keep
+                    LineEnding.LF -> R.string.editor_eol_lf
+                    LineEnding.CRLF -> R.string.editor_eol_crlf
+                },
+            )
+            MenuRow(if (eol == vm.saveEol) "$label  ✓" else label) {
+                eolPicker = false
+                vm.setLineEnding(eol)
+            }
         }
     }
 
@@ -336,14 +423,24 @@ private fun StatusLine(vm: TextEditorViewModel) {
     val reason = when (vm.limit) {
         EditorLimit.ARCHIVE -> stringResource(R.string.editor_ro_archive)
         EditorLimit.BINARY -> stringResource(R.string.editor_ro_binary)
-        EditorLimit.LARGE -> stringResource(R.string.editor_ro_large)
         else -> null
     }
-    val parts = listOfNotNull(doc.charset, if (doc.crlf) "CRLF" else "LF", stringResource(R.string.editor_lines, lines), reason)
+    val mixed = stringResource(R.string.editor_eol_mixed)
+    fun eol(e: LineEnding) = when (e) {
+        LineEnding.LF -> "LF"
+        LineEnding.CRLF -> "CRLF"
+        LineEnding.MIXED -> mixed
+    }
+    // what a save changes shows as "from → to"
+    val charset = if (vm.saveCharset != doc.charset) "${doc.charset} → ${vm.saveCharset}" else doc.charset
+    val ending = if (vm.saveEol != doc.eol) "${eol(doc.eol)} → ${eol(vm.saveEol)}" else eol(doc.eol)
+    val lossy = if (doc.lossy) stringResource(R.string.editor_lossy, doc.charset) else null
+    val lineMode = if (vm.buffer != null) stringResource(R.string.editor_line_mode) else null
+    val parts = listOfNotNull(charset, ending, stringResource(R.string.editor_lines, lines), lossy, reason, lineMode)
     Text(
         text = parts.joinToString("  ·  "),
         fontSize = 11.sp,
-        color = if (reason != null) colorScheme.error else colorScheme.onSurfaceVariantSummary,
+        color = if (reason != null || lossy != null) colorScheme.error else colorScheme.onSurfaceVariantSummary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
@@ -393,16 +490,20 @@ private fun spanColor(kind: SpanKind): Color {
     }
 }
 
-/** Colors from [Highlighter] without changing the text (identity offsets). */
+/**
+ * Colors from [Highlighter] without changing the text (identity offsets). The first [skip]
+ * characters are left out of the highlighting: the line editor's sentinel.
+ */
 private class HighlightTransformation(
     private val lang: Highlighter.Lang,
     private val colors: Map<SpanKind, Color>,
+    private val skip: Int = 0,
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val styled = AnnotatedString(
             text.text,
-            spanStyles = Highlighter.spans(text.text, lang).map {
-                AnnotatedString.Range(SpanStyle(color = colors.getValue(it.kind)), it.start, it.end)
+            spanStyles = Highlighter.spans(text.text.substring(skip.coerceAtMost(text.length)), lang).map {
+                AnnotatedString.Range(SpanStyle(color = colors.getValue(it.kind)), it.start + skip, it.end + skip)
             },
         )
         return TransformedText(styled, OffsetMapping.Identity)
@@ -432,7 +533,7 @@ private fun TextViewer(vm: TextEditorViewModel, rows: TextRows, fontSize: Float,
             val end = rows.end(row)
             val line = rows.line(row)
             Row {
-                androidx.compose.foundation.text.BasicText(
+                BasicText(
                     text = if (line > 0) line.toString() else "",
                     style = gutterStyle,
                     modifier = Modifier
@@ -452,7 +553,7 @@ private fun TextViewer(vm: TextEditorViewModel, rows: TextRows, fontSize: Float,
                         AnnotatedString(text.substring(start, end))
                     }
                 }
-                androidx.compose.foundation.text.BasicText(
+                BasicText(
                     text = content,
                     style = style,
                     modifier = Modifier
@@ -555,3 +656,112 @@ private fun EditorBody(
         }
     }
 }
+
+/**
+ * Big files, editable: a lazy list of [LineBuffer] rows, so only the rows on screen are laid out.
+ * Tapping a row turns it into a text field ([TextEditorViewModel.editRow]); Enter splits it,
+ * backspace at its start joins it to the row above, arrow keys move between rows.
+ */
+@Composable
+private fun LineEditor(vm: TextEditorViewModel, buffer: LineBuffer, fontSize: Float, state: LazyListState) {
+    val version = vm.version
+    val style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = fontSize.sp, lineHeight = (fontSize * 1.45f).sp, color = colorScheme.onSurface)
+    val gutterStyle = style.copy(color = colorScheme.onSurfaceVariantSummary, fontSize = (fontSize - 1).sp, textAlign = TextAlign.End)
+    val mark = colorScheme.primary.copy(alpha = 0.35f)
+    val editing = colorScheme.primary.copy(alpha = 0.06f)
+    val gutterBackground = colorScheme.onSurface.copy(alpha = 0.04f)
+    val colors = SpanKind.entries.associateWith { spanColor(it) }
+    val fieldTransformation = remember(vm.lang, colors) { HighlightTransformation(vm.lang, colors, skip = 1) }
+    val measurer = rememberTextMeasurer()
+    val digits = vm.lineCount.toString().length
+    val gutterWidth = with(LocalDensity.current) {
+        (measurer.measure("0".repeat(digits), gutterStyle).size.width + 12.dp.toPx()).toDp()
+    }
+    // the row being edited stays on screen: after Enter at the bottom, or a jump
+    LaunchedEffect(vm.editRow) {
+        val row = vm.editRow
+        if (row < 0) return@LaunchedEffect
+        val shown = state.layoutInfo.visibleItemsInfo
+        val fully = shown.size > 2 && row > shown.first().index && row < shown.last().index
+        if (!fully) state.scrollToItem((row - 3).coerceAtLeast(0))
+    }
+    LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 240.dp)) {
+        items(buffer.size) { row ->
+            // read under version: rows change in place without the list knowing
+            val item = remember(version, row) { if (row < buffer.size) buffer[row] else LineBuffer.Row("") }
+            val line = remember(version, row) { if (row < buffer.size) buffer.line(row) else 0 }
+            Row {
+                BasicText(
+                    text = if (line > 0) line.toString() else "",
+                    style = gutterStyle,
+                    modifier = Modifier
+                        .width(gutterWidth)
+                        .background(gutterBackground)
+                        .padding(end = 6.dp),
+                )
+                if (row == vm.editRow) {
+                    val focus = remember { FocusRequester() }
+                    BasicTextField(
+                        value = vm.rowValue,
+                        onValueChange = { vm.onRowChange(row, it) },
+                        textStyle = style,
+                        visualTransformation = if (item.text.length <= ROW_HIGHLIGHT_LIMIT) fieldTransformation else VisualTransformation.None,
+                        cursorBrush = SolidColor(colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password),
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(editing)
+                            .padding(start = 8.dp, end = 12.dp)
+                            .focusRequester(focus)
+                            .onPreviewKeyEvent { event ->
+                                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                                when (event.key) {
+                                    Key.DirectionUp -> true.also { vm.moveRow(-1) }
+                                    Key.DirectionDown -> true.also { vm.moveRow(1) }
+                                    else -> false
+                                }
+                            },
+                    )
+                    LaunchedEffect(Unit) {
+                        if (vm.wantsFocus) {
+                            vm.wantsFocus = false
+                            focus.requestFocus()
+                        }
+                    }
+                } else {
+                    val found = vm.match?.takeIf { it.first == row }?.second
+                    val content = remember(item.text, found, colors, mark, vm.lang) {
+                        val spans = if (item.text.length <= ROW_HIGHLIGHT_LIMIT) {
+                            Highlighter.spans(item.text, vm.lang).map {
+                                AnnotatedString.Range(SpanStyle(color = colors.getValue(it.kind)), it.start, it.end)
+                            }
+                        } else {
+                            emptyList()
+                        }
+                        val marked = found?.takeIf { it.last < item.text.length }?.let {
+                            AnnotatedString.Range(SpanStyle(background = mark), it.first, it.last + 1)
+                        }
+                        AnnotatedString(item.text, spanStyles = spans + listOfNotNull(marked))
+                    }
+                    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+                    BasicText(
+                        text = content,
+                        style = style,
+                        onTextLayout = { layout = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp, end = 12.dp)
+                            .pointerInput(row, item.text) {
+                                detectTapGestures { at ->
+                                    vm.editAt(row, layout?.getOffsetForPosition(at) ?: item.text.length)
+                                }
+                            },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** A row of the line editor is highlighted on its own; past this it is left plain. */
+private const val ROW_HIGHLIGHT_LIMIT = 10_000

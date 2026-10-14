@@ -70,6 +70,8 @@ fun FilesPager(
 
                 is FilesEvent.Hex -> navigator.push(Route.HexViewer(event.path))
 
+                is FilesEvent.Compare -> navigator.push(Route.Diff(event.left, event.right))
+
                 // a real terminal: colors, prompts that wait for an answer, Ctrl+C
                 is FilesEvent.Run -> navigator.push(Route.Terminal(FsPath.parent(event.path), event.path))
 

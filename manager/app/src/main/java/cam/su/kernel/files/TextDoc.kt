@@ -1,29 +1,141 @@
 package cam.su.kernel.files
 
 import java.nio.ByteBuffer
+import java.nio.CharBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
+import java.text.Normalizer
+import java.util.BitSet
 import java.util.Locale
 
+/** How lines end in a file; MIXED keeps each line's own ending on save. */
+enum class LineEnding { LF, CRLF, MIXED }
+
 /**
- * A text file as the editor holds it: always "\n" inside, with the file's own line ending,
- * BOM and charset put back on save, so editing one line of a CRLF file does not rewrite all.
+ * A text file as the editor holds it: always "\n" inside, with the file's own line endings, BOM
+ * and charset put back on save, so editing one line of a CRLF file does not rewrite all. A file
+ * with both endings keeps each unchanged line's own ending ([LineEnding.MIXED]).
  */
 data class TextDoc(
     val text: String,
-    val crlf: Boolean,
+    val eol: LineEnding,
     val bom: Boolean,
     val charset: String,
+    /** Bytes the charset could not read were replaced by U+FFFD: a save writes them changed. */
+    val lossy: Boolean = false,
+    /** For MIXED: the lines (0-based) that ended in CRLF. */
+    private val crlfLines: BitSet? = null,
+    /** For MIXED: most lines end in CRLF, so a new line does too. */
+    private val mostlyCrlf: Boolean = false,
 ) {
-    fun encode(edited: String): ByteArray {
-        val body = if (crlf) edited.replace("\n", "\r\n") else edited
-        val bytes = body.toByteArray(Charset.forName(charset))
-        return if (bom) UTF8_BOM + bytes else bytes
+    val crlf get() = eol == LineEnding.CRLF
+
+    /**
+     * The bytes to write for [edited]. Throws [CharacterCodingException] when [charset] cannot
+     * write a character (Vietnamese in GBK), rather than writing '?' in its place.
+     */
+    fun encode(edited: String, eol: LineEnding = this.eol, charset: String = this.charset): ByteArray {
+        val body = when (eol) {
+            LineEnding.LF -> edited
+            LineEnding.CRLF -> edited.replace("\n", "\r\n")
+            LineEnding.MIXED -> keepEndings(edited)
+        }.let { if (charset.equals(WINDOWS_1258, ignoreCase = true)) splitTones(it) else it }
+        val out = Charset.forName(charset).newEncoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .encode(CharBuffer.wrap(body))
+        val bytes = ByteArray(out.remaining()).also { out.get(it) }
+        val mark = if (bom) bomFor(charset) else null
+        return if (mark != null) mark + bytes else bytes
+    }
+
+    /**
+     * A line keeps the ending it had, found with [LineDiff] so moving lines around does not
+     * matter; a line edited in place keeps the ending of the line it replaced. Only a new line
+     * gets the ending most lines have, as does the old last line, which had none.
+     */
+    private fun keepEndings(edited: String): String {
+        val before = text.split('\n')
+        val after = edited.split('\n')
+        fun had(line: Int) = if (line == before.lastIndex) mostlyCrlf else crlfLines?.get(line) == true
+        val crlfAfter = BitSet()
+        val runs = LineDiff.diff(before, after)
+        runs.forEachIndexed { index, run ->
+            // deleted lines right before inserted ones: the inserted ones are their new text
+            val replaced = runs.getOrNull(index - 1)?.takeIf { run.op == LineDiff.Op.INSERT && it.op == LineDiff.Op.DELETE }
+            for (i in 0 until run.count) {
+                val crlf = when {
+                    run.op == LineDiff.Op.DELETE -> continue
+                    run.op == LineDiff.Op.EQUAL -> had(run.aStart + i)
+                    replaced != null && i < replaced.count -> had(replaced.aStart + i)
+                    else -> mostlyCrlf
+                }
+                if (crlf) crlfAfter.set(run.bStart + i)
+            }
+        }
+        val sb = StringBuilder(edited.length + crlfAfter.cardinality())
+        after.forEachIndexed { i, line ->
+            if (i > 0) sb.append(if (crlfAfter[i - 1]) "\r\n" else "\n")
+            sb.append(line)
+        }
+        return sb.toString()
     }
 
     companion object {
+        private const val WINDOWS_1258 = "windows-1258"
+
+        /** Grave, acute, tilde, hook above, dot below: the Vietnamese tones. */
+        private const val TONES = "\u0300\u0301\u0303\u0309\u0323"
+
+        /**
+         * Windows-1258 has the vowels with circumflex, breve and horn but writes the tone as a
+         * combining mark after them: one typed letter, e with circumflex and dot below, is saved
+         * as e with circumflex, then the dot below.
+         */
+        private fun splitTones(text: String): String {
+            val encoder = Charset.forName(WINDOWS_1258).newEncoder()
+            val sb = StringBuilder(text.length + 16)
+            for (c in text) {
+                if (c.code < 0x80 || encoder.canEncode(c)) {
+                    sb.append(c)
+                    continue
+                }
+                val parts = Normalizer.normalize(c.toString(), Normalizer.Form.NFD)
+                sb.append(Normalizer.normalize(parts.filterNot { it in TONES }, Normalizer.Form.NFC))
+                sb.append(parts.filter { it in TONES })
+            }
+            return sb.toString()
+        }
+
         private val UTF8_BOM = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte())
+        private val UTF16LE_BOM = byteArrayOf(0xFF.toByte(), 0xFE.toByte())
+        private val UTF16BE_BOM = byteArrayOf(0xFE.toByte(), 0xFF.toByte())
+
+        /**
+         * What "Reopen with encoding" offers: the ones a rooted phone's files come in (Chinese
+         * ROM configs in GBK, old Vietnamese text in Windows-1258...). Filtered by what the
+         * runtime has; DeviceCheck checks Android has them all.
+         */
+        val CHARSETS = listOf(
+            "UTF-8", "GBK", "GB18030", "Big5", "Shift_JIS", "EUC-KR", WINDOWS_1258, "windows-1252",
+            "windows-1251", "KOI8-R", "ISO-8859-1", "UTF-16LE", "UTF-16BE",
+        )
+
+        fun charsets(): List<String> = CHARSETS.filter { runCatching { Charset.isSupported(it) }.getOrDefault(false) }
+
+        /** UTF-16 text is half NUL bytes: not a sign of a binary file there. */
+        fun isWide(charset: String) = charset.startsWith("UTF-16")
+
+        private fun bomFor(charset: String): ByteArray? = when (charset) {
+            "UTF-8" -> UTF8_BOM
+            "UTF-16LE" -> UTF16LE_BOM
+            "UTF-16BE" -> UTF16BE_BOM
+            else -> null
+        }
+
+        private fun ByteArray.startsWith(prefix: ByteArray) =
+            size >= prefix.size && prefix.indices.all { this[it] == prefix[it] }
 
         /** NUL bytes in the first 8 KB: an ELF, an image, a database... not text. */
         fun looksBinary(bytes: ByteArray): Boolean {
@@ -32,21 +144,59 @@ data class TextDoc(
             return false
         }
 
-        /** UTF-8 when the bytes are valid UTF-8, else ISO-8859-1 so no byte is lost. */
-        fun decode(bytes: ByteArray): TextDoc {
-            val bom = bytes.size >= 3 && bytes[0] == UTF8_BOM[0] && bytes[1] == UTF8_BOM[1] && bytes[2] == UTF8_BOM[2]
-            val body = if (bom) bytes.copyOfRange(3, bytes.size) else bytes
-            val (raw, charset) = try {
-                Charsets.UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(body)).toString() to "UTF-8"
-            } catch (_: CharacterCodingException) {
-                String(body, Charsets.ISO_8859_1) to "ISO-8859-1"
+        /**
+         * With no [charset]: a BOM's charset, else UTF-8 when the bytes are valid UTF-8, else
+         * ISO-8859-1 so no byte is lost. With one, bytes it cannot read become U+FFFD ([lossy]).
+         */
+        fun decode(bytes: ByteArray, charset: String? = null): TextDoc {
+            val marked = listOf("UTF-8" to UTF8_BOM, "UTF-16LE" to UTF16LE_BOM, "UTF-16BE" to UTF16BE_BOM)
+                .firstOrNull { (name, mark) -> (charset == null || charset == name) && bytes.startsWith(mark) }
+            val body = if (marked != null) bytes.copyOfRange(marked.second.size, bytes.size) else bytes
+            val name = charset ?: marked?.first
+            var lossy = false
+            val (raw, used) = if (name != null) {
+                try {
+                    strict(body, name) to name
+                } catch (_: CharacterCodingException) {
+                    lossy = true
+                    String(body, Charset.forName(name)) to name
+                }
+            } else {
+                try {
+                    strict(body, "UTF-8") to "UTF-8"
+                } catch (_: CharacterCodingException) {
+                    String(body, Charsets.ISO_8859_1) to "ISO-8859-1"
+                }
             }
-            val crlf = raw.contains("\r\n")
-            return TextDoc(if (crlf) raw.replace("\r\n", "\n") else raw, crlf, bom, charset)
+            var crlf = 0
+            var lf = 0
+            val crlfLines = BitSet()
+            for (i in raw.indices) {
+                if (raw[i] != '\n') continue
+                if (i > 0 && raw[i - 1] == '\r') crlfLines.set(crlf + lf).also { crlf++ } else lf++
+            }
+            val eol = when {
+                crlf == 0 -> LineEnding.LF
+                lf == 0 -> LineEnding.CRLF
+                else -> LineEnding.MIXED
+            }
+            val text = if (crlf > 0) raw.replace("\r\n", "\n") else raw
+            return TextDoc(
+                text = text,
+                eol = eol,
+                bom = marked != null,
+                charset = used,
+                lossy = lossy,
+                crlfLines = crlfLines.takeIf { eol == LineEnding.MIXED },
+                mostlyCrlf = crlf > lf,
+            )
         }
+
+        private fun strict(body: ByteArray, charset: String): String =
+            Charset.forName(charset).newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(body)).toString()
     }
 }
 

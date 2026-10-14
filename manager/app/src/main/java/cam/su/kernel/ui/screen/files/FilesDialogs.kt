@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Difference
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Info
@@ -365,6 +366,14 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                     onDialog(FilesDialogState.OpenAs(entry))
                 }),
             )
+            compareTarget(state, menu.panel, entry, entries)?.let { (left, right) ->
+                add(
+                    GridCell(Icons.Rounded.Difference, stringResource(R.string.files_compare), onClick = {
+                        close()
+                        vm.compare(left, right)
+                    }),
+                )
+            }
             if (!inArchive) {
                 add(
                     GridCell(Icons.Rounded.Bookmark, stringResource(R.string.files_menu_add_bookmark), onClick = {
@@ -450,6 +459,20 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
             }
         }
     }
+}
+
+/**
+ * The two files "Compare" would open, left panel's first: two files selected in one panel, or
+ * this file and the one selected in the other panel, or else the file of the same name there
+ * (a module's copy against the system file it replaces).
+ */
+private fun compareTarget(state: FilesUiState, panel: Int, entry: FileEntry, entries: List<FileEntry>): Pair<String, String>? {
+    if (entries.size == 2) return entries.takeIf { list -> list.all { it.isReadableFile() } }?.let { it[0].path to it[1].path }
+    if (entries.size > 1 || !entry.isReadableFile()) return null
+    val other = state.panels[1 - panel]
+    val chosen = other.selection.singleOrNull()?.let { path -> other.entries.find { it.path == path } }
+    val match = (chosen ?: other.entries.find { it.name == entry.name })?.takeIf { it.isReadableFile() && it.path != entry.path } ?: return null
+    return if (panel == 0) entry.path to match.path else match.path to entry.path
 }
 
 /** A file whose bytes can be read: not a folder, device, fifo, socket or broken link. */

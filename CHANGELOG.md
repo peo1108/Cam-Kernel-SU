@@ -2,6 +2,16 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.1.8 - 2026-10-14
+- Flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu và khôi phục cấu hình
+### Tính năng mới
+- Sao lưu cấu hình (Cài đặt → Sao lưu cấu hình): quyền root, hồ sơ app, công tắc ẩn root, module đang bật và bookmark tab Tệp vào một file; khôi phục trên máy mới hoặc sau khi flash ROM, xem trước những gì sẽ đổi
+- Trang Kiểm tra ẩn root: mỗi mục có nút sửa ngay ("Bật umount module cho app này", bật umount trong hồ sơ mặc định, bật công tắc đang tắt, mở Tuỳ chọn nhà phát triển) và lời khuyên cụ thể cho mục không tự sửa được
+### Thay đổi
+- Flash vào phân vùng (tab Tệp): kiểm tra image đúng loại trước khi ghi (chặn flash nhầm boot vào init_boot, file zip, file nén), luôn sao lưu phân vùng hiện tại vào CamBackup trước, cảnh báo khi chọn slot máy không chạy, bước cuối phải gõ tên phân vùng
+### Lưu ý
+- Bản thử nghiệm: các tính năng trên chưa được thử trên nhiều máy, báo lỗi giúp Cam nếu gặp
+
 ## 1.1.7 - 2026-10-14
 - Tab Tệp: sửa file lớn, đổi bảng mã, so sánh hai file, terminal root, thùng rác; giao diện mới kiểu iOS
 ### Tính năng mới

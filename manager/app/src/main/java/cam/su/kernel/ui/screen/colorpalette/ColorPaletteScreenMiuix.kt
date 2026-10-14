@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.colorpalette
 
+import cam.su.kernel.ui.component.glass.GlassSlider
 import cam.su.kernel.ui.component.glass.GlassSegmentedControl
 import cam.su.kernel.ui.component.glass.iosSwitchColors
 import android.annotation.SuppressLint
@@ -90,8 +91,6 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -437,7 +436,7 @@ fun ColorPaletteScreenMiuix(
                             onClick = { showScaleDialog.value = !showScaleDialog.value },
                             holdDownState = showScaleDialog.value,
                             bottomAction = {
-                                Slider(
+                                GlassSlider(
                                     value = sliderValue,
                                     onValueChange = {
                                         sliderValue = it
@@ -446,10 +445,8 @@ fun ColorPaletteScreenMiuix(
                                         actions.onSetPageScale(sliderValue)
                                     },
                                     valueRange = 0.8f..1.1f,
-                                    showKeyPoints = true,
                                     keyPoints = listOf(0.8f, 0.9f, 1f, 1.1f),
                                     magnetThreshold = 0.01f,
-                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                                 )
                             },
                         )
@@ -487,7 +484,7 @@ fun ColorPaletteScreenMiuix(
                                 )
                             },
                             bottomAction = {
-                                Slider(
+                                GlassSlider(
                                     value = linesValue.toFloat(),
                                     onValueChange = {
                                         linesValue = it.roundToInt()
@@ -496,10 +493,8 @@ fun ColorPaletteScreenMiuix(
                                         actions.onSetModuleDescriptionMaxLines(linesValue)
                                     },
                                     valueRange = 1f..5f,
-                                    showKeyPoints = true,
                                     keyPoints = listOf(1f, 2f, 3f, 4f, 5f),
                                     magnetThreshold = 0.25f,
-                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                                 )
                             },
                         )

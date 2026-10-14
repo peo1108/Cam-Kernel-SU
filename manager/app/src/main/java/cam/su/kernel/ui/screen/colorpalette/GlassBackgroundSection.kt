@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.colorpalette
 
+import cam.su.kernel.ui.component.glass.GlassSlider
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -27,7 +28,6 @@ import cam.su.kernel.ui.component.glass.LocalGlassBackgroundState
 import cam.su.kernel.ui.screen.settings.SettingsUiState
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -128,7 +128,7 @@ private fun SliderPreference(
             Text(text = label(sliderValue), color = colorScheme.onSurfaceVariantActions)
         },
         bottomAction = {
-            Slider(
+            GlassSlider(
                 value = sliderValue,
                 onValueChange = { sliderValue = it },
                 onValueChangeFinished = { onValueChangeFinished(sliderValue) },

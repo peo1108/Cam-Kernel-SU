@@ -208,7 +208,7 @@ scenario_ok() {
     echo "== ok: a harmless init rc, threshold 2, three reboots: never disabled"
     dev threshold 2 >/dev/null
     dev module bgt-ok ok >/dev/null
-    for i in 1 2 3; do reboot_wait; done
+    for _ in 1 2 3; do reboot_wait; done
     local r
     r=$(dev report)
     check "ok: its rc ran on every boot" "$(field okruns "$r")" 3
@@ -303,7 +303,7 @@ fi
 echo "== device: $("${ADB[@]}" shell getprop ro.product.model | tr -d '\r'), Android $("${ADB[@]}" shell getprop ro.build.version.release | tr -d '\r')"
 push_helper
 prep=$(dev prep)
-echo "$prep" | sed 's/^/   /'
+while IFS= read -r line; do echo "   $line"; done <<<"$prep"
 if [ "$(field camd "$prep")" != new ]; then
     echo "camd on the device is older than this test (no boot-guard initrc-enable): install the Manager built from this checkout first" >&2
     dev restore >/dev/null

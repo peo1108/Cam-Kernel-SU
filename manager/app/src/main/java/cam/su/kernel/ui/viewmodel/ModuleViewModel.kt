@@ -25,6 +25,9 @@ import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.data.model.Module
 import cam.su.kernel.data.model.ModuleUpdateInfo
+import cam.su.kernel.data.model.RepoModule
+import cam.su.kernel.data.model.libraryUpdate
+import cam.su.kernel.data.repository.ModuleRepoRepositoryImpl
 import cam.su.kernel.data.repository.ModuleRepository
 import cam.su.kernel.data.repository.ModuleRepositoryImpl
 import cam.su.kernel.data.repository.SettingsRepository
@@ -54,6 +57,8 @@ class ModuleViewModel(
 ) : ViewModel() {
 
     companion object {
+        /** how long the module library list is reused for update checks */
+        private const val LIBRARY_TTL_MS = 10 * 60 * 1000L
         private const val TAG = "ModuleViewModel"
     }
 
@@ -304,12 +309,17 @@ class ModuleViewModel(
             }
         }
 
+        // Cam's module library, read once for the whole list: a newer release there is an update too
+        val library = if (modulesToFetch.isEmpty()) emptyList() else libraryModules()
+
         val fetchedEntries = coroutineScope {
             modulesToFetch.map { (id, module, signature) ->
                 async {
                     val info = withTimeoutOrNull(5_000L.milliseconds) {
                         withContext(Dispatchers.IO) { checkUpdate(module) }
-                    } ?: ModuleUpdateInfo.Empty
+                    }?.takeIf { it != ModuleUpdateInfo.Empty }
+                        ?: libraryUpdate(module, library)
+                        ?: ModuleUpdateInfo.Empty
                     id to ModuleUpdateCache(signature, info)
                 }
             }.awaitAll()
@@ -510,6 +520,18 @@ class ModuleViewModel(
             html = html,
             confirm = res.getString(R.string.module_update),
         )
+    }
+
+    private var libraryCache: Pair<Long, List<RepoModule>>? = null
+
+    /** The library's modules, fetched at most every [LIBRARY_TTL_MS]; empty when it cannot be read. */
+    private suspend fun libraryModules(): List<RepoModule> {
+        val now = SystemClock.elapsedRealtime()
+        libraryCache?.let { (at, modules) -> if (now - at < LIBRARY_TTL_MS) return modules }
+        val modules = withTimeoutOrNull(8_000L.milliseconds) { ModuleRepoRepositoryImpl().fetchModules().getOrNull() }
+            ?: return libraryCache?.second.orEmpty()
+        libraryCache = now to modules
+        return modules
     }
 
     private suspend fun checkUpdate(m: Module): ModuleUpdateInfo {

@@ -104,6 +104,8 @@ fun HomePager(
         onSystemInstallClick = viewModel::installWithSystemInstaller,
         onDismissWhatsNew = viewModel::dismissWhatsNew,
         onReenableModule = viewModel::reenableModule,
+        onReenableInitrc = viewModel::reenableInitrc,
+        onReenableOtherModules = viewModel::reenableOtherModules,
         onDismissBootGuard = viewModel::dismissBootGuard,
     )
 

@@ -38,7 +38,7 @@ data class HomeUiState(
     val bootGuard: BootGuardStatus = BootGuardStatus.Empty,
 ) {
     val showBootGuardNotice: Boolean
-        get() = bootGuard.autoDisabled.isNotEmpty()
+        get() = bootGuard.hasNotice
 
     val isSELinuxPermissive: Boolean
         get() = systemInfo.selinuxStatus == "Permissive"
@@ -93,5 +93,8 @@ data class HomeActions(
     val onDismissWhatsNew: () -> Unit = {},
     val onJailbreakClick: () -> Unit = {},
     val onReenableModule: (String) -> Unit = {},
+    val onReenableInitrc: (String) -> Unit = {},
+    /** every module the boot guard turned off but the likely causes */
+    val onReenableOtherModules: () -> Unit = {},
     val onDismissBootGuard: () -> Unit = {},
 )

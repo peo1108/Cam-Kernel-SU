@@ -24,6 +24,8 @@ import cam.su.kernel.ui.screen.home.HomeUiState
 import cam.su.kernel.ui.screen.home.SystemInfo
 import cam.su.kernel.ui.screen.home.getManagerVersion
 import cam.su.kernel.ui.util.clearBootGuard
+import cam.su.kernel.ui.util.enableBootGuardInitrc
+import cam.su.kernel.ui.util.reenableBootGuardOthers
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.getSELinuxStatusRaw
 import cam.su.kernel.ui.util.resolveDeviceName
@@ -102,6 +104,21 @@ class HomeViewModel(
     fun reenableModule(id: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { toggleModule(id, true) }
+            ModuleListSignal.invalidate()
+            refresh()
+        }
+    }
+
+    fun reenableInitrc(name: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { enableBootGuardInitrc(name) }
+            refresh()
+        }
+    }
+
+    fun reenableOtherModules() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { reenableBootGuardOthers() }
             ModuleListSignal.invalidate()
             refresh()
         }

@@ -36,14 +36,25 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
-/** "Disabled by boot guard" and "Conflict" chips under a module's author line. */
+/**
+ * "Disabled by boot guard", "New version", "Conflict" and "Previous" chips under a module's author
+ * line. [newVersion] is the newer release found (updateJson or Cam's module library); its chip
+ * starts the same update as the update button.
+ */
 @Composable
-fun ModuleStatusBadges(module: Module, onRestoreBackup: () -> Unit = {}, onDisableModule: (String) -> Unit = {}) {
+fun ModuleStatusBadges(
+    module: Module,
+    onRestoreBackup: () -> Unit = {},
+    onDisableModule: (String) -> Unit = {},
+    newVersion: String? = null,
+    onUpdate: () -> Unit = {},
+) {
     val showAutoDisabled = module.autoDisabled && !module.enabled
     val conflicts = module.conflicts
     // a pending update (or restore) is applied on the next boot; offer nothing until then
     val backupVersion = module.backupVersion.takeUnless { module.update || module.remove }
-    if (!showAutoDisabled && conflicts.isEmpty() && backupVersion == null) return
+    val showNewVersion = newVersion != null && !module.update && !module.remove
+    if (!showAutoDisabled && conflicts.isEmpty() && backupVersion == null && !showNewVersion) return
 
     var showConflicts by rememberSaveable(module.id) { mutableStateOf(false) }
     var confirmRestore by rememberSaveable(module.id) { mutableStateOf(false) }
@@ -53,10 +64,23 @@ fun ModuleStatusBadges(module: Module, onRestoreBackup: () -> Unit = {}, onDisab
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (showAutoDisabled) {
+            // every module goes off together; the likely causes stand out from the rest
             Badge(
-                text = stringResource(R.string.module_badge_auto_disabled),
-                background = colorScheme.errorContainer.copy(alpha = 0.6f),
-                color = colorScheme.onErrorContainer,
+                text = stringResource(
+                    if (module.bootCulprit) R.string.module_badge_culprit else R.string.module_badge_auto_disabled
+                ),
+                background = if (module.bootCulprit) colorScheme.error else colorScheme.errorContainer.copy(alpha = 0.6f),
+                color = if (module.bootCulprit) colorScheme.onError else colorScheme.onErrorContainer,
+            )
+        }
+        if (showNewVersion) {
+            Badge(
+                text = newVersion.orEmpty().takeIf { it.isNotBlank() }
+                    ?.let { stringResource(R.string.module_badge_new_version_named, it) }
+                    ?: stringResource(R.string.module_badge_new_version),
+                background = colorScheme.primary.copy(alpha = 0.15f),
+                color = colorScheme.primary,
+                onClick = onUpdate,
             )
         }
         if (conflicts.isNotEmpty()) {

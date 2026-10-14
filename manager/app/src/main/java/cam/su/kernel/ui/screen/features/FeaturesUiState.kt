@@ -48,8 +48,9 @@ data class FeaturesActions(
     val onSetBootGuardEnabled: (Boolean) -> Unit,
     /** failed boots tolerated, 1..4 */
     val onSetBootGuardFailures: (Int) -> Unit,
-    val onSetBootGuardDisableAll: (Boolean) -> Unit,
     val onReenableModule: (String) -> Unit,
+    val onReenableInitrc: (String) -> Unit,
+    val onReenableOtherModules: () -> Unit,
     val onDismissBootGuard: () -> Unit,
     val onSetConflictDetection: (Boolean) -> Unit,
     val onSetConflictWarnOnFlash: (Boolean) -> Unit,

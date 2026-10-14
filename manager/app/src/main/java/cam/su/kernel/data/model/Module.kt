@@ -21,6 +21,8 @@ data class Module(
     val webUiIconPath: String?,
     /** disabled by camd's boot guard and not enabled again since */
     val autoDisabled: Boolean = false,
+    /** among the boot guard's likely causes of the failed boots */
+    val bootCulprit: Boolean = false,
     val conflicts: List<ModuleConflict> = emptyList(),
     /** version kept by camd when an update replaced it; null when there is none */
     val backupVersion: String? = null,

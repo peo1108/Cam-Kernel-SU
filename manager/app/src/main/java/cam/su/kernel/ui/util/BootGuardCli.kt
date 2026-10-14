@@ -16,14 +16,29 @@ fun clearBootGuard(): Boolean {
 }
 
 /** `null` keeps a setting; [threshold] is the boot attempt that triggers (2..5). */
-fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null, disableAll: Boolean? = null): Boolean {
+fun setBootGuardConfig(enabled: Boolean? = null, threshold: Int? = null): Boolean {
     val args = buildList {
         enabled?.let { add("--enabled $it") }
         threshold?.let { add("--threshold $it") }
-        disableAll?.let { add("--mode ${if (it) "all" else "suspects"}") }
     }
     if (args.isEmpty()) return true
     val result = execCamd("boot-guard set ${args.joinToString(" ")}", true)
     Log.i(TAG, "boot-guard set $args result: $result")
     return result
+}
+
+/** Gives a /data/adb/initrc.d file the boot guard switched off its exec bit back. */
+fun enableBootGuardInitrc(name: String): Boolean {
+    val result = execCamd("boot-guard initrc-enable ${shellQuote(name)}", true)
+    Log.i(TAG, "boot-guard initrc-enable $name result: $result")
+    return result
+}
+
+private fun shellQuote(value: String) = "'" + value.replace("'", "'\''") + "'"
+
+/** Turns back on every module the boot guard switched off except the likely causes. */
+fun reenableBootGuardOthers(): Boolean {
+    val status = getBootGuardStatus()
+    val culprits = status.culpritModules
+    return status.autoDisabled.filterNot { it in culprits }.map { toggleModule(it, true) }.all { it }
 }

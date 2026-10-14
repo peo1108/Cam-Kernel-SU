@@ -6,6 +6,7 @@ import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -52,6 +53,7 @@ import cam.su.kernel.data.model.PropCheck
 import cam.su.kernel.ui.component.AttestationResult
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.GlassExpandableCard
+import cam.su.kernel.ui.screen.home.BootGuardReport
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.AttestationReport
 import cam.su.kernel.ui.util.BlurredBar
@@ -149,34 +151,17 @@ private fun BootGuardCard(state: FeaturesUiState, actions: FeaturesActions) {
                     selectedIndex = failures - 1,
                     onSelectedIndexChange = { actions.onSetBootGuardFailures(it + 1) },
                 )
-                GlassDropdownPreference(
-                    title = stringResource(R.string.features_boot_guard_mode),
-                    items = listOf(
-                        stringResource(R.string.features_boot_guard_mode_suspects),
-                        stringResource(R.string.features_boot_guard_mode_all),
-                    ),
-                    selectedIndex = if (bootGuard.disableAll) 1 else 0,
-                    onSelectedIndexChange = { actions.onSetBootGuardDisableAll(it == 1) },
-                )
             }
         }
-        if (bootGuard.autoDisabled.isNotEmpty()) {
+        if (bootGuard.hasNotice) {
             SectionTitle(stringResource(R.string.boot_guard_dialog_title))
-            bootGuard.autoDisabled.forEach { id ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(text = id, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                    TextButton(
-                        text = stringResource(R.string.boot_guard_reenable),
-                        onClick = { actions.onReenableModule(id) },
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                    )
-                }
-            }
+            BootGuardReport(
+                status = bootGuard,
+                onReenableModule = actions.onReenableModule,
+                onReenableInitrc = actions.onReenableInitrc,
+                onReenableOthers = actions.onReenableOtherModules,
+                padding = PaddingValues(horizontal = 16.dp),
+            )
             TextButton(
                 text = stringResource(R.string.boot_guard_dismiss),
                 onClick = actions.onDismissBootGuard,

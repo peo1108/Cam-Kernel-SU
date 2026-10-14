@@ -28,7 +28,9 @@ class ModuleRepositoryImpl : ModuleRepository {
             val result = listModules()
             val array = JSONArray(result)
             // one camd call each for the whole list, not one per module
-            val autoDisabled = getBootGuardStatus().autoDisabled.toSet()
+            val bootGuard = getBootGuardStatus()
+            val autoDisabled = bootGuard.autoDisabled.toSet()
+            val culprits = bootGuard.culpritModules
             val settings = SettingsRepositoryImpl()
             // the modules before the user installs one, for the check after the next boot
             if (settings.moduleHidingScan) ModuleBaseline(camApp).seedIfMissing(result)
@@ -59,6 +61,7 @@ class ModuleRepositoryImpl : ModuleRepository {
                         actionIconPath = obj.optString("actionIcon").takeIf { it.isNotBlank() },
                         webUiIconPath = obj.optString("webuiIcon").takeIf { it.isNotBlank() },
                         autoDisabled = id in autoDisabled,
+                        bootCulprit = id in culprits,
                         conflicts = conflicts.forModule(id),
                         backupVersion = if (obj.has("backupVersion")) obj.optString("backupVersion") else null,
                     )

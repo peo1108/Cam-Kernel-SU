@@ -17,6 +17,8 @@ import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.ui.screen.features.FeaturesUiState
 import cam.su.kernel.ui.util.checkAttestationReport
 import cam.su.kernel.ui.util.clearBootGuard
+import cam.su.kernel.ui.util.enableBootGuardInitrc
+import cam.su.kernel.ui.util.reenableBootGuardOthers
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.getHideBootloaderStatus
 import cam.su.kernel.ui.util.listModuleConflicts
@@ -84,12 +86,11 @@ class FeaturesViewModel(
         applyBootGuard { setBootGuardConfig(threshold = threshold) }
     }
 
-    fun setBootGuardDisableAll(disableAll: Boolean) {
-        _uiState.update { it.copy(bootGuard = it.bootGuard.copy(disableAll = disableAll)) }
-        applyBootGuard { setBootGuardConfig(disableAll = disableAll) }
-    }
-
     fun reenableModule(id: String) = applyBootGuard { toggleModule(id, true).also { ModuleListSignal.invalidate() } }
+
+    fun reenableInitrc(name: String) = applyBootGuard { enableBootGuardInitrc(name) }
+
+    fun reenableOtherModules() = applyBootGuard { reenableBootGuardOthers().also { ModuleListSignal.invalidate() } }
 
     fun dismissBootGuard() = applyBootGuard { clearBootGuard() }
 

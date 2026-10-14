@@ -673,6 +673,7 @@ private fun ModuleList(
                 ModuleItem(
                     module = module,
                     updateUrl = moduleUpdateInfo.downloadUrl,
+                    updateVersion = moduleUpdateInfo.version,
                     onUninstall = {
                         actions.onRequestUninstallConfirmation(currentModuleState.value)
                     },
@@ -725,6 +726,7 @@ private fun ModuleList(
 fun ModuleItem(
     module: Module,
     updateUrl: String,
+    updateVersion: String = "",
     onUndoUninstall: () -> Unit,
     onUninstall: () -> Unit,
     onCheckChanged: (Boolean) -> Unit,
@@ -827,7 +829,13 @@ fun ModuleItem(
                     color = colorScheme.onSurfaceVariantSummary,
                     textDecoration = textDecoration
                 )
-                ModuleStatusBadges(module = module, onRestoreBackup = onRestoreBackup, onDisableModule = onDisableModule)
+                ModuleStatusBadges(
+                    module = module,
+                    onRestoreBackup = onRestoreBackup,
+                    onDisableModule = onDisableModule,
+                    newVersion = updateVersion.takeIf { updateUrl.isNotEmpty() },
+                    onUpdate = onUpdate,
+                )
             }
             GlassSwitch(
                 enabled = !module.update,

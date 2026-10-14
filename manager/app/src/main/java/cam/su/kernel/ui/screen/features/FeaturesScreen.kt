@@ -40,8 +40,9 @@ fun FeaturesPager(
     val actions = FeaturesActions(
         onSetBootGuardEnabled = viewModel::setBootGuardEnabled,
         onSetBootGuardFailures = viewModel::setBootGuardFailures,
-        onSetBootGuardDisableAll = viewModel::setBootGuardDisableAll,
         onReenableModule = viewModel::reenableModule,
+        onReenableInitrc = viewModel::reenableInitrc,
+        onReenableOtherModules = viewModel::reenableOtherModules,
         onDismissBootGuard = viewModel::dismissBootGuard,
         onSetConflictDetection = viewModel::setConflictDetection,
         onSetConflictWarnOnFlash = viewModel::setConflictWarnOnFlash,

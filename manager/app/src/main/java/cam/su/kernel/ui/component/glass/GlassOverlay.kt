@@ -1,5 +1,34 @@
 package cam.su.kernel.ui.component.glass
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.LocalDismissState
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,7 +45,6 @@ import cam.su.kernel.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.highlight.Highlight
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -42,7 +70,11 @@ internal fun Modifier.overlayGlass(shape: RoundedCornerShape, frost: Float = 1f)
     )
 }
 
-/** Liquid glass [OverlayDialog] with the parameters used in this app. */
+/**
+ * iOS style alert on liquid glass: centred, title centred and bold, pops in from a slight zoom and
+ * fades out. Tapping the dimmed backdrop or Back calls [onDismissRequest]; buttons inside close it
+ * through LocalDismissState, as with the miuix dialog it replaces.
+ */
 @Composable
 fun GlassDialog(
     show: Boolean,
@@ -52,36 +84,68 @@ fun GlassDialog(
     insideMargin: DpSize? = null,
     content: @Composable () -> Unit,
 ) {
-    val modifier = Modifier.overlayGlass(RoundedCornerShape(GlassDefaults.dialogCorner))
+    val visible = remember { mutableStateOf(false) }
+    LaunchedEffect(show) { visible.value = show }
     val textStyles = MiuixTheme.textStyles
     // Secondary (cancel) buttons paint secondaryVariant; make them translucent over the glass.
     val glassColors = colorScheme.copy(secondaryVariant = colorScheme.secondaryVariant.copy(alpha = 0.4f))
-    val glassContent: @Composable () -> Unit = {
-        MiuixTheme(colors = glassColors, textStyles = textStyles) { content() }
-    }
-    if (insideMargin != null) {
-        OverlayDialog(
-            show = show,
-            modifier = modifier,
-            title = title,
-            summary = summary,
-            backgroundColor = Color.Transparent,
-            onDismissRequest = onDismissRequest,
-            insideMargin = insideMargin,
-            cornerRadius = GlassDefaults.dialogCorner,
-            content = glassContent,
-        )
-    } else {
-        OverlayDialog(
-            show = show,
-            modifier = modifier,
-            title = title,
-            summary = summary,
-            backgroundColor = Color.Transparent,
-            onDismissRequest = onDismissRequest,
-            cornerRadius = GlassDefaults.dialogCorner,
-            content = glassContent,
-        )
+    val margin = insideMargin ?: DpSize(24.dp, 24.dp)
+    val shape = RoundedCornerShape(GlassDefaults.dialogCorner)
+    MiuixPopupUtils.PopupLayout(
+        visible = visible,
+        enterTransition = fadeIn(tween(160)) + scaleIn(spring(dampingRatio = 0.8f, stiffness = 520f), initialScale = 1.12f),
+        exitTransition = fadeOut(tween(140)),
+        enableWindowDim = false,
+        enableBackHandler = false,
+    ) {
+        BackHandler(enabled = visible.value && onDismissRequest != null) { onDismissRequest?.invoke() }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f))
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                    onDismissRequest?.invoke()
+                }
+                .safeDrawingPadding()
+                .imePadding(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 420.dp)
+                    .fillMaxWidth(0.88f)
+                    .heightIn(max = LocalWindowInfo.current.containerSize.height.let { with(LocalDensity.current) { it.toDp() } } * 0.85f)
+                    .overlayGlass(shape)
+                    // taps on the card must not reach the backdrop
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                    .padding(horizontal = margin.width, vertical = margin.height),
+            ) {
+                if (title != null) {
+                    Text(
+                        text = title,
+                        style = textStyles.title4,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (summary != null) {
+                    Text(
+                        text = summary,
+                        style = textStyles.body2,
+                        color = colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    )
+                }
+                if (title != null || summary != null) Spacer(Modifier.height(16.dp))
+                MiuixTheme(colors = glassColors, textStyles = textStyles) {
+                    CompositionLocalProvider(LocalDismissState provides { visible.value = false }) {
+                        content()
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -1,13 +1,13 @@
 package cam.su.kernel.ui.component.glass
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,8 +42,8 @@ internal object IosControlColors {
 }
 
 /**
- * iOS 26 switch: a wide track and a capsule thumb. While pressed the thumb swells into a clear glass
- * lens over the track, then springs to the other side.
+ * iOS 26 switch: a wide track and a capsule thumb. It flips the moment it is touched; saving the
+ * setting (sometimes a root call) runs behind it, and [checked] from the caller still wins.
  */
 @Composable
 fun GlassSwitch(
@@ -57,27 +57,19 @@ fun GlassSwitch(
     val off = if (dark) IosControlColors.offDark else IosControlColors.offLight
     val haptic = LocalHapticFeedback.current
     val onChange by rememberUpdatedState(onCheckedChange)
-    // read at release time: the gesture outlives recompositions, a captured value would go stale
-    val isChecked by rememberUpdatedState(checked)
-    var pressed by remember { mutableStateOf(false) }
-    val position by animateFloatAsState(if (checked) 1f else 0f, spring(dampingRatio = 0.78f, stiffness = 900f), label = "switch")
-    val lens by animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.7f, stiffness = 900f), label = "lens")
+    var shown by remember { mutableStateOf(checked) }
+    LaunchedEffect(checked) { shown = checked }
+    val position by animateFloatAsState(if (shown) 1f else 0f, tween(220, easing = FastOutSlowInEasing), label = "switch")
     Canvas(
         modifier = modifier
             .size(62.dp, 28.dp)
             .alpha(if (enabled) 1f else 0.45f)
             .pointerInput(enabled, onCheckedChange != null) {
                 if (!enabled || onCheckedChange == null) return@pointerInput
-                awaitEachGesture {
-                    awaitFirstDown()
-                    pressed = true
-                    val up = waitForUpOrCancellation()
-                    pressed = false
-                    if (up != null) {
-                        up.consume()
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onChange?.invoke(!isChecked)
-                    }
+                detectTapGestures {
+                    shown = !shown
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onChange?.invoke(shown)
                 }
             },
     ) {
@@ -86,9 +78,8 @@ fun GlassSwitch(
         drawRoundRect(trackColor, cornerRadius = CornerRadius(h / 2))
         val inset = 2.dp.toPx()
         val tw = 37.dp.toPx()
-        val th = h - 2 * inset
         val cx = inset + tw / 2 + (size.width - 2 * inset - tw) * position
-        drawCapsuleThumb(Offset(cx, h / 2), tw, th, lens, tint = trackColor, dark = dark) { }
+        drawCapsuleThumb(Offset(cx, h / 2), tw, h - 2 * inset, lens = 0f, tint = trackColor, dark = dark) { }
     }
 }
 
@@ -148,7 +139,7 @@ private inline fun DrawScope.scaleAround(factor: Float, pivot: Offset, block: Dr
     withTransform({ scale(factor, factor, pivot) }) { block() }
 }
 
-/** Drop-in for miuix SwitchPreference with the iOS switch; the whole row toggles it. */
+/** Drop-in for miuix SwitchPreference with the iOS switch; the whole row toggles it, at once. */
 @Composable
 fun GlassSwitchPreference(
     title: String,
@@ -159,13 +150,19 @@ fun GlassSwitchPreference(
     startAction: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
 ) {
+    var shown by remember { mutableStateOf(checked) }
+    LaunchedEffect(checked) { shown = checked }
+    val toggle = { value: Boolean ->
+        shown = value
+        onCheckedChange(value)
+    }
     BasicComponent(
         modifier = modifier,
         title = title,
         summary = summary,
         startAction = startAction,
-        endActions = { GlassSwitch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled) },
-        onClick = { if (enabled) onCheckedChange(!checked) },
+        endActions = { GlassSwitch(checked = shown, onCheckedChange = toggle, enabled = enabled) },
+        onClick = { if (enabled) toggle(!shown) },
         enabled = enabled,
     )
 }

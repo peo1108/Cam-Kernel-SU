@@ -93,16 +93,17 @@ fun GlassListPopup(
     onDismissRequest: (() -> Unit)? = null,
     maxHeight: Dp? = null,
     morph: MorphPopupState? = null,
-    anchorIcon: @Composable () -> Unit = {},
+    morphAlign: MorphAlign = MorphAlign.Corner,
     content: @Composable () -> Unit,
 ) {
-    // With a morph state the menu grows out of the button marked with Modifier.morphAnchor.
+    // With a morph state the menu buds off the button marked with Modifier.morphAnchor.
     if (morph != null) {
         LaunchedEffect(show) { morph.expanded = show }
         GlassMorphPopup(
             state = morph,
             onDismissRequest = { onDismissRequest?.invoke() },
-            anchorIcon = anchorIcon,
+            align = morphAlign,
+            liquid = morphAlign == MorphAlign.Corner,
             content = content,
         )
         return

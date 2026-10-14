@@ -38,7 +38,7 @@ fun GlassDropdownPreference(
     val expanded = remember { mutableStateOf(false) }
     val morph = rememberMorphPopupState()
     val current = items.getOrNull(selectedIndex).orEmpty()
-    // The value and its arrow: the menu grows out of them, iOS pull-down style.
+    // The value and its arrow: the menu buds off them, iOS pull-down style.
     val valueLabel: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -67,7 +67,7 @@ fun GlassDropdownPreference(
             maxHeight = maxHeight,
             onDismissRequest = { expanded.value = false },
             morph = morph,
-            anchorIcon = valueLabel,
+            morphAlign = MorphAlign.End,
         ) {
             ListPopupColumn {
                 items.forEachIndexed { index, text ->

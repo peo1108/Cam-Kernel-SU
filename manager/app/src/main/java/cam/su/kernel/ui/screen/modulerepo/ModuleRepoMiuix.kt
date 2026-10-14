@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.modulerepo
 
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
@@ -175,7 +176,6 @@ fun ModuleRepoScreenMiuix(
                                     popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                     alignment = PopupPositionProvider.Align.TopEnd,
                                     morph = sortMorph,
-                                    anchorIcon = { Icon(imageVector = MiuixIcons.Sort, tint = colorScheme.onSurface, contentDescription = null) },
                                     onDismissRequest = { showSortPopup.value = false },
                                     content = {
                                         ListPopupColumn {
@@ -203,11 +203,11 @@ fun ModuleRepoScreenMiuix(
                                     onClick = { showSortPopup.value = true },
                                     modifier = Modifier.morphAnchor(sortMorph),
                                 ) {
-                                    Icon(
+                                    MorphIcon(sortMorph) { Icon(
                                         imageVector = MiuixIcons.Sort,
                                         tint = colorScheme.onSurface,
                                         contentDescription = stringResource(R.string.menu_sort),
-                                    )
+                                    ) }
                                 }
                             }
                         },

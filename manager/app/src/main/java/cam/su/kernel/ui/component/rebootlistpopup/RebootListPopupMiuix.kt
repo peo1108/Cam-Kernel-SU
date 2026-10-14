@@ -1,6 +1,7 @@
 package cam.su.kernel.ui.component.rebootlistpopup
 
 import cam.su.kernel.ui.component.glass.GlassMorphPopup
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassIconButton
@@ -32,11 +33,10 @@ fun RebootListPopupMiuix(
         GlassIconButton(
             modifier = modifier.morphAnchor(popup),
             onClick = { popup.expanded = true },
-        ) { icon() }
+        ) { MorphIcon(popup) { icon() } }
         GlassMorphPopup(
             state = popup,
             onDismissRequest = { popup.expanded = false },
-            anchorIcon = icon,
         ) {
             val rebootOptions = getRebootListOption()
             ListPopupColumn {

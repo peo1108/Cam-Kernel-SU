@@ -1,6 +1,7 @@
 package cam.su.kernel.ui.screen.appprofile
 
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
@@ -432,18 +433,17 @@ private fun TopBar(
                             onClick = { showTopPopup.value = true },
                             modifier = Modifier.morphAnchor(moreMorph),
                         ) {
-                            Icon(
+                            MorphIcon(moreMorph) { Icon(
                                 imageVector = MiuixIcons.MoreCircle,
                                 tint = colorScheme.onSurface,
                                 contentDescription = stringResource(id = R.string.settings)
-                            )
+                            ) }
                         }
                         GlassListPopup(
                             show = showTopPopup.value,
                             popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                             alignment = PopupPositionProvider.Align.TopEnd,
                             morph = moreMorph,
-                            anchorIcon = { Icon(imageVector = MiuixIcons.MoreCircle, tint = colorScheme.onSurface, contentDescription = null) },
                             onDismissRequest = { showTopPopup.value = false },
                             content = {
                                 ListPopupColumn {

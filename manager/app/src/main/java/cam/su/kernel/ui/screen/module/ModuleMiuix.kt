@@ -2,6 +2,7 @@ package cam.su.kernel.ui.screen.module
 
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassFab
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
@@ -282,18 +283,17 @@ fun ModulePagerMiuix(
                                         onClick = { showTopPopup.value = true },
                                         modifier = Modifier.morphAnchor(sortMorph),
                                     ) {
-                                        Icon(
+                                        MorphIcon(sortMorph) { Icon(
                                             imageVector = MiuixIcons.Sort,
                                             tint = colorScheme.onSurface,
                                             contentDescription = null
-                                        )
+                                        ) }
                                     }
                                     GlassListPopup(
                                         show = showTopPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
                                         morph = sortMorph,
-                                        anchorIcon = { Icon(imageVector = MiuixIcons.Sort, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = {
                                             showTopPopup.value = false
                                         },

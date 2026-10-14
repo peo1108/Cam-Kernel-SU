@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import cam.su.kernel.ui.component.glass.morphObstacle
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
@@ -271,7 +272,7 @@ fun FloatingBottomBar(
     val combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop)
 
     Box(
-        modifier = modifier.width(IntrinsicSize.Min),
+        modifier = modifier.morphObstacle().width(IntrinsicSize.Min),
         contentAlignment = Alignment.CenterStart
     ) {
         Row(

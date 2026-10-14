@@ -1,6 +1,7 @@
 package cam.su.kernel.ui.screen.superuser
 
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
@@ -165,7 +166,6 @@ fun SuperUserPagerMiuix(
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
                                         morph = sortMorph,
-                                        anchorIcon = { Icon(imageVector = MiuixIcons.Sort, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = { showSortPopup.value = false },
                                         content = {
                                             ListPopupColumn {
@@ -214,11 +214,11 @@ fun SuperUserPagerMiuix(
                                         onClick = { showSortPopup.value = true },
                                         modifier = Modifier.morphAnchor(sortMorph),
                                     ) {
-                                        Icon(
+                                        MorphIcon(sortMorph) { Icon(
                                             imageVector = MiuixIcons.Sort,
                                             tint = colorScheme.onSurface,
                                             contentDescription = stringResource(R.string.menu_sort)
-                                        )
+                                        ) }
                                     }
                                 }
 
@@ -236,7 +236,6 @@ fun SuperUserPagerMiuix(
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
                                         morph = moreMorph,
-                                        anchorIcon = { Icon(imageVector = MiuixIcons.MoreCircle, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = {
                                             showTopPopup.value = false
                                         },
@@ -285,11 +284,11 @@ fun SuperUserPagerMiuix(
                                         },
                                         modifier = Modifier.morphAnchor(moreMorph),
                                     ) {
-                                        Icon(
+                                        MorphIcon(moreMorph) { Icon(
                                             imageVector = MiuixIcons.MoreCircle,
                                             tint = colorScheme.onSurface,
                                             contentDescription = null
-                                        )
+                                        ) }
                                     }
                                 }
                             }

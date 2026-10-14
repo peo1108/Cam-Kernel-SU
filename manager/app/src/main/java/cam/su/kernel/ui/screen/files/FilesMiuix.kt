@@ -116,6 +116,7 @@ import cam.su.kernel.ui.component.ListPopupDefaults
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassIconButton
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
@@ -289,14 +290,13 @@ private fun OverflowMenu(state: FilesUiState, vm: FilesViewModel, onSort: () -> 
             var show by remember { mutableStateOf(false) }
             val menuMorph = rememberMorphPopupState()
             GlassIconButton(onClick = { show = true }, modifier = Modifier.morphAnchor(menuMorph)) {
-                Icon(Icons.Rounded.MoreVert, contentDescription = null, tint = colorScheme.onSurface)
+                MorphIcon(menuMorph) { Icon(Icons.Rounded.MoreVert, contentDescription = null, tint = colorScheme.onSurface) }
             }
             GlassListPopup(
                 show = show,
                 popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                 alignment = PopupPositionProvider.Align.TopEnd,
                 morph = menuMorph,
-                anchorIcon = { Icon(Icons.Rounded.MoreVert, contentDescription = null, tint = colorScheme.onSurface) },
                 onDismissRequest = { show = false },
             ) {
                 ListPopupColumn {

@@ -1,6 +1,7 @@
 package cam.su.kernel.ui.screen.template
 
 import cam.su.kernel.ui.component.glass.GlassFab
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
@@ -421,7 +422,6 @@ private fun TopBar(
                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                         alignment = PopupPositionProvider.Align.TopEnd,
                         morph = copyMorph,
-                        anchorIcon = { Icon(imageVector = MiuixIcons.Copy, contentDescription = null, tint = colorScheme.onBackground) },
                         onDismissRequest = {
                             showTopPopup.value = false
                         },
@@ -453,11 +453,11 @@ private fun TopBar(
                         onClick = { showTopPopup.value = true },
                         modifier = Modifier.morphAnchor(copyMorph),
                     ) {
-                        Icon(
+                        MorphIcon(copyMorph) { Icon(
                             imageVector = MiuixIcons.Copy,
                             contentDescription = stringResource(id = R.string.app_profile_import_export),
                             tint = colorScheme.onBackground
-                        )
+                        ) }
                     }
                 }
             },

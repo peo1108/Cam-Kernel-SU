@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import cam.su.kernel.ui.component.glass.morphObstacle
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
@@ -241,7 +242,7 @@ fun FloatingSideBar(
     val innerWidth = SIDE_BAR_WIDTH - INSET * 2
     val barHeight = TAB_HEIGHT * tabsCount + INSET * 2
 
-    Box(modifier = modifier.width(SIDE_BAR_WIDTH).height(barHeight), contentAlignment = Alignment.TopCenter) {
+    Box(modifier = modifier.morphObstacle().width(SIDE_BAR_WIDTH).height(barHeight), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier
                 .selectableGroup()

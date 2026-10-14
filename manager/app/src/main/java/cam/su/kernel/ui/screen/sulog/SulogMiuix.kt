@@ -1,6 +1,7 @@
 package cam.su.kernel.ui.screen.sulog
 
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
+import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
@@ -197,7 +198,6 @@ fun SulogScreenMiuix(
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
                                         morph = filterMorph,
-                                        anchorIcon = { Icon(imageVector = MiuixIcons.Filter, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = {
                                             showFilterPopup.value = false
                                         },
@@ -221,11 +221,11 @@ fun SulogScreenMiuix(
                                         onClick = { showFilterPopup.value = true },
                                         modifier = Modifier.morphAnchor(filterMorph),
                                     ) {
-                                        Icon(
+                                        MorphIcon(filterMorph) { Icon(
                                             imageVector = MiuixIcons.Filter,
                                             tint = colorScheme.onSurface,
                                             contentDescription = stringResource(R.string.sulog_filter_title),
-                                        )
+                                        ) }
                                     }
                                 }
                             }

@@ -3,12 +3,14 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.1.8 - 2026-10-14
-- Flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu và khôi phục cấu hình
+- Chống bootloop cứu được cả lỗi rất sớm lúc khởi động, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình
 ### Tính năng mới
+- Chống bootloop giờ cứu được cả máy treo rất sớm lúc khởi động do module có init rc (`initrc/*.rc`) hỏng: sau số lần khởi động lỗi đã chọn, lần sau máy bỏ qua init rc của module để lên được, rồi tự tắt module đó và báo như trước, không phải bấm phím vào safe mode
 - Sao lưu cấu hình (Cài đặt → Sao lưu cấu hình): quyền root, hồ sơ app, công tắc ẩn root, module đang bật và bookmark tab Tệp vào một file; khôi phục trên máy mới hoặc sau khi flash ROM, xem trước những gì sẽ đổi
 - Trang Kiểm tra ẩn root: mỗi mục có nút sửa ngay ("Bật umount module cho app này", bật umount trong hồ sơ mặc định, bật công tắc đang tắt, mở Tuỳ chọn nhà phát triển) và lời khuyên cụ thể cho mục không tự sửa được
 ### Thay đổi
 - Flash vào phân vùng (tab Tệp): kiểm tra image đúng loại trước khi ghi (chặn flash nhầm boot vào init_boot, file zip, file nén), luôn sao lưu phân vùng hiện tại vào CamBackup trước, cảnh báo khi chọn slot máy không chạy, bước cuối phải gõ tên phân vùng
+- Chống xung đột module: nhận ra cả thư mục được thay thế bằng xattr của overlayfs (module làm cho metamodule overlay), không chỉ file `.replace`
 ### Lưu ý
 - Bản thử nghiệm: các tính năng trên chưa được thử trên nhiều máy, báo lỗi giúp Cam nếu gặp
 

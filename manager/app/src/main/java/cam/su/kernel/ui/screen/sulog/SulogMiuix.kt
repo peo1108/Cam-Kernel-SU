@@ -202,7 +202,7 @@ fun SulogScreenMiuix(
                                             showFilterPopup.value = false
                                         },
                                         content = {
-                                            GlassMenuColumn(checks = true) {
+                                            GlassMenuColumn {
                                                 SulogEventFilter.entries.forEachIndexed { index, filter ->
                                                     GlassMenuItem(
                                                         text = sulogFilterLabel(filter),

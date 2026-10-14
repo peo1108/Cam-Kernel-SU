@@ -310,7 +310,7 @@ private fun OverflowMenu(state: FilesUiState, vm: FilesViewModel, onSort: () -> 
                     show = false
                     action()
                 }
-                GlassMenuColumn(checks = true) {
+                GlassMenuColumn {
                     GlassMenuItem(stringResource(R.string.files_refresh), icon = Icons.Rounded.Refresh, onClick = { run { vm.refresh() } })
                     GlassMenuItem(stringResource(R.string.files_search), icon = Icons.Rounded.Search, onClick = { run(onSearch) })
                     GlassMenuItem(stringResource(R.string.files_select_all), icon = Icons.Rounded.CheckCircle, onClick = { run { vm.selectAll() } })

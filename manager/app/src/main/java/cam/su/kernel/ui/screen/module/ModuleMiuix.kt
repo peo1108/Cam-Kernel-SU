@@ -299,7 +299,7 @@ fun ModulePagerMiuix(
                                             showTopPopup.value = false
                                         },
                                         content = {
-                                            GlassMenuColumn(checks = true) {
+                                            GlassMenuColumn {
                                                 GlassMenuItem(
                                                     text = stringResource(R.string.module_sort_action_first),
                                                     icon = Icons.Rounded.PlayArrow,

@@ -24,10 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -45,24 +43,19 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
  * large text, thin inset separators between groups, and an optional row of icon-over-label actions.
  */
 
-/** Whether the rows of this menu reserve the leading check column (any row can be checked). */
-private val LocalMenuChecks = staticCompositionLocalOf { false }
-
 /** Destructive rows (delete, reboot to EDL...) are red, as on iOS. */
 private val MenuRed = Color(0xFFFF3B30)
 
 @Composable
-fun GlassMenuColumn(checks: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
-    CompositionLocalProvider(LocalMenuChecks provides checks) {
-        Column(
-            modifier = Modifier
-                .width(IntrinsicSize.Max)
-                .widthIn(min = 230.dp, max = 320.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(vertical = 6.dp),
-            content = content,
-        )
-    }
+fun GlassMenuColumn(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(IntrinsicSize.Max)
+            .widthIn(min = 180.dp, max = 320.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 6.dp),
+        content = content,
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -93,14 +86,9 @@ fun GlassMenuItem(
                 onLongClick = onLongClick,
             )
             .alpha(if (enabled) 1f else 0.35f)
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (LocalMenuChecks.current) {
-            Box(Modifier.width(30.dp)) {
-                if (checked) Icon(Icons.Rounded.Check, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            }
-        }
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(16.dp))
@@ -110,6 +98,11 @@ fun GlassMenuItem(
             if (subtitle != null) {
                 Text(subtitle, fontSize = 13.sp, color = colorScheme.onSurfaceVariantSummary, maxLines = 1)
             }
+        }
+        // the check sits at the end: a leading check column leaves every unchecked menu with a gap
+        if (checked) {
+            Spacer(Modifier.width(12.dp))
+            Icon(Icons.Rounded.Check, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
         }
         if (submenu) {
             Spacer(Modifier.width(8.dp))
@@ -123,7 +116,7 @@ fun GlassMenuItem(
 fun GlassMenuDivider() {
     Box(
         Modifier
-            .padding(horizontal = 18.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
             .fillMaxWidth()
             .height(0.7.dp)
             .background(colorScheme.onSurface.copy(alpha = 0.12f)),
@@ -137,14 +130,20 @@ fun GlassMenuActions(content: @Composable RowScope.() -> Unit) {
 }
 
 @Composable
-fun RowScope.GlassMenuAction(icon: ImageVector, label: String, enabled: Boolean = true, onClick: () -> Unit) {
+fun RowScope.GlassMenuAction(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean = true,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     Column(
         modifier = Modifier
             .weight(1f)
             .background(if (pressed) colorScheme.onSurface.copy(alpha = 0.08f) else Color.Transparent)
-            .combinedClickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
+            .combinedClickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick, onLongClick = onLongClick)
             .alpha(if (enabled) 1f else 0.35f)
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

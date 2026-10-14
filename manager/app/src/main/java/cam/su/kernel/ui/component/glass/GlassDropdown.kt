@@ -67,7 +67,7 @@ fun GlassDropdownPreference(
             morph = morph,
             morphAlign = MorphAlign.End,
         ) {
-            GlassMenuColumn(checks = true) {
+            GlassMenuColumn {
                 items.forEachIndexed { index, text ->
                     GlassMenuItem(
                         text = text,

@@ -174,7 +174,7 @@ fun SuperUserPagerMiuix(
                                         morph = sortMorph,
                                         onDismissRequest = { showSortPopup.value = false },
                                         content = {
-                                            GlassMenuColumn(checks = true) {
+                                            GlassMenuColumn {
                                                 val sortEntries = listOf(
                                                     AppSortType.NAME to R.string.sort_by_name,
                                                     AppSortType.PACKAGE_NAME to R.string.sort_by_package_name,
@@ -242,7 +242,7 @@ fun SuperUserPagerMiuix(
                                         content = {
                                             val isMultiUser = uiState.userIds.size > 1
                                             val size = if (isMultiUser) 3 else 2
-                                            GlassMenuColumn(checks = true) {
+                                            GlassMenuColumn {
                                                 GlassMenuItem(
                                                     text = stringResource(R.string.show_system_apps),
                                                     icon = Icons.Rounded.Android,

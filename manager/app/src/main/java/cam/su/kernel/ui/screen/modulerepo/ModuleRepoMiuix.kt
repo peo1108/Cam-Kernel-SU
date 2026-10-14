@@ -178,7 +178,7 @@ fun ModuleRepoScreenMiuix(
                                     morph = sortMorph,
                                     onDismissRequest = { showSortPopup.value = false },
                                     content = {
-                                        GlassMenuColumn(checks = true) {
+                                        GlassMenuColumn {
                                             val sortOptions = listOf(
                                                 RepoSort.UPDATED to R.string.module_repos_sort_updated,
                                                 RepoSort.CREATED to R.string.module_repos_sort_created,

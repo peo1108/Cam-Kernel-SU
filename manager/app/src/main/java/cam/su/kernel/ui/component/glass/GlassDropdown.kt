@@ -36,24 +36,28 @@ fun GlassDropdownPreference(
     onSelectedIndexChange: ((Int) -> Unit)? = null,
 ) {
     val expanded = remember { mutableStateOf(false) }
+    val morph = rememberMorphPopupState()
     val current = items.getOrNull(selectedIndex).orEmpty()
+    // The value and its arrow: the menu grows out of them, iOS pull-down style.
+    val valueLabel: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = current,
+                color = if (enabled) colorScheme.onSurfaceVariantActions else colorScheme.disabledOnSecondaryVariant,
+                modifier = Modifier.padding(end = 6.dp),
+            )
+            DropdownArrowEndAction(colorScheme.onSurfaceVariantActions)
+        }
+    }
     Box(modifier = modifier) {
         BasicComponent(
             title = title,
             summary = summary,
             startAction = startAction,
             endActions = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = current,
-                        color = if (enabled) colorScheme.onSurfaceVariantActions else colorScheme.disabledOnSecondaryVariant,
-                        modifier = Modifier.padding(end = 6.dp),
-                    )
-                    DropdownArrowEndAction(colorScheme.onSurfaceVariantActions)
-                }
+                Box(Modifier.morphAnchor(morph)) { valueLabel() }
             },
             onClick = { if (enabled) expanded.value = true },
-            holdDownState = expanded.value,
             enabled = enabled,
         )
         GlassListPopup(
@@ -62,6 +66,8 @@ fun GlassDropdownPreference(
             alignment = PopupPositionProvider.Align.End,
             maxHeight = maxHeight,
             onDismissRequest = { expanded.value = false },
+            morph = morph,
+            anchorIcon = valueLabel,
         ) {
             ListPopupColumn {
                 items.forEachIndexed { index, text ->

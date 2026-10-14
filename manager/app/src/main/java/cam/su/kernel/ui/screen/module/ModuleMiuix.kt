@@ -2,6 +2,8 @@ package cam.su.kernel.ui.screen.module
 
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassFab
+import cam.su.kernel.ui.component.glass.morphAnchor
+import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassDialog
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
@@ -275,9 +277,10 @@ fun ModulePagerMiuix(
                             GlassButtonGroup {
                                 Box {
                                     val showTopPopup = remember { mutableStateOf(false) }
+                                    val sortMorph = rememberMorphPopupState()
                                     GlassIconButton(
                                         onClick = { showTopPopup.value = true },
-                                        holdDownState = showTopPopup.value
+                                        modifier = Modifier.morphAnchor(sortMorph),
                                     ) {
                                         Icon(
                                             imageVector = MiuixIcons.Sort,
@@ -289,6 +292,8 @@ fun ModulePagerMiuix(
                                         show = showTopPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
+                                        morph = sortMorph,
+                                        anchorIcon = { Icon(imageVector = MiuixIcons.Sort, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = {
                                             showTopPopup.value = false
                                         },

@@ -1,6 +1,8 @@
 package cam.su.kernel.ui.screen.appprofile
 
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
+import cam.su.kernel.ui.component.glass.morphAnchor
+import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassCard
@@ -425,9 +427,10 @@ private fun TopBar(
                 GlassButtonGroup {
                     if (showActions) {
                         val showTopPopup = remember { mutableStateOf(false) }
+                        val moreMorph = rememberMorphPopupState()
                         GlassIconButton(
                             onClick = { showTopPopup.value = true },
-                            holdDownState = showTopPopup.value
+                            modifier = Modifier.morphAnchor(moreMorph),
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.MoreCircle,
@@ -439,6 +442,8 @@ private fun TopBar(
                             show = showTopPopup.value,
                             popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                             alignment = PopupPositionProvider.Align.TopEnd,
+                            morph = moreMorph,
+                            anchorIcon = { Icon(imageVector = MiuixIcons.MoreCircle, tint = colorScheme.onSurface, contentDescription = null) },
                             onDismissRequest = { showTopPopup.value = false },
                             content = {
                                 ListPopupColumn {

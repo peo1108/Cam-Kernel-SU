@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,8 +92,21 @@ fun GlassListPopup(
     alignment: PopupPositionProvider.Align,
     onDismissRequest: (() -> Unit)? = null,
     maxHeight: Dp? = null,
+    morph: MorphPopupState? = null,
+    anchorIcon: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
+    // With a morph state the menu grows out of the button marked with Modifier.morphAnchor.
+    if (morph != null) {
+        LaunchedEffect(show) { morph.expanded = show }
+        GlassMorphPopup(
+            state = morph,
+            onDismissRequest = { onDismissRequest?.invoke() },
+            anchorIcon = anchorIcon,
+            content = content,
+        )
+        return
+    }
     // The popup container is drawn by the root popup host (call-site locals do not reach it), so
     // the glass is laid over its content area instead; the backdrop is resolved here, at the call site.
     val glass = Modifier.overlayGlass(RoundedCornerShape(GlassDefaults.popupCorner))

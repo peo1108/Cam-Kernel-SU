@@ -5,6 +5,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -156,7 +157,8 @@ private fun MorphLayer(
         Layout(
             content = {
                 val bgShape = RoundedCornerShape(with(density) { radius.toDp() })
-                Box(Modifier.overlayGlass(bgShape))
+                // iOS menus are nearly opaque: a surface veil over the glass keeps busy rows behind unreadable.
+                Box(Modifier.overlayGlass(bgShape).background(colorScheme.surface.copy(alpha = 0.35f), bgShape))
                 Box(
                     Modifier
                         .onSizeChanged { contentSize = it }

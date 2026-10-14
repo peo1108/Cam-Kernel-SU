@@ -1,6 +1,8 @@
 package cam.su.kernel.ui.screen.sulog
 
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
+import cam.su.kernel.ui.component.glass.morphAnchor
+import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassDialog
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
@@ -189,10 +191,13 @@ fun SulogScreenMiuix(
 
                                 Box {
                                     val showFilterPopup = remember { mutableStateOf(false) }
+                                    val filterMorph = rememberMorphPopupState()
                                     GlassListPopup(
                                         show = showFilterPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
+                                        morph = filterMorph,
+                                        anchorIcon = { Icon(imageVector = MiuixIcons.Filter, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = {
                                             showFilterPopup.value = false
                                         },
@@ -214,7 +219,7 @@ fun SulogScreenMiuix(
                                     )
                                     GlassIconButton(
                                         onClick = { showFilterPopup.value = true },
-                                        holdDownState = showFilterPopup.value,
+                                        modifier = Modifier.morphAnchor(filterMorph),
                                     ) {
                                         Icon(
                                             imageVector = MiuixIcons.Filter,

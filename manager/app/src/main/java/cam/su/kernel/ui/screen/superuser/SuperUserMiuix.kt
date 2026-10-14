@@ -1,6 +1,8 @@
 package cam.su.kernel.ui.screen.superuser
 
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
+import cam.su.kernel.ui.component.glass.morphAnchor
+import cam.su.kernel.ui.component.glass.rememberMorphPopupState
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassListCard
@@ -157,10 +159,13 @@ fun SuperUserPagerMiuix(
                             GlassButtonGroup {
                                 Box {
                                     val showSortPopup = remember { mutableStateOf(false) }
+                                    val sortMorph = rememberMorphPopupState()
                                     GlassListPopup(
                                         show = showSortPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
+                                        morph = sortMorph,
+                                        anchorIcon = { Icon(imageVector = MiuixIcons.Sort, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = { showSortPopup.value = false },
                                         content = {
                                             ListPopupColumn {
@@ -207,7 +212,7 @@ fun SuperUserPagerMiuix(
 
                                     GlassIconButton(
                                         onClick = { showSortPopup.value = true },
-                                        holdDownState = showSortPopup.value,
+                                        modifier = Modifier.morphAnchor(sortMorph),
                                     ) {
                                         Icon(
                                             imageVector = MiuixIcons.Sort,
@@ -219,6 +224,7 @@ fun SuperUserPagerMiuix(
 
                                 Box {
                                     val showTopPopup = remember { mutableStateOf(false) }
+                                    val moreMorph = rememberMorphPopupState()
                                     val showRestore = remember { mutableStateOf(false) }
                                     RestoreSystemAppsDialog(
                                         show = showRestore.value,
@@ -229,6 +235,8 @@ fun SuperUserPagerMiuix(
                                         show = showTopPopup.value,
                                         popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
                                         alignment = PopupPositionProvider.Align.TopEnd,
+                                        morph = moreMorph,
+                                        anchorIcon = { Icon(imageVector = MiuixIcons.MoreCircle, tint = colorScheme.onSurface, contentDescription = null) },
                                         onDismissRequest = {
                                             showTopPopup.value = false
                                         },
@@ -275,7 +283,7 @@ fun SuperUserPagerMiuix(
                                         onClick = {
                                             showTopPopup.value = true
                                         },
-                                        holdDownState = showTopPopup.value
+                                        modifier = Modifier.morphAnchor(moreMorph),
                                     ) {
                                         Icon(
                                             imageVector = MiuixIcons.MoreCircle,

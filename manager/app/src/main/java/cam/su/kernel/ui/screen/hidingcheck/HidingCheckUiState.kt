@@ -85,7 +85,18 @@ data class HidingCheckUiState(
 
     /** fixes the visible findings ask for that are still off */
     val pendingFixes: Set<String>
-        get() = findings.mapNotNull { it.finding.fix }.filterTo(mutableSetOf()) { !fix(it).enabled && fix(it).available }
+        get() = findings.mapNotNullTo(mutableSetOf()) { actionFor(it.finding) }
+
+    /**
+     * The fix one tap on [finding] applies, null when there is none to apply: a switch the
+     * finding names that is off, or module umount in the app profiles that keep the mounts.
+     */
+    fun actionFor(finding: HidingAudit.Finding): String? = when {
+        finding.id == "profileUmount" -> APP_UMOUNT
+        finding.id == "defaultProfileUmount" -> DEFAULT_UMOUNT
+        finding.fix != null && !fix(finding.fix).enabled && fix(finding.fix).available -> finding.fix
+        else -> null
+    }
 
     fun fix(name: String): HidingFix = when (name) {
         "kernelUmount" -> kernelUmount
@@ -100,6 +111,12 @@ data class HidingCheckUiState(
     fun moduleName(id: String): String = moduleNames[id]?.takeIf { it.isNotBlank() } ?: id
 
     companion object {
+        /** Module umount in the profiles of the apps a profileUmount finding lists. */
+        const val APP_UMOUNT = "appUmount"
+
+        /** Module umount in the default profile of apps without root. */
+        const val DEFAULT_UMOUNT = "defaultUmount"
+
         /** App view checks, which report only what they find: the ones missing from a scan passed. */
         private val APP_CHECKS = listOf("appMounts", "appMaps", "appSu", "appProps", "appSelinux")
 
@@ -164,4 +181,7 @@ data class HidingCheckActions(
     val onCheckAttestation: () -> Unit,
     val onLaunchApp: () -> Unit,
     val onSetModuleScan: (Boolean) -> Unit,
+    /** applies one fix ([HidingCheckUiState.actionFor]) and scans again */
+    val onFix: (name: String) -> Unit,
+    val onOpenDeveloperOptions: () -> Unit,
 )

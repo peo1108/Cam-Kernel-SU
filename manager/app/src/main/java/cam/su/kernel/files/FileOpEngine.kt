@@ -6,8 +6,8 @@ import java.io.OutputStream
 
 /**
  * EXTRACT: sources are paths inside one archive. COMPRESS: destDir is the zip to write.
- * BACKUP: sources is one partition name, destDir the image file. FLASH: sources is one image,
- * destDir the partition name. TRASH: sources go to the trash. RESTORE / PURGE: sources are trash
+ * BACKUP: sources is one partition name, destDir the image file. FLASH: sources is the image and
+ * the file the partition is backed up to first, destDir the partition name. TRASH: sources go to the trash. RESTORE / PURGE: sources are trash
  * folders (Trash), put back or removed for good.
  */
 enum class OpKind { COPY, MOVE, DELETE, EXTRACT, COMPRESS, BACKUP, FLASH, TRASH, RESTORE, PURGE }

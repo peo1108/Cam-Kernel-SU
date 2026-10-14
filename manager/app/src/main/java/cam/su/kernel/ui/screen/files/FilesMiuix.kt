@@ -171,8 +171,13 @@ sealed interface FilesDialogState {
     data object Search : FilesDialogState
     data class ConfirmBackup(val partition: cam.su.kernel.files.Partition) : FilesDialogState
 
-    /** Flashing asks twice: [last] is the second time. */
-    data class ConfirmFlash(val image: FileEntry, val partition: cam.su.kernel.files.Partition, val last: Boolean = false) : FilesDialogState
+    /** Flashing asks twice: [last] is the second time. [otherSlot]: not the slot the phone boots. */
+    data class ConfirmFlash(
+        val image: FileEntry,
+        val partition: cam.su.kernel.files.Partition,
+        val otherSlot: Boolean = false,
+        val last: Boolean = false,
+    ) : FilesDialogState
 }
 
 @Composable

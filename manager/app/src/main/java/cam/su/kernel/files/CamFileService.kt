@@ -384,8 +384,12 @@ class CamFileService : RootService() {
                 OpKind.BACKUP -> PartitionOps(listener, cancelled)
                     .backup(op.sources.single(), op.destDir ?: throw FsException(Errno.EINVAL))
 
-                OpKind.FLASH -> PartitionOps(listener, cancelled)
-                    .flash(op.sources.single(), op.destDir ?: throw FsException(Errno.EINVAL))
+                // sources: the image, then where the partition is backed up first (never optional)
+                OpKind.FLASH -> PartitionOps(listener, cancelled).flash(
+                    op.sources.first(),
+                    op.destDir ?: throw FsException(Errno.EINVAL),
+                    op.sources.getOrNull(1) ?: throw FsException(Errno.EINVAL, detail = "flash needs a backup path"),
+                )
 
                 OpKind.COMPRESS -> ArchiveOps(OsBackend, listener, cancelled)
                     .compress(op.sources, op.destDir ?: throw FsException(Errno.EINVAL))

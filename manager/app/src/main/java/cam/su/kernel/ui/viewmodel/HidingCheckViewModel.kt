@@ -101,15 +101,19 @@ class HidingCheckViewModel(
      * Turns on every fix the findings ask for, camd's and the app view's, then scans again
      * so the page shows what is left.
      */
-    fun applyFixes() {
+    fun applyFixes() = apply(_uiState.value.pendingFixes, withCamd = uid == null)
+
+    /** One fix from a finding's own button, then a scan. */
+    fun applyFix(name: String) = apply(setOf(name), withCamd = false)
+
+    private fun apply(fixes: Set<String>, withCamd: Boolean) {
         if (_uiState.value.scanning) return
-        val pending = _uiState.value.pendingFixes
         _uiState.update { it.copy(scanning = true) }
         viewModelScope.launch {
             val rebootNeeded = withContext(Dispatchers.IO) {
                 // camd covers its own findings; the app view can ask for one camd did not see
-                val camd = uid == null && applyHidingFixes()
-                val rest = pending.map { writeFix(it, true) }
+                val camd = withCamd && applyHidingFixes()
+                val rest = fixes.map { writeFix(it, true) }
                 camd || rest.any { it }
             }
             if (rebootNeeded) _uiState.update { it.copy(rebootNeeded = true) }
@@ -141,7 +145,25 @@ class HidingCheckViewModel(
             setHideBootloader(enabled)
             false
         }
+        // a running app keeps the mounts it has: they go when it starts again
+        HidingCheckUiState.APP_UMOUNT -> {
+            if (enabled) umountInProfiles()
+            false
+        }
+        HidingCheckUiState.DEFAULT_UMOUNT -> {
+            Cam.setDefaultUmountModules(enabled)
+            false
+        }
         else -> false
+    }
+
+    /** Module umount on in the profile of every app [profileAudit] finds keeping the mounts. */
+    private fun umountInProfiles() {
+        keepingMounts(uid?.let(::setOf)).forEach { (appUid, apps) ->
+            val pkg = SuperUserViewModel.getGroupedApp(appUid)?.primary?.packageName ?: apps.first().packageName
+            val profile = Cam.getAppProfile(pkg, appUid)
+            Cam.setAppProfile(profile.copy(name = pkg, currentUid = appUid, allowSu = false, nonRootUseDefault = false, umountModules = true))
+        }
     }
 
     /**
@@ -235,14 +257,9 @@ class HidingCheckViewModel(
      */
     private fun profileAudit(uids: Set<Int>?): HidingAudit? {
         if (!settingsRepo.isKernelUmountEnabled()) return null
-        val groups = SuperUserViewModel.apps
-            .filter { uids == null || it.uid in uids }
-            .groupBy { it.uid }
-            .filterValues { apps -> apps.none { it.allowSu } }
+        val groups = nonRootApps(uids)
         if (groups.isEmpty()) return null
-        val keeping = groups.filterKeys { uid ->
-            !(SuperUserViewModel.getGroupedApp(uid)?.shouldUmount ?: Cam.uidShouldUmount(uid))
-        }
+        val keeping = keepingMounts(uids)
         val stats = mapOf("profileChecked" to 1)
         if (keeping.isEmpty()) return HidingAudit(emptyList(), 0, stats)
         val finding = if (uids == null && keeping.size == groups.size && groups.size > 1) {
@@ -256,6 +273,17 @@ class HidingCheckViewModel(
             )
         }
         return HidingAudit(listOf(finding), 0, stats)
+    }
+
+    /** Apps without root by uid, only [uids] when given. */
+    private fun nonRootApps(uids: Set<Int>?): Map<Int, List<cam.su.kernel.data.model.AppInfo>> = SuperUserViewModel.apps
+        .filter { uids == null || it.uid in uids }
+        .groupBy { it.uid }
+        .filterValues { apps -> apps.none { it.allowSu } }
+
+    /** Of [nonRootApps], the ones whose profile keeps module mounts. */
+    private fun keepingMounts(uids: Set<Int>?): Map<Int, List<cam.su.kernel.data.model.AppInfo>> = nonRootApps(uids).filterKeys { uid ->
+        !(SuperUserViewModel.getGroupedApp(uid)?.shouldUmount ?: Cam.uidShouldUmount(uid))
     }
 
     private suspend fun record(result: AuditResult) {

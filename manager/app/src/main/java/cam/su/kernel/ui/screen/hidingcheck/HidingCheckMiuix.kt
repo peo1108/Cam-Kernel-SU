@@ -412,7 +412,8 @@ private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, state: HidingCh
         if (modules.isNotEmpty()) add(stringResource(R.string.hiding_from_modules, modules.joinToString()))
         if (finding.items.isNotEmpty()) add(stringResource(R.string.hiding_items, finding.items.size))
         if (checked.newItems.isNotEmpty()) add(stringResource(R.string.hiding_new_items, checked.newItems.size))
-        add(stringResource(fixLabel(finding, fixOn)))
+        // advice is long: the card says there is some, and shows it opened
+        add(stringResource(if (adviceRes(finding) != null && finding.fix == null) R.string.hiding_see_advice else fixLabel(finding, fixOn)))
     }.joinToString(" · ")
 
     GlassExpandableCard(
@@ -489,6 +490,27 @@ private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, state: HidingCh
                         .padding(horizontal = 16.dp, vertical = 2.dp),
                 )
             }
+        }
+        val action = state.actionFor(finding)
+        if (action != null) {
+            TextButton(
+                text = actionLabel(action, finding, state),
+                enabled = !state.scanning,
+                onClick = { actions.onFix(action) },
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+        if (finding.id == "adb") {
+            TextButton(
+                text = stringResource(R.string.hiding_open_developer_options),
+                onClick = actions.onOpenDeveloperOptions,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
         }
         Row(
             modifier = Modifier
@@ -665,11 +687,40 @@ fun findingTitleRes(id: String): Int? = when (id) {
 /** What to do about [finding]; [fixOn]: its fix is on and the finding is still there. */
 private fun fixLabel(finding: HidingAudit.Finding, fixOn: Boolean): Int = when {
     finding.fix != null && fixOn -> R.string.hiding_fix_on_still
-    finding.id == "profileUmount" || finding.id == "defaultProfileUmount" -> R.string.hiding_fix_profile
+    finding.id == "profileUmount" -> R.string.hiding_fix_profile
+    finding.id == "defaultProfileUmount" -> R.string.hiding_fix_default_profile
     finding.id == "appHooked" -> R.string.hiding_fix_hooked
     finding.id == "appAttrTiming" -> R.string.hiding_fix_attr_timing
     finding.id == "selinuxAvcLookups" -> R.string.hiding_fix_avc_lookups
+    finding.fix == null -> adviceRes(finding) ?: R.string.audit_fix_none
     else -> fixLabel(finding.fix)
+}
+
+/** What the user can do about a finding the page cannot switch off; null when there is no advice. */
+private fun adviceRes(finding: HidingAudit.Finding): Int? = when (finding.id) {
+    "moduleMounts" -> R.string.hiding_advice_module_mounts
+    "maps", "appMaps" -> R.string.hiding_advice_maps
+    "bootArgs" -> R.string.hiding_advice_boot_args
+    "lsposed" -> R.string.hiding_advice_lsposed
+    "revanced" -> R.string.hiding_advice_revanced
+    "customRom" -> R.string.hiding_advice_custom_rom
+    "files" -> R.string.hiding_advice_files
+    "selinux", "appSelinux" -> R.string.hiding_advice_selinux
+    "adb" -> R.string.hiding_advice_adb
+    "appSu" -> R.string.hiding_advice_app_su
+    else -> null
+}
+
+/** The label of the button that applies [action] to [finding]. */
+@Composable
+private fun actionLabel(action: String, finding: HidingAudit.Finding, state: HidingCheckUiState): String = when (action) {
+    HidingCheckUiState.APP_UMOUNT -> if (state.app != null || finding.items.size <= 1) {
+        stringResource(R.string.hiding_action_umount_app)
+    } else {
+        stringResource(R.string.hiding_action_umount_apps, finding.items.size)
+    }
+    HidingCheckUiState.DEFAULT_UMOUNT -> stringResource(R.string.hiding_fix_default_profile)
+    else -> stringResource(fixLabel(action))
 }
 
 private fun passedTitle(id: String): Int = when (id) {

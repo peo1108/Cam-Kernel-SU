@@ -3,6 +3,7 @@ package cam.su.kernel.ui.screen.hidingcheck
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -13,6 +14,7 @@ import cam.su.kernel.ui.viewmodel.HidingCheckViewModel
 @Composable
 fun HidingCheckScreen(uid: Int? = null, scanNow: Boolean = false) {
     val navigator = LocalNavigator.current
+    val context = LocalContext.current
     val viewModel = viewModel(key = "hiding-check-${uid ?: "device"}") { HidingCheckViewModel(uid) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -33,6 +35,15 @@ fun HidingCheckScreen(uid: Int? = null, scanNow: Boolean = false) {
         onCheckAttestation = viewModel::checkAttestation,
         onLaunchApp = viewModel::launchCheckedApp,
         onSetModuleScan = viewModel::setModuleScan,
+        onFix = viewModel::applyFix,
+        onOpenDeveloperOptions = {
+            runCatching {
+                context.startActivity(
+                    android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+        },
     )
 
     HidingCheckScreenMiuix(uiState, actions)

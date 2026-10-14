@@ -738,7 +738,13 @@ private fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) -
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
                             vm.hidePartitions()
-                            onDialog(if (image != null) FilesDialogState.ConfirmFlash(image, p) else FilesDialogState.ConfirmBackup(p))
+                            onDialog(
+                                if (image != null) {
+                                    FilesDialogState.ConfirmFlash(image, p, otherSlot = !cam.su.kernel.files.Partitions.inSlot(p.name, ui.slot))
+                                } else {
+                                    FilesDialogState.ConfirmBackup(p)
+                                },
+                            )
                         }
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -763,62 +769,92 @@ private fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) -
     }
 }
 
-/** Two steps: what gets written where, then a last warning with a red Flash. */
+/**
+ * Two steps: what gets written where, with the image checked against the partition, then a last
+ * warning where the partition's name has to be typed before the red Flash works.
+ */
 @Composable
 private fun FlashConfirmDialog(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit) {
     val close = { onDialog(null) }
-    val tooBig = dialog.image.contentSize > dialog.partition.size
     val title = stringResource(if (dialog.last) R.string.files_flash_last_title else R.string.files_flash)
     // overlay dialogs keep the content they were shown with: each step is a dialog of its own
-    androidx.compose.runtime.key(dialog.last) { FlashConfirmBody(dialog, title, tooBig, vm, onDialog, close) }
+    androidx.compose.runtime.key(dialog.last) {
+        FilesDialog(show = true, title = title, onDismiss = close) {
+            if (dialog.last) FlashLastStep(dialog, vm, close) else FlashFirstStep(dialog, vm, onDialog, close)
+        }
+    }
 }
 
 @Composable
-private fun FlashConfirmBody(
-    dialog: FilesDialogState.ConfirmFlash,
-    title: String,
-    tooBig: Boolean,
-    vm: FilesViewModel,
-    onDialog: (FilesDialogState?) -> Unit,
-    close: () -> Unit,
-) {
-    FilesDialog(show = true, title = title, onDismiss = close) {
-        if (!dialog.last) {
-            Text(
-                stringResource(
-                    R.string.files_flash_confirm,
-                    dialog.image.name,
-                    FileFormat.size(dialog.image.contentSize),
-                    dialog.partition.name,
-                    FileFormat.size(dialog.partition.size),
-                ),
-            )
-            if (tooBig) Text(stringResource(R.string.files_flash_too_big), color = colorScheme.error, modifier = Modifier.padding(top = 8.dp))
-            Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                TextButton(text = stringResource(android.R.string.cancel), onClick = close, modifier = Modifier.weight(1f))
-                TextButton(
-                    text = stringResource(android.R.string.ok),
-                    enabled = !tooBig,
-                    onClick = { onDialog(dialog.copy(last = true)) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                )
-            }
-        } else {
-            Text(stringResource(R.string.files_flash_last_message), color = colorScheme.error)
-            Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                TextButton(text = stringResource(android.R.string.cancel), onClick = close, modifier = Modifier.weight(1f))
-                TextButton(
-                    text = stringResource(R.string.files_flash_go),
-                    onClick = {
-                        close()
-                        vm.flashPartition(dialog.image, dialog.partition.name)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColors(color = colorScheme.error, textColor = colorScheme.onError),
-                )
-            }
+private fun FlashFirstStep(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit, close: () -> Unit) {
+    var check by remember { mutableStateOf<FilesViewModel.FlashCheck?>(null) }
+    androidx.compose.runtime.LaunchedEffect(dialog.image.path, dialog.partition.name) {
+        check = vm.checkFlash(dialog.image, dialog.partition)
+    }
+    Text(
+        stringResource(
+            R.string.files_flash_confirm,
+            dialog.image.name,
+            FileFormat.size(dialog.image.contentSize),
+            dialog.partition.name,
+            FileFormat.size(dialog.partition.size),
+        ),
+    )
+    val problems = buildList {
+        if (dialog.image.contentSize > dialog.partition.size) add(stringResource(R.string.files_flash_too_big))
+        when (check?.problem) {
+            cam.su.kernel.files.ImageProblem.WRONG_FORMAT -> add(stringResource(R.string.files_flash_wrong_format, dialog.partition.name))
+            cam.su.kernel.files.ImageProblem.KERNEL_INTO_INIT_BOOT -> add(stringResource(R.string.files_flash_kernel_into_init_boot))
+            cam.su.kernel.files.ImageProblem.NO_KERNEL -> add(stringResource(R.string.files_flash_no_kernel, dialog.partition.name))
+            null -> {}
         }
+        if (check?.room == false) add(stringResource(R.string.files_flash_no_room, FileFormat.size(dialog.partition.size)))
+    }
+    problems.forEach { Text(it, color = colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
+    if (dialog.otherSlot) Text(stringResource(R.string.files_flash_other_slot), color = colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+    val note = when {
+        check == null -> stringResource(R.string.files_flash_checking)
+        problems.isEmpty() -> stringResource(R.string.files_flash_backup_first, dialog.partition.name, cam.su.kernel.files.Partitions.BACKUP_DIR)
+        else -> null
+    }
+    note?.let { Text(it, fontSize = 13.sp, color = colorScheme.onSurfaceVariantSummary, modifier = Modifier.padding(top = 8.dp)) }
+    Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        TextButton(text = stringResource(android.R.string.cancel), onClick = close, modifier = Modifier.weight(1f))
+        TextButton(
+            text = stringResource(android.R.string.ok),
+            enabled = check != null && problems.isEmpty(),
+            onClick = { onDialog(dialog.copy(last = true)) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.textButtonColorsPrimary(),
+        )
+    }
+}
+
+@Composable
+private fun FlashLastStep(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewModel, close: () -> Unit) {
+    var typed by remember { mutableStateOf("") }
+    Text(stringResource(R.string.files_flash_last_message), color = colorScheme.error)
+    Text(stringResource(R.string.files_flash_type_name, dialog.partition.name), modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
+    TextField(
+        value = typed,
+        onValueChange = { typed = it },
+        label = dialog.partition.name,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Ascii),
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        TextButton(text = stringResource(android.R.string.cancel), onClick = close, modifier = Modifier.weight(1f))
+        TextButton(
+            text = stringResource(R.string.files_flash_go),
+            enabled = typed.trim() == dialog.partition.name,
+            onClick = {
+                close()
+                vm.flashPartition(dialog.image, dialog.partition.name)
+            },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.textButtonColors(color = colorScheme.error, textColor = colorScheme.onError),
+        )
     }
 }
 

@@ -74,4 +74,22 @@ class HidingCheckCompareTest {
         assertEquals(mapOf("rootModuleMounts" to 2, "appView" to 1), merged.stats)
         assertEquals(1, merged.fixable)
     }
+
+    @Test
+    fun eachFindingOffersTheFixThatIsStillOff() {
+        val state = HidingCheckUiState(kernelUmount = HidingFix(enabled = false, available = true), selinuxHide = HidingFix(enabled = true, available = true))
+        fun f(id: String, fix: String?) = HidingAudit.Finding(id = id, leak = true, items = emptyList(), fix = fix)
+        assertEquals("kernelUmount", state.actionFor(f("camMounts", "kernelUmount")))
+        // on already, or the kernel lacks it: nothing to tap
+        assertEquals(null, state.actionFor(f("selinuxRules", "selinuxHide")))
+        assertEquals(null, state.actionFor(f("props", "hideBootloader")))
+        assertEquals(HidingCheckUiState.APP_UMOUNT, state.actionFor(f("profileUmount", null)))
+        assertEquals(HidingCheckUiState.DEFAULT_UMOUNT, state.actionFor(f("defaultProfileUmount", null)))
+        assertEquals(null, state.actionFor(f("lsposed", null)))
+
+        val withFindings = state.copy(findings = listOf("camMounts" to "kernelUmount", "appMounts" to "kernelUmount", "profileUmount" to null).map { (id, fix) ->
+            CheckedFinding(f(id, fix), null, emptySet())
+        })
+        assertEquals(setOf("kernelUmount", HidingCheckUiState.APP_UMOUNT), withFindings.pendingFixes)
+    }
 }

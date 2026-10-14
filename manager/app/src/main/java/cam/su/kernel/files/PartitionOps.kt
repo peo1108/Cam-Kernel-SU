@@ -18,34 +18,18 @@ class PartitionOps(
     fun backup(name: String, dest: String): OpResult {
         val device = device(name)
         val size = size(device)
-        val target = FsPath.normalize(dest)
-        RootFs(OsBackend).writeAtomicWith(target, beforeCommit = { checkCancel() }) { out ->
-            val fd = open(device, OsConstants.O_RDONLY)
-            try {
-                val buffer = ByteArray(BUFFER_SIZE)
-                var done = 0L
-                while (done < size) {
-                    checkCancel()
-                    val n = read(fd, device, buffer, minOf(buffer.size.toLong(), size - done).toInt())
-                    if (n <= 0) break
-                    out.write(buffer, 0, n)
-                    done += n
-                    emit(done, size, name)
-                }
-                if (done != size) throw FsException(Errno.EIO, device, "read $done of $size bytes")
-            } finally {
-                Os.close(fd)
-            }
-        }
+        copyOut(device, size, name, dest) { done -> emit(done, size, name) }
         listener.onProgress(size, size, name)
         return OpResult(1, 0)
     }
 
     /**
-     * Writes [image] over partition [name], then reads it back and compares SHA-256. Cancel only
-     * counts before the first byte is written: a half written boot partition does not boot.
+     * Writes [image] over partition [name], then reads it back and compares SHA-256. Before the
+     * first byte is written: the image must be in the partition's format, and the partition as it
+     * is goes to [backup], so a bad flash can always be undone. Cancel only counts until then: a
+     * half written boot partition does not boot.
      */
-    fun flash(image: String, name: String): OpResult {
+    fun flash(image: String, name: String, backup: String): OpResult {
         if (!Partitions.canFlash(name)) throw FsException(Errno.EPERM, name, "only the boot partitions can be flashed: $name")
         val source = FsPath.normalize(image)
         val st = OsBackend.stat(source)
@@ -54,6 +38,29 @@ class PartitionOps(
         val capacity = size(device)
         if (st.size <= 0) throw FsException(Errno.EINVAL, source, "empty image")
         if (st.size > capacity) throw FsException(Errno.EFBIG, source, "image is ${st.size} bytes, $name holds $capacity")
+        val header = OsBackend.openRead(source).use { input ->
+            val buffer = ByteArray(Partitions.HEADER_SIZE)
+            var got = 0
+            while (got < buffer.size) {
+                val n = input.read(buffer, got, buffer.size - got)
+                if (n < 0) break
+                got += n
+            }
+            buffer.copyOf(got)
+        }
+        Partitions.checkImage(name, header)?.let { problem ->
+            throw FsException(Errno.EINVAL, source, "${problem.name.lowercase()}: $source does not fit $name")
+        }
+        val target = FsPath.normalize(backup)
+        val free = OsBackend.statFs(FsPath.parent(target))[1]
+        if (free < Partitions.backupRoom(capacity)) {
+            throw FsException(Errno.ENOSPC, target, "no room to back up $name ($capacity bytes) first")
+        }
+        checkCancel()
+
+        // progress: the backup, then writing, then reading it back
+        val total = capacity + 2 * st.size
+        copyOut(device, capacity, name, target) { done -> emit(done, total, name) }
         checkCancel()
 
         val written = MessageDigest.getInstance("SHA-256")
@@ -69,10 +76,9 @@ class PartitionOps(
                     while (off < n) off += os(device) { Os.write(fd, buffer, off, n - off) }
                     written.update(buffer, 0, n)
                     done += n
-                    // writing is the first 90%, checking it back the rest
-                    emit(done * 9 / 10, st.size, name)
+                    emit(capacity + done, total, name)
                 }
-                if (done != st.size) throw FsException(Errno.EIO, source, "read $done of ${st.size} bytes")
+                if (done != st.size) throw FsException(Errno.EIO, source, "read $done of ${st.size} bytes; the old $name is in $target")
             }
             os(device) { Os.fsync(fd) }
         } finally {
@@ -89,16 +95,38 @@ class PartitionOps(
                 if (n <= 0) break
                 readBack.update(buffer, 0, n)
                 done += n
-                emit(st.size * 9 / 10 + done / 10, st.size, name)
+                emit(capacity + st.size + done, total, name)
             }
         } finally {
             Os.close(back)
         }
         if (!written.digest().contentEquals(readBack.digest())) {
-            throw FsException(Errno.EIO, device, "verify failed: $name does not hold the image now, flash it again")
+            throw FsException(Errno.EIO, device, "verify failed: $name does not hold the image now, flash it again or flash back $target")
         }
-        listener.onProgress(st.size, st.size, name)
+        listener.onProgress(total, total, name)
         return OpResult(1, 0)
+    }
+
+    /** The first [size] bytes of [device] into the file [dest], written atomically. */
+    private fun copyOut(device: String, size: Long, name: String, dest: String, progress: (Long) -> Unit) {
+        RootFs(OsBackend).writeAtomicWith(FsPath.normalize(dest), beforeCommit = { checkCancel() }) { out ->
+            val fd = open(device, OsConstants.O_RDONLY)
+            try {
+                val buffer = ByteArray(BUFFER_SIZE)
+                var done = 0L
+                while (done < size) {
+                    checkCancel()
+                    val n = read(fd, device, buffer, minOf(buffer.size.toLong(), size - done).toInt())
+                    if (n <= 0) break
+                    out.write(buffer, 0, n)
+                    done += n
+                    progress(done)
+                }
+                if (done != size) throw FsException(Errno.EIO, device, "read $done of $size bytes of $name")
+            } finally {
+                Os.close(fd)
+            }
+        }
     }
 
     private fun emit(done: Long, total: Long, current: String) {

@@ -156,7 +156,7 @@ data class FilesUiState(
 }
 
 class FilesViewModel : ViewModel() {
-    private val prefs = camApp.getSharedPreferences("files", Context.MODE_PRIVATE)
+    private val prefs = camApp.getSharedPreferences(cam.su.kernel.files.Bookmarks.PREFS, Context.MODE_PRIVATE)
     private val raw = arrayOf<List<FileEntry>>(emptyList(), emptyList())
     private val loadJobs = arrayOfNulls<Job>(2)
     private var opHandle: CamFileClient.OpHandle? = null
@@ -375,7 +375,7 @@ class FilesViewModel : ViewModel() {
 
     fun removeBookmark(path: String) = saveBookmarks(_uiState.value.bookmarks - path)
 
-    fun restoreBookmarks() = saveBookmarks((DEFAULT_BOOKMARKS + _uiState.value.bookmarks).distinct())
+    fun restoreBookmarks() = saveBookmarks((cam.su.kernel.files.Bookmarks.DEFAULTS + _uiState.value.bookmarks).distinct())
 
     // --- single file actions ---
 
@@ -709,9 +709,34 @@ class FilesViewModel : ViewModel() {
         }
     }
 
+    /** What the flash dialog shows before it lets the flash go. */
+    data class FlashCheck(val problem: cam.su.kernel.files.ImageProblem?, val room: Boolean)
+
+    /** Reads the image header and the free space; the root side checks both again before writing. */
+    suspend fun checkFlash(image: FileEntry, partition: cam.su.kernel.files.Partition): FlashCheck {
+        val header = runCatching { CamFileClient.readRange(image.path, 0, cam.su.kernel.files.Partitions.HEADER_SIZE) }.getOrNull()
+        val free = runCatching { CamFileClient.statFs(FsPath.parent(cam.su.kernel.files.Partitions.BACKUP_DIR))[1] }.getOrNull()
+        return FlashCheck(
+            problem = header?.let { cam.su.kernel.files.Partitions.checkImage(partition.name, it) },
+            room = free == null || free >= cam.su.kernel.files.Partitions.backupRoom(partition.size),
+        )
+    }
+
+    /**
+     * The partition as it is goes to /sdcard/CamBackup first (the root side refuses to flash
+     * without that path); the active panel opens there when it is done.
+     */
     fun flashPartition(image: FileEntry, name: String) {
         hidePartitions()
-        runOp(FileOp(OpKind.FLASH, listOf(image.path), name))
+        val backup = cam.su.kernel.files.Partitions.backupPath(name, System.currentTimeMillis())
+        viewModelScope.launch {
+            try {
+                mkdirs(FsPath.parent(backup))
+                runOp(FileOp(OpKind.FLASH, listOf(image.path, backup), name)) { navigateActive(FsPath.parent(backup)) }
+            } catch (e: FsException) {
+                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
+            }
+        }
     }
 
     fun viewAsApp(pid: Int, name: String) {
@@ -965,13 +990,10 @@ class FilesViewModel : ViewModel() {
     private fun home(panel: Int) =
         prefs.getString(if (panel == 0) KEY_HOME_0 else KEY_HOME_1, null) ?: if (panel == 0) DEFAULT_PATH_0 else DEFAULT_PATH_1
 
-    private fun loadBookmarks(): List<String> {
-        if (!prefs.contains(KEY_BOOKMARKS)) return DEFAULT_BOOKMARKS
-        return prefs.getString(KEY_BOOKMARKS, "").orEmpty().split('\n').filter { it.isNotEmpty() }
-    }
+    private fun loadBookmarks(): List<String> = cam.su.kernel.files.Bookmarks.load(prefs)
 
     private fun saveBookmarks(list: List<String>) {
-        prefs.edit { putString(KEY_BOOKMARKS, list.joinToString("\n")) }
+        cam.su.kernel.files.Bookmarks.save(prefs, list)
         _uiState.update { it.copy(bookmarks = list) }
     }
 
@@ -1053,17 +1075,8 @@ class FilesViewModel : ViewModel() {
         const val KEY_SORT_BY = "sort_by"
         const val KEY_SORT_DESC = "sort_desc"
         const val KEY_SHOW_HIDDEN = "show_hidden"
-        const val KEY_BOOKMARKS = "bookmarks"
 
         const val SEARCH_LIMIT = 500
         const val RELOAD_DELAY_MS = 400L
-
-        val DEFAULT_BOOKMARKS = listOf(
-            "/data/adb/modules",
-            "/data/adb/cam",
-            "/data/adb/service.d",
-            "/data/adb/post-fs-data.d",
-            "/data/local/tmp",
-        )
     }
 }

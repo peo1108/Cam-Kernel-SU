@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.SettingsBackupRestore
 import androidx.compose.material.icons.rounded.DeveloperMode
 import androidx.compose.material.icons.rounded.FlashOn
 import androidx.compose.material.icons.rounded.Info
@@ -220,6 +221,20 @@ fun SettingPagerMiuix(
                                     )
                                 },
                                 onClick = actions.onOpenProfileTemplate
+                            )
+                            val configBackup = stringResource(id = R.string.config_backup_title)
+                            ArrowPreference(
+                                title = configBackup,
+                                summary = stringResource(id = R.string.config_backup_entry_summary),
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.SettingsBackupRestore,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = configBackup,
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                onClick = actions.onOpenConfigBackup
                             )
                         }
                     }

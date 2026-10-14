@@ -290,6 +290,9 @@ class CamActivity : ComponentActivity() {
                             entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
                             entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPage { AboutScreen() } }
                             entry<Route.Account>(swipeDismiss = swipeDismiss) { GlassPage { AccountScreen() } }
+                            entry<Route.ConfigBackup>(swipeDismiss = swipeDismiss) {
+                                GlassPage { cam.su.kernel.ui.screen.configbackup.ConfigBackupScreen() }
+                            }
                             entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPage { SulogScreen() } }
                             entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPage { ColorPaletteScreen() } }
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPage { AppProfileTemplateScreen() } }

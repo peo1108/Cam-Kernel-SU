@@ -42,4 +42,36 @@ class PartitionsTest {
         assertEquals("boot_a", Partitions.guess("boot_a.img", list, "_b")?.name)
         assertTrue(Partitions.backupPath("boot_a", 0).startsWith("/storage/emulated/0/CamBackup/boot_a_"))
     }
+
+    /** A header with [magic] and kernel_size (little endian, offset 8) set to [kernel]. */
+    private fun header(magic: String, kernel: Int = 0): ByteArray = ByteArray(Partitions.HEADER_SIZE).also { h ->
+        magic.toByteArray().copyInto(h)
+        for (i in 0 until 4) h[8 + i] = (kernel shr (8 * i)).toByte()
+    }
+
+    @Test
+    fun imagesMustMatchThePartitionFormat() {
+        assertNull(Partitions.checkImage("boot_a", header("ANDROID!", kernel = 0x1234567)))
+        assertNull(Partitions.checkImage("recovery", header("ANDROID!", kernel = 1)))
+        assertNull(Partitions.checkImage("init_boot_b", header("ANDROID!")))
+        assertNull(Partitions.checkImage("vendor_boot_a", header("VNDRBOOT")))
+        assertNull(Partitions.checkImage("vbmeta_system_a", header("AVB0")))
+        val dtbo = ByteArray(Partitions.HEADER_SIZE).also { byteArrayOf(0xd7.toByte(), 0xb7.toByte(), 0xab.toByte(), 0x1e).copyInto(it) }
+        assertNull(Partitions.checkImage("dtbo_a", dtbo))
+
+        // a zip, a vbmeta in boot, a boot image in vendor_boot, a file shorter than the magic
+        assertEquals(ImageProblem.WRONG_FORMAT, Partitions.checkImage("boot_a", header("PK\u0003\u0004")))
+        assertEquals(ImageProblem.WRONG_FORMAT, Partitions.checkImage("boot_a", header("AVB0")))
+        assertEquals(ImageProblem.WRONG_FORMAT, Partitions.checkImage("vendor_boot", header("ANDROID!", kernel = 1)))
+        assertEquals(ImageProblem.WRONG_FORMAT, Partitions.checkImage("vbmeta", "AV".toByteArray()))
+        assertEquals(ImageProblem.WRONG_FORMAT, Partitions.checkImage("boot", "ANDROID!".toByteArray()))
+    }
+
+    @Test
+    fun bootAndInitBootAreToldApartByTheKernel() {
+        assertEquals(ImageProblem.KERNEL_INTO_INIT_BOOT, Partitions.checkImage("init_boot_a", header("ANDROID!", kernel = 4096)))
+        assertEquals(ImageProblem.NO_KERNEL, Partitions.checkImage("boot_a", header("ANDROID!")))
+        assertEquals(ImageProblem.NO_KERNEL, Partitions.checkImage("recovery", header("ANDROID!")))
+        assertTrue(Partitions.backupRoom(100) > 100)
+    }
 }

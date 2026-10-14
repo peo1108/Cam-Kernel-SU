@@ -46,6 +46,11 @@ sealed interface Route : NavKey, Parcelable {
     @Serializable
     data object Account : Route
 
+    /** Settings → Back up configuration: profiles, switches, modules and bookmarks to one file and back. */
+    @Parcelize
+    @Serializable
+    data object ConfigBackup : Route
+
     @Parcelize
     @Serializable
     data object Sulog : Route

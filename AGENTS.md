@@ -71,7 +71,7 @@ cp ../userspace/camd/target/aarch64-linux-android/release/camd app/src/main/jniL
 ./gradlew clean assembleRelease
 ```
 
-Unit tests: `./gradlew :app:testDebugUnitTest` (38 classes, 260 tests, all pass on 2026-10-14; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks. On a device: `scripts/device_smoke.sh` (adb, read-only; CI never loads the LKM).
+Unit tests: `./gradlew :app:testDebugUnitTest` (39 classes, 267 tests, all pass on 2026-10-14; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks. On a device: `scripts/device_smoke.sh` (adb, read-only; CI never loads the LKM).
 
 Important: Manager build REQUIRES camd binaries to be present in `jniLibs` before building. Gradle packs whatever `libcamd.so` is there and never rebuilds it: after changing camd, copy a fresh build in, or the APK ships the old daemon (CI builds both from the same commit). From CI, install the `manager` artifact, never `manager-gradle` (no `libcamd.so` in it). On Windows, run Gradle from the `K:` drive (`docs/CAM_CHANGES.md` section 5).
 

@@ -132,7 +132,7 @@ import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
-import cam.su.kernel.ui.util.shouldShowSplitPane
+import cam.su.kernel.ui.util.shouldShowTwoFilePanels
 import cam.su.kernel.ui.viewmodel.FilesUiState
 import cam.su.kernel.ui.viewmodel.FilesViewModel
 import cam.su.kernel.ui.viewmodel.PanelUi
@@ -189,7 +189,7 @@ fun FilesPagerMiuix(
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
     val barColor = if (backdrop != null) Color.Transparent else colorScheme.surface
-    val wide = shouldShowSplitPane()
+    val wide = shouldShowTwoFilePanels()
     var dialog by remember { mutableStateOf<FilesDialogState?>(null) }
     var drawer by remember { mutableStateOf(false) }
     // composed after FilesPager's handler, so it wins while the drawer is open

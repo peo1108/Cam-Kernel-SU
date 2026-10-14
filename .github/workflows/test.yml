@@ -85,17 +85,11 @@ jobs:
         with:
           workspaces: userspace/camd
 
-      # Two tests are skipped on purpose:
-      # - embedded_module_uses_release_asset_layout reads bin/aarch64/android12-5.10_camsu.ko,
-      #   which only the Build Manager workflow builds.
-      # - rejects_conflicting_loading_module_values is stale upstream: KernelSU 243f0dd1
-      #   removed the LOADING_MODULE check but kept its test (it fails on upstream too).
+      # embedded_module_uses_release_asset_layout only checks the .ko size when Build Manager
+      # has put it in bin/; here it checks the asset name only.
       - name: cargo test
         working-directory: userspace/camd
-        run: |
-          cargo test --target x86_64-unknown-linux-gnu -- \
-            --skip embedded_module_uses_release_asset_layout \
-            --skip rejects_conflicting_loading_module_values
+        run: cargo test --target x86_64-unknown-linux-gnu
 
   manager:
     runs-on: ubuntu-latest

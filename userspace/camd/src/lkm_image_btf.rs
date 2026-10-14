@@ -668,13 +668,10 @@ mod tests {
     }
 
     #[test]
-    fn rejects_conflicting_loading_module_values() {
+    fn ignores_conflicting_loading_module_values() {
+        // KernelSU 243f0dd1 dropped the LOADING_MODULE check as redundant; its old test
+        // (`rejects_conflicting_loading_module_values`) was left behind and fails upstream too
         let blob = build_btf(&[(136, 16, 24)], &[2, 3], 3);
-        assert!(
-            recover_single_btf(&blob)
-                .unwrap_err()
-                .to_string()
-                .contains("conflicting LOADING_MODULE values")
-        );
+        assert!(recover_single_btf(&blob).is_ok());
     }
 }

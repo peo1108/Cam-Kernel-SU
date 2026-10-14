@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.component.profile
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.GlassDialog
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -39,8 +39,6 @@ import cam.su.kernel.ui.component.miuix.SuperEditArrow
 import cam.su.kernel.ui.util.isSepolicyValid
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
@@ -58,12 +56,11 @@ fun RootProfileConfigMiuix(
         modifier = modifier
     ) {
         if (!fixedName) {
-            TextField(
+            GlassTextField(
                 enabled = enabled,
                 label = stringResource(R.string.profile_name),
                 value = profile.name,
                 onValueChange = { onProfileChange(profile.copy(name = it)) },
-                cornerRadius = IosFieldCorner,
             )
         }
 
@@ -465,40 +462,28 @@ private fun SELinuxPanel(
         content = {
             Column(modifier = Modifier.heightIn(max = 500.dp)) {
                 Column(modifier = Modifier.weight(1f, fill = false)) {
-                    TextField(
+                    GlassTextField(
                         value = domain,
                         onValueChange = { domain = it },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
                         label = stringResource(id = R.string.profile_selinux_domain),
-                        colors = TextFieldDefaults.textFieldColors(
-                            borderColor = if (isDomainValid) {
-                                colorScheme.primary
-                            } else {
-                                Color.Red.copy(alpha = if (isSystemInDarkTheme()) 0.3f else 0.6f)
-                            },
-                        ),
+                        isError = !isDomainValid,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Ascii,
                             imeAction = ImeAction.Next
                         ),
                         singleLine = true
                     )
-                    TextField(
+                    GlassTextField(
                         value = rules,
                         onValueChange = { rules = it },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
                         label = stringResource(id = R.string.profile_selinux_rules),
-                        colors = TextFieldDefaults.textFieldColors(
-                            borderColor = if (isRulesValid) {
-                                colorScheme.primary
-                            } else {
-                                Color.Red.copy(alpha = if (isSystemInDarkTheme()) 0.3f else 0.6f)
-                            },
-                        ),
+                        isError = !isRulesValid,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Ascii,
                         ),

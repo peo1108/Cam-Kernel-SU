@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.install
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.GlassDialog
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -42,7 +42,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import cam.su.kernel.R
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import androidx.compose.material3.Text as MaterialText
@@ -183,14 +182,13 @@ private fun SeedPickerDialogMiuix(
         insideMargin = DpSize(0.dp, 24.dp),
         content = {
             Column(modifier = Modifier.heightIn(max = 560.dp)) {
-                TextField(
+                GlassTextField(
                     value = state.query,
                     onValueChange = { state.query = it },
                     label = stringResource(R.string.seed_search),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
-                    cornerRadius = IosFieldCorner,
                 )
                 LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
                     items(state.visible, key = { it.packageName }) { app ->
@@ -209,12 +207,11 @@ private fun SeedPickerDialogMiuix(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
                 ) {
-                    TextField(
+                    GlassTextField(
                         value = state.input,
                         onValueChange = { state.input = it },
                         label = stringResource(R.string.seed_add_package),
                         modifier = Modifier.weight(1f),
-                        cornerRadius = IosFieldCorner,
                     )
                     Spacer(Modifier.width(12.dp))
                     MiuixTextButton(

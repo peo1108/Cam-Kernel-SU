@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.component.miuix
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,7 +22,6 @@ import top.yukonga.miuix.kmp.basic.BasicComponentColors
 import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 @Composable
@@ -84,7 +83,7 @@ private fun EditDialog(
             filter.setInputValue(dialogTextFieldValue.toString())
         },
         content = {
-            TextField(
+            GlassTextField(
                 modifier = Modifier.padding(bottom = 16.dp),
                 value = filter.getInputValue(),
                 maxLines = 1,
@@ -92,7 +91,6 @@ private fun EditDialog(
                     keyboardType = KeyboardType.Number,
                 ),
                 onValueChange = filter.onValueChange(),
-                cornerRadius = IosFieldCorner,
             )
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween

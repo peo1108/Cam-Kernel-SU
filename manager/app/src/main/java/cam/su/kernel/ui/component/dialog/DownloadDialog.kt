@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.component.dialog
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,7 +22,6 @@ import androidx.core.net.toUri
 import cam.su.kernel.R
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.window.WindowDialog
 
 @Composable
@@ -47,12 +46,11 @@ private fun DownloadDialogMiuix(
         onDismissRequest = onDismiss,
         content = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                TextField(
+                GlassTextField(
                     value = url,
                     onValueChange = { url = it },
                     label = stringResource(R.string.download_dialog_msg),
                     modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = IosFieldCorner,
                 )
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,

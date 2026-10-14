@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.module
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.ui.component.glass.iosSwitchColors
@@ -152,7 +152,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarResult
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -605,11 +604,10 @@ private fun ModuleShortcutDialog(
                         }
                     }
                 }
-                TextField(
+                GlassTextField(
                     value = shortcutState.name,
                     onValueChange = shortcutState::updateName,
                     label = stringResource(id = R.string.module_shortcut_name_label),
-                    cornerRadius = IosFieldCorner,
                 )
                 if (shortcutState.hasExistingShortcut) {
                     TextButton(

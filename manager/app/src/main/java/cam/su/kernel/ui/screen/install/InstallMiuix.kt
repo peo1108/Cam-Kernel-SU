@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.install
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassIconButton
@@ -61,7 +61,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -291,7 +290,7 @@ internal fun InstallScreenMiuix(
                                     onCheckedChange = actions.onSelectBlockModules
                                 )
                                 if (uiState.blockModulesEnabled) {
-                                    TextField(
+                                    GlassTextField(
                                         value = uiState.blockModules,
                                         onValueChange = actions.onBlockModulesChange,
                                         label = stringResource(id = R.string.install_block_modules_list),
@@ -299,7 +298,6 @@ internal fun InstallScreenMiuix(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        cornerRadius = IosFieldCorner,
                                     )
                                     Text(
                                         text = stringResource(

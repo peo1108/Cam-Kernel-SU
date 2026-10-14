@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.screen.colorpalette
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.CamToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -57,7 +57,6 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private const val PREVIEW_PX = 192
@@ -141,7 +140,7 @@ fun AppIdentitySection() {
             )
         }
 
-        TextField(
+        GlassTextField(
             value = name,
             onValueChange = { name = it },
             label = stringResource(R.string.app_identity_name),
@@ -149,7 +148,6 @@ fun AppIdentitySection() {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            cornerRadius = IosFieldCorner,
         )
         Row(
             modifier = Modifier

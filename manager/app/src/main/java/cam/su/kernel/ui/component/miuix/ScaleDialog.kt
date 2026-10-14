@@ -1,6 +1,6 @@
 package cam.su.kernel.ui.component.miuix
 
-import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -19,7 +19,6 @@ import cam.su.kernel.R
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
@@ -38,7 +37,7 @@ fun ScaleDialog(
             var text by remember(show) {
                 mutableStateOf((volumeState() * 100).toInt().toString())
             }
-            TextField(
+            GlassTextField(
                 modifier = Modifier.padding(bottom = 16.dp),
                 value = text,
                 maxLines = 1,
@@ -59,7 +58,6 @@ fun ScaleDialog(
                         }
                     }
                 },
-                cornerRadius = IosFieldCorner,
             )
             Row(horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(

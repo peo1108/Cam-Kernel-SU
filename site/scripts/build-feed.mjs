@@ -40,7 +40,11 @@ async function sha256(file) {
 // The official line starts at cam-v1.1.1 (launch, 2026-10-19). Once it exists, everything
 // published before it (the 3.x beta-test builds) is left out of the site and the OTA feed.
 const FIRST_OFFICIAL = 'cam-v1.1.1'
-let all = (await (await api('releases?per_page=30')).json()).filter((r) => !r.draft && /^cam-v/.test(r.tag_name))
+// Newest first by publish time: the API is not in date order (it lists the "Latest" release ahead
+// of newer betas), and the cuts below rely on the order.
+let all = (await (await api('releases?per_page=30')).json())
+  .filter((r) => !r.draft && /^cam-v/.test(r.tag_name))
+  .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
 const official = all.find((r) => r.tag_name === FIRST_OFFICIAL)
 if (official) all = all.filter((r) => Date.parse(r.published_at) >= Date.parse(official.published_at))
 const firstStable = all.findIndex((r) => !r.prerelease)

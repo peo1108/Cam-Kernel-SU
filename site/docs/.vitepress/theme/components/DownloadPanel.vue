@@ -22,6 +22,9 @@ const T = {
     toolsTitle: 'Công cụ dòng lệnh',
     toolsLead: 'camd cho máy tính (vá ảnh boot không cần điện thoại) và caminit. Người dùng thường không cần.',
     older: 'Bản trước',
+    betaTitle: 'Bản beta',
+    betaLead: 'Bản thử nghiệm của phiên bản sắp ra, có thể còn lỗi. Chỉ beta tester tải được.',
+    betaAsk: 'Xin làm beta tester',
     changelog: 'Nhật ký',
     changelogLink: '/nhat-ky',
     req: 'Yêu cầu',
@@ -41,6 +44,9 @@ const T = {
     toolsTitle: 'Command-line tools',
     toolsLead: 'camd for your computer (patch a boot image without the phone) and caminit. Most people never need them.',
     older: 'Earlier releases',
+    betaTitle: 'Beta builds',
+    betaLead: 'Test builds of the next release; they may still have bugs. Only beta testers can download them.',
+    betaAsk: 'Ask to be a beta tester',
     changelog: 'Changelog',
     changelogLink: '/en/changelog',
     req: 'Requirements',
@@ -60,6 +66,9 @@ const T = {
     toolsTitle: '命令行工具',
     toolsLead: '电脑版 camd（无需手机即可修补启动镜像）和 caminit。大多数人用不到。',
     older: '早期版本',
+    betaTitle: '测试版',
+    betaLead: '下一版本的测试构建，可能仍有问题。仅测试者可下载。',
+    betaAsk: '申请成为测试者',
     changelog: '更新日志',
     changelogLink: '/zh/changelog',
     req: '要求',
@@ -91,6 +100,8 @@ const arch = ref<'aarch64' | 'x86_64'>('aarch64')
 const lkm = computed(() => (latest?.lkm ?? []).filter((l) => l.arch === arch.value))
 // Prefer the changelog date (local release day) over GitHub's UTC timestamp.
 const dateOf = (v: string, fallback: string) => changelog.find((e) => e.version === v)?.date ?? fallback
+// A beta's notes are the coming release's changelog entry: 1.1.8-beta.2 -> #v1-1-8.
+const notesOf = (v: string) => `${t.value.changelogLink}#v${v.replace(/-.*$/, '').replaceAll('.', '-')}`
 const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))])
 </script>
 
@@ -160,6 +171,19 @@ const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))
             <span class="cam-mono">{{ a.name }}</span><span class="size">{{ mb(a.size) }}</span>
           </a>
         </div>
+      </section>
+
+      <section v-if="release.betas.length" class="card lg lg-hover lg-in">
+        <h2 class="lg-display">{{ t.betaTitle }}</h2>
+        <p class="muted">{{ t.betaLead }}</p>
+        <ul class="older">
+          <li v-for="r in release.betas" :key="r.tag">
+            <a :href="notesOf(r.version)" class="cam-mono">v{{ r.version }}</a>
+            <span class="muted">{{ fmtDate(r.date, lang) }}<template v-if="r.apk"> · {{ mb(r.apk.size) }}</template></span>
+            <a v-if="r.apk" :href="href(r.tag, r.apk.url)" class="apk"><template v-if="openTags && !can(r.tag)">🔒 </template>APK</a>
+          </li>
+        </ul>
+        <a v-if="openTags && release.betas.some((r) => !can(r.tag))" class="lg lg-btn lg-drop lg-press small" data-lens="droplet" :href="t.memberHref">{{ t.betaAsk }} →</a>
       </section>
 
       <section v-if="release.older.length" class="card lg lg-hover lg-in">

@@ -4,6 +4,8 @@ import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuItem
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassDialog
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
@@ -86,9 +88,7 @@ import cam.su.kernel.ui.util.SulogEntry
 import cam.su.kernel.ui.util.SulogEventFilter
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -202,16 +202,14 @@ fun SulogScreenMiuix(
                                             showFilterPopup.value = false
                                         },
                                         content = {
-                                            ListPopupColumn {
+                                            GlassMenuColumn(checks = true) {
                                                 SulogEventFilter.entries.forEachIndexed { index, filter ->
-                                                    DropdownImpl(
+                                                    GlassMenuItem(
                                                         text = sulogFilterLabel(filter),
-                                                        isSelected = filter in state.selectedFilters,
-                                                        optionSize = SulogEventFilter.entries.size,
-                                                        onSelectedIndexChange = {
+                                                        checked = filter in state.selectedFilters,
+                                                        onClick = {
                                                             actions.onToggleFilter(filter)
                                                         },
-                                                        index = index,
                                                     )
                                                 }
                                             }

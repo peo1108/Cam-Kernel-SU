@@ -4,6 +4,10 @@ import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuItem
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.ContentPaste
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassListCard
@@ -72,14 +76,12 @@ import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.data.model.TemplateInfo
 import cam.su.kernel.ui.component.ListPopupDefaults
-import cam.su.kernel.ui.component.miuix.DropdownItem
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -426,26 +428,23 @@ private fun TopBar(
                             showTopPopup.value = false
                         },
                         content = {
-                            ListPopupColumn {
-                                val items = listOf(
-                                    stringResource(id = R.string.app_profile_import_from_clipboard),
-                                    stringResource(id = R.string.app_profile_export_to_clipboard)
+                            GlassMenuColumn {
+                                GlassMenuItem(
+                                    text = stringResource(id = R.string.app_profile_import_from_clipboard),
+                                    icon = Icons.Rounded.ContentPaste,
+                                    onClick = {
+                                        onImport()
+                                        showTopPopup.value = false
+                                    },
                                 )
-                                items.forEachIndexed { index, text ->
-                                    DropdownItem(
-                                        text = text,
-                                        optionSize = items.size,
-                                        index = index,
-                                        onSelectedIndexChange = { selectedIndex ->
-                                            if (selectedIndex == 0) {
-                                                onImport()
-                                            } else {
-                                                onExport()
-                                            }
-                                            showTopPopup.value = false
-                                        }
-                                    )
-                                }
+                                GlassMenuItem(
+                                    text = stringResource(id = R.string.app_profile_export_to_clipboard),
+                                    icon = Icons.Rounded.ContentCopy,
+                                    onClick = {
+                                        onExport()
+                                        showTopPopup.value = false
+                                    },
+                                )
                             }
                         }
                     )

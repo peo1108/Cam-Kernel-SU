@@ -4,6 +4,13 @@ import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuDivider
+import cam.su.kernel.ui.component.glass.GlassMenuItem
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.Stop
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassCard
@@ -62,7 +69,6 @@ import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.AppIconImage
 import cam.su.kernel.ui.component.ListPopupDefaults
-import cam.su.kernel.ui.component.miuix.DropdownItem
 import cam.su.kernel.ui.component.profile.AppProfileConfig
 import cam.su.kernel.ui.component.profile.RootProfileConfig
 import cam.su.kernel.ui.component.profile.TemplateConfig
@@ -76,7 +82,6 @@ import cam.su.kernel.ui.util.setSepolicy
 import cam.su.kernel.ui.viewmodel.SuperUserViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -446,30 +451,32 @@ private fun TopBar(
                             morph = moreMorph,
                             onDismissRequest = { showTopPopup.value = false },
                             content = {
-                                ListPopupColumn {
+                                GlassMenuColumn {
                                     val items = listOf(
-                                        stringResource(id = R.string.launch_app),
-                                        stringResource(id = R.string.force_stop_app),
-                                        stringResource(id = R.string.restart_app),
-                                        stringResource(id = R.string.app_system_info),
+                                        Triple(R.string.launch_app, Icons.Rounded.PlayArrow) { onLaunchApp(packageName, userId) },
+                                        Triple(R.string.restart_app, Icons.Rounded.RestartAlt) { onRestartApp(packageName, userId) },
+                                        Triple(R.string.app_system_info, Icons.Rounded.Info) { onOpenSystemInfo(packageName, userId) },
                                     )
-
-                                    items.forEachIndexed { index, text ->
-                                        DropdownItem(
-                                            text = text,
-                                            optionSize = items.size,
-                                            index = index,
-                                            onSelectedIndexChange = { selectedIndex ->
-                                                when (selectedIndex) {
-                                                    0 -> onLaunchApp(packageName, userId)
-                                                    1 -> onForceStopApp(packageName, userId)
-                                                    2 -> onRestartApp(packageName, userId)
-                                                    3 -> onOpenSystemInfo(packageName, userId)
-                                                }
+                                    items.forEach { (label, icon, action) ->
+                                        GlassMenuItem(
+                                            text = stringResource(label),
+                                            icon = icon,
+                                            onClick = {
+                                                action()
                                                 showTopPopup.value = false
-                                            }
+                                            },
                                         )
                                     }
+                                    GlassMenuDivider()
+                                    GlassMenuItem(
+                                        text = stringResource(R.string.force_stop_app),
+                                        icon = Icons.Rounded.Stop,
+                                        destructive = true,
+                                        onClick = {
+                                            onForceStopApp(packageName, userId)
+                                            showTopPopup.value = false
+                                        },
+                                    )
                                 }
                             }
                         )

@@ -119,6 +119,15 @@ import cam.su.kernel.ui.component.glass.GlassIconButton
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuDivider
+import cam.su.kernel.ui.component.glass.GlassMenuItem
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
@@ -128,10 +137,8 @@ import cam.su.kernel.ui.viewmodel.FilesUiState
 import cam.su.kernel.ui.viewmodel.FilesViewModel
 import cam.su.kernel.ui.viewmodel.PanelUi
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -299,29 +306,26 @@ private fun OverflowMenu(state: FilesUiState, vm: FilesViewModel, onSort: () -> 
                 morph = menuMorph,
                 onDismissRequest = { show = false },
             ) {
-                ListPopupColumn {
-                    val items: List<Pair<String, () -> Unit>> = listOf(
-                        stringResource(R.string.files_refresh) to { vm.refresh() },
-                        stringResource(R.string.files_search) to onSearch,
-                        stringResource(R.string.files_select_all) to { vm.selectAll() },
-                        stringResource(R.string.files_menu_sort) to onSort,
-                        (stringResource(R.string.files_show_hidden) + if (state.sort.showHidden) "  ✓" else "") to { vm.toggleHidden() },
-                        stringResource(R.string.files_menu_add_bookmark) to { vm.addBookmark(state.activePanel.nav.path) },
-                        stringResource(R.string.files_menu_set_home) to { vm.setHome() },
-                        stringResource(R.string.files_menu_swap) to { vm.swapPanels() },
+                val run = { action: () -> Unit ->
+                    show = false
+                    action()
+                }
+                GlassMenuColumn(checks = true) {
+                    GlassMenuItem(stringResource(R.string.files_refresh), icon = Icons.Rounded.Refresh, onClick = { run { vm.refresh() } })
+                    GlassMenuItem(stringResource(R.string.files_search), icon = Icons.Rounded.Search, onClick = { run(onSearch) })
+                    GlassMenuItem(stringResource(R.string.files_select_all), icon = Icons.Rounded.CheckCircle, onClick = { run { vm.selectAll() } })
+                    GlassMenuDivider()
+                    GlassMenuItem(stringResource(R.string.files_menu_sort), icon = Icons.AutoMirrored.Rounded.Sort, onClick = { run(onSort) })
+                    GlassMenuItem(
+                        stringResource(R.string.files_show_hidden),
+                        icon = Icons.Rounded.Visibility,
+                        checked = state.sort.showHidden,
+                        onClick = { run { vm.toggleHidden() } },
                     )
-                    items.forEachIndexed { index, (label, action) ->
-                        DropdownImpl(
-                            text = label,
-                            optionSize = items.size,
-                            isSelected = false,
-                            onSelectedIndexChange = {
-                                show = false
-                                action()
-                            },
-                            index = index,
-                        )
-                    }
+                    GlassMenuDivider()
+                    GlassMenuItem(stringResource(R.string.files_menu_add_bookmark), icon = Icons.Rounded.BookmarkAdd, onClick = { run { vm.addBookmark(state.activePanel.nav.path) } })
+                    GlassMenuItem(stringResource(R.string.files_menu_set_home), icon = Icons.Rounded.Home, onClick = { run { vm.setHome() } })
+                    GlassMenuItem(stringResource(R.string.files_menu_swap), icon = Icons.Rounded.SwapHoriz, onClick = { run { vm.swapPanels() } })
                 }
             }
         }

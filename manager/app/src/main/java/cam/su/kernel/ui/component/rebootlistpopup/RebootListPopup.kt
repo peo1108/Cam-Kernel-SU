@@ -3,8 +3,17 @@ package cam.su.kernel.ui.component.rebootlistpopup
 import android.content.Context
 import android.os.PowerManager
 import androidx.annotation.StringRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Autorenew
+import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import cam.su.kernel.Cam
@@ -15,6 +24,7 @@ import cam.su.kernel.ui.util.reboot
 data class RebootListOption(
     @param:StringRes val labelRes: Int,
     val reason: String,
+    val icon: ImageVector,
 )
 
 @Composable
@@ -25,15 +35,15 @@ fun getRebootListOption(): List<RebootListOption> {
     val isRebootingUserspaceSupported = pm?.isRebootingUserspaceSupported == true
 
     return buildList {
-        add(RebootListOption(R.string.reboot, ""))
+        add(RebootListOption(R.string.reboot, "", Icons.Rounded.RestartAlt))
         if (isRebootingUserspaceSupported) {
-            add(RebootListOption(R.string.reboot_userspace, "userspace"))
+            add(RebootListOption(R.string.reboot_userspace, "userspace", Icons.Rounded.Refresh))
         }
-        add(RebootListOption(R.string.reboot_soft, "soft_reboot"))
-        add(RebootListOption(R.string.reboot_recovery, "recovery"))
-        add(RebootListOption(R.string.reboot_bootloader, "bootloader"))
-        add(RebootListOption(R.string.reboot_download, "download"))
-        add(RebootListOption(R.string.reboot_edl, "edl"))
+        add(RebootListOption(R.string.reboot_soft, "soft_reboot", Icons.Rounded.Autorenew))
+        add(RebootListOption(R.string.reboot_recovery, "recovery", Icons.Rounded.Build))
+        add(RebootListOption(R.string.reboot_bootloader, "bootloader", Icons.Rounded.Lock))
+        add(RebootListOption(R.string.reboot_download, "download", Icons.Rounded.Download))
+        add(RebootListOption(R.string.reboot_edl, "edl", Icons.Rounded.Memory))
     }
 }
 

@@ -3,6 +3,8 @@ package cam.su.kernel.ui.screen.modulerepo
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuItem
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassListCard
@@ -102,11 +104,9 @@ import cam.su.kernel.ui.util.isDownloadAvailable
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import cam.su.kernel.ui.util.rememberContentReady
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -178,7 +178,7 @@ fun ModuleRepoScreenMiuix(
                                     morph = sortMorph,
                                     onDismissRequest = { showSortPopup.value = false },
                                     content = {
-                                        ListPopupColumn {
+                                        GlassMenuColumn(checks = true) {
                                             val sortOptions = listOf(
                                                 RepoSort.UPDATED to R.string.module_repos_sort_updated,
                                                 RepoSort.CREATED to R.string.module_repos_sort_created,
@@ -186,15 +186,13 @@ fun ModuleRepoScreenMiuix(
                                                 RepoSort.STARS to R.string.module_repos_sort_stars,
                                             )
                                             sortOptions.forEachIndexed { index, (order, resId) ->
-                                                DropdownImpl(
+                                                GlassMenuItem(
                                                     text = stringResource(resId),
-                                                    optionSize = sortOptions.size,
-                                                    isSelected = state.sortOrder == order,
-                                                    onSelectedIndexChange = {
+                                                    checked = state.sortOrder == order,
+                                                    onClick = {
                                                         actions.onSetSortOrder(order)
                                                         showSortPopup.value = false
                                                     },
-                                                    index = index,
                                                 )
                                             }
                                         }

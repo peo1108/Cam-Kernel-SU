@@ -4,6 +4,14 @@ import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuItem
+import cam.su.kernel.ui.component.glass.GlassMenuDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Android
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.SettingsBackupRestore
+import androidx.compose.material.icons.rounded.SwapVert
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassListCard
@@ -97,10 +105,8 @@ import cam.su.kernel.ui.util.ownerNameForUid
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import cam.su.kernel.ui.viewmodel.AppSortType
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -168,7 +174,7 @@ fun SuperUserPagerMiuix(
                                         morph = sortMorph,
                                         onDismissRequest = { showSortPopup.value = false },
                                         content = {
-                                            ListPopupColumn {
+                                            GlassMenuColumn(checks = true) {
                                                 val sortEntries = listOf(
                                                     AppSortType.NAME to R.string.sort_by_name,
                                                     AppSortType.PACKAGE_NAME to R.string.sort_by_package_name,
@@ -179,32 +185,26 @@ fun SuperUserPagerMiuix(
                                                 val sortGroupSize = sortEntries.size + 1
 
                                                 sortEntries.forEachIndexed { index, (type, resId) ->
-                                                    DropdownImpl(
+                                                    GlassMenuItem(
                                                         text = stringResource(resId),
-                                                        optionSize = sortGroupSize,
-                                                        isSelected = sortConfig.sortType == type,
-                                                        index = index,
-                                                        onSelectedIndexChange = {
+                                                        checked = sortConfig.sortType == type,
+                                                        onClick = {
                                                             actions.onUpdateSortConfig(sortConfig.withType(type))
                                                             showSortPopup.value = false
-                                                        }
+                                                        },
                                                     )
                                                 }
 
-                                                HorizontalDivider(
-                                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                                                    thickness = 1.5.dp,
-                                                )
+                                                GlassMenuDivider()
 
-                                                DropdownImpl(
+                                                GlassMenuItem(
                                                     text = stringResource(R.string.sort_reverse),
-                                                    optionSize = sortGroupSize,
-                                                    isSelected = sortConfig.reversed,
-                                                    index = sortEntries.size,
-                                                    onSelectedIndexChange = {
+                                                    icon = Icons.Rounded.SwapVert,
+                                                    checked = sortConfig.reversed,
+                                                    onClick = {
                                                         actions.onUpdateSortConfig(sortConfig.toggleReversed())
                                                         showSortPopup.value = false
-                                                    }
+                                                    },
                                                 )
                                             }
                                         }
@@ -242,38 +242,34 @@ fun SuperUserPagerMiuix(
                                         content = {
                                             val isMultiUser = uiState.userIds.size > 1
                                             val size = if (isMultiUser) 3 else 2
-                                            ListPopupColumn {
-                                                DropdownImpl(
+                                            GlassMenuColumn(checks = true) {
+                                                GlassMenuItem(
                                                     text = stringResource(R.string.show_system_apps),
-                                                    isSelected = uiState.showSystemApps,
-                                                    optionSize = size,
-                                                    onSelectedIndexChange = {
+                                                    icon = Icons.Rounded.Android,
+                                                    checked = uiState.showSystemApps,
+                                                    onClick = {
                                                         actions.onToggleShowSystemApps()
                                                         showTopPopup.value = false
                                                     },
-                                                    index = 0
                                                 )
                                                 if (isMultiUser) {
-                                                    DropdownImpl(
+                                                    GlassMenuItem(
                                                         text = stringResource(R.string.show_only_primary_user_apps),
-                                                        isSelected = uiState.showOnlyPrimaryUserApps,
-                                                        optionSize = size,
-                                                        onSelectedIndexChange = {
+                                                        icon = Icons.Rounded.Person,
+                                                        checked = uiState.showOnlyPrimaryUserApps,
+                                                        onClick = {
                                                             actions.onToggleShowOnlyPrimaryUserApps()
                                                             showTopPopup.value = false
                                                         },
-                                                        index = 1
                                                     )
                                                 }
-                                                DropdownImpl(
+                                                GlassMenuItem(
                                                     text = stringResource(R.string.app_restore_system),
-                                                    isSelected = false,
-                                                    optionSize = size,
-                                                    onSelectedIndexChange = {
+                                                    icon = Icons.Rounded.SettingsBackupRestore,
+                                                    onClick = {
                                                         showRestore.value = true
                                                         showTopPopup.value = false
                                                     },
-                                                    index = size - 1
                                                 )
                                             }
                                         }

@@ -5,6 +5,9 @@ import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuItem
+import androidx.compose.material.icons.rounded.ToggleOn
 import cam.su.kernel.ui.component.glass.GlassListPopup
 import cam.su.kernel.ui.component.glass.GlassDialog
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
@@ -132,11 +135,9 @@ import cam.su.kernel.ui.util.getFileName
 import cam.su.kernel.ui.util.reboot
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -298,26 +299,24 @@ fun ModulePagerMiuix(
                                             showTopPopup.value = false
                                         },
                                         content = {
-                                            ListPopupColumn {
-                                                DropdownImpl(
+                                            GlassMenuColumn(checks = true) {
+                                                GlassMenuItem(
                                                     text = stringResource(R.string.module_sort_action_first),
-                                                    optionSize = 2,
-                                                    isSelected = uiState.sortActionFirst,
-                                                    onSelectedIndexChange = {
+                                                    icon = Icons.Rounded.PlayArrow,
+                                                    checked = uiState.sortActionFirst,
+                                                    onClick = {
                                                         actions.onToggleSortActionFirst()
                                                         showTopPopup.value = false
                                                     },
-                                                    index = 0
                                                 )
-                                                DropdownImpl(
+                                                GlassMenuItem(
                                                     text = stringResource(R.string.module_sort_enabled_first),
-                                                    optionSize = 2,
-                                                    isSelected = uiState.sortEnabledFirst,
-                                                    onSelectedIndexChange = {
+                                                    icon = Icons.Rounded.ToggleOn,
+                                                    checked = uiState.sortEnabledFirst,
+                                                    onClick = {
                                                         actions.onToggleSortEnabledFirst()
                                                         showTopPopup.value = false
                                                     },
-                                                    index = 1
                                                 )
                                             }
                                         }

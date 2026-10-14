@@ -139,6 +139,9 @@ fun Modifier.morphObstacle(): Modifier {
     return onGloballyPositioned { MorphObstacles.rects[key] = it.boundsInWindow() }
 }
 
+/** iOS menus round their corners more than cards. */
+private val MENU_CORNER = 28.dp
+
 enum class MorphAlign {
     /** Icon buttons: the menu hangs from the button's bottom-start corner, beside it. */
     Corner,
@@ -230,11 +233,11 @@ private fun MorphLayer(
         surfaceContainer = Color.Transparent,
         tertiaryContainer = colorScheme.tertiaryContainer.copy(alpha = 0.45f),
     )
-    val veil = colorScheme.surface.copy(alpha = 0.35f)
+    val veil = colorScheme.surface.copy(alpha = 0.55f)
     val neckColor = colorScheme.surface.copy(alpha = 0.3f)
     val neck = if (liquid && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) remember { NeckShader() } else null
     val gap = with(density) { 8.dp.toPx() }
-    val endRadius = with(density) { GlassDefaults.popupCorner.toPx() }
+    val endRadius = with(density) { MENU_CORNER.toPx() }
     val shift = with(density) { 6.dp.toPx() }
 
     fun frame(): MorphFrame {

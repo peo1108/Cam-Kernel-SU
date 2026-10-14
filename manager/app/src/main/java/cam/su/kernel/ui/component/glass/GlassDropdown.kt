@@ -12,8 +12,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
@@ -69,15 +67,13 @@ fun GlassDropdownPreference(
             morph = morph,
             morphAlign = MorphAlign.End,
         ) {
-            ListPopupColumn {
+            GlassMenuColumn(checks = true) {
                 items.forEachIndexed { index, text ->
-                    DropdownImpl(
+                    GlassMenuItem(
                         text = text,
-                        optionSize = items.size,
-                        isSelected = index == selectedIndex,
-                        index = index,
-                        onSelectedIndexChange = {
-                            onSelectedIndexChange?.invoke(it)
+                        checked = index == selectedIndex,
+                        onClick = {
+                            onSelectedIndexChange?.invoke(index)
                             expanded.value = false
                         },
                     )

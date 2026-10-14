@@ -1,5 +1,8 @@
 package cam.su.kernel.ui.component.rebootlistpopup
 
+import cam.su.kernel.ui.component.glass.GlassMenuColumn
+import cam.su.kernel.ui.component.glass.GlassMenuDivider
+import cam.su.kernel.ui.component.glass.GlassMenuItem
 import cam.su.kernel.ui.component.glass.GlassMorphPopup
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -11,7 +14,6 @@ import androidx.compose.ui.res.stringResource
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.CamIsValid
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close2
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -39,36 +41,20 @@ fun RebootListPopupMiuix(
             onDismissRequest = { popup.expanded = false },
         ) {
             val rebootOptions = getRebootListOption()
-            ListPopupColumn {
+            GlassMenuColumn {
                 rebootOptions.forEachIndexed { idx, option ->
-                    RebootDropdownItem(
-                        option = option,
-                        onDismiss = { popup.expanded = false },
-                        optionSize = rebootOptions.size,
-                        index = idx,
-                        onReboot = onReboot
+                    // the first entry is the everyday reboot; the rest boot into special modes
+                    if (idx == 1) GlassMenuDivider()
+                    GlassMenuItem(
+                        text = stringResource(option.labelRes),
+                        icon = option.icon,
+                        onClick = {
+                            popup.expanded = false
+                            onReboot(option.reason)
+                        },
                     )
                 }
             }
         }
     }
-}
-
-@Composable
-fun RebootDropdownItem(
-    option: RebootListOption,
-    onDismiss: () -> Unit,
-    optionSize: Int,
-    index: Int,
-    onReboot: (String) -> Unit,
-) {
-    cam.su.kernel.ui.component.miuix.DropdownItem(
-        text = stringResource(option.labelRes),
-        optionSize = optionSize,
-        onSelectedIndexChange = {
-            onDismiss()
-            onReboot(option.reason)
-        },
-        index = index
-    )
 }

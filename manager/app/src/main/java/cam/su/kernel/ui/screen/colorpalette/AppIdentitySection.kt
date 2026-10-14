@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.colorpalette
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
 import cam.su.kernel.ui.component.CamToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -148,6 +149,7 @@ fun AppIdentitySection() {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
+            cornerRadius = IosFieldCorner,
         )
         Row(
             modifier = Modifier

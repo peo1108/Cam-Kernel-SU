@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.install
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
 import cam.su.kernel.ui.component.glass.GlassDialog
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -188,7 +189,8 @@ private fun SeedPickerDialogMiuix(
                     label = stringResource(R.string.seed_search),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
+                        .padding(horizontal = 24.dp),
+                    cornerRadius = IosFieldCorner,
                 )
                 LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
                     items(state.visible, key = { it.packageName }) { app ->
@@ -211,7 +213,8 @@ private fun SeedPickerDialogMiuix(
                         value = state.input,
                         onValueChange = { state.input = it },
                         label = stringResource(R.string.seed_add_package),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        cornerRadius = IosFieldCorner,
                     )
                     Spacer(Modifier.width(12.dp))
                     MiuixTextButton(

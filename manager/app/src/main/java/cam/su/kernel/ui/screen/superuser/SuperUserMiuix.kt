@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.superuser
 
+import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -312,12 +313,6 @@ fun SuperUserPagerMiuix(
                 isBusy = { latestRefreshing.value },
             ) { latestGroupedApps.value }
             val pullToRefreshState = rememberPullToRefreshState()
-            val refreshTexts = listOf(
-                stringResource(R.string.refresh_pulling),
-                stringResource(R.string.refresh_release),
-                stringResource(R.string.refresh_refresh),
-                stringResource(R.string.refresh_complete),
-            )
 
             val expandedUids = remember { mutableStateOf(setOf<Int>()) }
             val openProfileUid = rememberSaveable { mutableStateOf<Int?>(null) }
@@ -328,7 +323,7 @@ fun SuperUserPagerMiuix(
                     actions.onRefresh()
                     refreshTick.intValue++
                 },
-                refreshTexts = refreshTexts,
+                refreshTexts = IosRefreshTexts,
                 contentPadding = PaddingValues(
                     top = innerPadding.calculateTopPadding() + 6.dp,
                     start = innerPadding.calculateStartPadding(layoutDirection),

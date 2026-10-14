@@ -1,5 +1,7 @@
 package cam.su.kernel.ui.screen.module
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
+import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.ui.component.glass.iosSwitchColors
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
@@ -437,12 +439,6 @@ fun ModulePagerMiuix(
         val layoutDirection = LocalLayoutDirection.current
         run {
             val pullToRefreshState = rememberPullToRefreshState()
-            val refreshTexts = listOf(
-                stringResource(R.string.refresh_pulling),
-                stringResource(R.string.refresh_release),
-                stringResource(R.string.refresh_refresh),
-                stringResource(R.string.refresh_complete),
-            )
             val contentPadding = PaddingValues(
                 top = innerPadding.calculateTopPadding() + 6.dp,
                 start = innerPadding.calculateStartPadding(layoutDirection),
@@ -456,7 +452,7 @@ fun ModulePagerMiuix(
                     actions.onRefresh()
                     refreshTick.intValue++
                 },
-                refreshTexts = refreshTexts,
+                refreshTexts = IosRefreshTexts,
                 contentPadding = contentPadding,
             ) {
                 if (modules.isEmpty()) {
@@ -612,7 +608,8 @@ private fun ModuleShortcutDialog(
                 TextField(
                     value = shortcutState.name,
                     onValueChange = shortcutState::updateName,
-                    label = stringResource(id = R.string.module_shortcut_name_label)
+                    label = stringResource(id = R.string.module_shortcut_name_label),
+                    cornerRadius = IosFieldCorner,
                 )
                 if (shortcutState.hasExistingShortcut) {
                     TextButton(

@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.sulog
 
+import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -125,12 +126,6 @@ fun SulogScreenMiuix(
     val pullToRefreshState = rememberPullToRefreshState()
     val listState = rememberLazyListState()
     val fileSelector = buildSulogFileSelector(state.files, state.selectedFilePath)
-    val refreshTexts = listOf(
-        stringResource(R.string.refresh_pulling),
-        stringResource(R.string.refresh_release),
-        stringResource(R.string.refresh_refresh),
-        stringResource(R.string.refresh_complete),
-    )
     var searchStatus by remember { mutableStateOf(SearchStatus("")) }
     var selectedEntry by remember { mutableStateOf<SulogEntry?>(null) }
 
@@ -292,7 +287,7 @@ fun SulogScreenMiuix(
                 isRefreshing = state.isLoading || state.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
                 onRefresh = actions.onRefresh,
-                refreshTexts = refreshTexts,
+                refreshTexts = IosRefreshTexts,
                 contentPadding = PaddingValues(
                     top = innerPadding.calculateTopPadding() + 6.dp,
                     start = innerPadding.calculateStartPadding(layoutDirection),

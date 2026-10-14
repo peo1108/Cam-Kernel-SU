@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.template
 
+import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -227,18 +228,12 @@ fun AppProfileTemplateScreenMiuix(
             }
         }
         val pullToRefreshState = rememberPullToRefreshState()
-        val refreshTexts = listOf(
-            stringResource(R.string.refresh_pulling),
-            stringResource(R.string.refresh_release),
-            stringResource(R.string.refresh_refresh),
-            stringResource(R.string.refresh_complete),
-        )
         val layoutDirection = LocalLayoutDirection.current
         PullToRefresh(
             isRefreshing = state.isRefreshing,
             pullToRefreshState = pullToRefreshState,
             onRefresh = { actions.onRefresh(true) },
-            refreshTexts = refreshTexts,
+            refreshTexts = IosRefreshTexts,
             contentPadding = PaddingValues(
                 top = innerPadding.calculateTopPadding() + 12.dp,
                 start = innerPadding.calculateStartPadding(layoutDirection),

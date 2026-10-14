@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.component.miuix
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
 import cam.su.kernel.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -90,7 +91,8 @@ private fun EditDialog(
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
                 ),
-                onValueChange = filter.onValueChange()
+                onValueChange = filter.onValueChange(),
+                cornerRadius = IosFieldCorner,
             )
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween

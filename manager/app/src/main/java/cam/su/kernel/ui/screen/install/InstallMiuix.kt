@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.install
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassIconButton
@@ -297,7 +298,8 @@ internal fun InstallScreenMiuix(
                                         singleLine = true,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        cornerRadius = IosFieldCorner,
                                     )
                                     Text(
                                         text = stringResource(

@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.component.miuix
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
 import cam.su.kernel.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -58,6 +59,7 @@ fun ScaleDialog(
                         }
                     }
                 },
+                cornerRadius = IosFieldCorner,
             )
             Row(horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(

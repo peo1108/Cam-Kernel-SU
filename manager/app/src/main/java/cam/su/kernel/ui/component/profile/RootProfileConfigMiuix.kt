@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.component.profile
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.GlassDialog
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -61,7 +62,8 @@ fun RootProfileConfigMiuix(
                 enabled = enabled,
                 label = stringResource(R.string.profile_name),
                 value = profile.name,
-                onValueChange = { onProfileChange(profile.copy(name = it)) }
+                onValueChange = { onProfileChange(profile.copy(name = it)) },
+                cornerRadius = IosFieldCorner,
             )
         }
 

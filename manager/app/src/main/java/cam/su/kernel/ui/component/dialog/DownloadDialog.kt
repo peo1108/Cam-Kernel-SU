@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.component.dialog
 
+import cam.su.kernel.ui.component.glass.IosFieldCorner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,7 +51,8 @@ private fun DownloadDialogMiuix(
                     value = url,
                     onValueChange = { url = it },
                     label = stringResource(R.string.download_dialog_msg),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = IosFieldCorner,
                 )
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,

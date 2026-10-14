@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.modulerepo
 
+import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
 import cam.su.kernel.ui.component.glass.rememberMorphPopupState
@@ -371,12 +372,6 @@ fun ModuleRepoScreenMiuix(
                 refreshTick.intValue,
                 isBusy = { latestRefreshing.value },
             ) { latestModules.value }
-            val refreshTexts = listOf(
-                stringResource(R.string.refresh_pulling),
-                stringResource(R.string.refresh_release),
-                stringResource(R.string.refresh_refresh),
-                stringResource(R.string.refresh_complete),
-            )
             PullToRefresh(
                 isRefreshing = state.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
@@ -384,7 +379,7 @@ fun ModuleRepoScreenMiuix(
                     actions.onRefresh()
                     refreshTick.intValue++
                 },
-                refreshTexts = refreshTexts,
+                refreshTexts = IosRefreshTexts,
                 contentPadding = PaddingValues(
                     top = innerPadding.calculateTopPadding() + 6.dp,
                     start = innerPadding.calculateStartPadding(layoutDirection),

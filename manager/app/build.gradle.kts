@@ -22,6 +22,7 @@ val androidTargetCompatibility = rootProject.extra["androidTargetCompatibility"]
 val managerVersionCode = rootProject.extra["managerVersionCode"] as Int
 val managerVersionName = rootProject.extra["managerVersionName"] as String
 val kernelSourceId = rootProject.extra["kernelSourceId"] as String
+val camdSourceId = rootProject.extra["camdSourceId"] as String
 
 val isPrBuild = project.findProperty("IS_PR_BUILD")?.toString()?.toBoolean() ?: false
 val defaultManagerPackageName = if (isPrBuild) "cam.su.kernel.pr" else "cam.su.kernel"
@@ -211,6 +212,73 @@ val copyChangelog = tasks.register<CopyChangelog>("copyChangelog") {
 androidComponents {
     onVariants { variant ->
         variant.sources.assets?.addGeneratedSourceDirectory(copyChangelog, CopyChangelog::outputDir)
+    }
+}
+
+/**
+ * Gradle packs whatever libcamd.so sits in jniLibs, and the Manager copies it over /data/adb/camd at
+ * every launch, so a camd built from older sources would quietly replace the newer daemon. camd
+ * carries `CAMD_SOURCE_ID=<id>;` (userspace/camd/build.rs); this compares it with the committed
+ * sources. A release build stops on a mismatch unless `-PallowStaleCamd`; a debug build only warns
+ * (packing the device's own camd for a quick test is fine). No libcamd.so at all is left alone:
+ * CI builds the APK without it and adds camd afterwards.
+ */
+abstract class CheckCamdSource : DefaultTask() {
+    @get:Input
+    abstract val expectedId: Property<String>
+
+    @get:Input
+    abstract val strict: Property<Boolean>
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val libraries: ConfigurableFileCollection
+
+    @TaskAction
+    fun check() {
+        val expected = expectedId.get()
+        if (expected.isEmpty()) {
+            logger.warn("camd source check skipped: no git sources")
+            return
+        }
+        val marker = "CAMD_SOURCE_ID=".toByteArray()
+        val stale = libraries.files.filter { it.isFile }.mapNotNull { lib ->
+            val bytes = lib.readBytes()
+            val at = indexOf(bytes, marker)
+            val found = if (at < 0) "none (built before the id existed)" else {
+                val start = at + marker.size
+                val end = (start until bytes.size).firstOrNull { bytes[it] == ';'.code.toByte() } ?: start
+                String(bytes, start, end - start)
+            }
+            if (found == expected) null else "${lib.parentFile.name}/${lib.name}: $found"
+        }
+        if (stale.isEmpty()) return
+        val message = "libcamd.so was built from other sources than this checkout (expected $expected):\n" +
+            stale.joinToString("\n") { "  $it" } +
+            "\nBuild camd again and copy it into app/src/main/jniLibs, or pass -PallowStaleCamd to pack it anyway."
+        if (strict.get()) throw GradleException(message) else logger.warn("warning: $message")
+    }
+
+    private fun indexOf(bytes: ByteArray, needle: ByteArray): Int {
+        outer@ for (i in 0..bytes.size - needle.size) {
+            for (j in needle.indices) if (bytes[i + j] != needle[j]) continue@outer
+            return i
+        }
+        return -1
+    }
+}
+
+val allowStaleCamd = project.findProperty("allowStaleCamd") != null
+
+androidComponents {
+    onVariants { variant ->
+        val name = variant.name.replaceFirstChar(Char::uppercase)
+        val check = tasks.register<CheckCamdSource>("check${name}CamdSource") {
+            expectedId.set(camdSourceId)
+            strict.set(variant.buildType == "release" && !allowStaleCamd)
+            libraries.from(fileTree("src/main/jniLibs") { include("*/libcamd.so") })
+        }
+        tasks.matching { it.name == "pre${name}Build" }.configureEach { dependsOn(check) }
     }
 }
 

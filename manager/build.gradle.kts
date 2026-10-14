@@ -15,6 +15,7 @@ extra["androidTargetCompatibility"] = JavaVersion.VERSION_21
 extra["managerVersionCode"] = getVersionCode()
 extra["managerVersionName"] = getVersionName()
 extra["kernelSourceId"] = getKernelSourceId()
+extra["camdSourceId"] = getCamdSourceId()
 
 fun getGitCommitCount(): Int {
     val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
@@ -39,6 +40,20 @@ fun getKernelSourceId(): String {
     val digest = java.security.MessageDigest.getInstance("SHA-1")
     digest.update("blob ${content.size}\u0000".toByteArray())
     digest.update(content)
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
+// Same value as CAMD_SOURCE_ID in userspace/camd/build.rs: the git blob hash of the committed
+// listing of what camd is built from. The app build compares it with the libcamd.so it packs.
+fun getCamdSourceId(): String {
+    val process = Runtime.getRuntime().exec(
+        arrayOf("git", "ls-tree", "--full-tree", "-r", "HEAD", "--", "userspace", "uapi", "Cargo.toml", "Cargo.lock")
+    )
+    val listing = process.inputStream.use { it.readBytes() }
+    if (process.waitFor() != 0 || listing.isEmpty()) return ""
+    val digest = java.security.MessageDigest.getInstance("SHA-1")
+    digest.update("blob ${listing.size}\u0000".toByteArray())
+    digest.update(listing)
     return digest.digest().joinToString("") { "%02x".format(it) }
 }
 

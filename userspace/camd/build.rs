@@ -38,6 +38,31 @@ fn get_git_version() -> Result<(u32, String), std::io::Error> {
     Ok((version_code, version_name))
 }
 
+/// Paths whose committed state camd is built from. manager/build.gradle.kts hashes the same
+/// listing (getCamdSourceId) and warns when the libcamd.so it packs carries another id.
+const SOURCE_PATHS: [&str; 4] = ["userspace", "uapi", "Cargo.toml", "Cargo.lock"];
+
+/// The git blob hash of `git ls-tree --full-tree -r HEAD -- <SOURCE_PATHS>`.
+fn get_source_id() -> Option<String> {
+    let listing = Command::new("git")
+        .args(["ls-tree", "--full-tree", "-r", "HEAD", "--"])
+        .args(SOURCE_PATHS)
+        .output()
+        .ok()
+        .filter(|out| out.status.success() && !out.stdout.is_empty())?
+        .stdout;
+    let mut hasher = Command::new("git")
+        .args(["hash-object", "--stdin"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .ok()?;
+    io::Write::write_all(&mut hasher.stdin.take()?, &listing).ok()?;
+    let out = hasher.wait_with_output().ok()?;
+    let id = String::from_utf8(out.stdout).ok()?.trim().to_string();
+    (out.status.success() && id.len() == 40).then_some(id)
+}
+
 fn configure_bindgen() {
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -243,6 +268,25 @@ fn main() {
     }
     println!("cargo:rustc-env=VERSION_CODE={code}");
     println!("cargo:rustc-env=VERSION_NAME={name}");
+    let source_id = get_source_id().unwrap_or_else(|| {
+        println!("cargo:warning=Failed to get the source id from git");
+        "unknown".to_string()
+    });
+    println!("cargo:rustc-env=CAMD_SOURCE_ID={source_id}");
+    // a new commit changes the id
+    if let Ok(out) = Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .output()
+        && let Ok(dir) = String::from_utf8(out.stdout)
+    {
+        let dir = PathBuf::from(dir.trim());
+        println!("cargo:rerun-if-changed={}", dir.join("HEAD").display());
+        println!("cargo:rerun-if-changed={}", dir.join("index").display());
+        println!(
+            "cargo:rerun-if-changed={}",
+            dir.join("logs").join("HEAD").display()
+        );
+    }
 
     let target_os = env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS not set");
     if target_os == "android" {

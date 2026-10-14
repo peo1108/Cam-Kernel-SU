@@ -72,6 +72,20 @@ mod android {
 #[allow(unused)]
 pub const VERSION_CODE: &str = env!("VERSION_CODE");
 pub const VERSION_NAME: &str = env!("VERSION_NAME");
+
+/// Kept whole in the binary: the Manager build looks for this text in the libcamd.so it packs
+/// (checkCamdSource in manager/app/build.gradle.kts) to warn about a camd built from older sources.
+const SOURCE_ID_MARKER: &str = concat!("CAMD_SOURCE_ID=", env!("CAMD_SOURCE_ID"), ";");
+
+/// The git blob hash of the committed `userspace/`, `uapi/` and Cargo files listing (build.rs).
+pub fn source_id() -> &'static str {
+    // read through a black box so the whole marker stays in the binary
+    let marker = std::hint::black_box(SOURCE_ID_MARKER);
+    marker
+        .strip_prefix("CAMD_SOURCE_ID=")
+        .and_then(|rest| rest.strip_suffix(';'))
+        .unwrap_or(marker)
+}
 #[cfg(target_os = "android")]
 pub const FULL_VERSION: &str = const_format::formatcp!(
     "{VERSION_NAME} (uapi: {})",

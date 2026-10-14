@@ -222,6 +222,9 @@ enum Debug {
     /// Get kernel version
     Version,
 
+    /// Print the id of the committed sources this camd was built from
+    SourceId,
+
     /// For testing
     Test,
 
@@ -814,6 +817,10 @@ pub fn run() -> Result<()> {
         Commands::Debug { command } => match command {
             Debug::Version => {
                 println!("Kernel Version: {}", ksucalls::get_version());
+                Ok(())
+            }
+            Debug::SourceId => {
+                println!("{}", defs::source_id());
                 Ok(())
             }
             Debug::Su { global_mnt } => crate::su::grant_root(global_mnt),

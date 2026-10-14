@@ -57,9 +57,11 @@ fun GlassSwitch(
     val off = if (dark) IosControlColors.offDark else IosControlColors.offLight
     val haptic = LocalHapticFeedback.current
     val onChange by rememberUpdatedState(onCheckedChange)
+    // read at release time: the gesture outlives recompositions, a captured value would go stale
+    val isChecked by rememberUpdatedState(checked)
     var pressed by remember { mutableStateOf(false) }
-    val position by animateFloatAsState(if (checked) 1f else 0f, spring(dampingRatio = 0.68f, stiffness = 420f), label = "switch")
-    val lens by animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.6f, stiffness = 520f), label = "lens")
+    val position by animateFloatAsState(if (checked) 1f else 0f, spring(dampingRatio = 0.78f, stiffness = 900f), label = "switch")
+    val lens by animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.7f, stiffness = 900f), label = "lens")
     Canvas(
         modifier = modifier
             .size(62.dp, 28.dp)
@@ -74,7 +76,7 @@ fun GlassSwitch(
                     if (up != null) {
                         up.consume()
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onChange?.invoke(!checked)
+                        onChange?.invoke(!isChecked)
                     }
                 }
             },

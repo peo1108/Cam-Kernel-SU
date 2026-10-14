@@ -198,12 +198,39 @@ class HidingCheckViewModel(
         }
     }
 
+    /** The level, the HAL, and the attestation too: its lock state is what the diagnosis trusts. */
     fun checkWidevine() {
         if (_uiState.value.checkingWidevine) return
         _uiState.update { it.copy(checkingWidevine = true) }
         viewModelScope.launch {
-            val info = withContext(Dispatchers.IO) { cam.su.kernel.ui.util.checkWidevine() }
-            _uiState.update { it.copy(widevine = info, checkingWidevine = false) }
+            val needAttestation = _uiState.value.attestation?.info == null
+            val (info, hal, attestation) = withContext(Dispatchers.IO) {
+                Triple(
+                    cam.su.kernel.ui.util.checkWidevine(),
+                    runCatching { cam.su.kernel.ui.util.widevineHalRunning() }.getOrNull(),
+                    if (needAttestation) checkAttestationReport() else null,
+                )
+            }
+            _uiState.update {
+                it.copy(
+                    widevine = info,
+                    widevineHal = hal,
+                    attestation = attestation ?: it.attestation,
+                    checkingWidevine = false,
+                )
+            }
+        }
+    }
+
+    fun reprovisionWidevine() {
+        if (_uiState.value.reprovisionStep != null) return
+        _uiState.update { it.copy(reprovisionStep = "backup", reprovision = null) }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                cam.su.kernel.ui.util.reprovisionWidevine { step -> _uiState.update { it.copy(reprovisionStep = step) } }
+            }
+            val hal = withContext(Dispatchers.IO) { runCatching { cam.su.kernel.ui.util.widevineHalRunning() }.getOrNull() }
+            _uiState.update { it.copy(reprovisionStep = null, reprovision = result, widevine = result.after, widevineHal = hal) }
         }
     }
 

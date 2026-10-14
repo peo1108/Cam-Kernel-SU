@@ -44,6 +44,33 @@ class WidevineInfoTest {
         assertEquals("Widevine: L3", info.summary())
     }
 
+    private val l1 = WidevineInfo(supported = true, securityLevel = "L1", provisioned = true)
+    private val l3 = WidevineInfo(supported = true, securityLevel = "L3", provisioned = true)
+
+    @Test
+    fun diagnosis() {
+        assertEquals(WidevineDiagnosis.L1, diagnoseWidevine(l1, halRunning = true, bootloaderLocked = false))
+        assertEquals(WidevineDiagnosis.NoPlugin, diagnoseWidevine(WidevineInfo.None, halRunning = null, bootloaderLocked = null))
+        assertEquals(WidevineDiagnosis.HalDown, diagnoseWidevine(WidevineInfo.None, halRunning = false, bootloaderLocked = true))
+        assertEquals(WidevineDiagnosis.HalDown, diagnoseWidevine(l3, halRunning = false, bootloaderLocked = true))
+        assertEquals(
+            WidevineDiagnosis.NotProvisioned,
+            diagnoseWidevine(l3.copy(provisioned = false), halRunning = true, bootloaderLocked = false),
+        )
+        assertEquals(WidevineDiagnosis.BootloaderUnlocked, diagnoseWidevine(l3, halRunning = true, bootloaderLocked = false))
+        assertEquals(WidevineDiagnosis.KeyboxMissing, diagnoseWidevine(l3, halRunning = null, bootloaderLocked = true))
+        assertEquals(WidevineDiagnosis.Unknown, diagnoseWidevine(l3, halRunning = true, bootloaderLocked = null))
+    }
+
+    @Test
+    fun reprovisioningIsOfferedWhereItCanHelp() {
+        assertFalse(WidevineDiagnosis.L1.reprovisionHelps)
+        assertFalse(WidevineDiagnosis.NoPlugin.reprovisionHelps)
+        assertFalse(WidevineDiagnosis.HalDown.reprovisionHelps)
+        assertTrue(WidevineDiagnosis.NotProvisioned.reprovisionHelps)
+        assertTrue(WidevineDiagnosis.BootloaderUnlocked.reprovisionHelps)
+    }
+
     @Test
     fun noPlugin() {
         assertFalse(WidevineInfo.None.supported)

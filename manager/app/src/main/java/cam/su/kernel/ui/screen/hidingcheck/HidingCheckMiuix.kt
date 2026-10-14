@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.data.model.HidingAudit
+import cam.su.kernel.data.model.WidevineDiagnosis
+import cam.su.kernel.data.model.diagnoseWidevine
 import cam.su.kernel.data.repository.HidingRulesStatus
 import cam.su.kernel.ui.component.AttestationResult
 import cam.su.kernel.ui.component.glass.GlassCard
@@ -602,10 +604,15 @@ private fun AttestationCard(state: HidingCheckUiState, actions: HidingCheckActio
     }
 }
 
-/** The Widevine DRM level streaming apps see: L1 plays HD, L3 is SD only. */
+/**
+ * The Widevine DRM level streaming apps see (L1 plays HD, L3 is SD only), why a device is below
+ * L1, and a way to clear and fetch the DRM certificates again when that can help.
+ */
 @Composable
 private fun WidevineCard(state: HidingCheckUiState, actions: HidingCheckActions) {
     val context = LocalContext.current
+    var confirm by remember { mutableStateOf(false) }
+    val busy = state.reprovisionStep != null
     GlassCard(modifier = cardModifier) {
         Text(
             text = stringResource(R.string.hiding_widevine_summary),
@@ -613,27 +620,52 @@ private fun WidevineCard(state: HidingCheckUiState, actions: HidingCheckActions)
             color = colorScheme.onSurfaceVariantSummary,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
         )
-        state.widevine?.let { info ->
-            when {
-                !info.supported -> WidevineLine(stringResource(R.string.hiding_widevine_none), ok = false)
-                else -> {
+        val info = state.widevine
+        if (info != null) {
+            if (info.supported) {
+                WidevineLine(stringResource(R.string.hiding_widevine_level, info.securityLevel ?: "?"), ok = info.isL1)
+                info.systemId?.let { WidevineLine(stringResource(R.string.hiding_widevine_system_id, it), ok = null) }
+                info.version?.let { WidevineLine(stringResource(R.string.hiding_widevine_version, it), ok = null) }
+                info.hdcpLevel?.let { hdcp ->
+                    WidevineLine(stringResource(R.string.hiding_widevine_hdcp, hdcp, info.maxHdcpLevel ?: "?"), ok = null)
+                }
+                info.provisioned?.let {
                     WidevineLine(
-                        stringResource(R.string.hiding_widevine_level, info.securityLevel ?: "?"),
-                        ok = info.isL1,
+                        stringResource(
+                            when {
+                                !it -> R.string.hiding_widevine_not_provisioned
+                                info.justProvisioned -> R.string.hiding_widevine_just_provisioned
+                                else -> R.string.hiding_widevine_provisioned
+                            }
+                        ),
+                        ok = it,
                     )
-                    info.systemId?.let { WidevineLine(stringResource(R.string.hiding_widevine_system_id, it), ok = null) }
-                    info.version?.let { WidevineLine(stringResource(R.string.hiding_widevine_version, it), ok = null) }
-                    info.hdcpLevel?.let { hdcp ->
-                        WidevineLine(stringResource(R.string.hiding_widevine_hdcp, hdcp, info.maxHdcpLevel ?: "?"), ok = null)
-                    }
-                    if (!info.isL1) {
-                        Text(
-                            text = stringResource(R.string.hiding_widevine_l3_hint),
-                            fontSize = 12.sp,
-                            color = colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        )
-                    }
+                }
+                info.sessionError?.let { WidevineLine(stringResource(R.string.hiding_widevine_session_error, it), ok = false) }
+            }
+            state.widevineHal?.let {
+                WidevineLine(stringResource(if (it) R.string.hiding_widevine_hal_up else R.string.hiding_widevine_hal_down), ok = it)
+            }
+            val diagnosis = diagnoseWidevine(info, state.widevineHal, state.attestation?.info?.deviceLocked)
+            Text(
+                text = stringResource(diagnosis.text()),
+                fontSize = 12.sp,
+                color = if (diagnosis == WidevineDiagnosis.L1) colorScheme.onSurfaceVariantSummary else colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            state.reprovision?.let { result ->
+                val text = when {
+                    result.restored -> stringResource(R.string.hiding_widevine_reprovision_restored, result.after.securityLevel ?: "?")
+                    result.error != null -> stringResource(R.string.hiding_widevine_reprovision_failed, result.error)
+                    else -> stringResource(
+                        R.string.hiding_widevine_reprovision_done,
+                        result.before.securityLevel ?: "?",
+                        result.after.securityLevel ?: "?",
+                    )
+                }
+                WidevineLine(text, ok = result.after.isL1 && result.error == null)
+                if (result.error != null && !result.restored) {
+                    WidevineLine(stringResource(R.string.hiding_widevine_reprovision_backup, result.backup), ok = null)
                 }
             }
             TextButton(
@@ -647,18 +679,74 @@ private fun WidevineCard(state: HidingCheckUiState, actions: HidingCheckActions)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
             )
+            if (info.supported && state.widevineHal != false) {
+                TextButton(
+                    text = stringResource(
+                        when (state.reprovisionStep) {
+                            null -> R.string.hiding_widevine_reprovision
+                            "backup" -> R.string.hiding_widevine_step_backup
+                            "clear" -> R.string.hiding_widevine_step_clear
+                            "provision" -> R.string.hiding_widevine_step_provision
+                            else -> R.string.hiding_widevine_step_restore
+                        }
+                    ),
+                    enabled = !busy,
+                    onClick = { confirm = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    colors = if (diagnosis.reprovisionHelps) ButtonDefaults.textButtonColorsPrimary() else ButtonDefaults.textButtonColors(),
+                )
+            }
         }
         TextButton(
             text = stringResource(
                 if (state.checkingWidevine) R.string.features_attestation_checking else R.string.hiding_widevine_check
             ),
-            enabled = !state.checkingWidevine,
+            enabled = !state.checkingWidevine && !busy,
             onClick = actions.onCheckWidevine,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
     }
+
+    cam.su.kernel.ui.component.glass.GlassDialog(
+        show = confirm,
+        title = stringResource(R.string.hiding_widevine_reprovision),
+        summary = stringResource(
+            if (state.widevine?.isL1 == true) R.string.hiding_widevine_reprovision_confirm_l1 else R.string.hiding_widevine_reprovision_confirm
+        ),
+        onDismissRequest = { confirm = false },
+    ) {
+        Row {
+            TextButton(
+                text = stringResource(android.R.string.cancel),
+                onClick = { confirm = false },
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(20.dp))
+            TextButton(
+                text = stringResource(R.string.hiding_widevine_reprovision_go),
+                onClick = {
+                    confirm = false
+                    actions.onReprovisionWidevine()
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
+        }
+    }
+}
+
+private fun WidevineDiagnosis.text(): Int = when (this) {
+    WidevineDiagnosis.L1 -> R.string.hiding_widevine_diag_l1
+    WidevineDiagnosis.NoPlugin -> R.string.hiding_widevine_diag_no_plugin
+    WidevineDiagnosis.HalDown -> R.string.hiding_widevine_diag_hal_down
+    WidevineDiagnosis.NotProvisioned -> R.string.hiding_widevine_diag_not_provisioned
+    WidevineDiagnosis.BootloaderUnlocked -> R.string.hiding_widevine_diag_unlocked
+    WidevineDiagnosis.KeyboxMissing -> R.string.hiding_widevine_diag_keybox
+    WidevineDiagnosis.Unknown -> R.string.hiding_widevine_diag_unknown
 }
 
 /** [ok] null: a neutral fact. */

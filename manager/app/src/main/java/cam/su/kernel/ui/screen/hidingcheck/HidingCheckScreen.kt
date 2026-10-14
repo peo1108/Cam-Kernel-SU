@@ -34,6 +34,7 @@ fun HidingCheckScreen(uid: Int? = null, scanNow: Boolean = false) {
         onDisableModule = viewModel::disableModule,
         onCheckAttestation = viewModel::checkAttestation,
         onCheckWidevine = viewModel::checkWidevine,
+        onReprovisionWidevine = viewModel::reprovisionWidevine,
         onLaunchApp = viewModel::launchCheckedApp,
         onSetModuleScan = viewModel::setModuleScan,
         onFix = viewModel::applyFix,

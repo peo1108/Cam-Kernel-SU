@@ -2,6 +2,25 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.1.7 - 2026-10-14
+- Tab Tệp: sửa file lớn, đổi bảng mã, so sánh hai file, terminal root, thùng rác; giao diện mới kiểu iOS
+### Tính năng mới
+- Trình sửa văn bản: file trên 128 KB giờ sửa được (sửa từng dòng, vẫn cuộn mượt), không còn chỉ đọc
+- Mở lại file bằng bảng mã khác (GBK, Big5, Windows-1258...) và lưu sang bảng mã khác; chuyển kiểu xuống dòng sang LF hoặc CRLF
+- So sánh hai file: chọn file ở mỗi panel (hoặc hai file trong một panel) rồi bấm "So sánh"; chạm một dòng để mở file đúng dòng đó
+- Terminal root ngay trong tab Tệp; chạy script bằng root và gõ trả lời khi script hỏi
+- Thùng rác: file xoá trong tab Tệp được giữ lại để khôi phục
+- Sao lưu phân vùng và flash ảnh boot từ tab Tệp
+- Ảnh thu nhỏ cho ảnh, video và APK; danh sách tự làm mới khi thư mục thay đổi
+- Mở file bằng app khác mà không phải chép ra trước
+### Thay đổi
+- Giao diện kiểu iOS: menu mọc ra từ nút, hộp thoại ở giữa màn hình, thông báo dạng banner, công tắc và thanh trượt mới, ô nhập có nút xoá
+- Màn ngang: thanh điều hướng chuyển sang cạnh bên
+### Sửa lỗi
+- File lẫn CRLF và LF không còn bị đổi hết sang CRLF khi lưu: mỗi dòng giữ kiểu xuống dòng của nó
+- Ký tự mà bảng mã của file không ghi được giờ báo lỗi thay vì ghi thành "?"
+- Công tắc không còn bật tắt theo giá trị cũ
+
 ## 1.1.6 - 2026-10-13
 - Tab Tệp mới: quản lý file bằng root kiểu MT Manager, hai panel, ngay trong app
 ### Tính năng mới

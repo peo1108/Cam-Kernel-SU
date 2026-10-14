@@ -11,7 +11,7 @@ Chấm lại ngày 2026-10-13 trên `fe4b7b7f` (sau `cam-v1.1.5-beta.1`, 2875 co
 | Ý tưởng và phạm vi | 8,5 | 8,5 | Như cũ. Bỏ Chặn RKP: tính năng cắt mạng cả máy để che một tín hiệu đo, rủi ro cao hơn giá trị |
 | Kiến trúc | 8,5 | 8,5 | Ranh giới vẫn sạch: kernel chỉ nhận lệnh quản trị từ uid 0, Manager đi qua root service, UI chỉ gọi facade `Cam`. Feature mới của upstream (`shell_su_adb_only`) vào không conflict |
 | Chất lượng code | 7,5 | 7,5 | `CamCli.kt` chỉ còn hàm của upstream (đã đối chiếu với `KsuCli.kt` ngày 2026-10-14), lệnh riêng của Cam nằm ở các file `*Cli.kt`. TODO: 7, đều của upstream (5 kernel, 2 Manager). Cụm slime không còn file trên 1000 dòng (2026-10-14); file lớn nhất giờ là `FilesDialogs.kt` của tab Tệp |
-| Kiểm thử | 7,5 | 7,5 | Kernel 29 test (ASan + UBSan), camd 104 (102 chạy trên CI), Manager 267 (tab Tệp có thêm `DeviceCheck` chạy trên máy). Có thêm smoke test chạy tay trên máy (14/14 đạt trên TB323FU); chưa có `androidTest` |
+| Kiểm thử | 7,5 | 7,5 | Kernel 29 test (ASan + UBSan), camd 109 (chạy đủ trên CI), Manager 276 (tab Tệp có thêm `DeviceCheck` chạy trên máy). Có thêm smoke test chạy tay trên máy (14/14 đạt trên TB323FU); chưa có `androidTest` |
 | CI và phát hành | 8,5 | 8,5 | Release theo tag `cam-v*`, test chặn trước khi build, kênh beta, tag bất biến; 16 workflow. `expected_size`/`expected_hash` giữ có chủ đích (upstream vẫn dùng) |
 | Tài liệu | 8,5 | 8,5 | `CAM_CHANGES.md` đồng bộ tới merge `8a8058d9`, ghi rõ phần dọn dẹp của Chặn RKP; ví dụ phát hành đã theo số 1.1.x |
 | Bảo mật | 8,0 | 8,0 | Như cũ (ghim Manager theo chứng chỉ trong `packages.xml`, khóa dự phòng, rule ký ECDSA). Thêm tuỳ chọn upstream chặn app chiếm quyền shell leo lên root (mặc định tắt) |
@@ -38,9 +38,9 @@ File lớn nhất của Cam: `FilesDialogs.kt` (1206 dòng), `FilesViewModel.kt`
 | Phần | Lệnh | Kết quả |
 |---|---|---|
 | Kernel (WSL) | `make -C kernel/tests` | **29 đạt** (ASan + UBSan) |
-| camd (WSL) | `cargo test --target x86_64-unknown-linux-gnu` | 104 test: **102 đạt, 2 fail sẵn** (2026-10-14) (`embedded_module_uses_release_asset_layout` cần `.ko` chỉ có trên CI; `rejects_conflicting_loading_module_values` lỗi thời từ upstream). CI bỏ qua đúng hai test này |
+| camd (WSL) | `cargo test --target x86_64-unknown-linux-gnu` | 109 test: **109 đạt** (2026-10-14; hai test fail sẵn trước đây đã sửa, dòng 47 của `CAM_CHANGES.md`). CI chạy đủ |
 | camd | `cargo ndk -t arm64-v8a check` / `clippy` / `cargo fmt` | Sạch |
-| Manager (ổ `K:`) | `gradlew :app:testDebugUnitTest` | 39 lớp, **267 đạt** (2026-10-14: thêm kiểm tra image khi flash, gợi ý sửa ẩn root, sao lưu cấu hình) |
+| Manager (ổ `K:`) | `gradlew :app:testDebugUnitTest` | 40 lớp, **276 đạt** (2026-10-14: thêm kiểm tra image khi flash, gợi ý sửa ẩn root, sao lưu cấu hình, rồi thủ phạm bootloop và bản mới từ thư viện) |
 | Trên máy (TB323FU, Android 16) | `scripts/device_smoke.sh` | **14/14 đạt** trên APK CI `1825927c` |
 | `androidTest` | | Không có |
 

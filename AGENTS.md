@@ -57,7 +57,7 @@ For Rust projects in `userspace/camd` and `userspace/caminit`, ALWAYS run these 
 2. `cargo ndk -t arm64-v8a clippy` (lints and warnings)
 3. `cargo fmt` (format)
 4. Fix any errors or warnings before considering the task complete.
-5. Host tests (WSL): `cd userspace/camd && cargo test --target x86_64-unknown-linux-gnu`. Two tests fail before any change of yours (`embedded_module_uses_release_asset_layout`: missing CI-only `.ko`; `rejects_conflicting_loading_module_values`: stale upstream test); anything else failing is yours. CI runs the same tests (`.github/workflows/test.yml`, skipping those two).
+5. Host tests (WSL): `cd userspace/camd && cargo test --target x86_64-unknown-linux-gnu`. All pass (109 on 2026-10-14); `embedded_module_uses_release_asset_layout` only checks the `.ko` size when CI has put it in `bin/`. CI runs the same tests (`.github/workflows/test.yml`).
 
 ### Android Manager App (`manager/`)
 
@@ -71,9 +71,9 @@ cp ../userspace/camd/target/aarch64-linux-android/release/camd app/src/main/jniL
 ./gradlew clean assembleRelease
 ```
 
-Unit tests: `./gradlew :app:testDebugUnitTest` (39 classes, 267 tests, all pass on 2026-10-14; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks. On a device: `scripts/device_smoke.sh` (adb, read-only; CI never loads the LKM).
+Unit tests: `./gradlew :app:testDebugUnitTest` (40 classes, 276 tests, all pass on 2026-10-14; CI runs them in `test.yml`). See `docs/PROJECT_REVIEW.md` for status and open risks. On a device: `scripts/device_smoke.sh` (adb, read-only; CI never loads the LKM). After touching the boot guard (`boot_guard.rs`, `boot_evidence.rs`, the module rc code in `module.rs`): `scripts/device_bootguard_test.sh` (real boot loops that stop by themselves, about 15 reboots; header of the script).
 
-Important: Manager build REQUIRES camd binaries to be present in `jniLibs` before building. Gradle packs whatever `libcamd.so` is there and never rebuilds it: after changing camd, copy a fresh build in, or the APK ships the old daemon (CI builds both from the same commit). From CI, install the `manager` artifact, never `manager-gradle` (no `libcamd.so` in it). On Windows, run Gradle from the `K:` drive (`docs/CAM_CHANGES.md` section 5).
+Important: Manager build REQUIRES camd binaries to be present in `jniLibs` before building. Gradle packs whatever `libcamd.so` is there and never rebuilds it: after changing camd, copy a fresh build in, or the APK ships the old daemon (CI builds both from the same commit). `check<Variant>CamdSource` compares the `CAMD_SOURCE_ID` built into that camd with the committed `userspace/`, `uapi/` and Cargo files: a debug build warns, a release build stops (`-PallowStaleCamd` packs it anyway). From CI, install the `manager` artifact, never `manager-gradle` (no `libcamd.so` in it). On Windows, run Gradle from the `K:` drive (`docs/CAM_CHANGES.md` section 5).
 
 ### Cam website (`site/`)
 

@@ -116,6 +116,8 @@ fun GlassDialog(
                     .fillMaxWidth(0.88f)
                     .heightIn(max = LocalWindowInfo.current.containerSize.height.let { with(LocalDensity.current) { it.toDp() } } * 0.85f)
                     .overlayGlass(shape)
+                    // like iOS alerts, nearly opaque: lists behind must not show through
+                    .background(colorScheme.surface.copy(alpha = 0.5f), shape)
                     // taps on the card must not reach the backdrop
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
                     .padding(horizontal = margin.width, vertical = margin.height),

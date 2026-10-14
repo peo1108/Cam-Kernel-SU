@@ -14,6 +14,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Flash vào phân vùng (tab Tệp): kiểm tra image đúng loại trước khi ghi (chặn flash nhầm boot vào init_boot, file zip, file nén), luôn sao lưu phân vùng hiện tại vào CamBackup trước, cảnh báo khi chọn slot máy không chạy, bước cuối phải gõ tên phân vùng
 - Chống xung đột module: nhận ra cả thư mục được thay thế bằng xattr của overlayfs (module làm cho metamodule overlay), không chỉ file `.replace`
 - Chống bootloop: bỏ lựa chọn "Khi can thiệp", giờ luôn tắt tất cả module
+- Tab Tệp: máy tính bảng để dọc cũng hiện hai panel cạnh nhau (từ 600dp), điện thoại vẫn một panel
 ### Lưu ý
 - Bản thử nghiệm: các tính năng trên chưa được thử trên nhiều máy, báo lỗi giúp Cam nếu gặp
 

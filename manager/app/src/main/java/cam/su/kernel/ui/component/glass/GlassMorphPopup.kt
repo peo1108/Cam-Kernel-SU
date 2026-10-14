@@ -75,7 +75,6 @@ fun rememberMorphPopupState(): MorphPopupState = remember { MorphPopupState() }
 internal class MorphGroup {
     val members = mutableStateListOf<MorphPopupState>()
     var bounds = Rect.Zero
-    val active: Boolean get() = members.any { it.active }
 }
 
 internal val LocalMorphGroup = staticCompositionLocalOf<MorphGroup?> { null }
@@ -94,7 +93,7 @@ fun Modifier.morphAnchor(state: MorphPopupState): Modifier {
     }
     return this
         .onGloballyPositioned { state.anchor = it.boundsInWindow() }
-        .graphicsLayer { alpha = if (state.active) 0f else 1f }
+        .graphicsLayer { alpha = anchorAlpha(state.progress.value) }
 }
 
 /** Applied by [GlassButtonGroup]: tracks the pill for its members' menus and hides it while one is open. */
@@ -103,7 +102,15 @@ internal fun Modifier.morphGroup(group: MorphGroup): Modifier = this
         group.bounds = coordinates.boundsInWindow()
         group.members.forEach { it.anchor = group.bounds }
     }
-    .graphicsLayer { alpha = if (group.active) 0f else 1f }
+    .graphicsLayer { alpha = anchorAlpha(group.members.maxOfOrNull { it.progress.value } ?: 0f) }
+
+/**
+ * Near the button the real button and the morphing shape cross-fade, so neither pops in or out
+ * (a two-button pill would otherwise jump from the one icon on the shape to both).
+ */
+private const val CROSS_FADE = 0.2f
+
+private fun anchorAlpha(progress: Float) = (1f - progress / CROSS_FADE).coerceIn(0f, 1f)
 
 /**
  * iOS style menu: the anchor button itself grows into the glass popup and shrinks back into it on
@@ -120,9 +127,9 @@ fun GlassMorphPopup(
     LaunchedEffect(state.expanded) {
         if (state.expanded) {
             hostVisible.value = true
-            state.progress.animateTo(1f, spring(dampingRatio = 0.78f, stiffness = 420f))
+            state.progress.animateTo(1f, spring(dampingRatio = 0.78f, stiffness = 420f, visibilityThreshold = 0.001f))
         } else {
-            state.progress.animateTo(0f, spring(dampingRatio = 1f, stiffness = 560f))
+            state.progress.animateTo(0f, spring(dampingRatio = 0.86f, stiffness = 520f, visibilityThreshold = 0.001f))
             hostVisible.value = false
         }
     }
@@ -194,6 +201,7 @@ private fun MorphLayer(
             .pointerInput(onDismissRequest) { detectTapGestures { onDismissRequest() } },
     ) {
         Layout(
+            modifier = Modifier.graphicsLayer { alpha = (state.progress.value / CROSS_FADE).coerceIn(0f, 1f) },
             content = {
                 val bgShape = RoundedCornerShape(with(density) { radius.toDp() })
                 // iOS menus are nearly opaque: a surface veil over the glass keeps busy rows behind unreadable.

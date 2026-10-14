@@ -2,6 +2,9 @@ package cam.su.kernel.ui.screen.files
 
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -86,6 +89,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -188,7 +192,9 @@ fun FilesPagerMiuix(
                         title = state.activePanel.nav.path.let { if (it.endsWith("/")) it else "$it/" },
                         color = barColor,
                         navigationIcon = {
-                            GlassIconButton(onClick = { drawer = true }) {
+                            // the drawer takes over from its button, like the menus grow out of theirs
+                            val menuAlpha by animateFloatAsState(if (drawer) 0f else 1f, spring(stiffness = Spring.StiffnessMediumLow), label = "drawerButton")
+                            GlassIconButton(onClick = { drawer = true }, modifier = Modifier.graphicsLayer { alpha = menuAlpha }) {
                                 Icon(Icons.Rounded.Menu, contentDescription = null, tint = colorScheme.onSurface)
                             }
                         },
@@ -680,8 +686,9 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
     }
     AnimatedVisibility(
         visible = visible,
-        enter = slideInHorizontally { -it },
-        exit = slideOutHorizontally { -it },
+        // iOS sheets: a spring in, a quicker critically damped spring out
+        enter = slideInHorizontally(spring(dampingRatio = 0.85f, stiffness = 380f)) { -it },
+        exit = slideOutHorizontally(spring(dampingRatio = 1f, stiffness = 520f)) { -it },
     ) {
         GlassCard(
             modifier = Modifier

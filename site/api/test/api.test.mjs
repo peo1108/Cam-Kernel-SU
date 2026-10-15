@@ -145,3 +145,17 @@ test('cross-site writes are refused', async (t) => {
   })
   assert.equal(res.status, 403)
 })
+
+test('rate limits survive a flood of other keys; malformed escapes are a 400', async (t) => {
+  const { makeLimiter } = await import('../auth.mjs')
+  const limited = makeLimiter(100)
+  // As /api/auth/login does, from many addresses (a botnet) at one account: each new address
+  // adds a key, and that flood must not reset the account's own count.
+  let blocked = 0
+  for (let i = 0; i < 1000; i++) if (limited(`login:10.0.${i >> 8}.${i & 255}`, 20, 60_000) || limited('login:victim@x.io', 8, 60_000)) blocked++
+  assert.equal(blocked, 992, 'only 8 guesses at the account got through')
+
+  const { base } = await start(t)
+  assert.equal((await fetch(`${base}/api/orders/%E0%A4%A`)).status, 400)
+  assert.equal((await fetch(`${base}/api/auth/features`, { headers: { Cookie: 'cam_s=%E0%A4%A' } })).status, 200)
+})

@@ -19,7 +19,11 @@ export function parseCookies(header = '') {
   const out = {}
   for (const part of header.split(';')) {
     const i = part.indexOf('=')
-    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim())
+    if (i <= 0) continue
+    // a malformed %-escape is someone else's cookie, not a reason for a 500
+    try {
+      out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim())
+    } catch {}
   }
   return out
 }
@@ -96,7 +100,11 @@ export class Router {
         continue
       }
       const params = {}
-      r.keys.forEach((k, i) => (params[k] = decodeURIComponent(m[i + 1])))
+      try {
+        r.keys.forEach((k, i) => (params[k] = decodeURIComponent(m[i + 1])))
+      } catch {
+        fail(400, 'bad_path')
+      }
       return { route: r, params }
     }
     return methodMismatch ? 'method' : null

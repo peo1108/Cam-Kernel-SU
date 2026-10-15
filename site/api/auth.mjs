@@ -76,16 +76,26 @@ export function lookupSession(db, token) {
 
 /* ---------------- rate limits (memory) ---------------- */
 
-/** A rate limiter with its own memory (one per app): limited(key, max, windowMs) is true when
- * [key] went over [max] hits in [windowMs]. */
-export function makeLimiter() {
-  const buckets = new Map()
+/**
+ * A rate limiter with its own memory (one per app): limited(key, max, windowMs) is true when
+ * [key] went over [max] hits in [windowMs]. Past [cap] keys, those whose window is over go first,
+ * then the least recently hit: a flood of fresh keys never resets the key being hammered.
+ */
+export function makeLimiter(cap = 20000) {
+  const buckets = new Map() // key -> { hits, windowMs }, least recently hit first
   return function limited(key, max, windowMs) {
     const now = Date.now()
-    const hits = (buckets.get(key) || []).filter((t) => now - t < windowMs)
+    const hits = (buckets.get(key)?.hits || []).filter((t) => now - t < windowMs)
     hits.push(now)
-    buckets.set(key, hits)
-    if (buckets.size > 20000) buckets.clear()
+    buckets.delete(key)
+    buckets.set(key, { hits, windowMs })
+    if (buckets.size > cap) {
+      for (const [k, b] of buckets) if (now - b.hits[b.hits.length - 1] >= b.windowMs) buckets.delete(k)
+      for (const k of buckets.keys()) {
+        if (buckets.size <= cap * 0.9) break
+        buckets.delete(k)
+      }
+    }
     return hits.length > max
   }
 }

@@ -2,8 +2,8 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.1.8 - 2026-10-14
-- Chống bootloop tắt hết module và chỉ ra module gây lỗi, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình
+## 1.1.8 - 2026-10-15 [gấp]
+- Bản cập nhật quan trọng, nên cài ngay: chống bootloop tắt hết module và chỉ ra module gây lỗi, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình
 ### Tính năng mới
 - Chống bootloop: khi máy khởi động lỗi liên tục, tất cả module được tắt để máy lên chắc chắn, và SU Kernel chỉ ra module nghi gây lỗi kèm lý do (mới cài hoặc cập nhật, có init rc chạy rất sớm, hay log của lần khởi động lỗi nhắc tới nó, có cả dòng log). Một nút bật lại các module còn lại
 - Chống bootloop giờ cứu được cả máy treo rất sớm lúc khởi động do init rc hỏng (của module, hoặc file trong /data/adb/initrc.d): lần khởi động sau bỏ qua các init rc đó để máy lên được, không phải bấm phím vào safe mode
@@ -21,7 +21,8 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Văng app hiếm gặp ở thẻ trạng thái khi xoay máy hoặc quay lại app đúng lúc slime đang diễn đoạn mở màn
 - Ẩn SELinux: sửa lỗi có thể làm máy khởi động lại khi tắt tính năng lúc app đang đọc selinuxfs, chặn lộ qua thông báo nạp policy (netlink), không còn dò hàm kernel qua kallsyms
 ### Lưu ý
-- Bản thử nghiệm: các tính năng trên chưa được thử trên nhiều máy, báo lỗi giúp Cam nếu gặp
+- Cập nhật quan trọng: sửa lỗi ẩn SELinux có thể làm máy khởi động lại và chống bootloop chắc chắn hơn, Cam khuyến nghị mọi máy cập nhật
+- Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" ở màn "Có gì mới" rồi khởi động lại
 
 ## 1.1.7 - 2026-10-14
 - Tab Tệp: sửa file lớn, đổi bảng mã, so sánh hai file, terminal root, thùng rác; giao diện mới kiểu iOS

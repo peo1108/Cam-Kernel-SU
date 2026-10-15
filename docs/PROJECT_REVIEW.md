@@ -1,75 +1,83 @@
 # Đánh giá dự án Cam Kernel SU
 
-Chấm lại ngày 2026-10-13 trên `fe4b7b7f` (sau `cam-v1.1.5-beta.1`, 2875 commit), cộng phần bỏ Chặn RKP chưa commit. Lần chấm trước: 2026-10-12 trên `cam-v3.1.0` (trước khi đánh số lại thành 1.1.x), được **7,9**. Số liệu bên dưới đo trực tiếp từ repo; điểm là nhận định, thang 10, chấm theo hiện trạng chứ không theo kế hoạch.
+Chấm lại ngày 2026-10-15 trên `11d748ea` (2973 commit). Lần chấm trước: 2026-10-13 trên `fe4b7b7f`, được **7,9**. Số liệu bên dưới đo trực tiếp từ repo và trên máy; điểm là nhận định, thang 10, chấm theo hiện trạng chứ không theo kế hoạch.
 
-## Điểm tổng: 7,9 / 10 (trước: 7,9)
+Khách hàng gần như toàn bộ là người dùng riêng, chủ yếu Lenovo Y700 Gen5 (một ít Gen4): một lượt thử trên máy của Cam được coi là phủ khoảng 95% người dùng thật, nên mục "Kiểm chứng trên máy thật" chấm theo máy đó chứ không theo số dòng máy.
 
-Điểm không đổi: việc tồn đọng đã đóng hết, nhưng phần mới từ 1.1.1 đến 1.1.5 (tài khoản, thanh toán, OTA qua caesarvn.xyz, shell adb-only) vẫn chưa có bằng chứng chạy trên máy. Smoke test đã đạt 14/14 trên máy; thêm thử shell adb-only và luồng tài khoản trên máy thì mục "Kiểm chứng trên máy thật" lên khoảng 7,5 và điểm tổng lên khoảng 8,0.
+## Điểm tổng: 8,3 / 10 (trước: 7,9)
+
+Tăng nhờ một ngày dọn và kiểm chứng: thử trên máy những tính năng chưa từng chạy thật (shell adb-only, Widevine, tài khoản, OTA), test trên máy cho root service và AIDL, sửa một lỗ hổng chiếm quyền thành viên trên `site/api`, nhả bộ nhớ 3D khi app nằm nền, sửa một crash có sẵn ở thẻ trạng thái. Mục Bảo mật tính 8,5 khi bản API mới đã được deploy (việc làm bằng tay, xem cuối trang).
 
 | Hạng mục | Điểm | Trước | Lý do ngắn |
 |---|---|---|---|
-| Ý tưởng và phạm vi | 8,5 | 8,5 | Như cũ. Bỏ Chặn RKP: tính năng cắt mạng cả máy để che một tín hiệu đo, rủi ro cao hơn giá trị |
-| Kiến trúc | 8,5 | 8,5 | Ranh giới vẫn sạch: kernel chỉ nhận lệnh quản trị từ uid 0, Manager đi qua root service, UI chỉ gọi facade `Cam`. Feature mới của upstream (`shell_su_adb_only`) vào không conflict |
-| Chất lượng code | 7,5 | 7,5 | `CamCli.kt` chỉ còn hàm của upstream (đã đối chiếu với `KsuCli.kt` ngày 2026-10-14), lệnh riêng của Cam nằm ở các file `*Cli.kt`. TODO: 7, đều của upstream (5 kernel, 2 Manager). Cụm slime không còn file trên 1000 dòng (2026-10-14); file lớn nhất giờ là `FilesDialogs.kt` của tab Tệp |
-| Kiểm thử | 7,5 | 7,5 | Kernel 29 test (ASan + UBSan), camd 109 (chạy đủ trên CI), Manager 276 (tab Tệp có thêm `DeviceCheck` chạy trên máy). Có thêm smoke test chạy tay trên máy (14/14 đạt trên TB323FU); chưa có `androidTest` |
-| CI và phát hành | 8,5 | 8,5 | Release theo tag `cam-v*`, test chặn trước khi build, kênh beta, tag bất biến; 16 workflow. `expected_size`/`expected_hash` giữ có chủ đích (upstream vẫn dùng) |
-| Tài liệu | 8,5 | 8,5 | `CAM_CHANGES.md` đồng bộ tới merge `8a8058d9`, ghi rõ phần dọn dẹp của Chặn RKP; ví dụ phát hành đã theo số 1.1.x |
-| Bảo mật | 8,0 | 8,0 | Như cũ (ghim Manager theo chứng chỉ trong `packages.xml`, khóa dự phòng, rule ký ECDSA). Thêm tuỳ chọn upstream chặn app chiếm quyền shell leo lên root (mặc định tắt) |
-| Khả năng merge upstream | 7,5 | 7,5 | Merge 2026-10-13 không conflict. Chi phí vẫn cao ở các file Miuix |
-| Kiểm chứng trên máy thật | 6,5 | 6,5 | Vẫn 1-2 máy. Chưa thử trên máy: shell adb-only, "Chặn module kernel" phải tick, bước dọn Chặn RKP, cùng ba thứ của 3.1.0 |
-| Vệ sinh repo | 8,0 | 8,0 | `log/` (dump RKP) đã xoá. Junction `cpp/uapi` vẫn làm `git status` luôn hiện một dòng |
+| Ý tưởng và phạm vi | 8,0 | 8,5 | Lõi (ẩn root, ghim Manager theo chứng chỉ, kiểm tra ẩn root) rõ ràng; phạm vi rộng dần (tab Tệp kiểu MT, Widevine, slime 3D) là thêm việc bảo trì ngoài phần root |
+| Kiến trúc | 8,5 | 8,5 | Ranh giới sạch: kernel chỉ nhận lệnh từ uid 0, UI qua facade `Cam` rồi root service. `FilesViewModel` chỉ cho helper mượn đúng thứ cần (`FilesHost`); engine 3D theo vòng đời activity (`rememberBackgroundRelease`) |
+| Chất lượng code | 8,0 | 7,5 | Không còn file nào của riêng Cam trên 1000 dòng (lớn nhất: `ArenaDecor.kt` 895); `FilesDialogs`, `FilesViewModel`, `HidingCheckMiuix` đã tách, mỗi lần tách đều đối chiếu từng dòng với bản cũ. TODO: 7, đều của upstream |
+| Kiểm thử | 8,5 | 7,5 | Kernel 29 (ASan + UBSan), camd 109, Manager 281 unit + 15 test trên máy (root service, AIDL), `site/api` 19 (có kịch bản tấn công). Test mới đều được thử bằng cách làm hỏng code: chúng bắt được. Script trên máy: smoke 15, shell adb-only 5, boot guard, `DeviceCheck` 23 |
+| CI và phát hành | 8,5 | 8,5 | Release theo tag `cam-v*`, test chặn trước khi build, kênh beta, 16 workflow. Test trên máy (androidTest) không chạy trên CI vì CI không có máy |
+| Tài liệu | 9,0 | 8,5 | `CAM_CHANGES.md` ghi từng thay đổi kèm kết quả thử trên máy; `AGENTS.md` có lệnh test cho từng phần; cách lấy lại `libcamd.so` đã được ghi |
+| Bảo mật | 8,5 | 8,0 | Ghim Manager theo chứng chỉ, khóa dự phòng, rule ký ECDSA. Audit `site/api` (2026-10-15): sửa chiếm quyền thành viên qua email chưa xác minh và chiếm trước tài khoản qua Google, bộ giới hạn đăng nhập không còn bị xả. Shell adb-only đã thử trên máy |
+| Khả năng merge upstream | 7,5 | 7,5 | Tên symbol kernel giữ của KernelSU nên merge nhẹ; các file Miuix có sửa (`ModuleRepoMiuix.kt` 1172, `ModuleMiuix.kt` 1029) vẫn tốn công |
+| Kiểm chứng trên máy thật | 8,0 | 6,5 | Trên máy của Cam (Android 16): mọi tính năng đã thử thật, kể cả shell adb-only, Widevine, tài khoản và OTA. Chưa thử: cấp lại Widevine, cài một bản OTA thật từ đầu đến cuối, thanh toán bằng tiền thật, bước dọn Chặn RKP khi máy có cờ |
+| Vệ sinh repo | 8,5 | 8,0 | `libcamd.so` (gitignore) lấy lại được bằng `scripts/build_camd.sh`, Gradle từ chối file không phải ELF; script mới qua ShellCheck. Junction `cpp/uapi` vẫn làm `git status` hiện một dòng |
 
-Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo mật tính gấp đôi: (8,5 + 2×8,5 + 7,5 + 2×7,5 + 8,5 + 8,5 + 2×8,0 + 7,5 + 6,5 + 8,0) / 13 = 7,9.
+Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo mật tính gấp đôi: (8,0 + 2×8,5 + 8,0 + 2×8,5 + 8,5 + 9,0 + 2×8,5 + 7,5 + 8,0 + 8,5) / 13 = 8,3.
 
 ## Số liệu
 
 | Phần | File | Dòng |
 |---|---|---|
-| `kernel/` (C, không tính `tests/`) | 81 | 14.200 |
-| `userspace/camd/src` (Rust) | 37 | 17.140 |
+| `kernel/` (C, không tính `tests/`) | 100 | 14.200 |
+| `userspace/camd/src` (Rust) | 38 | 18.188 |
 | `userspace/caminit/src` (Rust) | 3 | 645 |
-| `manager/app/src/main/java` (Kotlin) | 283 | 54.129 |
+| `manager/app/src/main/java` (Kotlin) | 354 | 68.988 |
 | `manager/app/src/main/cpp` (JNI, probe) | 6 | 1.067 |
+| `site/api` (Node, không dependency) | 15 | 2.936 |
 
-File lớn nhất của Cam: `FilesDialogs.kt` (1206 dòng), `FilesViewModel.kt` (1082). `ModuleRepoMiuix.kt` (1178) và `ModuleMiuix.kt` là file upstream có sửa. Cụm slime đã dưới 1000 dòng mỗi file (2026-10-14: `ArenaShow.kt` 298 + `ArenaRuntime.kt` 776, `RoamWorld.kt` 879 + `RoamPose.kt` 292).
-
-## Kết quả test (2026-10-13)
+## Kết quả test (2026-10-15)
 
 | Phần | Lệnh | Kết quả |
 |---|---|---|
-| Kernel (WSL) | `make -C kernel/tests` | **29 đạt** (ASan + UBSan) |
-| camd (WSL) | `cargo test --target x86_64-unknown-linux-gnu` | 109 test: **109 đạt** (2026-10-14; hai test fail sẵn trước đây đã sửa, dòng 47 của `CAM_CHANGES.md`). CI chạy đủ |
-| camd | `cargo ndk -t arm64-v8a check` / `clippy` / `cargo fmt` | Sạch |
-| Manager (ổ `K:`) | `gradlew :app:testDebugUnitTest` | 40 lớp, **276 đạt** (2026-10-14: thêm kiểm tra image khi flash, gợi ý sửa ẩn root, sao lưu cấu hình, rồi thủ phạm bootloop và bản mới từ thư viện) |
-| Trên máy (TB323FU, Android 16) | `scripts/device_smoke.sh` | **14/14 đạt** trên APK CI `1825927c` |
-| `androidTest` | | Không có |
+| Kernel (WSL) | `make -C kernel/tests` | **29 đạt** (ASan + UBSan; code không đổi từ 2026-10-13) |
+| camd (WSL) | `cargo test --target x86_64-unknown-linux-gnu` | **109 đạt** (2026-10-14; code không đổi từ đó) |
+| Manager | `gradlew :app:testDebugUnitTest` | 41 lớp, **281 đạt** |
+| Manager trên máy | `scripts/device_android_test.sh` | **15/15** (`AidlParcelTest`, `CamRootServiceTest`, `CamFileServiceTest`) |
+| `site/api` | `node --test site/api/test/api.test.mjs site/api/test/business.test.mjs` | **19 đạt** |
+| Trên máy | `scripts/device_smoke.sh` | **15/15** (thêm: Widevine HAL chạy, có chứng chỉ DRM) |
+| Trên máy | `scripts/device_shell_adb_only_test.sh` | **5/5**: tắt thì tiến trình shell mồ côi có root; bật thì `adb shell` vẫn có, tiến trình mồ côi bị từ chối, shell do root sinh ra vẫn có; trả lại như cũ |
+| Trên máy | `DeviceCheck` (tab Tệp) | **23/23** |
+
+## Hiệu năng trên máy (2026-10-15, bản debug)
+
+| Đo | Kết quả |
+|---|---|
+| Khung hình khi cuộn (6 tab) | Giật 0,1–0,8%, p90 10–13 ms (Home có slime 3D: 0,78%) |
+| Mở nguội | Khoảng 1,45 s (bản debug; bản release có R8) |
+| Bộ nhớ khi mở | PSS khoảng 1,1 GB, phần lớn là đồ họa 3D và kính (máy 11,5 GB RAM) |
+| Bộ nhớ sau 10 s nằm nền | Đồ họa 478 MB → **13 MB**, PSS 843 MB → **353 MB** (trước 2026-10-15 không nhả gì). Quay lại: slime 3D hiện lại, cùng tiến trình, 5 vòng không crash |
 
 ## Điểm yếu và rủi ro
 
 | # | Vấn đề | Mức | Tình trạng |
 |---|---|---|---|
-| 1 | CI không chạy test | Cao | **Xong** (`test.yml`, và Release chạy toàn bộ test trước khi build) |
-| 2 | Kernel không có test trong repo | Cao | **Xong** (`kernel/tests`, 29 test) |
-| 3 | Ghim root theo tên gói `cam.su.kernel` | Trung bình | **Xong** (ghim theo chứng chỉ ký trong `packages.xml`, dòng 36 mục 1 của `CAM_CHANGES.md`) |
-| 4 | Khóa ký chỉ ở một máy | Trung bình | **Xong** (`scripts/backup_signing_keys.sh`, khóa dự phòng `KSU_MANAGER_CERT_BACKUP`) |
-| 5 | Tính năng mới chưa thử trên máy | Trung bình | **Một phần.** `scripts/device_smoke.sh` 14/14 trên TB323FU (2026-10-13); còn thiếu thử bật shell adb-only, bước dọn Chặn RKP khi có cờ, và luồng tài khoản/thanh toán |
-| 6 | Cụm slime/3D lớn so với giá trị cốt lõi | Trung bình | Còn mở, có chủ đích. Code riêng của Cam nên không làm tăng chi phí merge; các file trên 1000 dòng đã tách (2026-10-14) |
-| 7 | Tài liệu, website, bản dịch còn của KernelSU | Thấp | **Xong** phần README và `SECURITY.md`; APK chỉ đóng gói en/vi |
-| 8 | Repo bẩn | Thấp | **Xong** |
-| 9 | TODO và mã dở | Thấp | **Xong** phần của Cam; 7 TODO còn lại đều của upstream |
-| 10 | Mã chết trong CI (`expected_size`/`expected_hash`) | Thấp | **Đóng, giữ có chủ đích**: upstream vẫn dùng ở cả ba workflow và `Kbuild`, gỡ ra chỉ thêm conflict (mục 7 của `CAM_CHANGES.md`) |
-| 11 | Lộ timing `attr/current` | Cao | **Xong** (`a3803700`), có probe timing và probe đếm AVC lookup làm test hồi quy |
-| 12 | Chặn RKP: luật DROP có thể kẹt, cắt mạng cả máy | Trung bình | **Xong**: bỏ tính năng (2026-10-13); `legacy::remove_block_rkp` dọn cờ và luật trên máy từng bật |
+| 1 | Quyền cấp theo email nhận bởi ai đăng ký email đó trước (đăng ký không xác minh email) | Cao | **Sửa trong code** (2026-10-15, dòng 54 của `CAM_CHANGES.md`): quyền theo email chỉ có hiệu lực khi email đã được chứng minh; Google lấy lại email bị đăng ký trước. **Chờ deploy API** |
+| 2 | Bộ giới hạn đăng nhập reset khi đầy 20.000 khóa (botnet đoán mật khẩu một tài khoản) | Trung bình | **Sửa trong code**, chờ deploy cùng mục 1 |
+| 3 | Hai engine Filament giữ khoảng 470 MB đồ họa khi app nằm nền | Trung bình | **Xong** (dòng 53) |
+| 4 | Crash thẻ trạng thái khi cache vẽ dựng lại giữa đoạn mở màn (xoay máy, đổi kích thước, engine 3D làm lại) | Trung bình | **Xong** (dòng 53) |
+| 5 | `libcamd.so` gitignore, mất là không lấy lại được | Trung bình | **Xong** (dòng 52) |
+| 6 | Root service và AIDL chỉ có test JVM | Trung bình | **Xong** (dòng 51), 15 test trên máy |
+| 7 | Chưa thử: cấp lại Widevine, OTA từ đầu đến cuối, thanh toán thật | Thấp | Còn mở. Cấp lại Widevine có sao lưu và tự khôi phục; OTA và thanh toán có test phía server |
+| 8 | Cụm slime/3D lớn so với giá trị cốt lõi | Thấp | Có chủ đích; giờ nhả bộ nhớ khi nằm nền |
+| 9 | File Miuix của upstream trên 1000 dòng | Thấp | Giữ nguyên để merge dễ |
 
 ## Việc nên làm tiếp, theo thứ tự
 
-1. **Thử bằng tay phần smoke test không phủ**: bật "Chỉ cho Shell lấy root qua ADB" rồi `adb shell su -c id` vẫn ra uid 0; trên một máy từng bật Chặn RKP, cập nhật rồi mở app, mục cuối của smoke test phải PASS. Ghi kết quả vào mục 6 của `CAM_CHANGES.md`.
-2. **Gắn tag `cam-v1.1.5`** lên `main` (đã sau `cam-v1.1.5-beta.1`, mục 8 của `CAM_CHANGES.md`).
-3. ~~**Tách các file `Arena*`/`slime`**~~ xong 2026-10-14: `ArenaRuntime.kt` tách khỏi `ArenaShow.kt`, `RoamPose.kt` tách khỏi `RoamWorld.kt` (chỉ chuyển code, không đổi logic).
-4. **Thử trên máy ba phần mới của 2026-10-14**: flash image sai định dạng phải bị chặn và flash đúng phải để lại bản sao lưu trong `/sdcard/CamBackup`; nút "Bật umount module cho app này" trên trang ẩn root; sao lưu rồi khôi phục cấu hình trên cùng máy (số hồ sơ phải khớp).
+1. **Deploy API** (`site/scripts/deploy-api.sh`): migration 4 tự chạy, tài khoản cũ được coi là đã xác minh nên không ai mất quyền. Push `site/**` tự deploy giao diện; giao diện chỉ hiện nhắc xác minh khi API mới báo `verified: false`, nên thứ tự deploy nào cũng được.
+2. **Một lượt OTA thật**: gắn tag beta, để máy của Cam nhận và cài qua OTA, ghi kết quả vào mục 6 của `CAM_CHANGES.md`.
+3. **Thử cấp lại Widevine** trên một máy chịu được rủi ro (có sao lưu và tự khôi phục, nhưng xóa `/data/vendor/mediadrm` là thật).
 
 ## Cách chấm
 
 - 10 = dùng được trong sản xuất, kiểm chứng đủ, không có việc tồn đọng đáng kể. 7 = chạy tốt, có chỗ hổng đã biết. 5 = chạy được nhưng thiếu nền tảng để tin cậy.
 - Điểm tổng là trung bình có trọng số: kiến trúc, kiểm thử và bảo mật tính gấp đôi, vì sai ở ba chỗ này thì máy người dùng chịu hậu quả.
-- Đánh giá này không thay cho review bảo mật kernel độc lập; chưa đọc kỹ từng dòng của `kernel/` và `lkm_image.rs` (phần lớn là code upstream).
+- Đánh giá này không thay cho review bảo mật kernel độc lập; chưa đọc kỹ từng dòng của `kernel/` và `lkm_image.rs` (phần lớn là code upstream). Audit `site/api` ngày 2026-10-15 đọc toàn bộ route và phần xác thực, chưa gồm cấu hình Caddy trên VPS.

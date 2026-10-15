@@ -16,6 +16,9 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Chống xung đột module: nhận ra cả thư mục được thay thế bằng xattr của overlayfs (module làm cho metamodule overlay), không chỉ file `.replace`
 - Chống bootloop: bỏ lựa chọn "Khi can thiệp", giờ luôn tắt tất cả module
 - Tab Tệp: máy tính bảng để dọc cũng hiện hai panel cạnh nhau (từ 600dp), điện thoại vẫn một panel
+- Chạy nền nhẹ hơn: slime 3D trả lại bộ nhớ đồ hoạ (khoảng 470 MB) sau 10 giây ở nền, quay lại thì hiện như cũ
+### Sửa lỗi
+- Văng app hiếm gặp ở thẻ trạng thái khi xoay máy hoặc quay lại app đúng lúc slime đang diễn đoạn mở màn
 ### Lưu ý
 - Bản thử nghiệm: các tính năng trên chưa được thử trên nhiều máy, báo lỗi giúp Cam nếu gặp
 

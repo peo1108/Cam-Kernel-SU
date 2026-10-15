@@ -19,6 +19,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -84,6 +85,7 @@ import cam.su.kernel.ui.slime.roamCostume
 import cam.su.kernel.ui.slime.slimeSurface
 import cam.su.kernel.ui.theme.AppFontFamily
 import top.yukonga.miuix.kmp.basic.Text
+import cam.su.kernel.ui.util.rememberBackgroundRelease
 
 /**
  * The "working" status card as a small cartoon. Four jelly slimes of different sizes and tempers
@@ -119,7 +121,10 @@ fun StatusArena(
     var clock by remember { mutableFloatStateOf(0f) }
     val latestOnClick by rememberUpdatedState(onClick)
     val grain = remember { filmGrain() }
-    val arena3d = remember { Arena3D.createOrNull() }
+    // let go of the engine while the app sits in the background, made again on return
+    val arena3dNow = remember { arrayOfNulls<Arena3D>(1) }
+    val generation = rememberBackgroundRelease { arena3dNow[0]?.destroy() }
+    val arena3d = remember(generation) { Arena3D.createOrNull().also { arena3dNow[0] = it } }
     DisposableEffect(arena3d) {
         onDispose { arena3d?.destroy() }
     }
@@ -176,10 +181,13 @@ fun StatusArena(
             }
     ) {
         if (arena3d != null) {
-            AndroidView(
-                factory = { ctx -> TextureView(ctx).also { arena3d.attach(it) } },
-                modifier = Modifier.matchParentSize(),
-            )
+            // a fresh view for a fresh engine: the old one is attached to the released one
+            key(arena3d) {
+                AndroidView(
+                    factory = { ctx -> TextureView(ctx).also { arena3d.attach(it) } },
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
         }
         Spacer(
             modifier = Modifier

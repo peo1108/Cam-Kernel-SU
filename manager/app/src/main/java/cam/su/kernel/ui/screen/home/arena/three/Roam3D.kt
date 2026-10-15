@@ -172,7 +172,11 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
         return IndirectLight.Builder().reflections(specular).irradiance(2, sh).intensity(0.7f).build(engine)
     }
 
+    /** Set by [destroy]; afterwards every call does nothing (a frame loop may still run once). */
+    private var destroyed = false
+
     fun attach(textureView: TextureView) {
+        if (destroyed) return
         uiHelper.renderCallback = object : UiHelper.RendererCallback {
             override fun onNativeWindowChanged(surface: android.view.Surface) {
                 swapChain?.let { engine.destroySwapChain(it) }
@@ -213,6 +217,7 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
 
     /** Starts a frame of poses; [unit] is screen pixels per world unit. */
     fun begin(unit: Float) {
+        if (destroyed) return
         frame(unit)
         shownNow = false
     }
@@ -222,6 +227,7 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
      * (standing on a wall), facing [yaw] degrees round, [scale] times its roaming size.
      */
     fun place(k: Int, p: SlimePose, now: Float, x: Float, y: Float, angle: Float, yaw: Float) {
+        if (destroyed) return
         if (!p.visible) {
             rig.hide(k)
             return
@@ -230,7 +236,9 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
         rig.place(k, p, now, unit, (x - width / 2f) / unit, (height / 2f - y) / unit, k * 0.02f, angle, yaw)
     }
 
-    fun hide(k: Int) = rig.hide(k)
+    fun hide(k: Int) {
+        if (!destroyed) rig.hide(k)
+    }
 
     /** Ends the frame; [anyVisible] tells whether anything was drawn. */
     fun end() {
@@ -239,6 +247,7 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
 
     /** Renders at most 60 times a second. */
     fun render(frameTimeNanos: Long) {
+        if (destroyed) return
         val chain = swapChain ?: return
         if (!uiHelper.isReadyToRender) return
         if (frameTimeNanos - lastRender < MIN_FRAME_NANOS) return
@@ -250,6 +259,8 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
     }
 
     fun destroy() {
+        if (destroyed) return
+        destroyed = true
         uiHelper.detach()
         scene.indirectLight = null
         engine.destroyIndirectLight(indirect)

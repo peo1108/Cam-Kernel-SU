@@ -63,6 +63,7 @@ import cam.su.kernel.ui.screen.home.arena.lerp
 import cam.su.kernel.ui.screen.home.arena.progress
 import cam.su.kernel.ui.screen.home.arena.three.Roam3D
 import cam.su.kernel.ui.theme.AppFontFamily
+import cam.su.kernel.ui.util.rememberBackgroundRelease
 
 /** The country costume the status card is showing; the roaming slimes dress the same. */
 @Volatile
@@ -100,10 +101,17 @@ fun SlimeLayer(
     }
     val world = remember { RoamWorld() }
     // The very same 3D slimes as in the status card, in a see-through layer over the whole
-    // window that never takes a touch; without Filament they are drawn flat instead.
-    val roam3d = remember { Roam3D.createOrNull(context) }
-    val hostView = LocalView.current
+    // window that never takes a touch; without Filament they are drawn flat instead. Engine and
+    // view are let go while the app sits in the background and made again on return.
+    val roam3dNow = remember { arrayOfNulls<Roam3D>(1) }
     val surface = remember { arrayOfNulls<TextureView>(1) }
+    val generation = rememberBackgroundRelease {
+        roam3dNow[0]?.destroy()
+        // the full-window view holds buffers of its own; a new one comes with the new engine
+        surface[0]?.let { (it.parent as? ViewGroup)?.removeView(it) }
+    }
+    val roam3d = remember(generation) { Roam3D.createOrNull(context).also { roam3dNow[0] = it } }
+    val hostView = LocalView.current
     DisposableEffect(roam3d) {
         val root = hostView.rootView.findViewById<ViewGroup>(android.R.id.content)
         val tv = if (roam3d != null && root != null) {
@@ -158,7 +166,7 @@ fun SlimeLayer(
         onPauseOrDispose { sensors?.unregisterListener(listener) }
     }
 
-    LaunchedEffect(world) {
+    LaunchedEffect(world, roam3d) {
         var last = -1L
         while (true) {
             androidx.compose.runtime.withFrameNanos { nanos ->

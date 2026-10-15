@@ -191,7 +191,11 @@ internal class Arena3D private constructor() {
         rig.open()
     }
 
+    /** Set by [destroy]; afterwards every call does nothing (a frame loop may still run once). */
+    private var destroyed = false
+
     fun attach(textureView: TextureView) {
+        if (destroyed) return
         uiHelper.renderCallback = object : UiHelper.RendererCallback {
             override fun onNativeWindowChanged(surface: android.view.Surface) {
                 swapChain?.let { engine.destroySwapChain(it) }
@@ -378,6 +382,7 @@ internal class Arena3D private constructor() {
         roll: Float,
         paintPanorama: DrawScope.() -> Unit,
     ) {
+        if (destroyed) return
         layout(stage)
         aim(shake, roll)
         uploadPanorama()
@@ -519,6 +524,7 @@ internal class Arena3D private constructor() {
 
     /** Renders at most 60 times a second; high refresh panels would otherwise double the GPU work. */
     fun render(frameTimeNanos: Long) {
+        if (destroyed) return
         val chain = swapChain ?: return
         if (!uiHelper.isReadyToRender || asset == null) return
         if (frameTimeNanos - lastRender < MIN_FRAME_NANOS) return
@@ -530,6 +536,8 @@ internal class Arena3D private constructor() {
     }
 
     fun destroy() {
+        if (destroyed) return
+        destroyed = true
         rig.destroy()
         painter.shutdownNow()
         uiHelper.detach()

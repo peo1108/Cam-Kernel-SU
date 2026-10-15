@@ -36,8 +36,15 @@ static int ksu_handle_inode_event(struct fsnotify_mark *mark, u32 mask, struct i
     return 0;
 }
 
+static void ksu_free_mark(struct fsnotify_mark *mark)
+{
+    kfree(mark);
+}
+
 static const struct fsnotify_ops ksu_ops = {
     .handle_inode_event = ksu_handle_inode_event,
+    // not optional: the fsnotify reaper calls it for every destroyed mark
+    .free_mark = ksu_free_mark,
 };
 
 static int add_mark_on_inode(struct inode *inode, u32 mask, struct fsnotify_mark **out)
@@ -120,6 +127,8 @@ int ksu_observer_init(void)
 void __exit ksu_observer_exit(void)
 {
     unwatch_one_dir(&g_watch);
-    fsnotify_put_group(g);
+    // destroy, not put: it waits until the reaper has freed our marks, which
+    // calls ksu_free_mark in this module
+    fsnotify_destroy_group(g);
     pr_info("observer exit done\n");
 }

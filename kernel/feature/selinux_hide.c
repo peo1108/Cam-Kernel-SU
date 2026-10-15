@@ -384,6 +384,7 @@ static int my_sel_open_handle_status(struct inode *inode, struct file *filp)
 }
 
 static void hook_selinux_status_open();
+static void unhook_selinux_status_open();
 static void ksu_selinux_hide_unhook();
 static int ksu_selinux_hide_enable()
 {
@@ -460,14 +461,7 @@ static void ksu_selinux_hide_unhook()
             pr_err("selinux_hide: exit: patch_text access_write err: %d\n", ret);
         }
     }
-    if (sel_open_handle_status_slot && orig_sel_open_handle_status) {
-        ret = ksu_patch_text(sel_open_handle_status_slot, &orig_sel_open_handle_status,
-                             sizeof(orig_sel_open_handle_status), KSU_PATCH_TEXT_FLUSH_DCACHE);
-        orig_sel_open_handle_status = NULL;
-        if (ret) {
-            pr_err("selinux_hide: exit: patch_text sel_open_handle_status err: %d\n", ret);
-        }
-    }
+    unhook_selinux_status_open();
     ksu_lsm_unhook(&selinux_setprocattr_hook);
 }
 
@@ -555,6 +549,19 @@ static void hook_selinux_status_open()
     }
 }
 
+static void unhook_selinux_status_open()
+{
+    int ret;
+    if (sel_open_handle_status_slot && orig_sel_open_handle_status) {
+        ret = ksu_patch_text(sel_open_handle_status_slot, &orig_sel_open_handle_status,
+                             sizeof(orig_sel_open_handle_status), KSU_PATCH_TEXT_FLUSH_DCACHE);
+        orig_sel_open_handle_status = NULL;
+        if (ret) {
+            pr_err("selinux_hide: exit: patch_text sel_open_handle_status err: %d\n", ret);
+        }
+    }
+}
+
 void __init ksu_selinux_hide_init()
 {
     if (ksu_register_feature_handler(&selinux_hide_handler)) {
@@ -575,11 +582,15 @@ void __exit ksu_selinux_hide_exit()
         ksu_selinux_hide_disable();
         ksu_selinux_hide_running = false;
     }
+    // init hooks the status open whether or not the feature runs: left in
+    // place, it would point into the freed module
+    unhook_selinux_status_open();
     mutex_unlock(&selinux_hide_mutex);
     ksu_unregister_feature_handler(KSU_FEATURE_SELINUX_HIDE);
+    // Leak the fake status page (4 KB) instead of freeing it: an app may still
+    // map it (remap_pfn_range takes no reference) or hold a status fd whose
+    // private_data points at it, and would then read a reused page.
     mutex_lock(&selinux_state.status_lock);
-    if (fake_status)
-        __free_page(fake_status);
     fake_status = NULL;
     mutex_unlock(&selinux_state.status_lock);
 }
@@ -690,12 +701,14 @@ static int string_to_context_struct(struct policydb *pol, struct policydb *orig_
     }
 
     /* Check the validity of the new context. */
-    orig_rc = rc = -EINVAL;
+    rc = -EINVAL;
     if (policydb_context_isvalid(pol, ctx)) {
         rc = 0;
     }
-    if (policydb_context_isvalid(orig_pol, ctx)) {
-        orig_rc = 0;
+    // orig_ctx carries the live policy's own values and MLS result; callers
+    // only use it when the backup accepted the context too
+    if (rc || (!orig_rc && !policydb_context_isvalid(orig_pol, orig_ctx))) {
+        orig_rc = -EINVAL;
     }
 out:
     if (rc)

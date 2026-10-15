@@ -81,9 +81,18 @@ object AppViewProbe {
         val path = line.substringAfter('/', "").let { if (it.isEmpty()) null else "/$it" }
             ?: line.split(' ').lastOrNull()?.takeIf { it.startsWith("[anon:") || it.startsWith("memfd:") }
             ?: return@mapNotNull null
-        val lower = path.lowercase()
+        val lower = withoutInstallIds(path.lowercase())
         path.takeIf { rules.mapMarkers.any { it in lower } }
     }.distinct().toList()
+
+    // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk: the random
+    // base64 ids can hold a marker (WebView's -...EdXpOQh3UA== reads as EdXposed)
+    private fun withoutInstallIds(path: String): String = path.split('/')
+        .filterNot { it.startsWith("~~") }
+        .joinToString("/") { part ->
+            val dash = part.lastIndexOf('-')
+            if (dash >= 0 && part.endsWith("==")) part.substring(0, dash) else part
+        }
 
     fun props(rules: HidingRules, get: (String) -> String): List<String> = rules.safeProps.mapNotNull { (name, safe) ->
         val value = get(name)

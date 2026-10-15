@@ -53,6 +53,7 @@ class AppViewProbeTest {
             7f2000-7f3000 r--p 00000000 00:01 125   /memfd:zygisk-loader (deleted)
             7f3000-7f4000 rw-p 00000000 00:00 0     [anon:dalvik-main space]
             7f4000-7f5000 r-xp 00000000 fd:05 124   /data/adb/modules/zygisk_lsposed/lib/liblspd.so
+            7f5000-7f6000 r--p 00000000 fd:05 126   /data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/base.apk
         """.trimIndent()
         assertEquals(
             listOf("/data/adb/modules/zygisk_lsposed/lib/liblspd.so", "/memfd:zygisk-loader (deleted)"),

@@ -254,10 +254,23 @@ pub fn mapped_path<'a>(line: &'a str, markers: &[String]) -> Option<&'a str> {
     let start = line.find(path)?;
     let path = line[start..].trim_end();
     let path = path.strip_suffix(" (deleted)").unwrap_or(path);
-    let lower = path.to_ascii_lowercase();
+    let lower = without_install_ids(&path.to_ascii_lowercase());
     (ROOT_PREFIXES.iter().any(|prefix| path.starts_with(prefix))
         || markers.iter().any(|m| lower.contains(m.as_str())))
     .then_some(path)
+}
+
+/// `/data/app/~~<id>==/<pkg>-<id>==/base.apk` -> `/data/app/<pkg>/base.apk`: the random
+/// base64 ids can hold a marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed).
+fn without_install_ids(path: &str) -> String {
+    path.split('/')
+        .filter(|part| !part.starts_with("~~"))
+        .map(|part| match part.rsplit_once('-') {
+            Some((pkg, id)) if id.ends_with("==") => pkg,
+            _ => part,
+        })
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 fn is_lsposed(id: &str) -> bool {
@@ -791,6 +804,22 @@ mod tests {
         assert_eq!(
             mapped_path("7f00-7f10 rw-p 00000000 00:00 0", &markers),
             None
+        );
+        // the install ids are random base64: this one holds "edxp"
+        let markers = vec!["edxp".to_owned(), "lsposed".to_owned()];
+        assert_eq!(
+            mapped_path(
+                "7f00-7f10 r--p 00000000 fe:2a 1 /data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/base.apk",
+                &markers
+            ),
+            None
+        );
+        assert_eq!(
+            mapped_path(
+                "7f00-7f10 r--p 00000000 fe:2a 1 /data/app/~~AAAA==/org.lsposed.manager-BBBB==/base.apk",
+                &markers
+            ),
+            Some("/data/app/~~AAAA==/org.lsposed.manager-BBBB==/base.apk")
         );
     }
 

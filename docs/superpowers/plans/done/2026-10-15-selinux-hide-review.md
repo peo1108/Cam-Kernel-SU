@@ -93,7 +93,7 @@ Còn mở: mục 3b. Rủi ro rất thấp, không sửa: `drop_backup_if_unused
 | A | Hook `sel_handle_status_ops.open` dùng `orig_sel_open_handle_status = NULL` làm cờ "chưa hook", cùng lỗi mục 8. Tắt tính năng lúc có tiến trình đang mở `status` thì có thể gọi NULL (đường này còn có `mutex_lock`, luồng có thể ngủ giữa chừng); trả slot thất bại thì slot vẫn trỏ vào hook mà gốc đã NULL: lần mở `status` kế tiếp của uid < 10000 chắc chắn panic, bật lại thì hook lấy chính nó làm gốc | Trung bình | **Đã sửa**: cờ `status_open_hooked`, con trỏ gốc không bao giờ bị xoá |
 | B | Bật lỗi ở bước hook `setprocattr` thì đường `unhook` gỡ luôn hook `status` của init, trong khi cờ `enabled` vẫn là 1: trang status giả không còn được phục vụ | Thấp | **Đã sửa (lần bốn)**: `ksu_selinux_hide_unhook` không gỡ hook `status` nữa; hook do init cài, exit gỡ, tự kiểm `enabled` |
 | C | `reset_avc_cache()` gửi `selnl_notify_policyload` mỗi khi áp sepolicy lúc chạy; trang status giả không che bản tin `NETLINK_SELINUX`. Lộ nếu domain app được `bind` socket đó | **Trung bình** | **Đã sửa (lần bốn)**: đo trên máy — `app_zygote` thật sự nhận được. Gate netlink khi ẩn chạy |
-| D | `context_struct_compute_av_fn` là hàm `static` lấy qua kallsyms, gọi `__nocfi`: LTO có thể đổi ABI mà giữ tên | Ghi nhận | Thừa hưởng upstream; chạy đúng trên 6.12 |
+| D | `context_struct_compute_av_fn` là hàm `static` lấy qua kallsyms, gọi `__nocfi`: LTO có thể đổi ABI mà giữ tên | Thấp | **Đã sửa (lần năm)**: bỏ kallsyms, luôn dùng bản nội bộ (xem lần năm) |
 | — | Race bản sao lưu (đoạn trên) | Rất thấp | **Đã sửa**: `backup_sepolicy_sem`; hook đọc dưới khoá đọc, thấy đã bỏ thì đi đường gốc; `drop_backup_if_unused` lấy khoá ghi |
 | 3b | `hiding-audit --apply` gặp `-EAGAIN` | Thấp | **Đã sửa**: `ksuctl` trả `KsuctlError` giữ errno (chuỗi lỗi không đổi), `enable_feature` coi `-EAGAIN` của ẩn SELinux là bật ở lần boot sau, `rebootNeeded` chỉ đúng khi đó |
 | — | `kfree(str)` thừa trong `security_context_to_sid_with_policy` | Dọn | **Đã bỏ** |
@@ -142,4 +142,14 @@ Kiểm trên máy (so sánh hai chiều, LKM `32978` bản B+C):
 
 `selprobe` 3 domain (ẩn bật): `leaks=0`. `scripts/device_smoke.sh`: 15/15.
 
-Còn mở: mục D (ABI của `context_struct_compute_av` qua `__nocfi`) — thừa hưởng upstream, chạy đúng trên 6.12, chỉ ghi nhận. Máy để lại LKM `32978` (bản B+C, build từ working tree, chưa commit), ẩn SELinux bật và đã lưu.
+## Review lần năm (2026-10-15, đêm muộn): mục D — bỏ gọi hàm static qua kallsyms
+
+Trên `82d089ee`. Điểm lên 8,5 / 10 (không còn lỗ phụ thuộc ABI). Dòng 59 của `CAM_CHANGES.md` mở rộng lần nữa.
+
+**Mục D — giải quyết triệt để.** `security_compute_av_user_with_policy` trước ưu tiên gọi `context_struct_compute_av` của kernel (hàm `static`, lấy qua kallsyms, gọi `__nocfi`), chỉ dùng bản nội bộ khi không tìm thấy symbol; `type_attribute_bounds_av` nội bộ gọi `security_dump_masked_av` của kernel (cũng `static`) để ghi audit. Với LTO, compiler được đổi cách truyền tham số của hàm static mà vẫn giữ tên, nên đường kallsyms có thể chạy sai ABI. Trên tablet `context_struct_compute_av` đúng là `t` (local) trong `/proc/kallsyms`.
+
+Sửa: bỏ hẳn hai con trỏ `context_struct_compute_av_fn` / `security_dump_masked_av_fn` và hai lookup. `security_compute_av_user_with_policy` luôn gọi bản nội bộ; `type_attribute_bounds_av` bỏ lời gọi audit (phần cắt quyền vẫn giữ; với context tính trên bản sao lưu cho app ẩn, một dòng audit lại là tell). Bản nội bộ `context_struct_compute_av` / `type_attribute_bounds_av` / `constraint_expr_eval` được build cùng header kernel nên khớp layout; so với `security/selinux/ss/services.c` của android16-6.12 (và 6.6 giống hệt): logic trùng từng dòng.
+
+Kiểm trên máy (LKM `32981`, ẩn bật): so quyết định `access` giữa đường thật (uid 0, hàm kernel + policy thật) và đường ẩn (uid 10310 giữ domain `cam`, bản nội bộ + bản sao lưu) cho `untrusted_app → untrusted_app`, 12 lớp có `allowed` khác 0 (`0x2217ffd`, `0x11140053`, `0x3fe7f`…): **khớp cả 12, mismatches=0** — bản nội bộ tính đúng cả constraint/MLS và bounds. `selprobe` 3 domain: `leaks=0`. `scripts/device_smoke.sh`: 15/15. Stress 120 s (32 luồng ghi + mở `status`, tắt/bật): không crash.
+
+Không còn mục mở. Máy để lại LKM `32981` (bản B+C+D, build từ working tree, chưa commit lúc viết), ẩn SELinux bật và đã lưu.

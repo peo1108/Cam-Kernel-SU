@@ -2,6 +2,11 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.1.9 - 2026-10-16
+- Trang Kiểm tra ẩn root không còn báo nhầm WebView là file root
+### Sửa lỗi
+- Kiểm tra ẩn root: sau khi mở WebUI của module (hoặc app có WebView), trang báo "App đang nạp file root trong bộ nhớ" với các file của WebView. Đó là báo nhầm: tên thư mục cài app có mã ngẫu nhiên trùng chữ "edxp" (EdXposed). Giờ chỉ xét tên app, không xét mã ngẫu nhiên
+
 ## 1.1.8 - 2026-10-15
 - Bản cập nhật quan trọng, nên cài ngay: chống bootloop tắt hết module và chỉ ra module gây lỗi, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình
 ### Tính năng mới

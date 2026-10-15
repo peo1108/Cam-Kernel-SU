@@ -27,12 +27,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LayersClear
-import androidx.compose.material.icons.rounded.NewReleases
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Shield
@@ -46,7 +43,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -59,11 +55,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
-import cam.su.kernel.data.model.HidingAudit
-import cam.su.kernel.data.model.WidevineDiagnosis
-import cam.su.kernel.data.model.diagnoseWidevine
-import cam.su.kernel.data.repository.HidingRulesStatus
-import cam.su.kernel.ui.component.AttestationResult
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassExpandableCard
 import cam.su.kernel.ui.component.glass.GlassIconButton
@@ -95,7 +86,7 @@ private const val ITEMS_SHOWN = 6
 /** Modules a finding offers to turn off; more are only named. */
 private const val MODULE_BUTTONS = 3
 
-private val cardModifier = Modifier
+internal val cardModifier = Modifier
     .fillMaxWidth()
     .padding(horizontal = 12.dp)
     .padding(bottom = 12.dp)
@@ -540,227 +531,6 @@ private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, state: HidingCh
 }
 
 @Composable
-private fun DetectorCard(
-    status: HidingRulesStatus,
-    checking: Boolean,
-    actions: HidingCheckActions,
-    format: (Long) -> String,
-) {
-    GlassCard(modifier = cardModifier) {
-        val rules = status.rules
-        BasicComponent(
-            title = stringResource(R.string.hiding_rules_title),
-            summary = buildList {
-                add(stringResource(R.string.hiding_rules_summary, rules.version, rules.updated))
-                status.checkedAt?.let { add(stringResource(R.string.hiding_rules_checked, format(it))) }
-                if (status.updated) add(stringResource(R.string.hiding_rules_updated, rules.version))
-                if (status.failed) add(stringResource(R.string.hiding_rules_failed))
-            }.joinToString(" · "),
-            startAction = { RowIcon(Icons.Rounded.Description, if (status.updated) colorScheme.primary else colorScheme.onBackground) },
-        )
-        BasicComponent(
-            title = stringResource(R.string.hiding_duck_title),
-            summary = buildList {
-                add(stringResource(R.string.hiding_duck_following, rules.duckDetector.take(7)))
-                when {
-                    status.duckAhead -> add(
-                        stringResource(R.string.hiding_duck_ahead, status.duckLatest.orEmpty().take(7), status.duckLatestAt.orEmpty().take(10))
-                    )
-                    status.duckLatest != null -> add(stringResource(R.string.hiding_duck_current))
-                }
-                if (rules.duckPending.isNotEmpty()) add(stringResource(R.string.hiding_duck_pending, rules.duckPending.joinToString()))
-            }.joinToString(" · "),
-            startAction = { RowIcon(Icons.Rounded.NewReleases, if (status.duckAhead) colorScheme.primary else colorScheme.onBackground) },
-        )
-        BasicComponent(
-            title = stringResource(if (checking) R.string.hiding_checking else R.string.hiding_check_updates),
-            summary = stringResource(R.string.hiding_check_updates_summary),
-            startAction = { RowIcon(Icons.Rounded.Refresh, colorScheme.onBackground) },
-            onClick = { if (!checking) actions.onCheckUpdates() },
-        )
-    }
-}
-
-@Composable
-private fun AttestationCard(state: HidingCheckUiState, actions: HidingCheckActions) {
-    GlassCard(modifier = cardModifier) {
-        Text(
-            text = stringResource(R.string.hiding_attestation_summary),
-            fontSize = 12.sp,
-            color = colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
-        )
-        state.attestation?.let { AttestationResult(it) }
-        TextButton(
-            text = stringResource(
-                if (state.checkingAttestation) R.string.features_attestation_checking else R.string.features_attestation_check
-            ),
-            enabled = !state.checkingAttestation,
-            onClick = actions.onCheckAttestation,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-    }
-}
-
-/**
- * The Widevine DRM level streaming apps see (L1 plays HD, L3 is SD only), why a device is below
- * L1, and a way to clear and fetch the DRM certificates again when that can help.
- */
-@Composable
-private fun WidevineCard(state: HidingCheckUiState, actions: HidingCheckActions) {
-    val context = LocalContext.current
-    var confirm by remember { mutableStateOf(false) }
-    val busy = state.reprovisionStep != null
-    GlassCard(modifier = cardModifier) {
-        Text(
-            text = stringResource(R.string.hiding_widevine_summary),
-            fontSize = 12.sp,
-            color = colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
-        )
-        val info = state.widevine
-        if (info != null) {
-            if (info.supported) {
-                WidevineLine(stringResource(R.string.hiding_widevine_level, info.securityLevel ?: "?"), ok = info.isL1)
-                info.systemId?.let { WidevineLine(stringResource(R.string.hiding_widevine_system_id, it), ok = null) }
-                info.version?.let { WidevineLine(stringResource(R.string.hiding_widevine_version, it), ok = null) }
-                info.hdcpLevel?.let { hdcp ->
-                    WidevineLine(stringResource(R.string.hiding_widevine_hdcp, hdcp, info.maxHdcpLevel ?: "?"), ok = null)
-                }
-                info.provisioned?.let {
-                    WidevineLine(
-                        stringResource(
-                            when {
-                                !it -> R.string.hiding_widevine_not_provisioned
-                                info.justProvisioned -> R.string.hiding_widevine_just_provisioned
-                                else -> R.string.hiding_widevine_provisioned
-                            }
-                        ),
-                        ok = it,
-                    )
-                }
-                info.sessionError?.let { WidevineLine(stringResource(R.string.hiding_widevine_session_error, it), ok = false) }
-            }
-            state.widevineHal?.let {
-                WidevineLine(stringResource(if (it) R.string.hiding_widevine_hal_up else R.string.hiding_widevine_hal_down), ok = it)
-            }
-            val diagnosis = diagnoseWidevine(info, state.widevineHal, state.attestation?.info?.deviceLocked)
-            Text(
-                text = stringResource(diagnosis.text()),
-                fontSize = 12.sp,
-                color = if (diagnosis == WidevineDiagnosis.L1) colorScheme.onSurfaceVariantSummary else colorScheme.error,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
-            state.reprovision?.let { result ->
-                val text = when {
-                    result.restored -> stringResource(R.string.hiding_widevine_reprovision_restored, result.after.securityLevel ?: "?")
-                    result.error != null -> stringResource(R.string.hiding_widevine_reprovision_failed, result.error)
-                    else -> stringResource(
-                        R.string.hiding_widevine_reprovision_done,
-                        result.before.securityLevel ?: "?",
-                        result.after.securityLevel ?: "?",
-                    )
-                }
-                WidevineLine(text, ok = result.after.isL1 && result.error == null)
-                if (result.error != null && !result.restored) {
-                    WidevineLine(stringResource(R.string.hiding_widevine_reprovision_backup, result.backup), ok = null)
-                }
-            }
-            TextButton(
-                text = stringResource(R.string.hiding_widevine_copy),
-                onClick = {
-                    context.getSystemService(android.content.ClipboardManager::class.java)
-                        ?.setPrimaryClip(android.content.ClipData.newPlainText("widevine", info.summary()))
-                    cam.su.kernel.ui.component.CamToast.show(context, R.string.hiding_widevine_copied)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            )
-            if (info.supported && state.widevineHal != false) {
-                TextButton(
-                    text = stringResource(
-                        when (state.reprovisionStep) {
-                            null -> R.string.hiding_widevine_reprovision
-                            "backup" -> R.string.hiding_widevine_step_backup
-                            "clear" -> R.string.hiding_widevine_step_clear
-                            "provision" -> R.string.hiding_widevine_step_provision
-                            else -> R.string.hiding_widevine_step_restore
-                        }
-                    ),
-                    enabled = !busy,
-                    onClick = { confirm = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    colors = if (diagnosis.reprovisionHelps) ButtonDefaults.textButtonColorsPrimary() else ButtonDefaults.textButtonColors(),
-                )
-            }
-        }
-        TextButton(
-            text = stringResource(
-                if (state.checkingWidevine) R.string.features_attestation_checking else R.string.hiding_widevine_check
-            ),
-            enabled = !state.checkingWidevine && !busy,
-            onClick = actions.onCheckWidevine,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-    }
-
-    cam.su.kernel.ui.component.glass.GlassDialog(
-        show = confirm,
-        title = stringResource(R.string.hiding_widevine_reprovision),
-        summary = stringResource(
-            if (state.widevine?.isL1 == true) R.string.hiding_widevine_reprovision_confirm_l1 else R.string.hiding_widevine_reprovision_confirm
-        ),
-        onDismissRequest = { confirm = false },
-    ) {
-        Row {
-            TextButton(
-                text = stringResource(android.R.string.cancel),
-                onClick = { confirm = false },
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.width(20.dp))
-            TextButton(
-                text = stringResource(R.string.hiding_widevine_reprovision_go),
-                onClick = {
-                    confirm = false
-                    actions.onReprovisionWidevine()
-                },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-            )
-        }
-    }
-}
-
-private fun WidevineDiagnosis.text(): Int = when (this) {
-    WidevineDiagnosis.L1 -> R.string.hiding_widevine_diag_l1
-    WidevineDiagnosis.NoPlugin -> R.string.hiding_widevine_diag_no_plugin
-    WidevineDiagnosis.HalDown -> R.string.hiding_widevine_diag_hal_down
-    WidevineDiagnosis.NotProvisioned -> R.string.hiding_widevine_diag_not_provisioned
-    WidevineDiagnosis.BootloaderUnlocked -> R.string.hiding_widevine_diag_unlocked
-    WidevineDiagnosis.KeyboxMissing -> R.string.hiding_widevine_diag_keybox
-    WidevineDiagnosis.Unknown -> R.string.hiding_widevine_diag_unknown
-}
-
-/** [ok] null: a neutral fact. */
-@Composable
-private fun WidevineLine(text: String, ok: Boolean?) {
-    Text(
-        text = "${when (ok) { true -> "✓"; false -> "⚠"; null -> "·" }}  $text",
-        fontSize = 13.sp,
-        color = if (ok == false) colorScheme.error else colorScheme.onSurfaceVariantSummary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
-    )
-}
-
-@Composable
 private fun FixesCard(state: HidingCheckUiState, actions: HidingCheckActions) {
     GlassCard(modifier = cardModifier) {
         FixSwitch(
@@ -812,95 +582,6 @@ private fun FixSwitch(
 }
 
 @Composable
-private fun RowIcon(icon: ImageVector, tint: Color) {
+internal fun RowIcon(icon: ImageVector, tint: Color) {
     Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.padding(end = 6.dp))
-}
-
-@Composable
-private fun findingTitle(finding: HidingAudit.Finding): String =
-    findingTitleRes(finding.id)?.let { stringResource(it) } ?: finding.id
-
-/** The title of a finding by id; null for one this app does not know. The module scan notification uses it too. */
-fun findingTitleRes(id: String): Int? = when (id) {
-    "moduleMounts" -> R.string.audit_module_mounts
-    "camMounts" -> R.string.audit_cam_mounts
-    "selinuxRules" -> R.string.audit_selinux_rules
-    "maps" -> R.string.audit_maps
-    "props" -> R.string.audit_props
-    "bootArgs" -> R.string.audit_boot_args
-    "lsposed" -> R.string.audit_lsposed
-    "revanced" -> R.string.audit_revanced
-    "customRom" -> R.string.audit_custom_rom
-    "files" -> R.string.audit_files
-    "selinux" -> R.string.audit_selinux
-    "adb" -> R.string.audit_adb
-    "appMounts" -> R.string.audit_app_mounts
-    "appMaps" -> R.string.audit_app_maps
-    "appSu" -> R.string.audit_app_su
-    "appProps" -> R.string.audit_app_props
-    "appSelinux" -> R.string.audit_app_selinux
-    "appHooked" -> R.string.audit_app_hooked
-    "appAttrTiming" -> R.string.audit_app_attr_timing
-    "selinuxAvcLookups" -> R.string.audit_selinux_avc_lookups
-    "profileUmount" -> R.string.audit_profile_umount
-    "defaultProfileUmount" -> R.string.audit_default_profile_umount
-    else -> null
-}
-
-/** What to do about [finding]; [fixOn]: its fix is on and the finding is still there. */
-private fun fixLabel(finding: HidingAudit.Finding, fixOn: Boolean): Int = when {
-    finding.fix != null && fixOn -> R.string.hiding_fix_on_still
-    finding.id == "profileUmount" -> R.string.hiding_fix_profile
-    finding.id == "defaultProfileUmount" -> R.string.hiding_fix_default_profile
-    finding.id == "appHooked" -> R.string.hiding_fix_hooked
-    finding.id == "appAttrTiming" -> R.string.hiding_fix_attr_timing
-    finding.id == "selinuxAvcLookups" -> R.string.hiding_fix_avc_lookups
-    finding.fix == null -> adviceRes(finding) ?: R.string.audit_fix_none
-    else -> fixLabel(finding.fix)
-}
-
-/** What the user can do about a finding the page cannot switch off; null when there is no advice. */
-private fun adviceRes(finding: HidingAudit.Finding): Int? = when (finding.id) {
-    "moduleMounts" -> R.string.hiding_advice_module_mounts
-    "maps", "appMaps" -> R.string.hiding_advice_maps
-    "bootArgs" -> R.string.hiding_advice_boot_args
-    "lsposed" -> R.string.hiding_advice_lsposed
-    "revanced" -> R.string.hiding_advice_revanced
-    "customRom" -> R.string.hiding_advice_custom_rom
-    "files" -> R.string.hiding_advice_files
-    "selinux", "appSelinux" -> R.string.hiding_advice_selinux
-    "adb" -> R.string.hiding_advice_adb
-    "appSu" -> R.string.hiding_advice_app_su
-    else -> null
-}
-
-/** The label of the button that applies [action] to [finding]. */
-@Composable
-private fun actionLabel(action: String, finding: HidingAudit.Finding, state: HidingCheckUiState): String = when (action) {
-    HidingCheckUiState.APP_UMOUNT -> if (state.app != null || finding.items.size <= 1) {
-        stringResource(R.string.hiding_action_umount_app)
-    } else {
-        stringResource(R.string.hiding_action_umount_apps, finding.items.size)
-    }
-    HidingCheckUiState.DEFAULT_UMOUNT -> stringResource(R.string.hiding_fix_default_profile)
-    else -> stringResource(fixLabel(action))
-}
-
-private fun passedTitle(id: String): Int = when (id) {
-    "appMounts" -> R.string.hiding_ok_app_mounts
-    "appMaps" -> R.string.hiding_ok_app_maps
-    "appSu" -> R.string.hiding_ok_app_su
-    "appProps" -> R.string.hiding_ok_app_props
-    "appSelinux" -> R.string.hiding_ok_app_selinux
-    "appHooked" -> R.string.hiding_ok_app_hooked
-    "appAttrTiming" -> R.string.hiding_ok_app_attr_timing
-    "selinuxAvcLookups" -> R.string.hiding_ok_selinux_avc_lookups
-    else -> R.string.hiding_ok_profile_umount
-}
-
-private fun fixLabel(fix: String?): Int = when (fix) {
-    "kernelUmount" -> R.string.audit_fix_kernel_umount
-    "selinuxHide" -> R.string.audit_fix_selinux_hide
-    "hideBootloader" -> R.string.audit_fix_hide_bootloader
-    else -> R.string.audit_fix_none
 }

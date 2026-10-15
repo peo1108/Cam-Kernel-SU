@@ -57,3 +57,29 @@ LKM mới build android16-6.12 (clang-r536225, version `32974`), vá `init_boot_
 - **Không sửa panic `camd unload`.** Là giới hạn cố hữu của KernelSU (module tự ẩn), bám theo upstream. Sửa đòi dựng lại kobject + dọn kobject con ở `exit` — phẫu thuật nội bộ module của kernel, mong manh, phụ thuộc phiên bản; mà dù sửa xong `unload` vẫn chỉ gỡ tạm cho một lần boot. Ghi nhận giới hạn, không làm.
 - **Giữ và commit:** mục 1, mục 2 (`selinux_hide.c`), observer `free_mark` (`pkg_observer.c`). Không gửi upstream.
 - Mục 3b (`enable_feature` coi `-EAGAIN` là đã bật) chưa làm — để lần sau nếu cần.
+
+## Review lần hai (2026-10-15, khuya): race khi tắt, các đường chưa đo
+
+Đọc lại trên `256ec433`. Điểm phần này vẫn 8 / 10.
+
+**Mục 8 (mới, đã sửa, dòng 58 của `CAM_CHANGES.md`).** `ksu_selinux_hide_unhook` trả slot `write_op` rồi đặt ngay `orig_context_write` / `orig_access_write` = NULL. Tiến trình uid < 10000 đã vào `my_write_*` trước lúc trả slot gọi NULL. Sửa: không bao giờ xoá con trỏ gốc, trạng thái vá nằm ở `context_write_hooked` / `access_write_hooked`; vá lại thì bỏ qua slot còn hook (trả gốc thất bại) để không lấy chính hook làm gốc. Hook `setprocattr` không bị: `ksu_lsm_unhook` giữ `original` và có `synchronize_rcu()`.
+
+| Thử trên TB323FU | Kết quả |
+|---|---|
+| LKM `32974`, 7 luồng root ghi `access`/`context`, tắt/bật liền nhau, 120 s | Không crash (3845 lần): sau `stop_machine` luồng bị ngắt chạy tiếp và qua cửa sổ trước khi NULL được ghi |
+| LKM `32974`, 32 luồng (gấp 4 số nhân), giữ trạng thái tắt 0,1 s mỗi lần | **Panic sau khoảng 5 s**: `my_write_access+0x48`, `x8 = 0` nạp từ `orig_access_write`, kCFI đọc `[NULL-4]` (DABT) |
+| LKM `32976` (bản sửa), cùng bài, 300 s | Không crash: 355 triệu lần ghi, 1567 lần tắt/bật, boot_id giữ nguyên, tính năng vẫn bật |
+| `scripts/device_smoke.sh` trên `32976` | 15/15 |
+
+**Mục 6 mở rộng: các đường parse context chưa hook.** Công cụ tạm (không vào repo): root, mỗi phép thử một tiến trình con hạ xuống uid 10310 rồi đổi sang domain app, ghi chuỗi `ksu` / `cam` / type không tồn tại và so errno. Ẩn bật:
+
+| Đường | `untrusted_app` | `app_zygote` | `isolated_app` |
+|---|---|---|---|
+| `/sys/fs/selinux/context`, `access` | `EACCES` ở `open` | `EINVAL` cả ba chuỗi | `EACCES` ở `open` |
+| `attr/current` | `EACCES` | `EINVAL` cả ba | `EACCES` |
+| `attr/exec`, `fscreate`, `sockcreate`, `keycreate` | `EACCES` | `EACCES` | `EACCES` |
+| `fsetxattr security.selinux` lên file `app_data_file` của chính uid | `EACCES` | `EACCES` | `EACCES` |
+
+Đối chứng (ẩn tắt, `app_zygote`): `context` và `access` nhận `ksu`/`cam`, `attr/current` trả `EACCES` thay vì `EINVAL`, nên công cụ báo 3 chỗ lộ. Bốn đường `attr/*` còn lại và `setxattr` bị từ chối trước khi parse ở cả ba domain, như SELinux gốc: không lộ, không cần hook. Syscall `lsm_set_self_attr` vẫn chỉ được chặn nhờ seccomp của app (đã đo lần đầu); nếu Android sau này mở syscall đó thì phải hook `setselfattr`.
+
+Còn mở: mục 3b. Rủi ro rất thấp, không sửa: `drop_backup_if_unused` giải phóng `backup_sepolicy` mà không chờ hook đang dở (chỉ trúng khi tắt đúng lúc `boot_completed`).

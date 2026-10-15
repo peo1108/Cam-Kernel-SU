@@ -76,7 +76,10 @@ static void (*context_struct_compute_av_fn)(struct policydb *policydb, struct co
                                             struct extended_perms *xperms) = NULL;
 
 static write_op_fn *context_write, *access_write;
+// Never cleared once set: a caller that loaded my_write_* before the unhook
+// may still be on its way to calling these.
 static write_op_fn orig_context_write, orig_access_write;
+static bool context_write_hooked, access_write_hooked;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
 #define ksu_avc_has_perm_compat(...) avc_has_perm(__VA_ARGS__)
@@ -410,24 +413,32 @@ static int ksu_selinux_hide_enable()
         pr_warn("context_struct_compute_av not found!\n");
     }
 
+    write_op_fn my;
     context_write = &selinux_write_op[SEL_CONTEXT];
     pr_info("selinux_hide: context_write: 0x%lx [%pSb]\n", (unsigned long)*context_write, *context_write);
-    write_op_fn my = my_write_context;
-    orig_context_write = *context_write;
-    ret = ksu_patch_text(context_write, &my, sizeof(my), KSU_PATCH_TEXT_FLUSH_DCACHE);
-    if (ret) {
-        pr_err("selinux_hide: init: patch_text context_write err: %d\n", ret);
-        goto unhook;
+    // a failed restore leaves the slot pointing at us: do not take that as orig
+    if (!context_write_hooked) {
+        my = my_write_context;
+        orig_context_write = *context_write;
+        ret = ksu_patch_text(context_write, &my, sizeof(my), KSU_PATCH_TEXT_FLUSH_DCACHE);
+        if (ret) {
+            pr_err("selinux_hide: init: patch_text context_write err: %d\n", ret);
+            goto unhook;
+        }
+        context_write_hooked = true;
     }
 
     access_write = &selinux_write_op[SEL_ACCESS];
     pr_info("selinux_hide: access_write: 0x%lx [%pSb]\n", (unsigned long)*access_write, *access_write);
-    my = my_write_access;
-    orig_access_write = *access_write;
-    ret = ksu_patch_text(access_write, &my, sizeof(my), KSU_PATCH_TEXT_FLUSH_DCACHE);
-    if (ret) {
-        pr_err("selinux_hide: init: patch_text access_write err: %d\n", ret);
-        goto unhook;
+    if (!access_write_hooked) {
+        my = my_write_access;
+        orig_access_write = *access_write;
+        ret = ksu_patch_text(access_write, &my, sizeof(my), KSU_PATCH_TEXT_FLUSH_DCACHE);
+        if (ret) {
+            pr_err("selinux_hide: init: patch_text access_write err: %d\n", ret);
+            goto unhook;
+        }
+        access_write_hooked = true;
     }
 
     ret = ksu_lsm_hook(&selinux_setprocattr_hook);
@@ -446,19 +457,21 @@ unhook:
 static void ksu_selinux_hide_unhook()
 {
     int ret;
-    if (orig_context_write) {
+    if (context_write_hooked) {
         ret =
             ksu_patch_text(context_write, &orig_context_write, sizeof(orig_context_write), KSU_PATCH_TEXT_FLUSH_DCACHE);
-        orig_context_write = NULL;
         if (ret) {
             pr_err("selinux_hide: exit: patch_text context_write err: %d\n", ret);
+        } else {
+            context_write_hooked = false;
         }
     }
-    if (orig_access_write) {
+    if (access_write_hooked) {
         ret = ksu_patch_text(access_write, &orig_access_write, sizeof(orig_access_write), KSU_PATCH_TEXT_FLUSH_DCACHE);
-        orig_access_write = NULL;
         if (ret) {
             pr_err("selinux_hide: exit: patch_text access_write err: %d\n", ret);
+        } else {
+            access_write_hooked = false;
         }
     }
     unhook_selinux_status_open();

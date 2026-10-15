@@ -69,6 +69,7 @@ Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo 
 | 7 | Chưa thử: cấp lại Widevine, OTA từ đầu đến cuối, thanh toán thật | Thấp | Còn mở. Cấp lại Widevine có sao lưu và tự khôi phục; OTA và thanh toán có test phía server |
 | 8 | Cụm slime/3D lớn so với giá trị cốt lõi | Thấp | Có chủ đích; giờ nhả bộ nhớ khi nằm nền |
 | 9 | File Miuix của upstream trên 1000 dòng | Thấp | Giữ nguyên để merge dễ |
+| 11 | Ẩn SELinux (code upstream): kiểm hợp lệ nhầm `ctx`/`orig_ctx`, free trang status giả khi gỡ LKM, race khi tắt tính năng (gọi con trỏ NULL → panic) | Trung bình | **Xong** (dòng 56, 58 của `CAM_CHANGES.md`): race tái hiện được trên tablet với LKM cũ, LKM `32976` qua 300 s stress; dò 8 đường từ ba domain app không lộ. Còn mở: `camd hiding-audit --apply` thoát khi gặp `-EAGAIN` (chỉ khi chạy tay). `superpowers/plans/done/2026-10-15-selinux-hide-review.md` |
 
 ## Việc nên làm tiếp, theo thứ tự
 

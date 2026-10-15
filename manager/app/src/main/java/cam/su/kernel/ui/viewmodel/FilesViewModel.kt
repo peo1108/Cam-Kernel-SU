@@ -6,9 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cam.su.kernel.R
 import cam.su.kernel.camApp
-import cam.su.kernel.files.AppView
 import cam.su.kernel.files.Archives
-import cam.su.kernel.files.Systemless
 import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.ConflictChoice
 import cam.su.kernel.files.Errno
@@ -25,6 +23,7 @@ import cam.su.kernel.files.PanelNav
 import cam.su.kernel.files.SelectionOps
 import cam.su.kernel.files.SortBy
 import cam.su.kernel.files.SortOptions
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -39,120 +38,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-data class PanelUi(
-    val nav: PanelNav,
-    val entries: List<FileEntry> = emptyList(),
-    val loading: Boolean = false,
-    /** errno of the last failed listing; the list then stays empty. */
-    val errorErrno: Int? = null,
-    val selection: Set<String> = emptySet(),
-    /** [total, available] bytes of the file system the folder is on. */
-    val disk: LongArray? = null,
-    /** The folder [entries] were listed from; it trails [nav] while the next one loads. */
-    val loadedPath: String? = null,
-) {
-    // counted once per state, not on every recomposition of the header
-    val folders by lazy(LazyThreadSafetyMode.PUBLICATION) { entries.count { it.isDir } }
-    val files get() = entries.size - folders
-}
-
-data class OpUi(
-    val kind: OpKind,
-    val done: Long = 0,
-    val total: Long = 0,
-    val current: String = "",
-    val conflict: CamFileClient.OpEvent.Conflict? = null,
-)
-
-/** MD5, SHA-1, SHA-256 of [entry]; null while computing. [token] tells one opening from the next. */
-data class ChecksumUi(val entry: FileEntry, val token: Int, val values: List<String>? = null)
-
-/** What an APK says about itself, read from a cached copy. */
-data class ApkInfoUi(
-    val label: String,
-    val packageName: String,
-    val versionName: String?,
-    val versionCode: Long,
-    val minSdk: Int,
-    val targetSdk: Int,
-    val signer: String?,
-    val permissions: List<String>,
-    val icon: android.graphics.drawable.Drawable?,
-)
-
-/** The systemless override dialog for one system file. */
-data class OverrideUi(
-    val entry: FileEntry,
-    val target: String,
-    val exists: Boolean,
-    val metamodule: Boolean,
-    /** a file with the same name in the other panel, offered as the replacement */
-    val replacement: FileEntry?,
-)
-
-/**
- * The partition list: to back one up ([image] null), or to pick where [image] gets flashed.
- * [all] shows every partition, not just the boot chain.
- */
-data class PartitionsUi(
-    val list: List<cam.su.kernel.files.Partition>,
-    val slot: String,
-    val image: FileEntry? = null,
-    val all: Boolean = false,
-)
-
-data class SearchUi(val root: String, val running: Boolean = true, val results: List<FileEntry> = emptyList())
-
-/** The Properties dialog: [measure] fills in after the tree was walked. [token] tells one opening from the next. */
-data class PropertiesUi(val entry: FileEntry, val token: Int = 0, val measure: LongArray? = null)
-
-sealed interface FilesMessage {
-    data class Finished(val kind: OpKind, val items: Int, val skipped: Int) : FilesMessage
-    data object Cancelled : FilesMessage
-    data class Failed(val errno: Int, val detail: String?) : FilesMessage
-    data object Done : FilesMessage
-    data class Text(val text: String) : FilesMessage
-
-    /** Another copy/move/delete is still running: one at a time. */
-    data object Busy : FilesMessage
-}
-
-/** One-shot work for the screen: hand a cached copy of a root file to another app. */
-sealed interface FilesEvent {
-    data class Open(val uri: android.net.Uri, val mime: String) : FilesEvent
-    data class Share(val uris: List<android.net.Uri>) : FilesEvent
-    /** A module zip to hand to the Flash screen. */
-    data class Flash(val file: File) : FilesEvent
-    data class Edit(val path: String) : FilesEvent
-    data class Hex(val path: String) : FilesEvent
-    data class Compare(val left: String, val right: String) : FilesEvent
-    data class Run(val path: String) : FilesEvent
-    data class Terminal(val cwd: String) : FilesEvent
-}
-
-data class FilesUiState(
-    val panels: List<PanelUi>,
-    val active: Int = 0,
-    val sort: SortOptions = SortOptions(),
-    val op: OpUi? = null,
-    val message: FilesMessage? = null,
-    val properties: PropertiesUi? = null,
-    val bookmarks: List<String> = emptyList(),
-    val busy: Boolean = false,
-    val checksum: ChecksumUi? = null,
-    val apkInfo: ApkInfoUi? = null,
-    val search: SearchUi? = null,
-    val override: OverrideUi? = null,
-    /** running apps offered by "Browse as an app": (pid, uid, process) */
-    val processes: List<Triple<Int, Int, String>>? = null,
-    /** pid → process name of the apps browsed as */
-    val appNames: Map<Int, String> = emptyMap(),
-    val partitions: PartitionsUi? = null,
-    /** The trash dialog's list; null while it is closed. */
-    val trash: List<cam.su.kernel.files.TrashItem>? = null,
-) {
-    val activePanel get() = panels[active]
-    val otherPanel get() = panels[1 - active]
+/** What the view model lends the helpers that run some of its dialogs ([FilesInspector], [FilesSystemTools]). */
+internal interface FilesHost {
+    val state: MutableStateFlow<FilesUiState>
+    val scope: CoroutineScope
+    fun runOp(op: FileOp, then: (() -> Unit)? = null)
+    fun navigateActive(path: String)
+    suspend fun send(event: FilesEvent)
 }
 
 class FilesViewModel : ViewModel() {
@@ -180,11 +72,22 @@ class FilesViewModel : ViewModel() {
     )
     val uiState: StateFlow<FilesUiState> = _uiState.asStateFlow()
 
+    private val host = object : FilesHost {
+        override val state get() = _uiState
+        override val scope get() = viewModelScope
+        override fun runOp(op: FileOp, then: (() -> Unit)?) = this@FilesViewModel.runOp(op, then)
+        override fun navigateActive(path: String) = this@FilesViewModel.navigateActive(path)
+        override suspend fun send(event: FilesEvent) = events.send(event)
+    }
+
+    /** Properties, checksums, APK info and search. */
+    val inspector = FilesInspector(host)
+
+    /** Systemless overrides, browsing as an app, partitions. */
+    val system = FilesSystemTools(host)
+
     private var started = false
     private var sortJob: Job? = null
-
-    /** Tells a dialog's opening from the next one, so a late answer for an old one is dropped. */
-    private var dialogToken = 0
 
     /** The folders inotify watches now (both panels, archives left out). */
     private var watched = emptyList<String>()
@@ -427,30 +330,17 @@ class FilesViewModel : ViewModel() {
 
     fun chmod(path: String, mode: Int, recursive: Boolean) = simple(refreshActive = true) {
         CamFileClient.chmod(path, mode, recursive)
-        reloadProperties(path)
+        inspector.reloadProperties(path)
     }
 
     fun chown(path: String, uid: Int, gid: Int, recursive: Boolean) = simple(refreshActive = true) {
         CamFileClient.chown(path, uid, gid, recursive)
-        reloadProperties(path)
+        inspector.reloadProperties(path)
     }
 
     fun setContext(path: String, context: String, recursive: Boolean) = simple(refreshActive = true) {
         CamFileClient.setContext(path, context, recursive)
-        reloadProperties(path)
-    }
-
-    fun showProperties(entry: FileEntry) {
-        val token = ++dialogToken
-        _uiState.update { it.copy(properties = PropertiesUi(entry, token)) }
-        viewModelScope.launch {
-            val measure = try {
-                CamFileClient.measure(entry.path)
-            } catch (_: FsException) {
-                return@launch
-            }
-            _uiState.update { s -> s.copy(properties = s.properties?.let { if (it.token == token) it.copy(measure = measure) else it }) }
-        }
+        inspector.reloadProperties(path)
     }
 
     fun edit(entry: FileEntry) {
@@ -474,285 +364,6 @@ class FilesViewModel : ViewModel() {
 
     fun runScript(entry: FileEntry) {
         viewModelScope.launch { events.send(FilesEvent.Run(entry.path)) }
-    }
-
-    fun showChecksum(entry: FileEntry) {
-        val token = ++dialogToken
-        _uiState.update { it.copy(checksum = ChecksumUi(entry, token)) }
-        viewModelScope.launch {
-            try {
-                val values = CamFileClient.checksums(entry.path)
-                _uiState.update { s -> s.copy(checksum = s.checksum?.let { if (it.token == token) it.copy(values = values) else it }) }
-            } catch (e: FsException) {
-                // closed meanwhile (that cancelled it): nothing to report
-                if (_uiState.value.checksum?.token != token) return@launch
-                _uiState.update { it.copy(checksum = null, message = FilesMessage.Failed(e.errno, e.message)) }
-            }
-        }
-    }
-
-    fun hideChecksum() {
-        val computing = _uiState.value.checksum?.values == null
-        _uiState.update { it.copy(checksum = null) }
-        if (computing) cancelReads()
-    }
-
-    /** A closed Properties or Checksum dialog stops its walk or hash on the root side. */
-    private fun cancelReads() {
-        viewModelScope.launch { runCatching { CamFileClient.cancelReads() } }
-    }
-
-    /** Reads the APK (or the base APK inside a bundle) like the installer would, without installing. */
-    fun showApkInfo(entry: FileEntry) {
-        _uiState.update { it.copy(busy = true) }
-        viewModelScope.launch {
-            try {
-                val source = if (Archives.isApkBundle(entry.name)) {
-                    val inside = CamFileClient.listDir(Archives.join(entry.path, "")).filter { it.name.endsWith(".apk", true) }
-                    (inside.firstOrNull { it.name.equals("base.apk", true) } ?: inside.firstOrNull())?.path
-                        ?: throw FsException(cam.su.kernel.files.Errno.ENOENT, entry.path)
-                } else {
-                    entry.path
-                }
-                val file = File(camApp.cacheDir, "apk_info.apk")
-                CamFileClient.copyToLocal(source, file)
-                val info = readApk(file) ?: throw FsException(cam.su.kernel.files.Errno.EINVAL, entry.name, "not a valid APK")
-                _uiState.update { it.copy(apkInfo = info) }
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            } finally {
-                _uiState.update { it.copy(busy = false) }
-            }
-        }
-    }
-
-    fun hideApkInfo() = _uiState.update { it.copy(apkInfo = null) }
-
-    @Suppress("DEPRECATION")
-    private fun readApk(file: File): ApkInfoUi? {
-        val pm = camApp.packageManager
-        val flags = android.content.pm.PackageManager.GET_PERMISSIONS or android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
-        val info = pm.getPackageArchiveInfo(file.absolutePath, flags) ?: return null
-        val app = info.applicationInfo ?: return null
-        app.sourceDir = file.absolutePath
-        app.publicSourceDir = file.absolutePath
-        val signer = info.signingInfo?.apkContentsSigners?.firstOrNull()?.toByteArray()?.let { cert ->
-            java.security.MessageDigest.getInstance("SHA-256").digest(cert).joinToString(":") { "%02X".format(it) }
-        }
-        return ApkInfoUi(
-            label = app.loadLabel(pm).toString(),
-            packageName = info.packageName,
-            versionName = info.versionName,
-            versionCode = info.longVersionCode,
-            minSdk = app.minSdkVersion,
-            targetSdk = app.targetSdkVersion,
-            signer = signer,
-            permissions = info.requestedPermissions?.toList().orEmpty(),
-            icon = runCatching { app.loadIcon(pm) }.getOrNull(),
-        )
-    }
-
-    /** MT's search: from the active folder down, by name and optionally by content. */
-    fun search(pattern: String, content: String) {
-        val root = _uiState.value.activePanel.nav.path
-        if (Archives.isInside(root)) return
-        _uiState.update { it.copy(search = SearchUi(root)) }
-        viewModelScope.launch {
-            val results = try {
-                CamFileClient.search(root, pattern, content.ifEmpty { null }, SEARCH_LIMIT)
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-                emptyList()
-            }
-            _uiState.update { s -> s.copy(search = s.search?.copy(running = false, results = results)) }
-        }
-    }
-
-    fun stopSearch() {
-        viewModelScope.launch { runCatching { CamFileClient.cancelSearch() } }
-    }
-
-    fun closeSearch() {
-        if (_uiState.value.search?.running == true) stopSearch()
-        _uiState.update { it.copy(search = null) }
-    }
-
-    /** A search hit: its folder opens in the active panel. */
-    fun reveal(entry: FileEntry) {
-        closeSearch()
-        navigateActive(FsPath.parent(entry.path))
-    }
-
-    // --- systemless overrides (needs a metamodule to mount modules) ---
-
-    fun showOverride(entry: FileEntry) {
-        viewModelScope.launch {
-            try {
-                val target = Systemless.target(entry.path)
-                val other = _uiState.value.otherPanel.entries.firstOrNull { it.name == entry.name && !it.isDir && it.path != entry.path }
-                val ui = OverrideUi(
-                    entry = entry,
-                    target = target,
-                    exists = CamFileClient.stat(target) != null,
-                    metamodule = CamFileClient.stat(Systemless.METAMODULE_LINK) != null,
-                    replacement = other,
-                )
-                _uiState.update { it.copy(override = ui) }
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            }
-        }
-    }
-
-    fun hideOverride() = _uiState.update { it.copy(override = null) }
-
-    /** Copies the system file into the module (once) and opens the copy in the editor. */
-    fun overrideEdit() {
-        val o = _uiState.value.override ?: return
-        hideOverride()
-        viewModelScope.launch {
-            try {
-                prepareOverride(o.target)
-                if (o.exists) {
-                    events.send(FilesEvent.Edit(o.target))
-                } else {
-                    runOp(FileOp(OpKind.COPY, listOf(o.entry.path), FsPath.parent(o.target))) {
-                        viewModelScope.launch { events.send(FilesEvent.Edit(o.target)) }
-                    }
-                }
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            }
-        }
-    }
-
-    /** Puts the same-named file from the other panel in place of the system one. */
-    fun overrideReplace() {
-        val o = _uiState.value.override ?: return
-        val replacement = o.replacement ?: return
-        hideOverride()
-        viewModelScope.launch {
-            try {
-                prepareOverride(o.target)
-                runOp(FileOp(OpKind.COPY, listOf(replacement.path), FsPath.parent(o.target), preserve = false))
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            }
-        }
-    }
-
-    fun overrideRemove() {
-        val o = _uiState.value.override ?: return
-        hideOverride()
-        runOp(FileOp(OpKind.DELETE, listOf(o.target)))
-    }
-
-    private suspend fun prepareOverride(target: String) {
-        mkdirs(FsPath.parent(target))
-        val prop = FsPath.child(Systemless.MODULE, "module.prop")
-        if (CamFileClient.stat(prop) == null) CamFileClient.write(prop) { it.write(Systemless.MODULE_PROP.toByteArray()) }
-    }
-
-    private suspend fun mkdirs(path: String) {
-        if (path == "/" || CamFileClient.stat(path) != null) return
-        mkdirs(FsPath.parent(path))
-        CamFileClient.mkdir(path)
-    }
-
-    // --- browse as an app (/proc/<pid>/root) ---
-
-    fun chooseApp() {
-        viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(processes = CamFileClient.appProcesses()) }
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            }
-        }
-    }
-
-    fun hideProcesses() = _uiState.update { it.copy(processes = null) }
-
-    // --- partitions: back up any, flash the boot chain ---
-
-    /** The partition list; with [image], to choose where it gets flashed. */
-    fun showPartitions(image: FileEntry? = null) {
-        _uiState.update { it.copy(busy = true) }
-        viewModelScope.launch {
-            try {
-                val (list, slot) = CamFileClient.partitions()
-                if (list.isEmpty()) throw FsException(Errno.ENOENT, detail = "/dev/block/by-name")
-                _uiState.update { it.copy(partitions = PartitionsUi(cam.su.kernel.files.Partitions.ordered(list, slot), slot, image)) }
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            } finally {
-                _uiState.update { it.copy(busy = false) }
-            }
-        }
-    }
-
-    fun showAllPartitions() = _uiState.update { it.copy(partitions = it.partitions?.copy(all = true)) }
-
-    fun hidePartitions() = _uiState.update { it.copy(partitions = null) }
-
-    /** Into /sdcard/CamBackup/<name>_<time>.img; the active panel opens there when it is done. */
-    fun backupPartition(name: String) {
-        hidePartitions()
-        val dest = cam.su.kernel.files.Partitions.backupPath(name, System.currentTimeMillis())
-        viewModelScope.launch {
-            try {
-                mkdirs(FsPath.parent(dest))
-                runOp(FileOp(OpKind.BACKUP, listOf(name), dest)) { navigateActive(FsPath.parent(dest)) }
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            }
-        }
-    }
-
-    /** What the flash dialog shows before it lets the flash go. */
-    data class FlashCheck(val problem: cam.su.kernel.files.ImageProblem?, val room: Boolean)
-
-    /** Reads the image header and the free space; the root side checks both again before writing. */
-    suspend fun checkFlash(image: FileEntry, partition: cam.su.kernel.files.Partition): FlashCheck {
-        val header = runCatching { CamFileClient.readRange(image.path, 0, cam.su.kernel.files.Partitions.HEADER_SIZE) }.getOrNull()
-        val free = runCatching { CamFileClient.statFs(FsPath.parent(cam.su.kernel.files.Partitions.BACKUP_DIR))[1] }.getOrNull()
-        return FlashCheck(
-            problem = header?.let { cam.su.kernel.files.Partitions.checkImage(partition.name, it) },
-            room = free == null || free >= cam.su.kernel.files.Partitions.backupRoom(partition.size),
-        )
-    }
-
-    /**
-     * The partition as it is goes to /sdcard/CamBackup first (the root side refuses to flash
-     * without that path); the active panel opens there when it is done.
-     */
-    fun flashPartition(image: FileEntry, name: String) {
-        hidePartitions()
-        val backup = cam.su.kernel.files.Partitions.backupPath(name, System.currentTimeMillis())
-        viewModelScope.launch {
-            try {
-                mkdirs(FsPath.parent(backup))
-                runOp(FileOp(OpKind.FLASH, listOf(image.path, backup), name)) { navigateActive(FsPath.parent(backup)) }
-            } catch (e: FsException) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
-            }
-        }
-    }
-
-    fun viewAsApp(pid: Int, name: String) {
-        _uiState.update { it.copy(processes = null, appNames = it.appNames + (pid to name)) }
-        navigateActive(AppView.root(pid))
-    }
-
-    fun hideProperties() {
-        val measuring = _uiState.value.properties?.measure == null
-        _uiState.update { it.copy(properties = null) }
-        if (measuring) cancelReads()
-    }
-
-    private suspend fun reloadProperties(path: String) {
-        if (_uiState.value.properties?.entry?.path != path) return
-        CamFileClient.stat(path)?.let { fresh -> _uiState.update { it.copy(properties = it.properties?.copy(entry = fresh)) } }
     }
 
     /**
@@ -1076,7 +687,6 @@ class FilesViewModel : ViewModel() {
         const val KEY_SORT_DESC = "sort_desc"
         const val KEY_SHOW_HIDDEN = "show_hidden"
 
-        const val SEARCH_LIMIT = 500
         const val RELOAD_DELAY_MS = 400L
     }
 }

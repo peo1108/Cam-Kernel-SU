@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.files.FileFormat
+import cam.su.kernel.ui.viewmodel.FilesSystemTools
 import cam.su.kernel.ui.viewmodel.FilesViewModel
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -38,7 +39,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 /** Systemless override of one system file through the cam_file_override module. */
 @Composable
 internal fun OverrideDialog(vm: FilesViewModel) {
-    FilesDialog(show = true, title = stringResource(R.string.files_override), onDismiss = vm::hideOverride) {
+    FilesDialog(show = true, title = stringResource(R.string.files_override), onDismiss = vm.system::hideOverride) {
         val live by vm.uiState.collectAsState()
         val o = live.override ?: return@FilesDialog
         Text(o.entry.path, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.MiddleEllipsis)
@@ -52,21 +53,21 @@ internal fun OverrideDialog(vm: FilesViewModel) {
             Text(stringResource(R.string.files_override_no_metamodule), fontSize = 13.sp, color = colorScheme.error, modifier = Modifier.padding(top = 10.dp))
         } else {
             Spacer(Modifier.height(6.dp))
-            ListAction(stringResource(R.string.files_override_edit), onClick = vm::overrideEdit)
+            ListAction(stringResource(R.string.files_override_edit), onClick = vm.system::overrideEdit)
             o.replacement?.let { r ->
-                ListAction(stringResource(R.string.files_override_replace, r.path), onClick = vm::overrideReplace)
+                ListAction(stringResource(R.string.files_override_replace, r.path), onClick = vm.system::overrideReplace)
             }
-            if (o.exists) ListAction(stringResource(R.string.files_override_remove), onClick = vm::overrideRemove)
+            if (o.exists) ListAction(stringResource(R.string.files_override_remove), onClick = vm.system::overrideRemove)
             Text(stringResource(R.string.files_override_reboot), fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary, modifier = Modifier.padding(top = 6.dp))
         }
-        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideOverride, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+        TextButton(text = stringResource(R.string.files_close), onClick = vm.system::hideOverride, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
     }
 }
 
 /** "Browse as an app": pick a running app process. */
 @Composable
 internal fun ProcessDialog(vm: FilesViewModel) {
-    FilesDialog(show = true, title = stringResource(R.string.files_view_as_app), onDismiss = vm::hideProcesses) {
+    FilesDialog(show = true, title = stringResource(R.string.files_view_as_app), onDismiss = vm.system::hideProcesses) {
         val live by vm.uiState.collectAsState()
         val processes = live.processes ?: return@FilesDialog
         Text(stringResource(R.string.files_view_as_app_summary), fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary)
@@ -77,7 +78,7 @@ internal fun ProcessDialog(vm: FilesViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { vm.viewAsApp(pid, name) }
+                        .clickable { vm.system.viewAsApp(pid, name) }
                         .padding(vertical = 6.dp),
                 ) {
                     Text(name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -85,7 +86,7 @@ internal fun ProcessDialog(vm: FilesViewModel) {
                 }
             }
         }
-        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideProcesses, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        TextButton(text = stringResource(R.string.files_close), onClick = vm.system::hideProcesses, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
     }
 }
 
@@ -94,7 +95,7 @@ internal fun ProcessDialog(vm: FilesViewModel) {
 internal fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit) {
     val title = vm.uiState.collectAsState().value.partitions?.image?.let { stringResource(R.string.files_flash_pick, it.name) }
         ?: stringResource(R.string.files_partitions)
-    FilesDialog(show = true, title = title, onDismiss = vm::hidePartitions) {
+    FilesDialog(show = true, title = title, onDismiss = vm.system::hidePartitions) {
         val live by vm.uiState.collectAsState()
         val ui = live.partitions ?: return@FilesDialog
         val image = ui.image
@@ -116,7 +117,7 @@ internal fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) 
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
-                            vm.hidePartitions()
+                            vm.system.hidePartitions()
                             onDialog(
                                 if (image != null) {
                                     FilesDialogState.ConfirmFlash(image, p, otherSlot = !cam.su.kernel.files.Partitions.inSlot(p.name, ui.slot))
@@ -142,9 +143,9 @@ internal fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) 
             }
         }
         if (image == null && !ui.all && ui.list.size > shown.size) {
-            ListAction(stringResource(R.string.files_partitions_all, ui.list.size), onClick = vm::showAllPartitions)
+            ListAction(stringResource(R.string.files_partitions_all, ui.list.size), onClick = vm.system::showAllPartitions)
         }
-        TextButton(text = stringResource(R.string.files_close), onClick = vm::hidePartitions, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        TextButton(text = stringResource(R.string.files_close), onClick = vm.system::hidePartitions, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
     }
 }
 
@@ -166,9 +167,9 @@ internal fun FlashConfirmDialog(dialog: FilesDialogState.ConfirmFlash, vm: Files
 
 @Composable
 private fun FlashFirstStep(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit, close: () -> Unit) {
-    var check by remember { mutableStateOf<FilesViewModel.FlashCheck?>(null) }
+    var check by remember { mutableStateOf<FilesSystemTools.FlashCheck?>(null) }
     androidx.compose.runtime.LaunchedEffect(dialog.image.path, dialog.partition.name) {
-        check = vm.checkFlash(dialog.image, dialog.partition)
+        check = vm.system.checkFlash(dialog.image, dialog.partition)
     }
     Text(
         stringResource(
@@ -229,7 +230,7 @@ private fun FlashLastStep(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewMo
             enabled = typed.trim() == dialog.partition.name,
             onClick = {
                 close()
-                vm.flashPartition(dialog.image, dialog.partition.name)
+                vm.system.flashPartition(dialog.image, dialog.partition.name)
             },
             modifier = Modifier.weight(1f),
             colors = ButtonDefaults.textButtonColors(color = colorScheme.error, textColor = colorScheme.onError),

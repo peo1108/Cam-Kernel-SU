@@ -726,7 +726,7 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 item { DrawerSection(stringResource(R.string.files_drawer_tools)) }
                 item {
                     DrawerItem(Icons.Rounded.Apps, stringResource(R.string.files_view_as_app), stringResource(R.string.files_view_as_app_summary), onClick = {
-                        vm.chooseApp()
+                        vm.system.chooseApp()
                         onClose()
                     })
                 }
@@ -744,7 +744,7 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 }
                 item {
                     DrawerItem(Icons.Rounded.Storage, stringResource(R.string.files_partitions), stringResource(R.string.files_partitions_summary), onClick = {
-                        vm.showPartitions()
+                        vm.system.showPartitions()
                         onClose()
                     })
                 }

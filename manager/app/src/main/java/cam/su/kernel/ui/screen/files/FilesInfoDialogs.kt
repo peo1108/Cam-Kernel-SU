@@ -53,7 +53,7 @@ private val fullDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
 @Composable
 internal fun PropertiesDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit) {
     var more by remember { mutableStateOf(false) }
-    FilesDialog(show = true, title = stringResource(R.string.files_properties), onDismiss = vm::hideProperties) {
+    FilesDialog(show = true, title = stringResource(R.string.files_properties), onDismiss = vm.inspector::hideProperties) {
         val live by vm.uiState.collectAsState()
         val props: PropertiesUi = live.properties ?: return@FilesDialog
         val e = props.entry
@@ -95,7 +95,7 @@ internal fun PropertiesDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) 
             TextButton(text = stringResource(R.string.files_prop_more), onClick = { more = !more }, modifier = Modifier.weight(1f))
             TextButton(
                 text = stringResource(R.string.files_close),
-                onClick = vm::hideProperties,
+                onClick = vm.inspector::hideProperties,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
             )
@@ -119,7 +119,7 @@ private fun PropRow(label: Int, value: String) {
 @Composable
 internal fun ChecksumDialog(vm: FilesViewModel) {
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
-    FilesDialog(show = true, title = stringResource(R.string.files_tool_checksum), onDismiss = vm::hideChecksum) {
+    FilesDialog(show = true, title = stringResource(R.string.files_tool_checksum), onDismiss = vm.inspector::hideChecksum) {
         val live by vm.uiState.collectAsState()
         val sums = live.checksum ?: return@FilesDialog
         Text(sums.entry.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
@@ -144,13 +144,13 @@ internal fun ChecksumDialog(vm: FilesViewModel) {
             }
             Text(stringResource(R.string.files_tap_to_copy), fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary)
         }
-        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideChecksum, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+        TextButton(text = stringResource(R.string.files_close), onClick = vm.inspector::hideChecksum, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
     }
 }
 
 @Composable
 internal fun ApkInfoDialog(vm: FilesViewModel) {
-    FilesDialog(show = true, title = stringResource(R.string.files_apk_info), onDismiss = vm::hideApkInfo) {
+    FilesDialog(show = true, title = stringResource(R.string.files_apk_info), onDismiss = vm.inspector::hideApkInfo) {
         val live by vm.uiState.collectAsState()
         val apk = live.apkInfo ?: return@FilesDialog
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -175,7 +175,7 @@ internal fun ApkInfoDialog(vm: FilesViewModel) {
         Column(Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
             apk.permissions.forEach { Text(it.removePrefix("android.permission."), fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary) }
         }
-        TextButton(text = stringResource(R.string.files_close), onClick = vm::hideApkInfo, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+        TextButton(text = stringResource(R.string.files_close), onClick = vm.inspector::hideApkInfo, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
     }
 }
 
@@ -185,7 +185,7 @@ internal fun SearchDialog(vm: FilesViewModel, close: () -> Unit) {
     var pattern by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     val dismiss = {
-        vm.closeSearch()
+        vm.inspector.closeSearch()
         close()
     }
     FilesDialog(show = true, title = stringResource(R.string.files_search), onDismiss = dismiss) {
@@ -206,12 +206,12 @@ internal fun SearchDialog(vm: FilesViewModel, close: () -> Unit) {
         Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(text = stringResource(R.string.files_close), onClick = dismiss, modifier = Modifier.weight(1f))
             if (search?.running == true) {
-                TextButton(text = stringResource(R.string.files_search_stop), onClick = vm::stopSearch, modifier = Modifier.weight(1f))
+                TextButton(text = stringResource(R.string.files_search_stop), onClick = vm.inspector::stopSearch, modifier = Modifier.weight(1f))
             } else {
                 TextButton(
                     text = stringResource(R.string.files_search),
                     enabled = pattern.isNotBlank() || content.isNotEmpty(),
-                    onClick = { vm.search(pattern, content) },
+                    onClick = { vm.inspector.search(pattern, content) },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.textButtonColorsPrimary(),
                 )
@@ -233,7 +233,7 @@ internal fun SearchDialog(vm: FilesViewModel, close: () -> Unit) {
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
-                                    vm.reveal(hit)
+                                    vm.inspector.reveal(hit)
                                     close()
                                 }
                                 .padding(vertical = 6.dp),

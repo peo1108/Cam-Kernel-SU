@@ -121,7 +121,7 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
             }
             ListAction(stringResource(R.string.files_tool_checksum), enabled = readable) {
                 close()
-                vm.showChecksum(dialog.entry)
+                vm.inspector.showChecksum(dialog.entry)
             }
             ListAction(stringResource(R.string.files_hex), enabled = readable) {
                 close()
@@ -140,7 +140,7 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
             }
             ListAction(stringResource(R.string.files_apk_info)) {
                 close()
-                vm.showApkInfo(dialog.entry)
+                vm.inspector.showApkInfo(dialog.entry)
             }
             ListAction(stringResource(R.string.files_other_app)) {
                 close()
@@ -201,7 +201,7 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
                 cam.su.kernel.files.Partitions.BACKUP_DIR,
             ),
             onDismiss = close,
-        ) { vm.backupPartition(dialog.partition.name) }
+        ) { vm.system.backupPartition(dialog.partition.name) }
 
         is FilesDialogState.ConfirmFlash -> FlashConfirmDialog(dialog, vm, onDialog)
 
@@ -313,7 +313,7 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                 add(
                     GridCell(Icons.Rounded.Info, stringResource(R.string.files_properties), enabled = single, onClick = {
                         close()
-                        vm.showProperties(entry)
+                        vm.inspector.showProperties(entry)
                     }),
                 )
             }
@@ -364,7 +364,7 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                 add(
                     GridCell(Icons.Rounded.SystemUpdateAlt, stringResource(R.string.files_flash), onClick = {
                         close()
-                        vm.showPartitions(entry)
+                        vm.system.showPartitions(entry)
                     }),
                 )
             }
@@ -380,7 +380,7 @@ private fun ActionGrid(state: FilesUiState, vm: FilesViewModel, menu: FilesDialo
                 add(
                     GridCell(Icons.Rounded.Layers, stringResource(R.string.files_override), onClick = {
                         close()
-                        vm.showOverride(entry)
+                        vm.system.showOverride(entry)
                     }),
                 )
             }

@@ -171,7 +171,8 @@ onMounted(load)
 
     <p v-if="me?.notice" class="notice lg">{{ me.notice }}</p>
     <p v-if="err && errAt === 'top'" class="err">{{ err }}</p>
-    <p v-if="me && !me.user.verified" class="warn">
+    <!-- strict: an API from before email proof sends no field, and nobody should see this then -->
+    <p v-if="me?.user.verified === false" class="warn">
       ⚠ {{ t.verifyNote }}
       <button class="lg lg-btn lg-press" :disabled="busy" @click="resendVerify">{{ t.verifyBtn }}</button>
     </p>

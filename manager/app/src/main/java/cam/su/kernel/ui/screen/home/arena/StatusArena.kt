@@ -350,7 +350,7 @@ fun StatusArena(
                             rotate(roll, Offset(size.width / 2f, size.height / 2f))
                         }) {
                             if (arena3d == null) drawLayer(sceneLayer)
-                            val ctx = rt.ctx
+                            val ctx = rt.ctx?.takeIf { it.posed }
                             if (phase == Phase.Intro && ctx != null) with(sh.intro) { back(ctx) }
 
                             // Who has eaten what, for the letters seen inside each slime.

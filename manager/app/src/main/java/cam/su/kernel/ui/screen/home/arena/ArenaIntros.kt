@@ -32,6 +32,12 @@ internal class IntroCtx(val stage: Stage, val poses: Array<SlimePose>) {
     /** Where everyone stood when the intro began, and whether the 3D perspective applies. */
     lateinit var homes: Homes
     var projected = false
+
+    /**
+     * False until the next pose step after this context was made: the draw cache makes a new
+     * one whenever it rebuilds (resize, the 3D engine made again), possibly mid intro.
+     */
+    val posed get() = ::homes.isInitialized
     lateinit var say: (String) -> TextLayoutResult
     lateinit var shout: (String) -> TextLayoutResult
     var zero: TextLayoutResult? = null

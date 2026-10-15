@@ -140,10 +140,27 @@ fn init_driver_fd() -> Option<RawFd> {
     }
 }
 
+/// A failed ioctl on the driver fd; keeps the errno for callers that act on it.
+#[derive(Debug)]
+pub struct KsuctlError(pub io::Error);
+
+impl std::fmt::Display for KsuctlError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ksuctl failed: {}", self.0)
+    }
+}
+
+impl std::error::Error for KsuctlError {}
+
+/// The kernel's errno when `error` is a failed driver ioctl.
+pub fn ksuctl_errno(error: &anyhow::Error) -> Option<i32> {
+    error
+        .downcast_ref::<KsuctlError>()
+        .and_then(|e| e.0.raw_os_error())
+}
+
 // ioctl wrapper using libc
 fn ksuctl<T>(request: u32, arg: *mut T) -> Result<i32> {
-    use std::io;
-
     let fd = *DRIVER_FD.get_or_init(|| init_driver_fd().unwrap_or(-1));
     if fd < 0 {
         bail!("could not retrieve kernelsu driver fd")
@@ -151,7 +168,7 @@ fn ksuctl<T>(request: u32, arg: *mut T) -> Result<i32> {
     unsafe {
         let ret = libc::ioctl(fd as libc::c_int, request as i32, arg);
         if ret < 0 {
-            bail!("ksuctl failed: {}", io::Error::last_os_error())
+            return Err(KsuctlError(io::Error::last_os_error()).into());
         }
         Ok(ret)
     }

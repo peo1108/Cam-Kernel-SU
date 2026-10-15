@@ -614,12 +614,25 @@ mod device {
         }
     }
 
-    /// Turns a KernelSU feature on now and in the saved config, like the Manager's switch.
-    fn enable_feature(id: FeatureId) -> Result<()> {
-        ksucalls::set_feature(id as u32, 1)?;
+    /// Turns a KernelSU feature on now and in the saved config, like the Manager's switch;
+    /// true when it only starts on the next boot.
+    fn enable_feature(id: FeatureId) -> Result<bool> {
+        let pending = match ksucalls::set_feature(id as u32, 1) {
+            Ok(()) => false,
+            // SELinux hiding after its policy backup was dropped (off at boot_completed):
+            // the kernel keeps the switch on and the next boot starts it, as in the Manager
+            Err(e)
+                if id == FeatureId::SelinuxHide
+                    && ksucalls::ksuctl_errno(&e) == Some(libc::EAGAIN) =>
+            {
+                true
+            }
+            Err(e) => return Err(e),
+        };
         let mut saved = crate::feature::load_binary_config().unwrap_or_default();
         saved.insert(id as u32, 1);
-        crate::feature::save_binary_config(&saved)
+        crate::feature::save_binary_config(&saved)?;
+        Ok(pending)
     }
 
     /// `camd hiding-audit --uid <uid>`: what that app's running processes see; `running`
@@ -657,10 +670,13 @@ mod device {
             return Ok(());
         }
         let mut applied = Vec::new();
+        let mut reboot_needed = false;
         for fix in super::fixes(&findings) {
             match fix {
-                Fix::KernelUmount => enable_feature(FeatureId::KernelUmount)?,
-                Fix::SelinuxHide => enable_feature(FeatureId::SelinuxHide)?,
+                Fix::KernelUmount => {
+                    enable_feature(FeatureId::KernelUmount)?;
+                }
+                Fix::SelinuxHide => reboot_needed |= enable_feature(FeatureId::SelinuxHide)?,
                 Fix::HideBootloader => hide_bootloader::set_enabled(true)?,
             }
             applied.push(super::fix_name(fix));
@@ -669,7 +685,7 @@ mod device {
             "{}",
             json!({
                 "applied": applied,
-                "rebootNeeded": applied.contains(&"selinuxHide"),
+                "rebootNeeded": reboot_needed,
             })
         );
         Ok(())

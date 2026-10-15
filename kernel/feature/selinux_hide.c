@@ -87,11 +87,12 @@ static int security_sid_to_context_with_policy(struct selinux_policy *policy, u3
                                                u32 *scontext_len);
 static void security_compute_av_user_with_policy(struct selinux_policy *policy, u32 ssid, u32 tsid, u16 tclass,
                                                  struct av_decision *avd);
-static void (*security_dump_masked_av_fn)(struct policydb *policydb, struct context *scontext, struct context *tcontext,
-                                          u16 tclass, u32 permissions, const char *reason) = NULL;
-static void (*context_struct_compute_av_fn)(struct policydb *policydb, struct context *scontext,
-                                            struct context *tcontext, u16 tclass, struct av_decision *avd,
-                                            struct extended_perms *xperms) = NULL;
+// context_struct_compute_av and security_dump_masked_av are static kernel
+// functions. We carry our own copies (below) instead of resolving and calling
+// them through kallsyms: with LTO the compiler may change how it passes
+// arguments to a static function while keeping its name, so a kallsyms call
+// could run with a mismatched ABI. The copies are built against this kernel's
+// headers, so they match the live policydb layout.
 
 static write_op_fn *context_write, *access_write;
 // Never cleared once set: a caller that loaded my_write_* before the unhook
@@ -444,15 +445,6 @@ static int ksu_selinux_hide_enable()
         return -ENOSYS;
     }
     hook_selinux_status_open();
-
-    security_dump_masked_av_fn = find_kernel_symbol_exact("security_dump_masked_av");
-    if (!security_dump_masked_av_fn) {
-        pr_warn("security_dump_masked_av not found!\n");
-    }
-    context_struct_compute_av_fn = find_kernel_symbol_exact("context_struct_compute_av");
-    if (!context_struct_compute_av_fn) {
-        pr_warn("context_struct_compute_av not found!\n");
-    }
 
     write_op_fn my;
     context_write = &selinux_write_op[SEL_CONTEXT];
@@ -1015,9 +1007,10 @@ static void __nocfi type_attribute_bounds_av(struct policydb *policydb, struct c
     /* mask violated permissions */
     avd->allowed &= ~masked;
 
-    /* audit masked permissions */
-    if (security_dump_masked_av_fn)
-        security_dump_masked_av_fn(policydb, scontext, tcontext, tclass, masked, "bounds");
+    // Stock logs the masked permissions to audit here (security_dump_masked_av,
+    // a static kernel function). We drop the audit line: the masking itself is
+    // done, and these decisions run against the backup policy for a hidden app,
+    // so emitting an audit record would be its own tell.
 }
 
 /*
@@ -1333,11 +1326,7 @@ static void __nocfi security_compute_av_user_with_policy(struct selinux_policy *
         goto out;
     }
 
-    if (context_struct_compute_av_fn) {
-        context_struct_compute_av_fn(policydb, scontext, tcontext, tclass, avd, NULL);
-    } else {
-        context_struct_compute_av(policydb, scontext, tcontext, tclass, avd, NULL);
-    }
+    context_struct_compute_av(policydb, scontext, tcontext, tclass, avd, NULL);
 out:
     return;
 allow:

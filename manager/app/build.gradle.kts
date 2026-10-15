@@ -153,6 +153,9 @@ android {
         versionCode = managerVersionCode
         versionName = managerVersionName
         applicationId = managerPackageName
+        // src/androidTest: run with scripts/device_android_test.sh, never connectedAndroidTest
+        // (it uninstalls the Manager afterwards, and its data with it)
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("boolean", "IS_PR_BUILD", isPrBuild.toString())
         buildConfigField("String", "KERNEL_SOURCE_ID", "\"$kernelSourceId\"")
@@ -315,6 +318,8 @@ dependencies {
     testImplementation(libs.junit)
     // the android.jar org.json is a stub in local unit tests
     testImplementation(libs.json.org)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
     implementation(libs.androidx.core.splashscreen)
 
     implementation(platform(libs.androidx.compose.bom))

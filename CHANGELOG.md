@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.1.8 - 2026-10-15 [gấp]
+## 1.1.8 - 2026-10-15
 - Bản cập nhật quan trọng, nên cài ngay: chống bootloop tắt hết module và chỉ ra module gây lỗi, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình
 ### Tính năng mới
 - Chống bootloop: khi máy khởi động lỗi liên tục, tất cả module được tắt để máy lên chắc chắn, và SU Kernel chỉ ra module nghi gây lỗi kèm lý do (mới cài hoặc cập nhật, có init rc chạy rất sớm, hay log của lần khởi động lỗi nhắc tới nó, có cả dòng log). Một nút bật lại các module còn lại

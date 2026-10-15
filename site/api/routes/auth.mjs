@@ -17,6 +17,7 @@ import {
 import { newSecret, otpauthUri, verify } from '../totp.mjs'
 
 const GOOGLE_COOKIE = 'cam_g'
+const VERIFY_MS = 3 * 24 * 3600_000
 export const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : '')
 const safeNext = (n) => (typeof n === 'string' && /^\/(?!\/)[\w\-/.?=&%#]*$/.test(n) ? n : '/thanh-vien')
 
@@ -26,6 +27,32 @@ export default function authRoutes(app) {
   const setSession = (ctx, token) =>
     ctx.headers.push(['Set-Cookie', cookie(SESSION_COOKIE, token, { maxAge: WEB_SESSION_MS, secure: cfg.cookieSecure })])
   const clearCookie = (ctx, name) => ctx.headers.push(['Set-Cookie', cookie(name, '', { maxAge: 0, secure: cfg.cookieSecure })])
+
+  /**
+   * Mails a link that proves the address (grants kept by email count only then: db.mjs
+   * grantScope). Never fails the caller: without mail the account still works, Google or a
+   * password reset prove the address too.
+   */
+  async function sendVerification(user) {
+    if (!cfg.brevoKey) return 'mail_off'
+    const token = newToken()
+    db.prepare('INSERT INTO verifications(token_hash, user_id, created_at) VALUES (?, ?, ?)').run(sha256(token), user.id, Date.now())
+    try {
+      await sendMail(
+        cfg,
+        user.email,
+        'Xác minh email · Cam Kernel SU',
+        `Mở liên kết này trong 3 ngày để xác minh email của bạn:
+${cfg.origin}/api/auth/verify?token=${token}
+
+Quyền thành viên Cam cấp cho email này chỉ có hiệu lực sau khi xác minh. Không phải bạn đăng ký thì bỏ qua email này.`,
+      )
+      return 'sent'
+    } catch {
+      return 'mail_failed'
+    }
+  }
+  const markVerified = (userId) => db.prepare('UPDATE users SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?').run(Date.now(), userId)
 
   r.add('GET', '/api/auth/features', (ctx) => {
     const s = app.settings()
@@ -50,7 +77,7 @@ export default function authRoutes(app) {
       .prepare('INSERT INTO users(email, pass_hash, name, created_at) VALUES (?, ?, ?, ?)')
       .run(email, hash, str(ctx.body.name, 80) || null, Date.now()).lastInsertRowid
     setSession(ctx, createSession(db, id, 'web'))
-    return { ok: true }
+    return { ok: true, verify: await sendVerification({ id, email }) }
   })
 
   r.add('POST', '/api/auth/login', async (ctx) => {
@@ -120,11 +147,42 @@ export default function authRoutes(app) {
     const hash = await hashPassword(cleanPassword(ctx.body.password))
     tx(db, () => {
       db.prepare('UPDATE users SET pass_hash = ? WHERE id = ?').run(hash, row.user_id)
+      // the link reached the mailbox (or Cam handed it over): the address is proven
+      markVerified(row.user_id)
       db.prepare('DELETE FROM resets WHERE user_id = ?').run(row.user_id)
       db.prepare("DELETE FROM sessions WHERE user_id = ? AND kind = 'web'").run(row.user_id)
     })
     return { ok: true }
   })
+
+  /* ----- proving the email ----- */
+
+  // The mailed link: a plain GET that lands on the member page, no page code needed.
+  r.add('GET', '/api/auth/verify', (ctx) => {
+    const token = str(ctx.url.searchParams.get('token'), 100)
+    const row = token && db.prepare('SELECT * FROM verifications WHERE token_hash = ?').get(sha256(token))
+    if (!row || Date.now() - row.created_at > VERIFY_MS) {
+      ctx.redirect = '/tai-khoan?error=verify'
+      return
+    }
+    tx(db, () => {
+      markVerified(row.user_id)
+      db.prepare('DELETE FROM verifications WHERE user_id = ?').run(row.user_id)
+    })
+    ctx.redirect = '/thanh-vien?verified=1'
+  })
+
+  r.add(
+    'POST',
+    '/api/auth/verify/resend',
+    async (ctx) => {
+      const u = ctx.user
+      if (u.email_verified_at) return { ok: true, verify: 'done' }
+      if (limited(`verify:${u.id}`, 3, 3600_000)) fail(429, 'slow_down')
+      return { ok: true, verify: await sendVerification(u) }
+    },
+    { auth: 'web' },
+  )
 
   /* ----- Google ----- */
 
@@ -147,10 +205,23 @@ export default function authRoutes(app) {
     const p = await googleProfile(cfg, code)
     let u = db.prepare('SELECT * FROM users WHERE google_sub = ?').get(p.sub) || db.prepare('SELECT * FROM users WHERE email = ?').get(p.email)
     if (!u) {
-      const id = db.prepare('INSERT INTO users(email, google_sub, name, created_at) VALUES (?, ?, ?, ?)').run(p.email, p.sub, p.name, Date.now()).lastInsertRowid
+      const now = Date.now()
+      const id = db.prepare('INSERT INTO users(email, google_sub, name, created_at, email_verified_at) VALUES (?, ?, ?, ?, ?)').run(p.email, p.sub, p.name, now, now).lastInsertRowid
       u = db.prepare('SELECT * FROM users WHERE id = ?').get(id)
     } else if (!u.google_sub) {
-      db.prepare('UPDATE users SET google_sub = ?, name = COALESCE(name, ?) WHERE id = ?').run(p.sub, p.name, u.id)
+      tx(db, () => {
+        if (!u.email_verified_at) {
+          // Someone registered this address with a password and never proved it: it may not be
+          // its owner, who is the one signing in now. Their password, two-step key and sessions go.
+          db.prepare('UPDATE users SET pass_hash = NULL, totp_on = 0, totp_secret = NULL WHERE id = ?').run(u.id)
+          db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id)
+        }
+        db.prepare('UPDATE users SET google_sub = ?, name = COALESCE(name, ?) WHERE id = ?').run(p.sub, p.name, u.id)
+        markVerified(u.id)
+      })
+      u = db.prepare('SELECT * FROM users WHERE id = ?').get(u.id)
+    } else {
+      markVerified(u.id)
     }
     if (u.locked_at) {
       ctx.redirect = '/tai-khoan?error=locked'

@@ -9,7 +9,7 @@ import { createServer } from 'node:http'
 import { mkdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { audit, earlyTags, isTester, membership, openDb } from './db.mjs'
+import { audit, earlyTags, grantScope, isTester, membership, openDb } from './db.mjs'
 import { DAY, HttpError, Router, SESSION_COOKIE, fail, parseCookies, readJson, send } from './http.mjs'
 import { lookupSession, makeLimiter } from './auth.mjs'
 import { readSettings } from './settings.mjs'
@@ -86,12 +86,17 @@ export function createApp(cfg = config()) {
     settings: () => readSettings(db, cfg),
     audit: (admin, action, target, detail) => audit(db, admin, action, target, detail),
 
-    /** What an account may have: membership, bought early access, beta tester, admin. */
+    /**
+     * What an account may have: membership, bought early access, beta tester, admin. An account
+     * whose email is not proven only has what its own orders bought (db.mjs grantScope).
+     */
     accountState(user) {
+      const scope = grantScope(user)
+      const now = Date.now()
       return {
-        member: membership(db, user.email),
-        early: earlyTags(db, user.email),
-        tester: isTester(db, user.email),
+        member: membership(db, user.email, now, scope),
+        early: earlyTags(db, user.email, now, scope),
+        tester: isTester(db, user.email, now, scope),
         admin: user.role === 'admin',
       }
     },

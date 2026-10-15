@@ -20,6 +20,7 @@ const T = {
     twoStep: 'Xác thực 2 bước', twoStepOn: 'Đang bật', twoStepOff: 'Đang tắt', twoStepLead: 'Mỗi lần đăng nhập cần thêm mã 6 số từ app Google Authenticator, Authy, 2FAS…',
     setup: 'Bật xác thực 2 bước', scanKey: 'Mở Google Authenticator (hoặc Authy, 2FAS…) → thêm → quét mã QR này. Không quét được thì nhập khoá bên dưới.', keyLabel: 'Khoá', copyKey: 'Chép khoá', copied: 'Đã chép', openApp: 'Đang dùng điện thoại? Mở thẳng app xác thực', step2: 'Nhập mã 6 số app vừa hiện để bật', totpHint: 'Mã đổi mỗi 30 giây. Nếu app có nhiều mục Cam Kernel SU, xoá mục cũ và quét lại mã QR ở trên.', enterCode: 'Mã 6 số', enable: 'Xác nhận và bật',
     disable: 'Tắt', disableCode: 'Nhập mã để tắt', adminWarn: 'Tài khoản admin nên bật xác thực 2 bước.',
+    verifyNote: 'Email chưa được xác minh: quyền Cam cấp cho email này chỉ có hiệu lực sau khi bạn mở liên kết trong thư xác minh.', verifyBtn: 'Gửi lại thư xác minh', verifySent: 'Đã gửi, kiểm tra hộp thư (cả mục Spam).', verifyDone: 'Đã xác minh email.',
     beta: 'Beta tester', betaLead: 'Nhận mọi bản mới ngay khi ra, cả bản thử nghiệm. Cần được admin duyệt.', betaAsk: 'Xin làm beta tester', betaState: { none: 'Chưa xin', pending: 'Đang chờ duyệt', approved: 'Bạn là beta tester', rejected: 'Chưa được duyệt' },
     logout: 'Đăng xuất', admin: 'Quản trị', signin: '/tai-khoan?next=/thanh-vien', buy: '/mua', connect: '/ket-noi',
     kind: { member: 'Thành viên', early: 'Vé sớm' },
@@ -35,6 +36,7 @@ const T = {
     twoStep: 'Two-step sign-in', twoStepOn: 'On', twoStepOff: 'Off', twoStepLead: 'Each sign-in also asks for a 6-digit code from Google Authenticator, Authy, 2FAS…',
     setup: 'Turn on two-step sign-in', scanKey: 'Open Google Authenticator (or Authy, 2FAS…) → add → scan this QR code. Cannot scan? Type the key below.', keyLabel: 'Key', copyKey: 'Copy key', copied: 'Copied', openApp: 'On this phone? Open your authenticator app directly', step2: 'Enter the 6-digit code it shows to turn it on', totpHint: 'The code changes every 30 seconds. If the app lists Cam Kernel SU more than once, delete the old entries and scan the QR above again.', enterCode: '6-digit code', enable: 'Confirm and turn on',
     disable: 'Turn off', disableCode: 'Code to turn off', adminWarn: 'Admin accounts should use two-step sign-in.',
+    verifyNote: 'Your email is not verified: what Cam granted to this address applies once you open the link in the verification mail.', verifyBtn: 'Send the mail again', verifySent: 'Sent. Check your inbox (and spam).', verifyDone: 'Email verified.',
     beta: 'Beta tester', betaLead: 'Get every release as soon as it ships, betas included. Needs the admin\'s approval.', betaAsk: 'Ask to be a beta tester', betaState: { none: 'Not requested', pending: 'Waiting for approval', approved: 'You are a beta tester', rejected: 'Not approved' },
     logout: 'Sign out', admin: 'Admin', signin: '/en/account?next=/en/member', buy: '/en/buy', connect: '/en/connect',
     kind: { member: 'Membership', early: 'Early access' },
@@ -50,6 +52,7 @@ const T = {
     twoStep: '两步验证', twoStepOn: '已开启', twoStepOff: '未开启', twoStepLead: '每次登录还需输入身份验证器（Google Authenticator、Authy、2FAS…）中的 6 位代码。',
     setup: '开启两步验证', scanKey: '打开 Google Authenticator（或 Authy、2FAS…）→ 添加 → 扫描此二维码。无法扫描时请手动输入下方密钥。', keyLabel: '密钥', copyKey: '复制密钥', copied: '已复制', openApp: '正在用手机？直接打开身份验证器', step2: '输入应用显示的 6 位代码以开启', totpHint: '代码每 30 秒更换一次。若应用中有多个 Cam Kernel SU 条目，请删除旧条目并重新扫描上方二维码。', enterCode: '6 位代码', enable: '确认并开启',
     disable: '关闭', disableCode: '输入代码以关闭', adminWarn: '管理员账号应开启两步验证。',
+    verifyNote: '邮箱尚未验证：Cam 授予该邮箱的权限需在打开验证邮件中的链接后才生效。', verifyBtn: '重新发送验证邮件', verifySent: '已发送，请查看收件箱（含垃圾邮件）。', verifyDone: '邮箱已验证。',
     beta: '测试者', betaLead: '新版本一发布即可获取，包括测试版。需要管理员批准。', betaAsk: '申请成为测试者', betaState: { none: '未申请', pending: '等待批准', approved: '你是测试者', rejected: '未获批准' },
     logout: '退出登录', admin: '管理', signin: '/zh/account?next=/zh/member', buy: '/zh/buy', connect: '/zh/connect',
     kind: { member: '会员', early: '抢先体验' },
@@ -128,6 +131,13 @@ const changePassword = () =>
   })
 
 const askBeta = () => act(async () => (await api('POST', '/api/tester/request', {}), await load()))
+const resendVerify = () =>
+  act(async () => {
+    const r = await api<{ verify: string }>('POST', '/api/auth/verify/resend', {})
+    if (r.verify === 'done') await load()
+    else if (r.verify === 'sent') msg.value = t.value.verifySent
+    else throw new ApiError(503, 'mail_off')
+  })
 const startTotp = () => act(async () => (totp.value = await api('POST', '/api/auth/totp/setup', {})))
 const enableTotp = () =>
   act(async () => {
@@ -161,6 +171,10 @@ onMounted(load)
 
     <p v-if="me?.notice" class="notice lg">{{ me.notice }}</p>
     <p v-if="err && errAt === 'top'" class="err">{{ err }}</p>
+    <p v-if="me && !me.user.verified" class="warn">
+      ⚠ {{ t.verifyNote }}
+      <button class="lg lg-btn lg-press" :disabled="busy" @click="resendVerify">{{ t.verifyBtn }}</button>
+    </p>
 
     <template v-if="me">
       <section class="status lg lg-dialog lg-in" data-lens="dialog">

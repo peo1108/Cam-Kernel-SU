@@ -1,5 +1,4 @@
 // The signed-in account: /api/me, its devices, source requests.
-import { isTester, membership } from '../db.mjs'
 import { DAY, fail } from '../http.mjs'
 import { str } from './auth.mjs'
 
@@ -34,6 +33,7 @@ export default function memberRoutes(app) {
           google: !!u.google_sub,
           totp: !!u.totp_on,
           mfa: !!ctx.session.mfa,
+          verified: !!u.email_verified_at,
           created_at: u.created_at,
         },
         member: st.member,
@@ -74,8 +74,9 @@ export default function memberRoutes(app) {
     '/api/tester/request',
     (ctx) => {
       const u = ctx.user
-      if (isTester(db, u.email)) return { status: 'approved' }
-      if (u.role !== 'admin' && !membership(db, u.email)) fail(403, 'members_only')
+      const st = app.accountState(u)
+      if (st.tester) return { status: 'approved' }
+      if (u.role !== 'admin' && !st.member) fail(403, 'members_only')
       const open = db.prepare("SELECT * FROM tester_requests WHERE user_id = ? AND status = 'pending'").get(u.id)
       if (open) return { status: 'pending' }
       if (limited(`tester:${u.id}`, 5, DAY)) fail(429, 'slow_down')
@@ -97,7 +98,7 @@ Duyệt ở /quan-tri → Beta tester`)
     '/api/source-request',
     (ctx) => {
       const u = ctx.user
-      if (u.role !== 'admin' && !membership(db, u.email)) fail(403, 'members_only')
+      if (u.role !== 'admin' && !app.accountState(u).member) fail(403, 'members_only')
       if (limited(`src:${u.id}`, 3, DAY)) fail(429, 'slow_down')
       const github = str(ctx.body.github, 40).replace(/^@/, '')
       const contact = str(ctx.body.contact, 120)

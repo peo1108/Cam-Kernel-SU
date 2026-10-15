@@ -64,13 +64,14 @@ export default function payRoutes(app) {
     const now = Date.now()
     db.prepare("UPDATE orders SET status = 'paid', paid_at = ?, note = coalesce(?, note) WHERE id = ?").run(now, note, o.id)
     const email = db.prepare('SELECT email FROM users WHERE id = ?').get(o.user_id).email
-    db.prepare('INSERT INTO grants(email, kind, tag, note, by, order_code, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    db.prepare('INSERT INTO grants(email, kind, tag, note, by, order_code, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
       email,
       o.kind,
       o.kind === 'early' ? o.tag : null,
       `đơn ${o.code}`,
       by,
       o.code,
+      o.user_id,
       now,
     )
     return email

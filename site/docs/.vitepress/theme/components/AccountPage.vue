@@ -11,7 +11,7 @@ const T = {
     name: 'Tên hiển thị (không bắt buộc)', google: 'Tiếp tục với Google', or: 'hoặc', forgot: 'Quên mật khẩu?',
     sendReset: 'Gửi liên kết đặt lại', resetSent: 'Nếu email có tài khoản, liên kết đã được gửi. Xem hộp thư (cả mục Spam).',
     setPassword: 'Đặt mật khẩu mới', done: 'Xong. Đăng nhập bằng mật khẩu mới.', back: 'Quay lại', min: 'Ít nhất 8 ký tự',
-    lockedErr: 'Tài khoản đang bị khoá.', googleErr: 'Đăng nhập Google không thành công.', home: '/thanh-vien',
+    lockedErr: 'Tài khoản đang bị khoá.', googleErr: 'Đăng nhập Google không thành công.', verifyErr: 'Liên kết xác minh đã hết hạn hoặc đã dùng. Đăng nhập rồi gửi lại thư ở trang Thành viên.', home: '/thanh-vien',
     code: 'Mã xác thực 6 số', codeLead: 'Nhập mã từ app xác thực (Google Authenticator…).', verify: 'Xác nhận',
   },
   en: {
@@ -19,7 +19,7 @@ const T = {
     name: 'Display name (optional)', google: 'Continue with Google', or: 'or', forgot: 'Forgot password?',
     sendReset: 'Send reset link', resetSent: 'If the email has an account, a link is on its way. Check spam too.',
     setPassword: 'Set new password', done: 'Done. Sign in with the new password.', back: 'Back', min: 'At least 8 characters',
-    lockedErr: 'This account is locked.', googleErr: 'Google sign-in failed.', home: '/en/member',
+    lockedErr: 'This account is locked.', googleErr: 'Google sign-in failed.', verifyErr: 'The verification link expired or was used. Sign in and send it again from the member page.', home: '/en/member',
     code: '6-digit code', codeLead: 'Enter the code from your authenticator app.', verify: 'Confirm',
   },
   zh: {
@@ -27,7 +27,7 @@ const T = {
     name: '显示名称（可选）', google: '使用 Google 继续', or: '或', forgot: '忘记密码？',
     sendReset: '发送重置链接', resetSent: '如果该邮箱已注册，重置链接已发出。也请检查垃圾邮件。',
     setPassword: '设置新密码', done: '完成。请用新密码登录。', back: '返回', min: '至少 8 个字符',
-    lockedErr: '账号已被锁定。', googleErr: 'Google 登录失败。', home: '/zh/member',
+    lockedErr: '账号已被锁定。', googleErr: 'Google 登录失败。', verifyErr: '验证链接已过期或已使用。请登录后在会员页面重新发送。', home: '/zh/member',
     code: '6 位验证码', codeLead: '输入身份验证器中的代码。', verify: '确认',
   },
 }
@@ -100,6 +100,7 @@ onMounted(async () => {
   }
   if (q.get('error') === 'locked') err.value = t.value.lockedErr
   if (q.get('error') === 'google') err.value = t.value.googleErr
+  if (q.get('error') === 'verify') err.value = t.value.verifyErr
   try {
     const f = await api<any>('GET', '/api/auth/features')
     features.value = f

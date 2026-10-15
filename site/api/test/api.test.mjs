@@ -6,6 +6,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { config, createApp } from '../server.mjs'
+import { sha256 } from '../auth.mjs'
 
 const DAY = 24 * 3600 * 1000
 
@@ -54,6 +55,16 @@ function client(base) {
   }
 }
 
+
+/** The user opens the mailed verification link (mail is off in tests: the token is put in directly). */
+async function prove(app, base, email) {
+  const { id } = app.db.prepare('SELECT id FROM users WHERE email = ?').get(email)
+  const token = `verify-${id}-${Math.random()}`
+  app.db.prepare('INSERT INTO verifications(token_hash, user_id, created_at) VALUES (?, ?, ?)').run(sha256(token), id, Date.now())
+  const res = await fetch(`${base}/api/auth/verify?token=${encodeURIComponent(token)}`, { redirect: 'manual' })
+  if (res.headers.get('location') !== '/thanh-vien?verified=1') throw new Error(`verify failed: ${res.status} ${res.headers.get('location')}`)
+}
+
 test('register, sign in, me, wrong password, duplicate email', async (t) => {
   const { server, base } = await start(t)
   const c = client(base)
@@ -83,6 +94,7 @@ test('admin grants membership by email before the account exists; releases open 
   assert.equal((await admin('POST', '/api/admin/grants', { email: 'friend@x.io', kind: 'member', note: 'bạn bè' })).status, 200)
   const friend = client(base)
   await friend('POST', '/api/auth/register', { email: 'friend@x.io', password: 'password1' })
+  await prove(app, base, 'friend@x.io')
   const me = (await friend('GET', '/api/me')).body
   assert.equal(me.member.note, 'bạn bè')
   const open = Object.fromEntries(me.releases.map((r) => [r.tag, r.open]))
@@ -129,6 +141,7 @@ test('source requests are for members only', async (t) => {
   const { app, server, base } = await start(t)
   const c = client(base)
   await c('POST', '/api/auth/register', { email: 'm@x.io', password: 'password1' })
+  await prove(app, base, 'm@x.io')
   const req = { contact: 'tg @m', github: 'octocat', reason: 'đọc code' }
   assert.equal((await c('POST', '/api/source-request', req)).status, 403)
   app.db.prepare("INSERT INTO grants(email, kind, by, created_at) VALUES ('m@x.io', 'member', 'test', ?)").run(Date.now())
@@ -144,6 +157,109 @@ test('cross-site writes are refused', async (t) => {
     body: JSON.stringify({ email: 'e@x.io', password: 'password1' }),
   })
   assert.equal(res.status, 403)
+})
+
+test('an address typed into the register form gets nothing granted to it until it is proven', async (t) => {
+  const { app, base } = await start(t)
+  const admin = client(base)
+  await admin('POST', '/api/auth/register', { email: 'cam@x.io', password: 'password1' })
+  app.db.prepare("UPDATE users SET role = 'admin' WHERE email = 'cam@x.io'").run()
+  // Cam grants a customer by email before they have an account.
+  await admin('POST', '/api/admin/grants', { email: 'khach@x.io', kind: 'member', note: 'tặng' })
+  await admin('POST', '/api/admin/grants', { email: 'khach@x.io', kind: 'early', tag: 'cam-v1.2.0' })
+
+  // Someone else registers that address first.
+  const squatter = client(base)
+  const reg = await squatter('POST', '/api/auth/register', { email: 'khach@x.io', password: 'password1' })
+  assert.equal(reg.body.verify, 'mail_off')
+  const me = (await squatter('GET', '/api/me')).body
+  assert.equal(me.user.verified, false)
+  assert.equal(me.member, null, 'not proven: the grant is not theirs')
+  assert.ok(me.releases.every((r) => !r.open))
+  assert.equal((await squatter('POST', '/api/source-request', { github: 'someone', contact: 'x', reason: 'y' })).status, 403)
+
+  // The owner proves the address with a reset link (the mailbox, or Cam handing it over).
+  const id = app.db.prepare("SELECT id FROM users WHERE email = 'khach@x.io'").get().id
+  const link = (await admin('POST', `/api/admin/users/${id}/reset-link`, {})).body.url
+  const token = new URL(link).searchParams.get('reset')
+  assert.equal((await client(base)('POST', '/api/auth/reset/confirm', { token, password: 'new-password' })).status, 200)
+  assert.equal((await squatter('GET', '/api/me')).status, 401, 'reset ends the other sessions')
+  const owner = client(base)
+  assert.equal((await owner('POST', '/api/auth/login', { email: 'khach@x.io', password: 'new-password' })).status, 200)
+  const proven = (await owner('GET', '/api/me')).body
+  assert.equal(proven.user.verified, true)
+  assert.equal(proven.member.note, 'tặng')
+  assert.equal(proven.releases.find((r) => r.tag === 'cam-v1.2.0').open, true)
+  assert.equal((await owner('POST', '/api/auth/verify/resend', {})).body.verify, 'done')
+})
+
+test('verification links: once, not after three days, not someone else\'s token', async (t) => {
+  const { app, base } = await start(t)
+  const c = client(base)
+  await c('POST', '/api/auth/register', { email: 'v@x.io', password: 'password1' })
+  const id = app.db.prepare("SELECT id FROM users WHERE email = 'v@x.io'").get().id
+  const put = (token, age) =>
+    app.db.prepare('INSERT INTO verifications(token_hash, user_id, created_at) VALUES (?, ?, ?)').run(sha256(token), id, Date.now() - age)
+  const open = async (token) => (await fetch(`${base}/api/auth/verify?token=${token}`, { redirect: 'manual' })).headers.get('location')
+  put('old', 4 * DAY)
+  assert.equal(await open('old'), '/tai-khoan?error=verify')
+  assert.equal(await open('made-up'), '/tai-khoan?error=verify')
+  put('fresh', 0)
+  assert.equal(await open('fresh'), '/thanh-vien?verified=1')
+  assert.equal(await open('fresh'), '/tai-khoan?error=verify', 'used up')
+  assert.equal((await c('GET', '/api/me')).body.user.verified, true)
+})
+
+test('Google sign-in takes back an address someone registered with a password and never proved', async (t) => {
+  const { app, base } = await start(t, { googleClientId: 'g-id', googleClientSecret: 'g-secret' })
+  // Google's two endpoints, answered here; every other request goes out as usual.
+  const realFetch = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    const u = String(url)
+    if (u.startsWith('https://oauth2.googleapis.com/token')) return Response.json({ access_token: 'at' })
+    if (u.startsWith('https://openidconnect.googleapis.com/')) return Response.json({ sub: 'google-123', email: 'owner@x.io', email_verified: true, name: 'Owner' })
+    return realFetch(url, init)
+  }
+  t.after(() => (globalThis.fetch = realFetch))
+
+  const googleSignIn = async () => {
+    const start = await fetch(`${base}/api/auth/google?next=/thanh-vien`, { redirect: 'manual' })
+    const g = start.headers.getSetCookie().find((x) => x.startsWith('cam_g='))
+    const state = decodeURIComponent(g.split(';')[0].slice('cam_g='.length)).split('|')[0]
+    const back = await fetch(`${base}/api/auth/google/callback?state=${state}&code=c`, {
+      redirect: 'manual',
+      headers: { Cookie: g.split(';')[0] },
+    })
+    const session = back.headers.getSetCookie().find((x) => x.startsWith('cam_s=')).split(';')[0]
+    return { location: back.headers.get('location'), session }
+  }
+
+  // The attacker registers the owner's address first, with their own password and two-step key.
+  const attacker = client(base)
+  await attacker('POST', '/api/auth/register', { email: 'owner@x.io', password: 'attacker-pw' })
+  await attacker('POST', '/api/auth/totp/setup', {})
+
+  const { location, session } = await googleSignIn()
+  assert.equal(location, '/thanh-vien', 'no two-step prompt: the attacker\'s key is gone')
+  const me = await (await fetch(`${base}/api/me`, { headers: { Cookie: session } })).json()
+  assert.equal(me.user.verified, true)
+  assert.equal(me.user.password, false, 'the attacker\'s password is gone')
+  assert.equal((await attacker('GET', '/api/me')).status, 401, 'the attacker\'s session is gone')
+  assert.equal((await client(base)('POST', '/api/auth/login', { email: 'owner@x.io', password: 'attacker-pw' })).status, 401)
+
+  // A proven account keeps its password when it adds Google.
+  const c = client(base)
+  await c('POST', '/api/auth/register', { email: 'both@x.io', password: 'password1' })
+  await prove(app, base, 'both@x.io')
+  globalThis.fetch = async (url, init) => {
+    const u = String(url)
+    if (u.startsWith('https://oauth2.googleapis.com/token')) return Response.json({ access_token: 'at' })
+    if (u.startsWith('https://openidconnect.googleapis.com/')) return Response.json({ sub: 'google-456', email: 'both@x.io', email_verified: true })
+    return realFetch(url, init)
+  }
+  await googleSignIn()
+  assert.equal((await c('GET', '/api/me')).status, 200)
+  assert.equal((await client(base)('POST', '/api/auth/login', { email: 'both@x.io', password: 'password1' })).status, 200)
 })
 
 test('rate limits survive a flood of other keys; malformed escapes are a 400', async (t) => {

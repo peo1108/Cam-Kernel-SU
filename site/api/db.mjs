@@ -136,6 +136,21 @@ const MIGRATIONS = [
   );
   CREATE INDEX tester_requests_user ON tester_requests(user_id);
   `,
+  // 4: proven email. Anyone can type any address into the register form, and grants are kept by
+  // email (Cam grants by hand, sometimes before the account exists): only a proven address gets
+  // what was granted to it. Accounts made before this keep what they have.
+  `
+  ALTER TABLE users ADD COLUMN email_verified_at INTEGER;
+  UPDATE users SET email_verified_at = created_at;
+  -- The account a grant was made for (its own order, its approved request), when there is one.
+  ALTER TABLE grants ADD COLUMN user_id INTEGER;
+  UPDATE grants SET user_id = (SELECT user_id FROM orders o WHERE o.code = grants.order_code) WHERE order_code IS NOT NULL;
+  CREATE TABLE verifications (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL
+  );
+  `,
 ]
 
 export function openDb(file) {
@@ -169,18 +184,26 @@ export function tx(db, fn) {
   }
 }
 
-/** Live grants of one kind for an email (its own, plus '*' ones for early access). */
-export function liveGrants(db, email, kind, now = Date.now()) {
+/**
+ * Live grants of one kind for an email (its own, plus '*' ones for early access). With
+ * [ordersOf] (a user id: see grantScope), only the email's grants made for that very account (its
+ * own orders, its approved requests) count.
+ */
+export function liveGrants(db, email, kind, now = Date.now(), ordersOf = null) {
+  const own = ordersOf == null ? 'email = ?' : 'email = ? AND user_id = ?'
   return db
     .prepare(
       `SELECT * FROM grants WHERE kind = ? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)
-       AND (email = ? ${kind === 'early' ? "OR email = '*'" : ''}) ORDER BY created_at`,
+       AND ((${own}) ${kind === 'early' ? "OR email = '*'" : ''}) ORDER BY created_at`,
     )
-    .all(kind, now, email)
+    .all(kind, now, email, ...(ordersOf == null ? [] : [ordersOf]))
 }
 
-export function membership(db, email, now = Date.now()) {
-  const g = liveGrants(db, email, 'member', now)
+/** What liveGrants needs for an account: null when its email is proven, else its id. */
+export const grantScope = (user) => (user.email_verified_at ? null : user.id)
+
+export function membership(db, email, now = Date.now(), ordersOf = null) {
+  const g = liveGrants(db, email, 'member', now, ordersOf)
   if (!g.length) return null
   // The earliest live grant says since when; the furthest expiry wins (null = forever).
   const forever = g.some((x) => x.expires_at == null)
@@ -191,12 +214,12 @@ export function membership(db, email, now = Date.now()) {
   }
 }
 
-export function isTester(db, email, now = Date.now()) {
-  return liveGrants(db, email, 'tester', now).length > 0
+export function isTester(db, email, now = Date.now(), ordersOf = null) {
+  return liveGrants(db, email, 'tester', now, ordersOf).length > 0
 }
 
-export function earlyTags(db, email, now = Date.now()) {
-  return new Set(liveGrants(db, email, 'early', now).map((g) => g.tag))
+export function earlyTags(db, email, now = Date.now(), ordersOf = null) {
+  return new Set(liveGrants(db, email, 'early', now, ordersOf).map((g) => g.tag))
 }
 
 export function audit(db, admin, action, target, detail) {

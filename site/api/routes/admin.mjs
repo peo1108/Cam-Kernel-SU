@@ -106,6 +106,7 @@ export default function adminRoutes(app) {
           google: !!u.google_sub,
           password: !!u.pass_hash,
           totp: !!u.totp_on,
+          verified: !!u.email_verified_at,
         },
         member: membership(db, u.email),
         grants: db.prepare('SELECT * FROM grants WHERE email = ? ORDER BY created_at DESC').all(u.email),
@@ -304,8 +305,9 @@ export default function adminRoutes(app) {
       const note = str(ctx.body.note, 200) || null
       tx(db, () => {
         db.prepare('UPDATE tester_requests SET status = ?, reviewed_by = ?, reviewed_at = ?, review_note = ? WHERE id = ?').run(status, ctx.user.email, Date.now(), note, t.id)
-        if (status === 'approved' && !isTester(db, t.email)) {
-          db.prepare("INSERT INTO grants(email, kind, note, by, created_at) VALUES (?, 'tester', ?, ?, ?)").run(t.email, note ?? 'duyệt yêu cầu beta', ctx.user.email, Date.now())
+        // made for this account, so it counts before its email is proven (db.mjs grantScope)
+        if (status === 'approved' && !isTester(db, t.email, Date.now(), t.user_id)) {
+          db.prepare("INSERT INTO grants(email, kind, note, by, user_id, created_at) VALUES (?, 'tester', ?, ?, ?, ?)").run(t.email, note ?? 'duyệt yêu cầu beta', ctx.user.email, t.user_id, Date.now())
         }
       })
       app.audit(ctx.user, `tester_${status}`, t.email, note)

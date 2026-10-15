@@ -7,6 +7,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { config, createApp } from '../server.mjs'
+import { sha256 } from '../auth.mjs'
 import { code as totpCode } from '../totp.mjs'
 
 const DAY = 24 * 3600 * 1000
@@ -82,6 +83,16 @@ async function adminClient(app, base) {
   return c
 }
 
+
+/** The user opens the mailed verification link (mail is off in tests: the token is put in directly). */
+async function prove(app, base, email) {
+  const { id } = app.db.prepare('SELECT id FROM users WHERE email = ?').get(email)
+  const token = `verify-${id}-${Math.random()}`
+  app.db.prepare('INSERT INTO verifications(token_hash, user_id, created_at) VALUES (?, ?, ?)').run(sha256(token), id, Date.now())
+  const res = await fetch(`${base}/api/auth/verify?token=${encodeURIComponent(token)}`, { redirect: 'manual' })
+  if (res.headers.get('location') !== '/thanh-vien?verified=1') throw new Error(`verify failed: ${res.status} ${res.headers.get('location')}`)
+}
+
 test('buy membership: order, webhook pays it once, duplicate webhook does nothing', async (t) => {
   const { app, base } = await start(t)
   const c = client(base)
@@ -149,6 +160,7 @@ test('early access: members only, only for releases not open yet, opens after pa
   const { app, base } = await start(t)
   const c = client(base)
   await c('POST', '/api/auth/register', { email: 'm@x.io', password: 'password1' })
+  await prove(app, base, 'm@x.io')
   assert.equal((await c('POST', '/api/orders', { kind: 'early', tag: 'cam-v1.2.0' })).status, 403)
   app.db.prepare("INSERT INTO grants(email, kind, by, created_at) VALUES ('m@x.io', 'member', 't', ?)").run(Date.now())
   assert.equal((await c('POST', '/api/orders', { kind: 'early', tag: 'cam-v1.1.1' })).status, 409, 'already open')
@@ -163,6 +175,7 @@ test('early access bought in the app: device token orders, polls, then the relea
   const { app, base } = await start(t)
   const c = client(base)
   await c('POST', '/api/auth/register', { email: 'a@x.io', password: 'password1' })
+  await prove(app, base, 'a@x.io')
   app.db.prepare("INSERT INTO grants(email, kind, by, created_at) VALUES ('a@x.io', 'member', 't', ?)").run(Date.now())
   const pair = await (await fetch(base + '/api/devices/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Pixel' }) })).json()
   await c('POST', '/api/devices/confirm', { code: pair.code })
@@ -219,6 +232,7 @@ test('pair a device, OTA lists only open releases, /dl gate follows the same rul
   const { app, base } = await start(t)
   const c = client(base)
   await c('POST', '/api/auth/register', { email: 'p@x.io', password: 'password1' })
+  await prove(app, base, 'p@x.io')
   // The Manager sends no Origin and no cookie.
   const start1 = await fetch(base + '/api/devices/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Pixel 9' }) })
   assert.equal(start1.status, 200)
@@ -312,6 +326,7 @@ test('beta testers: members ask, Cam approves, testers get every release at once
   const admin = await adminClient(app, base)
   const c = client(base)
   await c('POST', '/api/auth/register', { email: 'tester@x.io', password: 'password1' })
+  await prove(app, base, 'tester@x.io')
   assert.equal((await c('POST', '/api/tester/request', {})).status, 403, 'members only')
   app.db.prepare("INSERT INTO grants(email, kind, by, created_at) VALUES ('tester@x.io', 'member', 't', ?)").run(Date.now())
   let me = (await c('GET', '/api/me')).body

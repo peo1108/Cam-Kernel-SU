@@ -16,6 +16,7 @@
 #include <net/genetlink.h>
 #include <linux/moduleparam.h>
 #include <linux/mutex.h>
+#include <linux/rwsem.h>
 // security/selinux/include/security.h
 #include <security.h>
 #include <ss/context.h>
@@ -34,6 +35,23 @@
 static DEFINE_MUTEX(selinux_hide_mutex);
 static bool ksu_selinux_hide_enabled __read_mostly = false;
 static bool ksu_selinux_hide_running __read_mostly = false;
+// Hooks read backup_sepolicy under this; dropping it takes it for write, so a
+// hook that entered before the feature was turned off never sees it freed.
+static DECLARE_RWSEM(backup_sepolicy_sem);
+
+static struct selinux_policy *backup_get(void)
+{
+    down_read(&backup_sepolicy_sem);
+    if (likely(backup_sepolicy))
+        return backup_sepolicy;
+    up_read(&backup_sepolicy_sem);
+    return NULL;
+}
+
+static void backup_put(void)
+{
+    up_read(&backup_sepolicy_sem);
+}
 
 enum sel_inos {
     SEL_ROOT_INO = 2,
@@ -101,6 +119,7 @@ static ssize_t my_write_context(struct file *file, char *buf, size_t size)
     if (likely(current_uid().val < 10000)) {
         return orig_context_write(file, buf, size);
     }
+    struct selinux_policy *policy;
     char *canon = NULL;
     u32 sid, len;
     ssize_t length;
@@ -109,25 +128,31 @@ static ssize_t my_write_context(struct file *file, char *buf, size_t size)
         ksu_avc_has_perm_compat(current_sid(), SECINITSID_SECURITY, SECCLASS_SECURITY, SECURITY__CHECK_CONTEXT, NULL);
     if (length)
         goto out;
-    length = security_context_to_sid_with_policy(backup_sepolicy, buf, size, &sid, SECSID_NULL, GFP_KERNEL, NULL, NULL);
+    policy = backup_get();
+    // dropped after a turn-off this call raced with: answer as when off
+    if (!policy)
+        return orig_context_write(file, buf, size);
+    length = security_context_to_sid_with_policy(policy, buf, size, &sid, SECSID_NULL, GFP_KERNEL, NULL, NULL);
     if (length) {
-        goto out;
+        goto out_put;
     }
 
-    length = security_sid_to_context_with_policy(backup_sepolicy, sid, &canon, &len);
+    length = security_sid_to_context_with_policy(policy, sid, &canon, &len);
     if (length)
-        goto out;
+        goto out_put;
 
     length = -ERANGE;
     if (len > SIMPLE_TRANSACTION_LIMIT) {
         pr_err("SELinux: %s:  context size (%u) exceeds "
                "payload max\n",
                __func__, len);
-        goto out;
+        goto out_put;
     }
 
     memcpy(buf, canon, len);
     length = len;
+out_put:
+    backup_put();
 out:
     kfree(canon);
     return length;
@@ -139,6 +164,7 @@ static ssize_t my_write_access(struct file *file, char *buf, size_t size)
     if (likely(current_uid().val < 10000)) {
         return orig_access_write(file, buf, size);
     }
+    struct selinux_policy *policy;
     char *scon = NULL, *tcon = NULL;
     u32 ssid, tsid, sconlen, tconlen;
     u16 tclass;
@@ -166,19 +192,26 @@ static ssize_t my_write_access(struct file *file, char *buf, size_t size)
     sconlen = strlen(scon);
     tconlen = strlen(tcon);
 
-    length =
-        security_context_to_sid_with_policy(backup_sepolicy, scon, sconlen, &ssid, SECSID_NULL, GFP_KERNEL, NULL, NULL);
-    if (length) {
+    policy = backup_get();
+    if (!policy) {
+        length = orig_access_write(file, buf, size);
         goto out;
     }
 
-    length =
-        security_context_to_sid_with_policy(backup_sepolicy, tcon, tconlen, &tsid, SECSID_NULL, GFP_KERNEL, NULL, NULL);
+    length = security_context_to_sid_with_policy(policy, scon, sconlen, &ssid, SECSID_NULL, GFP_KERNEL, NULL, NULL);
     if (length) {
+        backup_put();
         goto out;
     }
 
-    security_compute_av_user_with_policy(backup_sepolicy, ssid, tsid, tclass, &avd);
+    length = security_context_to_sid_with_policy(policy, tcon, tconlen, &tsid, SECSID_NULL, GFP_KERNEL, NULL, NULL);
+    if (length) {
+        backup_put();
+        goto out;
+    }
+
+    security_compute_av_user_with_policy(policy, ssid, tsid, tclass, &avd);
+    backup_put();
 
     // stock reads 1; a loader load_policy may have bumped the backup before we load
     avd.seqno = 1;
@@ -254,12 +287,17 @@ static int __nocfi my_setprocattr(const char *name, void *value, size_t size)
 
     /* Obtain a SID for the context, if one was specified. */
     if (size && str[0] && str[0] != '\n') {
+        struct selinux_policy *policy = backup_get();
+
+        if (!policy)
+            goto call_orig;
         if (str[size - 1] == '\n') {
             str[size - 1] = 0;
             size--;
         }
-        error2 = security_context_to_sid_with_policy(backup_sepolicy, value, size, &tmp_sid, SECSID_NULL, GFP_KERNEL,
-                                                     &sid, &error);
+        error2 =
+            security_context_to_sid_with_policy(policy, value, size, &tmp_sid, SECSID_NULL, GFP_KERNEL, &sid, &error);
+        backup_put();
         if (error2 || error)
             return error2 ?: error;
     }
@@ -365,7 +403,10 @@ out:
 }
 
 typedef int (*sel_open_handle_status_fn)(struct inode *inode, struct file *filp);
+// Never cleared once set, like orig_context_write: an open that entered our
+// hook before the unhook still calls it.
 static sel_open_handle_status_fn orig_sel_open_handle_status, *sel_open_handle_status_slot;
+static bool status_open_hooked;
 static int my_sel_open_handle_status(struct inode *inode, struct file *filp)
 {
     if (likely(current_uid().val >= 10000 && ksu_selinux_hide_enabled)) {
@@ -474,7 +515,11 @@ static void ksu_selinux_hide_unhook()
             access_write_hooked = false;
         }
     }
-    unhook_selinux_status_open();
+    // The status-open hook is owned by init/exit and self-gates on
+    // ksu_selinux_hide_enabled, so it stays installed across enable failures
+    // and disable; only module exit removes it. Removing it here would, on an
+    // enable that failed after init hooked it, leave the fake status page
+    // unserved while enabled stayed set (apps would read the real page).
     ksu_lsm_unhook(&selinux_setprocattr_hook);
 }
 
@@ -482,6 +527,15 @@ static void ksu_selinux_hide_disable()
 {
     pr_info("selinux_hide: exit selinux hide\n");
     ksu_selinux_hide_unhook();
+}
+
+// Read by reset_avc_cache() (selinux/rules.c) to drop the netlink policyload
+// broadcast while hiding is active: stock never reloads policy after boot, so
+// that notification is a tell on an app_zygote listener. A racy read of the
+// bool is fine; the worst case is one notification at the toggle instant.
+bool ksu_selinux_hide_is_running(void)
+{
+    return READ_ONCE(ksu_selinux_hide_running);
 }
 
 static int selinux_hide_feature_get(u64 *value)
@@ -501,13 +555,14 @@ static int selinux_hide_feature_set(u64 value)
         if (!ksu_selinux_hide_running) {
             ret = ksu_selinux_hide_enable();
             if (!ret) {
-                ksu_selinux_hide_running = true;
+                WRITE_ONCE(ksu_selinux_hide_running, true);
             }
         }
     } else {
         if (ksu_selinux_hide_running) {
+            // stop gating the netlink notify before tearing the hooks down
+            WRITE_ONCE(ksu_selinux_hide_running, false);
             ksu_selinux_hide_disable();
-            ksu_selinux_hide_running = false;
         }
     }
     mutex_unlock(&selinux_hide_mutex);
@@ -542,7 +597,8 @@ void ksu_selinux_hide_handle_post_fs_data()
 
 static void hook_selinux_status_open()
 {
-    if (orig_sel_open_handle_status)
+    // also covers a failed restore, whose slot still points at us
+    if (status_open_hooked)
         return;
     if (!sel_open_handle_status_slot) {
         struct file_operations *ops = find_kernel_symbol_exact("sel_handle_status_ops");
@@ -557,22 +613,23 @@ static void hook_selinux_status_open()
     int ret = ksu_patch_text(sel_open_handle_status_slot, &new_fn, sizeof(new_fn), KSU_PATCH_TEXT_FLUSH_DCACHE);
     if (ret) {
         pr_err("selinux_hide: init: patch_text sel_open_handle_status err: %d\n", ret);
-        sel_open_handle_status_slot = NULL;
-        orig_sel_open_handle_status = NULL;
+        return;
     }
+    status_open_hooked = true;
 }
 
 static void unhook_selinux_status_open()
 {
     int ret;
-    if (sel_open_handle_status_slot && orig_sel_open_handle_status) {
-        ret = ksu_patch_text(sel_open_handle_status_slot, &orig_sel_open_handle_status,
-                             sizeof(orig_sel_open_handle_status), KSU_PATCH_TEXT_FLUSH_DCACHE);
-        orig_sel_open_handle_status = NULL;
-        if (ret) {
-            pr_err("selinux_hide: exit: patch_text sel_open_handle_status err: %d\n", ret);
-        }
+    if (!status_open_hooked)
+        return;
+    ret = ksu_patch_text(sel_open_handle_status_slot, &orig_sel_open_handle_status, sizeof(orig_sel_open_handle_status),
+                         KSU_PATCH_TEXT_FLUSH_DCACHE);
+    if (ret) {
+        pr_err("selinux_hide: exit: patch_text sel_open_handle_status err: %d\n", ret);
+        return;
     }
+    status_open_hooked = false;
 }
 
 void __init ksu_selinux_hide_init()
@@ -592,11 +649,12 @@ void __exit ksu_selinux_hide_exit()
 {
     mutex_lock(&selinux_hide_mutex);
     if (ksu_selinux_hide_running) {
+        WRITE_ONCE(ksu_selinux_hide_running, false);
         ksu_selinux_hide_disable();
-        ksu_selinux_hide_running = false;
     }
-    // init hooks the status open whether or not the feature runs: left in
-    // place, it would point into the freed module
+    // The status-open hook is installed by init whether or not the feature
+    // ran and is left in place by enable/disable, so exit removes it here;
+    // left in place it would point into the freed module.
     unhook_selinux_status_open();
     mutex_unlock(&selinux_hide_mutex);
     ksu_unregister_feature_handler(KSU_FEATURE_SELINUX_HIDE);
@@ -610,13 +668,19 @@ void __exit ksu_selinux_hide_exit()
 
 void ksu_selinux_hide_drop_backup_if_unused()
 {
+    struct selinux_policy *backup;
+
     mutex_lock(&selinux_hide_mutex);
     if (!ksu_selinux_hide_running && backup_sepolicy) {
         pr_info("selinux_hide is not enabled - drop backup_sepolicy\n");
-        sidtab_destroy(backup_sepolicy->sidtab);
-        kfree(backup_sepolicy->sidtab);
-        ksu_destroy_sepolicy(backup_sepolicy);
+        // waits for hooks that entered before the feature was turned off
+        down_write(&backup_sepolicy_sem);
+        backup = backup_sepolicy;
         backup_sepolicy = NULL;
+        up_write(&backup_sepolicy_sem);
+        sidtab_destroy(backup->sidtab);
+        kfree(backup->sidtab);
+        ksu_destroy_sepolicy(backup);
     }
     mutex_unlock(&selinux_hide_mutex);
 }
@@ -738,7 +802,7 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
     struct selinux_policy *orig_policy;
     struct policydb *policydb, *orig_policydb;
     struct sidtab *sidtab, *orig_sidtab;
-    char *scontext2, *scontext3, *str = NULL;
+    char *scontext2, *scontext3;
     struct context context, orig_context;
     int rc = 0, orig_rc = 0;
     u32 orig_sid;
@@ -790,7 +854,6 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
         *orig_rc_p = orig_rc;
     kfree(scontext3);
     kfree(scontext2);
-    kfree(str);
     return rc;
 }
 

@@ -14,6 +14,7 @@
 #include "ss/services.h"
 #include "linux/lsm_audit.h" // IWYU pragma: keep
 #include "xfrm.h"
+#include "feature/selinux_hide.h"
 
 struct selinux_policy *backup_sepolicy;
 
@@ -29,17 +30,27 @@ extern int avc_ss_reset(struct selinux_avc *avc, u32 seqno);
 // reset avc cache table, otherwise the new rules will not take effect if already denied
 static void reset_avc_cache()
 {
+    // The avc_ss_reset flushes the kernel AVC so new rules take effect; the
+    // policyload netlink broadcast only tells userspace listeners. Stock never
+    // reloads policy after boot, so a runtime notification is a tell that an
+    // app_zygote process (which may bind the SELinux netlink group) can hear.
+    // While hiding is active, drop it; the AVC is still flushed. When hiding is
+    // off, keep upstream behavior.
+    bool notify = !ksu_selinux_hide_is_running();
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
     avc_ss_reset(0);
-    selnl_notify_policyload(0);
+    if (notify)
+        selnl_notify_policyload(0);
     selinux_status_update_policyload(0);
 #else
     struct selinux_avc *avc = selinux_state.avc;
     avc_ss_reset(avc, 0);
-    selnl_notify_policyload(0);
+    if (notify)
+        selnl_notify_policyload(0);
     selinux_status_update_policyload(&selinux_state, 0);
 #endif
-    selinux_xfrm_notify_policyload();
+    if (notify)
+        selinux_xfrm_notify_policyload();
 }
 
 // Rules for one su domain and its file type. The legacy KernelSU names get the

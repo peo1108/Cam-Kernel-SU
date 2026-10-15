@@ -95,6 +95,15 @@ check_json "camd boot-guard status" "boot-guard status"
 check_json "camd hide-bootloader status" "hide-bootloader status"
 check_json "camd module list" "module list"
 
+# Widevine (the hiding check's DRM card): the HAL runs and holds a DRM certificate, what
+# streaming apps need for HD. Root never changes the level; a wiped /data/vendor/mediadrm does.
+out=$(root "getprop | grep -iE '^\[init\.svc\.[^]]*widevine[^]]*\]: \[running\]' | head -n 1; ls -A /data/vendor/mediadrm | head -n 1")
+if grep -q 'running' <<<"$out" && [ "$(body_of "$out" | grep -vc 'running')" -gt 0 ]; then
+    ok "Widevine HAL running, DRM certificate present"
+else
+    bad "Widevine HAL running, DRM certificate present" "$(body_of "$out" | head -n 3)"
+fi
+
 # Block RKP was removed in 1.1.5: the Manager's `camd install` clears what it left
 out=$(root "test -e /data/adb/cam/.block_rkp; echo flag=\$?; iptables -w -C OUTPUT ! -o lo -j DROP 2>/dev/null; echo rule=\$?")
 if grep -q 'flag=1' <<<"$out" && grep -q 'rule=1' <<<"$out"; then

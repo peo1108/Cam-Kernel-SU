@@ -19,6 +19,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Chạy nền nhẹ hơn: slime 3D trả lại bộ nhớ đồ hoạ (khoảng 470 MB) sau 10 giây ở nền, quay lại thì hiện như cũ
 ### Sửa lỗi
 - Văng app hiếm gặp ở thẻ trạng thái khi xoay máy hoặc quay lại app đúng lúc slime đang diễn đoạn mở màn
+- Ẩn SELinux: sửa lỗi có thể làm máy khởi động lại khi tắt tính năng lúc app đang đọc selinuxfs, chặn lộ qua thông báo nạp policy (netlink), không còn dò hàm kernel qua kallsyms
 ### Lưu ý
 - Bản thử nghiệm: các tính năng trên chưa được thử trên nhiều máy, báo lỗi giúp Cam nếu gặp
 

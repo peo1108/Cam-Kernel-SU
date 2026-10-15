@@ -69,6 +69,7 @@ Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo 
 | 7 | Chưa thử: cấp lại Widevine, OTA từ đầu đến cuối, thanh toán thật | Thấp | Còn mở. Cấp lại Widevine có sao lưu và tự khôi phục; OTA và thanh toán có test phía server |
 | 8 | Cụm slime/3D lớn so với giá trị cốt lõi | Thấp | Có chủ đích; giờ nhả bộ nhớ khi nằm nền |
 | 9 | File Miuix của upstream trên 1000 dòng | Thấp | Giữ nguyên để merge dễ |
+| 10 | Kernel umount (code upstream): có thể gỡ nhầm nguyên phân vùng nếu metamodule đăng ký sai, log `pr_info` ở mỗi `setresuid`, không kiểm flag | Thấp–Trung bình | **Chưa làm** (review 2026-10-15): chờ kiểm tra trên máy, `superpowers/plans/2026-10-15-kernel-umount-review.md` |
 | 11 | Ẩn SELinux (code upstream): kiểm hợp lệ nhầm `ctx`/`orig_ctx`, free trang status giả khi gỡ LKM, race khi tắt tính năng (gọi con trỏ NULL → panic) ở `write_op` và hook `status`, bỏ bản sao lưu lúc hook đang dùng, lộ qua netlink policyload, gọi hàm static qua kallsyms | Trung bình | **Xong** (dòng 56, 58, 59 của `CAM_CHANGES.md`): race tái hiện được trên tablet với LKM cũ, LKM `32981` qua stress (ghi selinuxfs + mở `status`); dò 8 đường từ ba domain app không lộ; netlink policyload gate khi ẩn chạy (`app_zygote` nghe được, đã đo); đường `access` bỏ kallsyms, dùng bản nội bộ (12 lớp khớp đường thật); `camd hiding-audit --apply` xử lý `-EAGAIN`. `superpowers/plans/done/2026-10-15-selinux-hide-review.md` |
 
 ## Việc nên làm tiếp, theo thứ tự
@@ -76,6 +77,7 @@ Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo 
 1. **Deploy API** (`site/scripts/deploy-api.sh`): migration 4 tự chạy, tài khoản cũ được coi là đã xác minh nên không ai mất quyền. Push `site/**` tự deploy giao diện; giao diện chỉ hiện nhắc xác minh khi API mới báo `verified: false`, nên thứ tự deploy nào cũng được.
 2. **Một lượt OTA thật**: gắn tag beta, để máy của Cam nhận và cài qua OTA, ghi kết quả vào mục 6 của `CAM_CHANGES.md`.
 3. **Thử cấp lại Widevine** trên một máy chịu được rủi ro (có sao lưu và tự khôi phục, nhưng xóa `/data/vendor/mediadrm` là thật).
+4. **Kiểm tra kernel umount trên máy** (khoảng 10 phút, chỉ đọc; mục 10): xem hybrid_mount đăng ký gì và đo thời gian mở app, rồi mới quyết có sửa không. Các bước nằm trong `superpowers/plans/2026-10-15-kernel-umount-review.md`.
 
 ## Cách chấm
 

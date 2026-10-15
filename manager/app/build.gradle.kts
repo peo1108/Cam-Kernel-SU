@@ -220,8 +220,9 @@ androidComponents {
  * every launch, so a camd built from older sources would quietly replace the newer daemon. camd
  * carries `CAMD_SOURCE_ID=<id>;` (userspace/camd/build.rs); this compares it with the committed
  * sources. A release build stops on a mismatch unless `-PallowStaleCamd`; a debug build only warns
- * (packing the device's own camd for a quick test is fine). No libcamd.so at all is left alone:
- * CI builds the APK without it and adds camd afterwards.
+ * (packing the device's own camd for a quick test is fine). A libcamd.so that is not an ELF binary
+ * stops every build. No libcamd.so at all is left alone: CI builds the APK without it and adds camd
+ * afterwards. scripts/build_camd.sh puts a fresh one there.
  */
 abstract class CheckCamdSource : DefaultTask() {
     @get:Input
@@ -237,6 +238,17 @@ abstract class CheckCamdSource : DefaultTask() {
     @TaskAction
     fun check() {
         val expected = expectedId.get()
+        // Debug builds too: a file that is not a binary (an error message saved by a failed
+        // `adb exec-out`, say) would pack fine and then break /data/adb/camd on the device.
+        libraries.files.filter { it.isFile }.forEach { lib ->
+            val head = lib.inputStream().use { it.readNBytes(4) }
+            if (!head.contentEquals(byteArrayOf(0x7f, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte()))) {
+                throw GradleException(
+                    "${lib.parentFile.name}/${lib.name} is not an ELF binary (${lib.length()} bytes). " +
+                        "Put a real camd there: scripts/build_camd.sh (docs/CAM_CHANGES.md section 5)."
+                )
+            }
+        }
         if (expected.isEmpty()) {
             logger.warn("camd source check skipped: no git sources")
             return

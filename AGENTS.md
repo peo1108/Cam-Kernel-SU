@@ -46,7 +46,7 @@ Cam Kernel SU is a fork of KernelSU: a kernel-based root solution for Android wi
 
 - Kernel changes are C-only; keep interfaces aligned with supercall and allowlist expectations in userspace/Manager.
 - If you alter IOCTLs or profiles, update the corresponding wrappers in camd (`ksucalls.rs`) and Manager JNI (`manager/app/src/main/cpp/ksu.cc`).
-- Host tests for Cam's own kernel logic (`policy/pkg_tracker.c`: seed, Manager pin and its signature check; `policy/pkg_xml.c`): `make -C kernel/tests` on Linux/WSL (ASan + UBSan). `make check-format` covers `kernel/tests` too.
+- Host tests for Cam's own kernel logic (`policy/pkg_tracker.c`: seed, Manager pin and its signature and appid check; `policy/pkg_xml.c`): `make -C kernel/tests` on Linux/WSL (ASan + UBSan; 32 on 2026-10-16). `make check-format` covers `kernel/tests` too.
 - `feature/selinux_hide.c` hooks must refuse before doing extra work (permission check first): apps time these paths (Duck Detector's `attr/current` probe; section 12 of `docs/CAM_CHANGES.md`).
 
 ### Userspace Rust (`userspace/camd`, `userspace/caminit`)
@@ -84,7 +84,7 @@ npm run build   # data (releases, CHANGELOG.md, module-repo) is read at build ti
 ```
 
 CI (`deploy-site.yml`) rsyncs `docs/.vitepress/dist` to the VPS; see row 38 of `docs/CAM_CHANGES.md`.
-The Manager gets updates from `caesarvn.xyz/api/ota/releases` with its account token (Settings → Account) and hiding rules / the module library from `caesarvn.xyz/feed/`, never from GitHub (the repository goes private). Business rules (memberships, prices, payments, beta testers) live in `site/api`: tests `node --test site/api/test/api.test.mjs site/api/test/business.test.mjs` (19, pass on 2026-10-15; grants kept by email need a proven address, row 54 of `docs/CAM_CHANGES.md`), deploy `site/scripts/deploy-api.sh`. Section 14 of `docs/CAM_CHANGES.md`.
+The Manager gets updates from `caesarvn.xyz/api/ota/releases` with its account token (Settings → Account) and hiding rules / the module library from `caesarvn.xyz/feed/`, never from GitHub (the repository goes private). Business rules (memberships, prices, payments, beta testers) live in `site/api`: tests `node --test site/api/test/api.test.mjs site/api/test/business.test.mjs` (20, pass on 2026-10-16; grants kept by email need a proven address, row 54 of `docs/CAM_CHANGES.md`), deploy `site/scripts/deploy-api.sh`. Section 14 of `docs/CAM_CHANGES.md`.
 
 ### Website (`website/`)
 

@@ -5,8 +5,8 @@
 Thứ tự làm: 1 → 3 → 2. Mục 2 chờ kiểm trên tablet trước (lý do ở dưới).
 
 **Trạng thái (2026-10-16, tối):**
-- Mục 1: đã code (dòng 60 của `CAM_CHANGES.md`), rule v9 đã ký; Cam đã duyệt 3 mục trong `moduleRisks`. Test JVM đạt.
-- Mục 3: đã code (dòng 61). Test host + JVM đạt.
+- Mục 1: xong (dòng 60 của `CAM_CHANGES.md`), rule v9 đã ký; Cam đã duyệt 3 mục trong `moduleRisks`. Test JVM đạt, đã thử trên tablet.
+- Mục 3: xong (dòng 61). Test host + JVM đạt, đã thử trên tablet (cả file tar độc).
 - Mục 2: **bỏ** (Cam quyết định 2026-10-16): khách không dùng metamodule nên kernel umount không chạy, và chưa thấy module nào của khách tự mount. Thiết kế dưới đây giữ lại để tham khảo.
 
 ## 1. Chặn module nguy hiểm (ý từ KernelSU Next `risk.rs`)

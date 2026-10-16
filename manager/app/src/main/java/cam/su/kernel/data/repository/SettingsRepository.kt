@@ -45,6 +45,8 @@ interface SettingsRepository {
     var conflictDetection: Boolean
     var conflictWarnOnFlash: Boolean
     var conflictIncludeProps: Boolean
+    /** refuse modules the signed rules mark `block`; off: warn only */
+    var moduleRiskBlock: Boolean
     /** check root hiding once after a boot that brings in a module */
     var moduleHidingScan: Boolean
     val intentToken: String

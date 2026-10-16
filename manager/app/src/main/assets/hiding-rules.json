@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 9,
   "updated": "2026-10-16",
   "duckDetector": "d621e3ab5fb959a7f1d1246881b4021994cbe123",
   "duckPending": ["heap residue"],
@@ -20,5 +20,34 @@
     "ro.warranty_bit": "0",
     "ro.debuggable": "0",
     "ro.secure": "1"
-  }
+  },
+  "moduleRisks": [
+    {
+      "level": "block",
+      "patterns": ["zygisk floating overlay menu", "zygisk_floating_menu"],
+      "reason": {
+        "vi": "Backdoor có quyền root: gián điệp, lấy mã OTP trong SMS, chiếm dữ liệu ngân hàng",
+        "en": "Root-level backdoor: spyware, SMS OTP grabber, bank data hijacking"
+      },
+      "source": "KernelSU Next risk.json"
+    },
+    {
+      "level": "block",
+      "patterns": ["fakelook1337", "superpupermodule"],
+      "reason": {
+        "vi": "Có lệnh phá phân vùng hệ thống, có thể làm hỏng máy",
+        "en": "Brick-level commands that destroy system partitions"
+      },
+      "source": "KernelSU Next risk.json"
+    },
+    {
+      "level": "warn",
+      "patterns": ["root phantom fateh", "fateh7", "professorroot_dz"],
+      "reason": {
+        "vi": "Có thể là phần mềm gián điệp, có file chạy không công khai mã nguồn",
+        "en": "Possible spyware, closed-source binaries"
+      },
+      "source": "KernelSU Next risk.json"
+    }
+  ]
 }

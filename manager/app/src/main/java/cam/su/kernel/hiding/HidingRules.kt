@@ -22,6 +22,8 @@ data class HidingRules(
     val safeProps: Map<String, String>,
     /** Duck Detector checks this app does not run yet, by name; absent before version 3 */
     val duckPending: List<String> = emptyList(),
+    /** modules the Manager refuses to install or warns about; absent before version 9 */
+    val moduleRisks: List<ModuleRisk> = emptyList(),
 ) {
     fun toJson(): String = JSONObject()
         .put("version", version)
@@ -32,6 +34,7 @@ data class HidingRules(
         .put("suPaths", JSONArray(suPaths))
         .put("safeProps", JSONObject(safeProps))
         .put("duckPending", JSONArray(duckPending))
+        .put("moduleRisks", JSONArray(moduleRisks.map { it.toJson() }))
         .toString()
 
     companion object {
@@ -47,6 +50,7 @@ data class HidingRules(
                 suPaths = strings(obj.getJSONArray("suPaths")),
                 safeProps = props.keys().asSequence().associateWith { props.getString(it) },
                 duckPending = obj.optJSONArray("duckPending")?.let(::strings).orEmpty(),
+                moduleRisks = ModuleRisk.parseList(obj.optJSONArray("moduleRisks")),
             )
         }.getOrNull()
 

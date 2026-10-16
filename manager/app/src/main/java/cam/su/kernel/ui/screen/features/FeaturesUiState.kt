@@ -8,6 +8,7 @@ import cam.su.kernel.data.model.HideBootloaderStatus
 import cam.su.kernel.data.model.ModuleConflict
 import cam.su.kernel.data.model.RevokedCert
 import cam.su.kernel.data.model.visible
+import cam.su.kernel.hiding.ModuleRiskHit
 
 @Immutable
 data class FeaturesUiState(
@@ -18,6 +19,13 @@ data class FeaturesUiState(
     val conflictWarnOnFlash: Boolean = true,
     val conflictIncludeProps: Boolean = true,
     val scanning: Boolean = false,
+    /** refuse modules the rules mark `block` (else warn only) */
+    val riskBlock: Boolean = true,
+    /** installed modules on the dangerous module list, by module id */
+    val riskModules: Map<String, ModuleRiskHit> = emptyMap(),
+    /** entries in the rules' dangerous module list, and the rules version */
+    val riskEntries: Int = 0,
+    val rulesVersion: Int = 0,
     val hideBootloader: HideBootloaderStatus = HideBootloaderStatus.Empty,
     /** null until checked, or when the certificate could not be read */
     val attestation: AttestationInfo? = null,
@@ -56,6 +64,8 @@ data class FeaturesActions(
     val onSetConflictWarnOnFlash: (Boolean) -> Unit,
     val onSetConflictIncludeProps: (Boolean) -> Unit,
     val onRescanConflicts: () -> Unit,
+    val onSetRiskBlock: (Boolean) -> Unit,
+    val onDisableModule: (String) -> Unit,
     val onSetHideBootloader: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
     val onOpenHidingCheck: () -> Unit,

@@ -229,6 +229,10 @@ fun flashModule(
         file.outputStream().use { output ->
             this?.copyTo(output)
         }
+        moduleRiskGate(file, onStdout)?.let { blocked ->
+            file.delete()
+            return blocked
+        }
         val cmd = "module install ${file.absolutePath}"
         val result = flashWithIO("${getCamDaemonPath()} $cmd", onStdout, onStderr)
         Log.i("Cam", "install module $uri result: $result")

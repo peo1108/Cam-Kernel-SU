@@ -1,6 +1,7 @@
 package cam.su.kernel.data.model
 
 import androidx.compose.runtime.Immutable
+import cam.su.kernel.hiding.ModuleRiskHit
 
 @Immutable
 data class Module(
@@ -26,4 +27,6 @@ data class Module(
     val conflicts: List<ModuleConflict> = emptyList(),
     /** version kept by camd when an update replaced it; null when there is none */
     val backupVersion: String? = null,
+    /** on the signed rules' dangerous module list (by module.prop); null when not */
+    val risk: ModuleRiskHit? = null,
 )

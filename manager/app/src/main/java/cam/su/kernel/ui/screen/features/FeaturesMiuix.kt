@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Dangerous
 import androidx.compose.material.icons.rounded.HealthAndSafety
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Shield
@@ -111,6 +112,7 @@ fun FeaturesPagerMiuix(
                 item { Spacer(Modifier.height(12.dp)) }
                 item { BootGuardCard(state, actions) }
                 item { ConflictCard(state, actions) }
+                item { RiskCard(state, actions) }
                 item { HideBootloaderCard(state, actions) }
                 item { HidingCheckEntry(state, actions) }
                 item { WirelessAdbCard(state, actions) }
@@ -235,6 +237,53 @@ private fun ConflictCard(state: FeaturesUiState, actions: FeaturesActions) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun RiskCard(state: FeaturesUiState, actions: FeaturesActions) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val flagged = state.riskModules
+
+    GlassExpandableCard(
+        icon = Icons.Rounded.Dangerous,
+        title = stringResource(R.string.features_risk),
+        summary = when {
+            flagged.isNotEmpty() -> stringResource(R.string.features_risk_found, flagged.size)
+            !state.riskBlock -> stringResource(R.string.features_risk_warn_only)
+            else -> stringResource(R.string.features_risk_on, state.riskEntries)
+        },
+        expanded = expanded,
+        onToggle = { expanded = !expanded },
+    ) {
+        GlassSwitchPreference(
+            title = stringResource(R.string.features_risk_enable),
+            summary = stringResource(R.string.features_risk_enable_summary),
+            checked = state.riskBlock,
+            onCheckedChange = actions.onSetRiskBlock,
+        )
+        if (flagged.isNotEmpty()) {
+            SectionTitle(stringResource(R.string.features_risk_found, flagged.size))
+            flagged.forEach { (id, hit) ->
+                BasicComponent(
+                    title = id,
+                    summary = hit.risk.reason(),
+                    endActions = {
+                        TextButton(
+                            text = stringResource(R.string.module_conflict_disable),
+                            onClick = { actions.onDisableModule(id) },
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                        )
+                    },
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.features_risk_note, state.riskEntries, state.rulesVersion),
+            fontSize = 13.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
     }
 }
 

@@ -222,6 +222,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("conflict_include_props", true)
         set(value) = prefs.edit { putBoolean("conflict_include_props", value) }
 
+    override var moduleRiskBlock: Boolean
+        get() = prefs.getBoolean("module_risk_block", true)
+        set(value) = prefs.edit { putBoolean("module_risk_block", value) }
+
     override var moduleHidingScan: Boolean
         get() = prefs.getBoolean("module_hiding_scan", true)
         set(value) = prefs.edit { putBoolean("module_hiding_scan", value) }

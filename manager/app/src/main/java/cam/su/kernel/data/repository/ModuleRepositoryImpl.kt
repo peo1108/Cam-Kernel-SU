@@ -12,6 +12,7 @@ import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.isNetworkAvailable
 import cam.su.kernel.ui.util.listModuleConflicts
 import cam.su.kernel.ui.util.listModules
+import cam.su.kernel.ui.util.moduleRiskScanner
 import cam.su.kernel.ui.util.module.sanitizeVersionString
 import okhttp3.Request
 import org.json.JSONArray
@@ -39,15 +40,18 @@ class ModuleRepositoryImpl : ModuleRepository {
             } else {
                 emptyList()
             }
+            val risks = moduleRiskScanner()
             (0 until array.length())
                 .asSequence()
                 .map { array.getJSONObject(it) }
                 .map { obj ->
                     val id = obj.getString("id")
+                    val name = obj.optString("name")
+                    val author = obj.optString("author", "Unknown")
                     Module(
                         id = id,
-                        name = obj.optString("name"),
-                        author = obj.optString("author", "Unknown"),
+                        name = name,
+                        author = author,
                         version = obj.optString("version", "Unknown"),
                         versionCode = obj.optInt("versionCode", 0),
                         description = obj.optString("description"),
@@ -64,6 +68,7 @@ class ModuleRepositoryImpl : ModuleRepository {
                         bootCulprit = id in culprits,
                         conflicts = conflicts.forModule(id),
                         backupVersion = if (obj.has("backupVersion")) obj.optString("backupVersion") else null,
+                        risk = risks.matchModule(id, name, author),
                     )
                 }.toList()
         }

@@ -37,7 +37,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /**
- * "Disabled by boot guard", "New version", "Conflict" and "Previous" chips under a module's author
+ * "Dangerous", "Disabled by boot guard", "New version", "Conflict" and "Previous" chips under a module's author
  * line. [newVersion] is the newer release found (updateJson or Cam's module library); its chip
  * starts the same update as the update button.
  */
@@ -54,15 +54,25 @@ fun ModuleStatusBadges(
     // a pending update (or restore) is applied on the next boot; offer nothing until then
     val backupVersion = module.backupVersion.takeUnless { module.update || module.remove }
     val showNewVersion = newVersion != null && !module.update && !module.remove
-    if (!showAutoDisabled && conflicts.isEmpty() && backupVersion == null && !showNewVersion) return
+    val risk = module.risk?.risk
+    if (risk == null && !showAutoDisabled && conflicts.isEmpty() && backupVersion == null && !showNewVersion) return
 
     var showConflicts by rememberSaveable(module.id) { mutableStateOf(false) }
+    var showRisk by rememberSaveable(module.id) { mutableStateOf(false) }
     var confirmRestore by rememberSaveable(module.id) { mutableStateOf(false) }
 
     Row(
         modifier = Modifier.padding(top = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
+        if (risk != null) {
+            Badge(
+                text = stringResource(R.string.module_badge_risk),
+                background = colorScheme.error,
+                color = colorScheme.onError,
+                onClick = { showRisk = true },
+            )
+        }
         if (showAutoDisabled) {
             // every module goes off together; the likely causes stand out from the rest
             Badge(
@@ -123,6 +133,38 @@ fun ModuleStatusBadges(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.textButtonColorsPrimary(),
             )
+        }
+    }
+
+    GlassDialog(
+        show = showRisk && risk != null,
+        title = stringResource(R.string.module_risk_title),
+        summary = risk?.let { found ->
+            listOfNotNull(
+                found.reason(),
+                found.source.takeIf { it.isNotBlank() }?.let { stringResource(R.string.flash_risk_source, it) },
+            ).joinToString("\n\n")
+        },
+        onDismissRequest = { showRisk = false },
+    ) {
+        Row {
+            TextButton(
+                text = stringResource(R.string.close),
+                onClick = { showRisk = false },
+                modifier = Modifier.weight(1f),
+            )
+            if (module.enabled && !module.remove) {
+                Spacer(Modifier.width(20.dp))
+                TextButton(
+                    text = stringResource(R.string.module_conflict_disable),
+                    onClick = {
+                        showRisk = false
+                        onDisableModule(module.id)
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            }
         }
     }
 

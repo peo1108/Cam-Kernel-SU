@@ -113,6 +113,18 @@ class HidingRulesRepository(private val context: Context = camApp) {
         return status().copy(updated = updated, failed = failed)
     }
 
+    /**
+     * The rules only (no Duck Detector lookup), at most every [CHECK_INTERVAL_MS]: what a module
+     * install checks against. Failures leave [current] as it is. Blocking.
+     */
+    fun refreshRules() {
+        val now = System.currentTimeMillis()
+        if (now - prefs.getLong("rulesFetchedAt", 0L) < CHECK_INTERVAL_MS) return
+        runCatching { fetchRules(current()) }
+            .onSuccess { prefs.edit { putLong("rulesFetchedAt", now) } }
+            .onFailure { Log.w(TAG, "rules refresh failed", it) }
+    }
+
     /** Downloads the rules and their signature; true when a newer, verified copy was saved. */
     private fun fetchRules(have: HidingRules): Boolean {
         val data = get(RULES_URL)

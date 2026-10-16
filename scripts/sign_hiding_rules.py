@@ -58,6 +58,15 @@ def sign(path: Path) -> None:
     for field in ("version", "mountSources", "mapMarkers", "suPaths", "safeProps"):
         if field not in rules:
             sys.exit(f"{RULES.name} lacks {field}")
+    # the app drops an entry it cannot read (ModuleRisk.parse): refuse to sign one
+    for i, risk in enumerate(rules.get("moduleRisks", [])):
+        reason = risk.get("reason", {})
+        if risk.get("level") not in ("block", "warn"):
+            sys.exit(f"moduleRisks[{i}]: level must be block or warn")
+        if not (risk.get("ids") or risk.get("patterns")):
+            sys.exit(f"moduleRisks[{i}]: needs ids or patterns")
+        if not (isinstance(reason.get("vi"), str) and isinstance(reason.get("en"), str)):
+            sys.exit(f"moduleRisks[{i}]: reason needs vi and en")
     signature = key.sign(data, ec.ECDSA(hashes.SHA256()))
     RULES.with_name(RULES.name + ".sig").write_text(base64.b64encode(signature).decode() + "\n")
     print(f"signed {RULES.name} version {rules['version']} with {public_key_b64(key)}")

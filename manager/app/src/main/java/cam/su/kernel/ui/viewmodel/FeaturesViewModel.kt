@@ -12,6 +12,11 @@ import kotlinx.coroutines.withContext
 import cam.su.kernel.adb.WirelessAdb
 import cam.su.kernel.camApp
 import cam.su.kernel.data.repository.HidingHistoryRepository
+import cam.su.kernel.data.repository.HidingRulesRepository
+import cam.su.kernel.hiding.HidingRules
+import cam.su.kernel.hiding.ModuleRiskHit
+import cam.su.kernel.hiding.ModuleRiskScanner
+import org.json.JSONArray
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.ui.screen.features.FeaturesUiState
@@ -22,6 +27,7 @@ import cam.su.kernel.ui.util.reenableBootGuardOthers
 import cam.su.kernel.ui.util.getBootGuardStatus
 import cam.su.kernel.ui.util.getHideBootloaderStatus
 import cam.su.kernel.ui.util.listModuleConflicts
+import cam.su.kernel.ui.util.listModules
 import cam.su.kernel.ui.util.setBootGuardConfig
 import cam.su.kernel.ui.util.setHideBootloader as writeHideBootloader
 import cam.su.kernel.ui.util.toggleModule
@@ -36,6 +42,7 @@ class FeaturesViewModel(
             conflictDetection = settingsRepo.conflictDetection,
             conflictWarnOnFlash = settingsRepo.conflictWarnOnFlash,
             conflictIncludeProps = settingsRepo.conflictIncludeProps,
+            riskBlock = settingsRepo.moduleRiskBlock,
         )
     )
     val uiState: StateFlow<FeaturesUiState> = _uiState.asStateFlow()
@@ -54,6 +61,7 @@ class FeaturesViewModel(
             }
             val hidingFindings = hidingScan?.audit?.findings.orEmpty().filter { it.id !in ignored }
             val adb = withContext(Dispatchers.IO) { WirelessAdb.status() }
+            val (rules, riskModules) = withContext(Dispatchers.IO) { flaggedModules() }
             _uiState.update {
                 it.copy(
                     bootGuard = bootGuard,
@@ -62,6 +70,10 @@ class FeaturesViewModel(
                     conflictDetection = detection,
                     conflictWarnOnFlash = settingsRepo.conflictWarnOnFlash,
                     conflictIncludeProps = settingsRepo.conflictIncludeProps,
+                    riskBlock = settingsRepo.moduleRiskBlock,
+                    riskModules = riskModules,
+                    riskEntries = rules.moduleRisks.size,
+                    rulesVersion = rules.version,
                     hidingScanTime = hidingScan?.time,
                     hidingLeaks = hidingFindings.count { f -> f.leak },
                     hidingFindings = hidingFindings.size,
@@ -113,6 +125,32 @@ class FeaturesViewModel(
     }
 
     fun rescanConflicts() = refresh()
+
+    fun setRiskBlock(enabled: Boolean) {
+        settingsRepo.moduleRiskBlock = enabled
+        _uiState.update { it.copy(riskBlock = enabled) }
+    }
+
+    fun disableModule(id: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { toggleModule(id, false) }
+            ModuleListSignal.invalidate()
+            refresh()
+        }
+    }
+
+    /** The rules at hand, and the installed modules (by id) their dangerous module list names. */
+    private fun flaggedModules(): Pair<HidingRules, Map<String, ModuleRiskHit>> {
+        val rules = HidingRulesRepository().current()
+        val scanner = ModuleRiskScanner(rules.moduleRisks)
+        if (scanner.isEmpty) return rules to emptyMap()
+        val modules = runCatching { JSONArray(listModules()) }.getOrElse { JSONArray() }
+        val flagged = (0 until modules.length()).map { modules.getJSONObject(it) }.mapNotNull { obj ->
+            val id = obj.optString("id")
+            scanner.matchModule(id, obj.optString("name"), obj.optString("author"))?.let { id to it }
+        }.toMap()
+        return rules to flagged
+    }
 
     fun setHideBootloader(enabled: Boolean) {
         _uiState.update { it.copy(hideBootloader = it.hideBootloader.copy(enabled = enabled)) }

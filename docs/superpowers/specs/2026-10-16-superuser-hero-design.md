@@ -77,8 +77,12 @@ layout-phase read.
 1. miuix-nav may drop the covered Main page from composition; the source coordinates would then
    be missing on the way back (fade instead of flight). First implementation step: check on the
    device, together with the depth range (read from the miuix-nav bytecode, `relativeDepth` =
-   animated top index minus entry index; not yet observed). If the page recomposes as the back transition starts, the source re-registers within a
-   frame, while t is still near 1, so the return flight still works.
+   animated top index minus entry index). **Observed on the TB323FU (2026-10-16, probe logging):**
+   App Profile depth runs -1 → 0 on open and 0 → -1 on back, continuously with an edge swipe;
+   the Superuser page stays composed while covered (its depth 0 → 1), so the source stays
+   registered. A debug build composes App Profile about 350 ms late, so the slide is nearly over
+   before the page's first frame: check the flight on a release build. Jank baseline (release,
+   compiled, 10 × open full profile + back): 4.22% janky frames, p90 20 ms, p99 34 ms.
 2. Editing the profile can re-sort the list on return (an app granted root moves to the top). Live
    coordinates make the flight follow the card; a card that left composition fades out.
 3. Detached coordinates (`isAttached == false`) count as missing.

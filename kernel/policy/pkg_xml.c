@@ -454,16 +454,21 @@ static ssize_t xml_val_bytes(const struct xml_ev *ev, u8 *out, size_t cap)
     return n;
 }
 
-// Pass 1: the certificate index of pkg's current signer, and its key when defined right there.
-static int find_signer(struct xml_reader *r, const char *pkg, u32 *index, u8 *cert, size_t cap, ssize_t *cert_len)
+// Pass 1: the certificate index of pkg's current signer, its key when defined right there, and
+// pkg's appid.
+static int find_signer(struct xml_reader *r, const char *pkg, u32 *index, u8 *cert, size_t cap, ssize_t *cert_len,
+                       u32 *appid)
 {
     struct xml_ev ev;
     int depth = 0, certs = 0, ret;
     bool attrs_of_package = false, attrs_of_signer = false;
     bool found = false, in_pkg = false, in_sigs = false, have_index = false;
+    // of the <package> being read; its attributes may come in any order
+    u32 pkg_appid = 0;
     ssize_t n;
 
     *cert_len = 0;
+    *appid = 0;
     for (;;) {
         ret = xml_next(r, &ev);
         if (ret)
@@ -475,6 +480,8 @@ static int find_signer(struct xml_reader *r, const char *pkg, u32 *index, u8 *ce
             depth++;
             // <packages> is depth 1, <package> 2, <sigs> 3, <cert> 4
             attrs_of_package = depth == 2 && xml_str_is(ev.name, "package");
+            if (attrs_of_package)
+                pkg_appid = 0;
             attrs_of_signer = false;
             if (in_pkg && depth == 3 && xml_str_is(ev.name, "sigs")) {
                 in_sigs = true;
@@ -493,6 +500,7 @@ static int find_signer(struct xml_reader *r, const char *pkg, u32 *index, u8 *ce
                 in_sigs = false;
             if (in_pkg && depth == 2) {
                 in_pkg = false;
+                *appid = pkg_appid;
                 break;
             }
             depth--;
@@ -501,6 +509,10 @@ static int find_signer(struct xml_reader *r, const char *pkg, u32 *index, u8 *ce
 
         if (attrs_of_package && xml_str_is(ev.name, "name") && ev.vkind == XML_VAL_TEXT && xml_str_is(ev.val, pkg)) {
             found = in_pkg = true;
+        } else if (attrs_of_package && (xml_str_is(ev.name, "userId") || xml_str_is(ev.name, "sharedUserId"))) {
+            // Settings.writePackageLPr writes one of the two; anything unreadable counts as none
+            if (!xml_val_int(&ev, &pkg_appid))
+                pkg_appid = 0;
         } else if (attrs_of_signer && xml_str_is(ev.name, "index")) {
             if (!xml_val_int(&ev, index))
                 return -EBADMSG;
@@ -560,7 +572,7 @@ static ssize_t find_key(struct xml_reader *r, u32 index, u8 *cert, size_t cap)
     }
 }
 
-ssize_t ksu_pkg_xml_find_cert(const u8 *xml, size_t len, const char *pkg, u8 *cert, size_t cap)
+ssize_t ksu_pkg_xml_find_cert(const u8 *xml, size_t len, const char *pkg, u8 *cert, size_t cap, u32 *appid)
 {
     struct xml_reader r;
     ssize_t n;
@@ -568,7 +580,7 @@ ssize_t ksu_pkg_xml_find_cert(const u8 *xml, size_t len, const char *pkg, u8 *ce
     int ret;
 
     xml_reader_init(&r, xml, len);
-    ret = find_signer(&r, pkg, &index, cert, cap, &n);
+    ret = find_signer(&r, pkg, &index, cert, cap, &n, appid);
     xml_reader_free(&r);
     if (ret)
         return ret;

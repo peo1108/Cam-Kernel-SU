@@ -211,10 +211,14 @@ static void xml_package(struct xb *x, const char *name, uint32_t uid)
     xb_attr_interned(x, "primaryCpuAbi", "arm64-v8a");
     xb_attr_int(x, "publicFlags", 0x30c8be44);
     xb_attr_long_hex(x, "ft", 0x199d3b5a2c8ULL);
-    xb_attr_int(x, "userId", uid);
+    if (uid)
+        xb_attr_int(x, "userId", uid);
     xb_attr_bool(x, "isOrphaned", true);
     xb_attr_float(x, "scale");
 }
+
+// cam.su.kernel's userId in the packages.xml fixture; 0 leaves the attribute out
+static uint32_t mgr_appid = 10500;
 
 static void xml_sigs(struct xb *x, int count)
 {
@@ -257,14 +261,14 @@ static void build_packages_xml(struct xb *x, bool abx, enum mgr_sig sig)
     if (sig == SIG_ABSENT) {
         xb_start(x, "shared-user");
         xb_attr(x, "name", "android.uid.system");
-        xml_package(x, "cam.su.kernel", 10500);
+        xml_package(x, "cam.su.kernel", mgr_appid);
         xml_sigs(x, 1);
         xb_cert(x, 1, release_cert, release_cert_len);
         xb_end(x, "sigs");
         xb_end(x, "package");
         xb_end(x, "shared-user");
     } else {
-        xml_package(x, "cam.su.kernel", 10500);
+        xml_package(x, "cam.su.kernel", mgr_appid);
         switch (sig) {
         case SIG_RELEASE:
             xml_sigs(x, 1);
@@ -373,6 +377,7 @@ static void boot_with(const char *seed, const char *pkgs, bool with_cam_dir)
 {
     sh("rm -rf '%s' && mkdir -p '%s/data/system' '%s/data/adb'", root);
     write_file("/data/system/packages.list", pkgs);
+    mgr_appid = 10500;
     write_packages_xml(true, SIG_RELEASE);
     if (with_cam_dir)
         sh("mkdir -p '%s/data/adb/cam'", root);
@@ -561,6 +566,24 @@ T(missing_packages_list_does_nothing)
     assert(events[0] == 0 && prune_calls == 0);
 }
 
+// An unreadable line could be any app: the apps after it must not lose their root and profile,
+// while the seed still works with the lines that were read.
+T(unreadable_line_skips_prune_only)
+{
+    const char *bad_lines[] = { "com.broken\n", "com.broken notanumber 0 /data/user/0/x default 3003 0 1\n" };
+    for (size_t i = 0; i < sizeof(bad_lines) / sizeof(bad_lines[0]); i++) {
+        char pkgs[1024];
+        snprintf(pkgs, sizeof(pkgs),
+                 "com.termux 10234 0 /data/user/0/com.termux default 3003 0 1\n%s"
+                 "com.other 10400 0 /data/user/0/com.other default 3003 0 1\n",
+                 bad_lines[i]);
+        boot_with(NONCE ",com.other:10400", pkgs, true);
+        ksu_pkg_tracker_update();
+        assert(strcmp(events, "grant com.other:10400;") == 0 && prune_calls == 0);
+        assert(strstr(logbuf, "skip prune"));
+    }
+}
+
 static const char *MANAGER = "cam.su.kernel 10500 0 /data/user/0/cam.su.kernel default 3003 0 1\n";
 
 T(manager_is_pinned_by_name)
@@ -590,10 +613,50 @@ T(reinstalled_manager_gets_its_new_appid)
 {
     boot_with(NULL, MANAGER, true);
     ksu_pkg_tracker_update();
+    // PackageManager writes packages.xml first, then packages.list
+    mgr_appid = 10600;
+    write_packages_xml(true, SIG_RELEASE);
     write_file("/data/system/packages.list", "cam.su.kernel 10600 0 /data/user/0/cam.su.kernel default 3003 0 1\n");
     reboot_keep_fs();
     ksu_pkg_tracker_update();
     assert(strcmp(events, "grant cam.su.kernel:10600;prune;") == 0);
+}
+
+// The release signature recorded for one appid must not vouch for another: a packages.xml
+// lagging behind packages.list would otherwise hand the old Manager's root to whatever app now
+// holds the name.
+T(manager_pin_needs_the_same_appid_in_both_files)
+{
+    const char *list_10600 = "cam.su.kernel 10600 0 /data/user/0/cam.su.kernel default 3003 0 1\n";
+    for (int abx = 0; abx < 2; abx++) {
+        boot_with(NULL, list_10600, true);
+        write_packages_xml(abx, SIG_RELEASE); // still 10500
+        ksu_pkg_tracker_update();
+        assert(strcmp(events, "prune;") == 0 && persist_calls == 0);
+        assert(strstr(logbuf, "manager pin: cam.su.kernel is appid 10500 in /data/system/packages.xml, 10600"));
+    }
+
+    // no appid in packages.xml at all: cannot tell
+    boot_with(NULL, MANAGER, true);
+    mgr_appid = 0;
+    write_packages_xml(true, SIG_RELEASE);
+    ksu_pkg_tracker_update();
+    assert(strcmp(events, "prune;") == 0);
+
+    // already granted, files disagree for a moment: the grant stays
+    boot_with(NULL, MANAGER, true);
+    ksu_pkg_tracker_update();
+    mgr_appid = 10700;
+    write_packages_xml(true, SIG_RELEASE);
+    reboot_keep_fs();
+    ksu_pkg_tracker_update();
+    assert(strcmp(events, "prune;") == 0 && __ksu_is_allow_uid(10500));
+
+    // an untrusted signer is still revoked, appid or not
+    write_packages_xml(true, SIG_OTHER);
+    reboot_keep_fs();
+    ksu_pkg_tracker_update();
+    assert(strcmp(events, "revoke cam.su.kernel:10500;prune;") == 0);
 }
 
 T(manager_pin_needs_exact_name_and_app_range)
@@ -622,11 +685,12 @@ T(manager_pin_failure_is_logged)
 // ---- policy/pkg_xml.c ----
 
 static uint8_t certbuf[8192];
+static u32 xml_appid;
 
 static ssize_t find_in_fixture(bool abx, enum mgr_sig sig, const char *pkg)
 {
     build_packages_xml(&fixture, abx, sig);
-    return ksu_pkg_xml_find_cert(fixture.buf, fixture.len, pkg, certbuf, sizeof(certbuf));
+    return ksu_pkg_xml_find_cert(fixture.buf, fixture.len, pkg, certbuf, sizeof(certbuf), &xml_appid);
 }
 
 static bool is_release(ssize_t n)
@@ -644,6 +708,30 @@ T(xml_finds_signer_written_under_another_package)
 {
     for (int abx = 0; abx < 2; abx++)
         assert(is_release(find_in_fixture(abx, SIG_RELEASE_REUSED, "cam.su.kernel")));
+}
+
+T(xml_reports_the_appid)
+{
+    for (int abx = 0; abx < 2; abx++) {
+        xml_appid = 1;
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.su.kernel")) && xml_appid == 10500);
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE_REUSED, "cam.su.kernel")) && xml_appid == 10500);
+        assert(find_in_fixture(abx, SIG_RELEASE, "com.termux") > 0 && xml_appid == 10234);
+        mgr_appid = 0;
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.su.kernel")) && xml_appid == 0);
+        mgr_appid = 10500;
+    }
+    // a package in a shared user carries sharedUserId instead, before or after its name
+    const char *shared = "<packages><package sharedUserId=\"10777\" name=\"cam.su.kernel\">"
+                         "<sigs count=\"1\"><cert index=\"1\" key=\"3082\"/></sigs></package></packages>";
+    assert(ksu_pkg_xml_find_cert((const u8 *)shared, strlen(shared), "cam.su.kernel", certbuf, sizeof(certbuf),
+                                 &xml_appid) == 2 &&
+           xml_appid == 10777);
+    const char *junk = "<packages><package name=\"cam.su.kernel\" userId=\"x1\">"
+                       "<sigs count=\"1\"><cert index=\"1\" key=\"3082\"/></sigs></package></packages>";
+    assert(ksu_pkg_xml_find_cert((const u8 *)junk, strlen(junk), "cam.su.kernel", certbuf, sizeof(certbuf),
+                                 &xml_appid) == 2 &&
+           xml_appid == 0);
 }
 
 T(xml_reports_other_signers_as_they_are)
@@ -666,13 +754,14 @@ T(xml_errors)
         assert(find_in_fixture(abx, SIG_RELEASE, "cam.su.kerne") == -ENOENT);
         assert(find_in_fixture(abx, SIG_RELEASE, "cam.su.kernel.evil") == -ENOENT);
         build_packages_xml(&fixture, abx, SIG_RELEASE);
-        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.su.kernel", certbuf, release_cert_len - 1) ==
-               -E2BIG);
-        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.su.kernel", certbuf, release_cert_len) ==
-               (ssize_t)release_cert_len);
+        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.su.kernel", certbuf, release_cert_len - 1,
+                                     &xml_appid) == -E2BIG);
+        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.su.kernel", certbuf, release_cert_len,
+                                     &xml_appid) == (ssize_t)release_cert_len);
     }
-    assert(ksu_pkg_xml_find_cert((const u8 *)"", 0, "cam.su.kernel", certbuf, sizeof(certbuf)) == -ENOENT);
-    assert(ksu_pkg_xml_find_cert((const u8 *)"ABX\0", 4, "cam.su.kernel", certbuf, sizeof(certbuf)) == -EBADMSG);
+    assert(ksu_pkg_xml_find_cert((const u8 *)"", 0, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid) == -ENOENT);
+    assert(ksu_pkg_xml_find_cert((const u8 *)"ABX\0", 4, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid) ==
+           -EBADMSG);
 }
 
 T(xml_text_from_older_android)
@@ -683,7 +772,8 @@ T(xml_text_from_older_android)
                       "<package name='cam.su.kernel' userId=\"10500\">\n"
                       "  <sigs count=\"1\">\n    <cert index = \"7\" key=\"30820a0bFF\"/>\n  </sigs>\n"
                       "</package>\n</packages>\n";
-    ssize_t n = ksu_pkg_xml_find_cert((const u8 *)xml, strlen(xml), "cam.su.kernel", certbuf, sizeof(certbuf));
+    ssize_t n =
+        ksu_pkg_xml_find_cert((const u8 *)xml, strlen(xml), "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid);
     assert(n == 5 && !memcmp(certbuf, "\x30\x82\x0a\x0b\xff", 5));
 
     const char *bad[] = {
@@ -698,8 +788,8 @@ T(xml_text_from_older_android)
         "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"1\" key=\"3082/></sigs></package></packages>",
     };
     for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
-        assert(ksu_pkg_xml_find_cert((const u8 *)bad[i], strlen(bad[i]), "cam.su.kernel", certbuf, sizeof(certbuf)) ==
-               -EBADMSG);
+        assert(ksu_pkg_xml_find_cert((const u8 *)bad[i], strlen(bad[i]), "cam.su.kernel", certbuf, sizeof(certbuf),
+                                     &xml_appid) == -EBADMSG);
 }
 
 // Every cut-off point and single-byte corruption: never a read out of bounds (ASan), and a
@@ -712,7 +802,7 @@ T(xml_truncated_or_corrupt_never_misreads)
         for (size_t len = 0; len < fixture.len; len++) {
             uint8_t *cut = malloc(len ? len : 1);
             memcpy(cut, fixture.buf, len);
-            ssize_t n = ksu_pkg_xml_find_cert(cut, len, "cam.su.kernel", certbuf, sizeof(certbuf));
+            ssize_t n = ksu_pkg_xml_find_cert(cut, len, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid);
             assert(n < 0 || is_release(n));
             free(cut);
         }
@@ -722,7 +812,7 @@ T(xml_truncated_or_corrupt_never_misreads)
             seed = seed * 1103515245 + 12345;
             size_t at = (seed >> 8) % fixture.len;
             copy.buf[at] ^= (uint8_t)(1 + (seed >> 24) % 255);
-            (void)ksu_pkg_xml_find_cert(copy.buf, copy.len, "cam.su.kernel", certbuf, sizeof(certbuf));
+            (void)ksu_pkg_xml_find_cert(copy.buf, copy.len, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid);
         }
     }
 }
@@ -852,13 +942,16 @@ int main(void)
     RUN(no_seed_grants_nothing);
     RUN(grant_failure_does_not_persist);
     RUN(missing_packages_list_does_nothing);
+    RUN(unreadable_line_skips_prune_only);
     RUN(manager_is_pinned_by_name);
     RUN(manager_pin_runs_after_seed_before_prune);
     RUN(reinstalled_manager_gets_its_new_appid);
+    RUN(manager_pin_needs_the_same_appid_in_both_files);
     RUN(manager_pin_needs_exact_name_and_app_range);
     RUN(manager_pin_failure_is_logged);
     RUN(xml_finds_signer_written_in_place);
     RUN(xml_finds_signer_written_under_another_package);
+    RUN(xml_reports_the_appid);
     RUN(xml_reports_other_signers_as_they_are);
     RUN(xml_errors);
     RUN(xml_text_from_older_android);

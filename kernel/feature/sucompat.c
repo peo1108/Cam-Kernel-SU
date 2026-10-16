@@ -165,7 +165,7 @@ static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
     const char __user *fn;
     struct ksu_sulog_pending_event *pending_sucompat = NULL;
     char path[sizeof(su_path) + 1];
-    long ret, orig_regs[5];
+    long ret, escape_ret, orig_regs[5];
     unsigned long addr;
     int su_fd = -1;
     int tmp_fd;
@@ -228,11 +228,11 @@ static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
     regs->__PT_PARM2_REG = empty_user_path();
     PT_REGS_SYSCALL_PARM1(regs) = tmp_fd;
 
-    ret = escape_with_root_profile();
-    if (ret) {
-        pr_err("escape_with_root_profile failed: %ld\n", ret);
+    escape_ret = escape_with_root_profile();
+    if (escape_ret) {
+        pr_err("escape_with_root_profile failed: %ld\n", escape_ret);
     }
-    ksu_sulog_emit_pending(pending_sucompat, ret, GFP_KERNEL);
+    ksu_sulog_emit_pending(pending_sucompat, escape_ret, GFP_KERNEL);
 
     ret = ksu_syscall_table[__NR_execveat](regs);
     if (ret < 0) {
@@ -242,7 +242,7 @@ static long ksu_handle_execve_sucompat_common(const char __user **filename_user,
         regs->__PT_PARM3_REG = orig_regs[2];
         regs->__PT_SYSCALL_PARM4_REG = orig_regs[3];
         regs->__PT_PARM5_REG = orig_regs[4];
-    } else {
+    } else if (!escape_ret) {
         // Only grant the scoped driver capability after the selected root
         // profile has been applied successfully.
         su_fd = ksu_install_su_fd();

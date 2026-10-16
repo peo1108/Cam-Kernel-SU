@@ -58,8 +58,11 @@ static bool is_uid_exist(uid_t uid, char *package, void *data)
 }
 
 // Returns false if packages.list could not be read; uid_list is filled with what was parsed.
-static bool read_packages_list(struct list_head *uid_list)
+// *complete is false when a line was skipped: the list then cannot say which apps are gone.
+static bool read_packages_list(struct list_head *uid_list, bool *complete)
 {
+    *complete = true;
+
     struct file *fp = filp_open(SYSTEM_PACKAGES_LIST_PATH, O_RDONLY, 0);
     if (IS_ERR(fp)) {
         pr_err("%s: open " SYSTEM_PACKAGES_LIST_PATH " failed: %ld\n", __func__, PTR_ERR(fp));
@@ -79,37 +82,42 @@ static bool read_packages_list(struct list_head *uid_list)
 
         count = kernel_read(fp, buf, sizeof(buf) - 1, &line_start);
         if (count <= 0) {
+            *complete = false;
             break;
         }
         buf[count] = '\0';
-
-        struct uid_data *data = kzalloc(sizeof(struct uid_data), GFP_KERNEL);
-        if (!data) {
-            filp_close(fp, 0);
-            return false;
-        }
+        // the read runs into the next line: keep this one only
+        char *nl = strchr(buf, '\n');
+        if (nl)
+            *nl = '\0';
+        // the next line starts after this '\n', whatever this one holds
+        line_start = pos;
 
         char *tmp = buf;
         const char *delim = " ";
         char *package = strsep(&tmp, delim);
         char *uid = strsep(&tmp, delim);
         if (!uid || !package) {
-            kfree(data);
             pr_err("update_uid: package or uid is NULL!\n");
-            break;
+            *complete = false;
+            continue;
         }
 
         u32 res;
         if (kstrtou32(uid, 10, &res)) {
-            kfree(data);
             pr_err("update_uid: uid parse err\n");
-            break;
+            *complete = false;
+            continue;
+        }
+
+        struct uid_data *data = kzalloc(sizeof(struct uid_data), GFP_KERNEL);
+        if (!data) {
+            filp_close(fp, 0);
+            return false;
         }
         data->uid = res;
         strscpy(data->package, package, sizeof(data->package));
         list_add_tail(&data->list, uid_list);
-        // reset line start
-        line_start = pos;
     }
     filp_close(fp, 0);
     return true;
@@ -367,15 +375,18 @@ static int cert_sha256(const u8 *data, size_t len, u8 *digest)
 }
 
 // Whether PackageManager, which verified the APK when installing it, recorded a Manager key as
-// the one signer of KSU_MANAGER_PACKAGE. The APK itself is never read here.
-// 0: trusted. -EKEYREJECTED: signed by something else. Other errors: could not tell.
-static int manager_cert_check(void)
+// the one signer of KSU_MANAGER_PACKAGE, under the appid packages.list gives it. The APK itself
+// is never read here.
+// 0: trusted. -EKEYREJECTED: signed by something else. Other errors: could not tell (-ESTALE:
+// packages.xml and packages.list disagree on the appid, e.g. one written before the other).
+static int manager_cert_check(u32 appid)
 {
     static const char hex_digits[] = "0123456789abcdef";
     u8 digest[SHA256_LEN];
     char hex[SHA256_LEN * 2 + 1];
     size_t xml_len = 0, i;
     u8 *xml, *cert;
+    u32 xml_appid = 0;
     ssize_t n;
     int ret;
 
@@ -388,7 +399,7 @@ static int manager_cert_check(void)
         goto out;
     }
 
-    n = ksu_pkg_xml_find_cert(xml, xml_len, KSU_MANAGER_PACKAGE, cert, MANAGER_CERT_MAX_SIZE);
+    n = ksu_pkg_xml_find_cert(xml, xml_len, KSU_MANAGER_PACKAGE, cert, MANAGER_CERT_MAX_SIZE, &xml_appid);
     if (n == -ENOTUNIQ || n == -E2BIG) {
         // a Manager APK has exactly one signer, with a certificate far below the limit
         pr_warn("manager pin: %s signer rejected: %zd\n", KSU_MANAGER_PACKAGE, n);
@@ -419,8 +430,15 @@ static int manager_cert_check(void)
             break;
         }
     }
-    if (ret)
+    if (ret) {
+        // an untrusted signer is refused whatever the appid: revoking is the safe side
         pr_warn("manager pin: %s is signed by untrusted certificate %s\n", KSU_MANAGER_PACKAGE, hex);
+    } else if (xml_appid != appid) {
+        // a trusted signer recorded for another appid vouches for nothing here
+        pr_warn("manager pin: %s is appid %u in " SYSTEM_PACKAGES_XML_PATH ", %u in " SYSTEM_PACKAGES_LIST_PATH "\n",
+                KSU_MANAGER_PACKAGE, xml_appid, appid);
+        ret = -ESTALE;
+    }
 out:
     kfree(cert);
     kvfree(xml);
@@ -441,7 +459,7 @@ static void ksu_manager_pin_apply(struct list_head *pkgs)
             return;
         // Checked even when already allowed: a reused appid would otherwise hand an impostor
         // the root of the Manager it replaced.
-        ret = manager_cert_check();
+        ret = manager_cert_check(np->uid);
         if (ret == -EKEYREJECTED) {
             if (!__ksu_is_allow_uid(np->uid))
                 return;
@@ -473,13 +491,18 @@ void ksu_pkg_tracker_update(void)
 {
     struct list_head uid_list;
     struct uid_data *np, *n;
+    bool complete;
     const struct cred *old_cred = override_creds(ksu_cred);
 
     INIT_LIST_HEAD(&uid_list);
-    if (read_packages_list(&uid_list)) {
+    if (read_packages_list(&uid_list, &complete)) {
         ksu_seed_apply(&uid_list);
         ksu_manager_pin_apply(&uid_list);
-        ksu_prune_allowlist(is_uid_exist, &uid_list);
+        // a skipped line could be any app: pruning now would drop its root and profile
+        if (complete)
+            ksu_prune_allowlist(is_uid_exist, &uid_list);
+        else
+            pr_warn("packages.list has unreadable lines, skip prune\n");
     }
 
     list_for_each_entry_safe (np, n, &uid_list, list) {

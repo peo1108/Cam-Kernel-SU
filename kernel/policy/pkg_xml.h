@@ -5,6 +5,8 @@
 
 // Signing certificate of one package as PackageManager recorded it in /data/system/packages.xml,
 // after it verified the APK itself. Reads binary XML (ABX, Android 12+) and text XML.
+// *appid is the package's appid there (`userId`, or `sharedUserId` in a shared user), 0 if
+// the entry has neither; set whenever pkg is listed.
 // Returns the DER length copied to cert, or:
 //   -ENOENT    pkg is not listed
 //   -ENODATA   pkg has no signer
@@ -12,6 +14,6 @@
 //   -E2BIG     the certificate is larger than cap
 //   -EBADMSG   malformed or truncated file
 //   -ENOMEM
-ssize_t ksu_pkg_xml_find_cert(const u8 *xml, size_t len, const char *pkg, u8 *cert, size_t cap);
+ssize_t ksu_pkg_xml_find_cert(const u8 *xml, size_t len, const char *pkg, u8 *cert, size_t cap, u32 *appid);
 
 #endif

@@ -1,6 +1,7 @@
 # Superuser → App Profile icon flight
 
 Date: 2026-10-16
+Status: implemented 2026-10-16 (plan `docs/superpowers/plans/2026-10-16-superuser-hero.md`; device results in row 67 of `docs/CAM_CHANGES.md`). One change from section 2: the flight runs between resting places (rect relative to the element's `GlassPage`), not live endpoints, which bent the path toward the incoming page.
 Scope: `manager/` UI only (`ui/component/hero/`, Superuser list, App Profile header, `CamActivity`).
 No change to miuix-nav, navigation routes, kernel, camd or supercalls.
 Decided with Cam: keep today's tap behaviour; overlay approach (option 1 of 3).

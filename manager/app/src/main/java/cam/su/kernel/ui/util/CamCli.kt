@@ -250,8 +250,18 @@ fun flashModule(
 
         file.delete()
 
-        return FlashResult(result)
+        return FlashResult(result, result.isSuccess && moduleNeedsReboot(moduleId))
     }
+}
+
+private val MODULE_ID_REGEX = Regex("^[a-zA-Z][a-zA-Z0-9._-]+$")
+
+// A hot installed module goes live without leaving the "update" flag behind
+private fun moduleNeedsReboot(id: String?): Boolean {
+    if (id == null || !MODULE_ID_REGEX.matches(id)) return true
+    val dir = "/data/adb/modules/$id"
+    // Any failure to check counts as needing a reboot
+    return !ShellUtils.fastCmdResult(getRootShell(), "[ -d $dir ] && [ ! -e $dir/update ]")
 }
 
 fun runModuleAction(

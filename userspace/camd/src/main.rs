@@ -30,6 +30,8 @@ mod feature_id;
 mod hide_bootloader;
 mod hiding_audit;
 #[cfg(target_os = "android")]
+mod hot_install;
+#[cfg(target_os = "android")]
 mod init_event;
 #[cfg(target_os = "android")]
 mod jailbreak;

@@ -57,7 +57,7 @@ For Rust projects in `userspace/camd` and `userspace/caminit`, ALWAYS run these 
 2. `cargo ndk -t arm64-v8a clippy` (lints and warnings)
 3. `cargo fmt` (format)
 4. Fix any errors or warnings before considering the task complete.
-5. Host tests (WSL): `cd userspace/camd && cargo test --target x86_64-unknown-linux-gnu`. All pass (109 on 2026-10-14); `embedded_module_uses_release_asset_layout` only checks the `.ko` size when CI has put it in `bin/`. CI runs the same tests (`.github/workflows/test.yml`).
+5. Host tests (WSL): `cd userspace/camd && cargo test --target x86_64-unknown-linux-gnu`. All pass (114 on 2026-10-16); `embedded_module_uses_release_asset_layout` only checks the `.ko` size when CI has put it in `bin/`. CI runs the same tests (`.github/workflows/test.yml`).
 
 ### Android Manager App (`manager/`)
 

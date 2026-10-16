@@ -52,7 +52,7 @@ Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo 
 | Đo | Kết quả |
 |---|---|
 | Khung hình khi cuộn (6 tab) | Giật 0,1–0,8%, p90 10–13 ms (Home có slime 3D: 0,78%) |
-| Mở nguội | Khoảng 1,45 s (bản debug; bản release có R8) |
+| Mở nguội | Khoảng 1,45 s (bản debug). Bản release (2026-10-16, `scripts/device_baseline_profile.sh --benchmark`): 681 ms trước khi `AppCompile` biên dịch, 614 ms sau (có Baseline Profile; không có là 629 ms) |
 | Bộ nhớ khi mở | PSS khoảng 1,1 GB, phần lớn là đồ họa 3D và kính (máy 11,5 GB RAM) |
 | Bộ nhớ sau 10 s nằm nền | Đồ họa 478 MB → **13 MB**, PSS 843 MB → **353 MB** (trước 2026-10-15 không nhả gì). Quay lại: slime 3D hiện lại, cùng tiến trình, 5 vòng không crash |
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- reads the Manager's tab labels (Journeys.kt), whatever its package name is -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+</manifest>

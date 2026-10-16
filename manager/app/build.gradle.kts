@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.lsplugin.apksign)
     alias(libs.plugins.protobuf)
+    alias(libs.plugins.baselineprofile)
     id("kotlin-parcelize")
 }
 
@@ -297,6 +298,13 @@ androidComponents {
     }
 }
 
+// The Baseline Profile in src/release/generated/baselineProfiles comes from :baselineprofile on the
+// tablet (scripts/device_baseline_profile.sh); builds pack the committed file and never regenerate
+// it, CI has no device. AppCompile compiles against it after an OTA install.
+baselineProfile {
+    automaticGenerationDuringBuild = false
+}
+
 // Unit tests read the shipped assets and CHANGELOG.md straight from disk (HidingRulesRepositoryTest,
 // ChangelogParserTest); declare them so editing either re-runs the tests instead of "up-to-date".
 tasks.withType<Test>().configureEach {
@@ -321,6 +329,9 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     implementation(libs.androidx.core.splashscreen)
+    // installs the Baseline Profile on sideloaded (OTA) installs, where no store does it
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material.icons.extended)

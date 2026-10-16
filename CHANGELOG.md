@@ -12,8 +12,10 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Kiểm tra ẩn root: sau khi mở WebUI của module (hoặc app có WebView), trang báo "App đang nạp file root trong bộ nhớ" với các file của WebView. Đó là báo nhầm: tên thư mục cài app có mã ngẫu nhiên trùng chữ "edxp" (EdXposed). Giờ chỉ xét tên app, không xét mã ngẫu nhiên
 - Cài một file zip module bị hỏng giờ báo lỗi thay vì làm camd dừng đột ngột
 - Chặn module kernel (trang Cài đặt LKM): chặn nhầm module mà máy cần ngay lúc mới khởi động không còn làm máy bootloop. SU Kernel để module đó nạp bình thường và chỉ chặn những module chặn được an toàn. Có hiệu lực khi cài lại LKM
+- Quyền root và hồ sơ của các app không còn có thể bị xoá hàng loạt khi danh sách gói của Android có một dòng đọc không được
+- Root của SU Kernel chỉ được cấp lại khi chữ ký khớp đúng bản app đang cài (chặt hơn lúc gỡ rồi cài lại app)
 ### Lưu ý
-- Bản này không đổi kernel: không cần cài lại LKM
+- Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" (thẻ trên trang chủ) rồi khởi động lại
 
 ## 1.1.8 - 2026-10-15
 - Bản cập nhật quan trọng, nên cài ngay: chống bootloop tắt hết module và chỉ ra module gây lỗi, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình

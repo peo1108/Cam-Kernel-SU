@@ -123,9 +123,16 @@ export default function deviceRoutes(app) {
 
   r.add('GET', '/api/dl/check', (ctx) => {
     if (!cfg.dlGuard) return { ok: true }
-    const uri = decodeURIComponent(String(ctx.req.headers['x-forwarded-uri'] || ''))
-    const m = /^\/dl\/(cam-v[\w.-]+)\/[^/]+$/.exec(uri.split('?')[0])
-    if (!m) fail(404, 'not_found')
+    // The query goes before decoding: a %3F must not cut the path short, or
+    // /dl/<open tag>/x%3F/../../<locked tag>/a.apk would be checked as the open tag.
+    let uri
+    try {
+      uri = decodeURIComponent(String(ctx.req.headers['x-forwarded-uri'] || '').split('?')[0])
+    } catch {
+      fail(404, 'not_found')
+    }
+    const m = /^\/dl\/(cam-v[\w.-]+)\/[^/]+$/.exec(uri)
+    if (!m || uri.split('/').some((s) => s === '.' || s === '..') || uri.includes('\\')) fail(404, 'not_found')
     const tag = m[1]
     if (!ctx.user) {
       // A browser goes to sign in; the Manager gets a status it understands.

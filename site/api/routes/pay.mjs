@@ -92,6 +92,12 @@ export default function payRoutes(app) {
     }
   }
 
+  /** Whether the buyer already has what [o] buys (from another order, or granted by Cam). */
+  function alreadyHas(o) {
+    const st = app.accountState(db.prepare('SELECT * FROM users WHERE id = ?').get(o.user_id))
+    return o.kind === 'member' ? !!st.member : st.early.has(o.tag)
+  }
+
   /** Adds money to an order inside the caller's transaction; returns what happened. */
   function credit(o, amount) {
     const received = o.received + amount
@@ -101,6 +107,13 @@ export default function payRoutes(app) {
     if (received < o.amount) {
       db.prepare('UPDATE orders SET note = ? WHERE id = ?').run(`thiếu ${vnd(o.amount - received)}`, o.id)
       return { result: 'underpaid', note: `thiếu ${vnd(o.amount - received)}` }
+    }
+    if (alreadyHas(o)) {
+      // An expired order paid late after a newer one, or two orders paid: the order is settled,
+      // nothing more is granted, and the whole sum goes back.
+      const note = `đã có từ trước, nhận ${vnd(received)}: cần hoàn`
+      db.prepare("UPDATE orders SET status = 'paid', paid_at = ?, note = ? WHERE id = ?").run(Date.now(), note, o.id)
+      return { result: 'duplicate', note }
     }
     const extra = received - o.amount
     const email = markPaid(o, { by: 'sepay', note: extra ? `thừa ${vnd(extra)}: cần hoàn` : null })

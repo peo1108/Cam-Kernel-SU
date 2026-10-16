@@ -137,6 +137,35 @@ test('underpaid then topped up; overpaid noted; late payment on an expired order
   assert.equal((await c2('GET', `/api/orders/${o2.code}`)).body.status, 'paid')
 })
 
+test('paying for what the account already has is settled for a refund, not granted again', async (t) => {
+  const { app, base } = await start(t)
+  const c = client(base)
+  await c('POST', '/api/auth/register', { email: 'twice@x.io', password: 'password1' })
+  // An order runs out, the buyer makes a new one and pays it, then pays the old QR too.
+  const old = (await c('POST', '/api/orders', { kind: 'member' })).body
+  app.db.prepare('UPDATE orders SET expires_at = ? WHERE code = ?').run(Date.now() - 1000, old.code)
+  const fresh = (await c('POST', '/api/orders', { kind: 'member' })).body
+  assert.notEqual(fresh.code, old.code)
+  await webhook(base, { id: 51, transferAmount: 200000, content: fresh.code })
+  assert.equal((await c('GET', `/api/orders/${fresh.code}`)).body.status, 'paid')
+  await webhook(base, { id: 52, transferAmount: 200000, content: old.code })
+  assert.equal(app.db.prepare("SELECT count(*) n FROM grants WHERE kind = 'member'").get().n, 1)
+  assert.equal(app.db.prepare('SELECT status FROM payments WHERE ext_id = ?').get('52').status, 'duplicate')
+  const settled = app.db.prepare('SELECT status, note FROM orders WHERE code = ?').get(old.code)
+  assert.equal(settled.status, 'paid')
+  assert.match(settled.note, /cần hoàn/)
+
+  // The same for early access already bought.
+  await prove(app, base, 'twice@x.io')
+  const e1 = (await c('POST', '/api/orders', { kind: 'early', tag: 'cam-v1.2.0' })).body
+  app.db.prepare('UPDATE orders SET expires_at = ? WHERE code = ?').run(Date.now() - 1000, e1.code)
+  const e2 = (await c('POST', '/api/orders', { kind: 'early', tag: 'cam-v1.2.0' })).body
+  await webhook(base, { id: 53, transferAmount: 20000, content: e2.code })
+  await webhook(base, { id: 54, transferAmount: 20000, content: e1.code })
+  assert.equal(app.db.prepare("SELECT count(*) n FROM grants WHERE kind = 'early'").get().n, 1)
+  assert.equal(app.db.prepare('SELECT status FROM payments WHERE ext_id = ?').get('54').status, 'duplicate')
+})
+
 test('unmatched transfer is assigned by hand; refund revokes what was bought', async (t) => {
   const { app, base } = await start(t)
   const admin = await adminClient(app, base)
@@ -260,6 +289,13 @@ test('pair a device, OTA lists only open releases, /dl gate follows the same rul
   assert.equal((await check('cam-v1.2.0', dev)).status, 403)
   assert.equal((await check('cam-v1.1.1', {})).status, 401)
   assert.equal((await check('cam-v1.1.1', { Accept: 'text/html' })).status, 302)
+  // The path is read as the file server will serve it: an open tag cannot front a locked one.
+  const raw = (uri) => fetch(base + '/api/dl/check', { redirect: 'manual', headers: { 'X-Forwarded-Uri': uri, ...dev } })
+  assert.equal((await raw('/dl/cam-v1.1.1/a.apk?x=1')).status, 200)
+  assert.equal((await raw('/dl/cam-v1.1.1/x%3F/../../cam-v1.2.0/a.apk')).status, 404)
+  assert.equal((await raw('/dl/cam-v1.1.1/..%2F..%2Fcam-v1.2.0%2Fa.apk')).status, 404)
+  assert.equal((await raw('/dl/cam-v1.1.1/%2e%2e')).status, 404)
+  assert.equal((await raw('/dl/cam-v1.1.1/%E0%A4%A')).status, 404, 'a malformed escape is no server error')
 
   // Unlinked from the web: the token stops working.
   const me = (await c('GET', '/api/me')).body

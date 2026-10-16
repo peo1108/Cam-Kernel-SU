@@ -9,6 +9,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Sao lưu module (Cài đặt → Sao lưu cấu hình → Module): lưu chính các module đã cài vào một file .tar. Khôi phục thì chọn từng module, module được thay ở lần khởi động sau như một lần cập nhật và giữ trạng thái bật hay tắt như lúc sao lưu
 - Cài module không cần khởi động lại, với module tự khai hỗ trợ (hot install, từ KernelSU). Module khác vẫn cần khởi động lại như cũ
 - Intro khi mở app: logo Inner Veterans được ráp lại từ từng mảnh giáp, đạn găm vào khung, điện chạy quanh viền rồi nổ tung, mở ra trang chủ với slime đã chạy sẵn. Chạm để bỏ qua, tắt trong Cài đặt → Chủ đề (tắt thì màn hình chờ có logo như cũ)
+- Nền kính mới "Hầm chỉ huy Inner Veterans" (Cài đặt → Chủ đề → Nền kính): logo làm nền sống động, ánh sáng lạnh lướt trên các mảnh thép và viền chrome, thỉnh thoảng đạn găm hay mảnh giáp bật ra. Nghiêng máy thấy chiều sâu và vệt phản chiếu trượt theo, chuyển tab thì tam giác quay một vòng, kéo để làm mới thì viền nung sáng rồi chớp, cấp root hay cài module xong thì tâm ngắm khoá mục tiêu
 ### Thay đổi
 - Superuser, Module và Thư viện module hiện các thẻ mờ trong lúc tải lần đầu thay cho vòng xoay
 - Bấm "Mở hồ sơ đầy đủ" trong Superuser: icon và tên app bay từ thẻ sang trang hồ sơ, quay lại thì bay về thẻ (theo cả thao tác vuốt)

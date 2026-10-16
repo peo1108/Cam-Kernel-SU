@@ -1,6 +1,8 @@
 package cam.su.kernel.ui.component.glass
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GlassSourceTest {
@@ -24,6 +26,14 @@ class GlassSourceTest {
     @Test
     fun customImageMissingFallsBackToGradient() =
         assertEquals(GlassSourceKind.Gradient, pickGlassSourceKind(GlassBackgroundType.IMAGE, hasBitmap = false))
+
+    @Test
+    fun bunkerIgnoresBitmapAndIsAnimated() {
+        assertEquals(GlassSourceKind.Bunker, pickGlassSourceKind(GlassBackgroundType.BUNKER, hasBitmap = true))
+        assertEquals(GlassSourceKind.Bunker, pickGlassSourceKind(GlassBackgroundType.BUNKER, hasBitmap = false))
+        assertTrue(GlassSource.Bunker.animated && GlassSource.Gradient.animated)
+        assertFalse(GlassSource.Plain.animated)
+    }
 
     @Test
     fun unknownTypeBehavesLikeWallpaper() =

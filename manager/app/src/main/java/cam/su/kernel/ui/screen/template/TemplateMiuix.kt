@@ -1,5 +1,7 @@
 package cam.su.kernel.ui.screen.template
 
+import cam.su.kernel.ui.bunker.BunkerSignals
+import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.MorphIcon
@@ -228,11 +230,15 @@ fun AppProfileTemplateScreenMiuix(
             }
         }
         val pullToRefreshState = rememberPullToRefreshState()
+        ReportPullToBunker(pullToRefreshState)
         val layoutDirection = LocalLayoutDirection.current
         PullToRefresh(
             isRefreshing = state.isRefreshing,
             pullToRefreshState = pullToRefreshState,
-            onRefresh = { actions.onRefresh(true) },
+            onRefresh = {
+                BunkerSignals.discharge()
+                actions.onRefresh(true)
+            },
             refreshTexts = IosRefreshTexts,
             contentPadding = PaddingValues(
                 top = innerPadding.calculateTopPadding() + 12.dp,

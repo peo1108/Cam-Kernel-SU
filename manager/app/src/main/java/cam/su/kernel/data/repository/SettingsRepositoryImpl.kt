@@ -113,8 +113,8 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) = prefs.edit { putBoolean("enable_floating_bottom_bar_blur", value) }
 
     override var glassBackgroundType: Int
-        get() = prefs.getInt("glass_background_type", 0).coerceIn(0, 2)
-        set(value) = prefs.edit { putInt("glass_background_type", value.coerceIn(0, 2)) }
+        get() = prefs.getInt("glass_background_type", 0).coerceIn(0, 3)
+        set(value) = prefs.edit { putInt("glass_background_type", value.coerceIn(0, 3)) }
 
     override var glassBackgroundBlur: Float
         get() = prefs.getFloat("glass_background_blur", 0f).coerceIn(0f, 40f)

@@ -256,7 +256,7 @@ class SettingsViewModel(
 
     fun setGlassBackgroundType(type: Int) {
         repo.glassBackgroundType = type
-        _uiState.update { it.copy(glassBackgroundType = type.coerceIn(0, 2)) }
+        _uiState.update { it.copy(glassBackgroundType = type.coerceIn(0, 3)) }
     }
 
     fun setGlassBackgroundBlur(blur: Float) {

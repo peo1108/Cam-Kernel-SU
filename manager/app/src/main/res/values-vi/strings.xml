@@ -331,6 +331,7 @@
     <string name="glass_background_wallpaper">Hình nền máy</string>
     <string name="glass_background_gradient">Gradient động</string>
     <string name="glass_background_image">Ảnh tự chọn</string>
+    <string name="glass_background_bunker">Hầm chỉ huy Inner Veterans</string>
     <string name="glass_background_pick_image">Chọn ảnh</string>
     <string name="glass_background_blur">Độ mờ nền</string>
     <string name="glass_background_dim">Độ tối nền</string>

@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import cam.su.kernel.data.repository.PrefsStampStore
 import cam.su.kernel.data.repository.WallpaperRepository
+import cam.su.kernel.ui.bunker.BunkerBackground
 import cam.su.kernel.ui.component.miuix.effect.BgEffectBackground
 import cam.su.kernel.ui.component.miuix.effect.BgEffectConfig
 import cam.su.kernel.ui.component.miuix.effect.DeviceType
@@ -56,13 +57,17 @@ object GlassBackgroundType {
     const val WALLPAPER = 0
     const val GRADIENT = 1
     const val IMAGE = 2
+
+    /** The Inner Veterans command bunker, alive (ui/bunker). */
+    const val BUNKER = 3
 }
 
-enum class GlassSourceKind { Plain, Gradient, Bitmap }
+enum class GlassSourceKind { Plain, Gradient, Bitmap, Bunker }
 
 /** Wallpaper falls back to the plain surface; a custom image falls back to the gradient. */
 fun pickGlassSourceKind(type: Int, hasBitmap: Boolean): GlassSourceKind = when (type) {
     GlassBackgroundType.GRADIENT -> GlassSourceKind.Gradient
+    GlassBackgroundType.BUNKER -> GlassSourceKind.Bunker
     GlassBackgroundType.IMAGE -> if (hasBitmap) GlassSourceKind.Bitmap else GlassSourceKind.Gradient
     else -> if (hasBitmap) GlassSourceKind.Bitmap else GlassSourceKind.Plain
 }
@@ -70,9 +75,13 @@ fun pickGlassSourceKind(type: Int, hasBitmap: Boolean): GlassSourceKind = when (
 sealed interface GlassSource {
     data object Plain : GlassSource
     data object Gradient : GlassSource
+    data object Bunker : GlassSource
     /** [material] is the pre-blurred copy glass cards draw (see [glassMaterial]). */
     data class Bitmap(val image: ImageBitmap, val material: ImageBitmap, val meanLuma: Float) : GlassSource
 }
+
+/** Redrawn every frame: bar glass samples a still stand-in instead (see [rememberAnimatedStandIn]). */
+val GlassSource.animated: Boolean get() = this is GlassSource.Gradient || this is GlassSource.Bunker
 
 @Immutable
 data class GlassBackgroundState(
@@ -117,7 +126,7 @@ object GlassBackgroundCache {
 
     /** The app-private file the background of [type] is drawn from, if one exists yet. */
     fun localFile(context: Context, type: Int): File? = when (type) {
-        GlassBackgroundType.GRADIENT -> null
+        GlassBackgroundType.GRADIENT, GlassBackgroundType.BUNKER -> null
         GlassBackgroundType.IMAGE -> glassImageFile(context)
         else -> File(context.filesDir, "glass_wallpaper")
     }?.takeIf { it.isFile }
@@ -171,7 +180,7 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
 
     LaunchedEffect(type, resumeCount, maxEdge, imageVersion, blur) {
         val file = when (type) {
-            GlassBackgroundType.GRADIENT -> null
+            GlassBackgroundType.GRADIENT, GlassBackgroundType.BUNKER -> null
             GlassBackgroundType.IMAGE -> glassImageFile(context).takeIf { it.isFile }
             else -> repository.refresh()
         }
@@ -198,13 +207,14 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
     val source = when (kind) {
         GlassSourceKind.Plain -> GlassSource.Plain
         GlassSourceKind.Gradient -> GlassSource.Gradient
+        GlassSourceKind.Bunker -> GlassSource.Bunker
         GlassSourceKind.Bitmap -> decoded!!.let { GlassSource.Bitmap(it.image, it.material, it.meanLuma) }
     }
     return GlassBackgroundState(
         source = source,
         blur = blur.coerceIn(0f, 40f).dp,
         dim = dim.coerceIn(0f, 0.6f),
-        wallpaperFallback = type != GlassBackgroundType.GRADIENT && type != GlassBackgroundType.IMAGE &&
+        wallpaperFallback = type != GlassBackgroundType.GRADIENT && type != GlassBackgroundType.IMAGE && type != GlassBackgroundType.BUNKER &&
             kind == GlassSourceKind.Plain,
     )
 }
@@ -219,6 +229,7 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val pageBackdrop = rememberLayerBackdrop()
     val overlayBackdrop = rememberLayerBackdrop()
     val anchor = remember { GlassPageAnchor() }
+    val state = LocalGlassBackgroundState.current
     val transition = LocalNavTransitionScope.current
     // Only flips at the start and end of a transition, so pages recompose twice per navigation.
     val moving by remember(transition) { derivedStateOf { transition?.isRunning == true } }
@@ -233,7 +244,7 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
                 .fillMaxSize()
                 .layerBackdrop(pageBackdrop)
         ) {
-            GlassBackgroundLayer(LocalGlassBackgroundState.current, moving)
+            GlassBackgroundLayer(state, moving)
         }
         CompositionLocalProvider(
             LocalGlassBackdrop provides pageBackdrop,
@@ -256,6 +267,8 @@ private fun GlassBackgroundLayer(state: GlassBackgroundState, moving: Boolean) {
         )
 
         GlassSource.Gradient -> GradientLayer(animate = !moving)
+
+        GlassSource.Bunker -> BunkerBackground(animate = !moving, blur = state.blur, dim = state.dim)
 
         // Surface behind the image so transparent pixels of a custom PNG do not show the window.
         is GlassSource.Bitmap -> Box(

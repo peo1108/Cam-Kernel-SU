@@ -1,5 +1,7 @@
 package cam.su.kernel.ui.screen.modulerepo
 
+import cam.su.kernel.ui.bunker.BunkerSignals
+import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -364,6 +366,7 @@ fun ModuleRepoScreenMiuix(
 
         searchStatus.SearchBox {
             val pullToRefreshState = rememberPullToRefreshState()
+            ReportPullToBunker(pullToRefreshState)
             val lazyListState = rememberLazyListState()
             val refreshTick = remember { mutableIntStateOf(0) }
             val latestModules = rememberUpdatedState(state.modules)
@@ -378,6 +381,7 @@ fun ModuleRepoScreenMiuix(
                 isRefreshing = state.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
                 onRefresh = {
+                    BunkerSignals.discharge()
                     actions.onRefresh()
                     refreshTick.intValue++
                 },

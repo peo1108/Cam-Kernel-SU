@@ -1,5 +1,7 @@
 package cam.su.kernel.ui.screen.module
 
+import cam.su.kernel.ui.bunker.BunkerSignals
+import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.CamToast
@@ -440,6 +442,7 @@ fun ModulePagerMiuix(
         val layoutDirection = LocalLayoutDirection.current
         run {
             val pullToRefreshState = rememberPullToRefreshState()
+            ReportPullToBunker(pullToRefreshState)
             val contentPadding = PaddingValues(
                 top = innerPadding.calculateTopPadding() + 6.dp,
                 start = innerPadding.calculateStartPadding(layoutDirection),
@@ -450,6 +453,7 @@ fun ModulePagerMiuix(
                 isRefreshing = uiState.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
                 onRefresh = {
+                    BunkerSignals.discharge()
                     actions.onRefresh()
                     refreshTick.intValue++
                 },

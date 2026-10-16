@@ -46,6 +46,7 @@ fun GlassBackgroundSection(
         GlassBackgroundType.WALLPAPER to stringResource(R.string.glass_background_wallpaper),
         GlassBackgroundType.GRADIENT to stringResource(R.string.glass_background_gradient),
         GlassBackgroundType.IMAGE to stringResource(R.string.glass_background_image),
+        GlassBackgroundType.BUNKER to stringResource(R.string.glass_background_bunker),
     )
 
     GlassCard(

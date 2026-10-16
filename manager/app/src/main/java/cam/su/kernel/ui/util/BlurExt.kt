@@ -1,13 +1,13 @@
 package cam.su.kernel.ui.util
 
-import cam.su.kernel.ui.component.glass.rememberGradientStandIn
+import cam.su.kernel.ui.component.glass.rememberAnimatedStandIn
+import cam.su.kernel.ui.component.glass.animated
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.layout.BoxScope
 import cam.su.kernel.ui.component.glass.LocalGlassBackgroundState
-import cam.su.kernel.ui.component.glass.GlassSource
 import cam.su.kernel.ui.component.glass.LocalGlassPageMoving
 import top.yukonga.miuix.kmp.blur.ProgressiveBlur
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -63,8 +63,8 @@ fun BlurredBar(
     val pageGlass = LocalGlassBackdrop.current
     // An animated background would make every bar surface re-record each frame; it has no detail
     // worth refracting, so the bar samples a static stand-in color under the content instead.
-    val animatedBackground = LocalGlassBackgroundState.current.source is GlassSource.Gradient
-    val background: Backdrop? = if (animatedBackground) rememberGradientStandIn() else pageGlass
+    val animatedBackground = LocalGlassBackgroundState.current.source.animated
+    val background: Backdrop? = if (animatedBackground) rememberAnimatedStandIn() else pageGlass
     // Controls in the bar (droplet buttons, search field) refract the content scrolling under it.
     val sample: Backdrop? = when {
         !blurActive || backdrop == null -> pageGlass

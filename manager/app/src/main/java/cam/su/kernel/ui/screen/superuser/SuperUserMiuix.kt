@@ -1,5 +1,7 @@
 package cam.su.kernel.ui.screen.superuser
 
+import cam.su.kernel.ui.bunker.BunkerSignals
+import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.MorphIcon
@@ -317,6 +319,7 @@ fun SuperUserPagerMiuix(
                 isBusy = { latestRefreshing.value },
             ) { latestGroupedApps.value }
             val pullToRefreshState = rememberPullToRefreshState()
+            ReportPullToBunker(pullToRefreshState)
 
             val expandedUids = remember { mutableStateOf(setOf<Int>()) }
             val openProfileUid = rememberSaveable { mutableStateOf<Int?>(null) }
@@ -324,6 +327,7 @@ fun SuperUserPagerMiuix(
                 isRefreshing = uiState.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
                 onRefresh = {
+                    BunkerSignals.discharge()
                     actions.onRefresh()
                     refreshTick.intValue++
                 },

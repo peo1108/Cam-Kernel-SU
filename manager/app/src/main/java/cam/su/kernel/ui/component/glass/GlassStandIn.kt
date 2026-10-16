@@ -32,6 +32,18 @@ class SolidBackdrop(val color: Color) : Backdrop {
 }
 
 /**
+ * Static stand-in for whichever animated background is showing ([GlassSource.animated]), for bar
+ * glass. The bunker is black under its logo, so a near-black stands in for it.
+ */
+@Composable
+fun rememberAnimatedStandIn(): Backdrop {
+    val gradient = rememberGradientStandIn()
+    return if (LocalGlassBackgroundState.current.source is GlassSource.Bunker) remember { SolidBackdrop(BunkerStandIn) } else gradient
+}
+
+private val BunkerStandIn = Color(0xFF060B0B)
+
+/**
  * Static stand-in for the animated gradient background, for bar glass: sampling the live gradient
  * would re-record the bars every frame, and sampling nothing renders black. The gradient has no
  * detail to refract, so its average color (over the surface, like the shader draws it) looks the same.

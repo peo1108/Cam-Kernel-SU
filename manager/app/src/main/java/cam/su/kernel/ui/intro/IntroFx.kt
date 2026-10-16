@@ -34,10 +34,12 @@ import kotlin.math.sin
 
 internal val IntroTeal = Color(0xFF2EE6D6)
 internal val IntroCyan = Color(0xFF8AFBFF)
-internal val IntroEmber = Color(0xFFFF4D1A)
-internal val IntroEmberHot = Color(0xFFFFB46B)
-private val SparkColor = Color(0xFFFFE3A3)
-private val SlugColor = Color(0xFF3A1206)
+
+/** The colours of a shot: its glow, its hot core, its sparks, the slug left in the metal. */
+internal class ShotColors(val glow: Color, val hot: Color, val spark: Color, val slug: Color)
+
+/** Shots strike cold: ice-blue glow, white-hot core, pale sparks, a steel-blue slug. */
+internal val ColdShot = ShotColors(Color(0xFF4FB8FF), Color(0xFFD6F2FF), Color(0xFFBFE6FF), Color(0xFF0A1A2A))
 
 /** Reused paths and scratch space, kept by the player's thread (no allocation per frame). */
 internal class IntroPaths {
@@ -109,11 +111,11 @@ private fun nextCorner(s: Float): Float {
     }
 }
 
-/** Teal halo, cyan body, white-hot core: the look of every bolt in [path]. */
-internal fun DrawScope.drawBolts(path: Path, width: Float, alpha: Float) {
+/** A [halo] (teal), a [body] (cyan) and a white-hot core: the look of every bolt in [path]. */
+internal fun DrawScope.drawBolts(path: Path, width: Float, alpha: Float, halo: Color = IntroTeal, body: Color = IntroCyan) {
     if (alpha <= 0.01f) return
-    drawPath(path, IntroTeal, alpha = 0.16f * alpha, style = Stroke(width * 7f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-    drawPath(path, IntroCyan, alpha = 0.55f * alpha, style = Stroke(width * 2.6f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    drawPath(path, halo, alpha = 0.16f * alpha, style = Stroke(width * 7f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    drawPath(path, body, alpha = 0.55f * alpha, style = Stroke(width * 2.6f, cap = StrokeCap.Round, join = StrokeJoin.Round))
     drawPath(path, Color.White, alpha = 0.95f * alpha, style = Stroke(width, cap = StrokeCap.Round, join = StrokeJoin.Round))
 }
 
@@ -121,10 +123,10 @@ internal fun DrawScope.drawBolts(path: Path, width: Float, alpha: Float) {
  * A shot in the air heading along [dir]: a light trail [trail] long (longer while it is fast),
  * two rifling strands twisting round it, and a hot head.
  */
-internal fun DrawScope.drawBullet(paths: IntroPaths, head: Offset, dir: Offset, trail: Float, t: Float) {
+internal fun DrawScope.drawBullet(paths: IntroPaths, head: Offset, dir: Offset, trail: Float, t: Float, colors: ShotColors = ColdShot) {
     val tail = head - dir * trail
     drawLine(
-        Brush.linearGradient(listOf(Color.Transparent, IntroEmber.copy(alpha = 0.5f), IntroEmberHot, Color.White), tail, head),
+        Brush.linearGradient(listOf(Color.Transparent, colors.glow.copy(alpha = 0.5f), colors.hot, Color.White), tail, head),
         tail,
         head,
         strokeWidth = 7f,
@@ -139,25 +141,26 @@ internal fun DrawScope.drawBullet(paths: IntroPaths, head: Offset, dir: Offset, 
             val o = lerp(tail, head, f) + perp * (sin(f * trail / 16f - t * 80f + side * PI.toFloat()) * 10f * f)
             if (k == 0) strand.moveTo(o.x, o.y) else strand.lineTo(o.x, o.y)
         }
-        drawPath(strand, if (side == 0) IntroCyan else IntroEmberHot, alpha = 0.75f, style = Stroke(2.2f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(strand, if (side == 0) IntroCyan else colors.hot, alpha = 0.75f, style = Stroke(2.2f, cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
-    drawGlow(head, 34f, IntroEmber, 0.9f)
-    drawGlow(head, 15f, IntroEmberHot, 1f)
+    drawGlow(head, 34f, colors.glow, 0.9f)
+    drawGlow(head, 15f, colors.hot, 1f)
     drawCircle(Color.White, 4.5f, head)
 }
 
-/** A slug stuck in the frame, glowing red-orange; [age] seconds since it hit. */
-internal fun DrawScope.drawEmbedded(p: Offset, age: Float, t: Float, seed: Int) {
+/** A slug stuck in the frame, glowing cold; [age] seconds since it hit, [heat] 1 hot to 0 cold. */
+internal fun DrawScope.drawEmbedded(p: Offset, age: Float, t: Float, seed: Int, heat: Float = 1f, colors: ShotColors = ColdShot) {
+    if (heat <= 0.01f) return
     val pulse = 0.5f + 0.5f * sin(t * 26f + seed * 1.7f)
     val fresh = 1f - progress(age, 0f, 0.15f)
-    drawGlow(p, 34f + 30f * fresh, IntroEmber, (0.5f + 0.3f * pulse + 0.2f * fresh).coerceAtMost(1f))
-    drawCircle(SlugColor, 8f, p)
-    drawCircle(IntroEmberHot, 5.5f, p, alpha = 0.75f + 0.25f * pulse)
-    drawCircle(Color.White, 2.4f, p, alpha = 0.5f + 0.5f * fresh)
+    drawGlow(p, 34f + 30f * fresh, colors.glow, heat * (0.5f + 0.3f * pulse + 0.2f * fresh).coerceAtMost(1f))
+    drawCircle(colors.slug, 8f, p, alpha = heat)
+    drawCircle(colors.hot, 5.5f, p, alpha = heat * (0.75f + 0.25f * pulse))
+    drawCircle(Color.White, 2.4f, p, alpha = heat * (0.5f + 0.5f * fresh))
 }
 
 /** Sparks thrown back out of an impact at [p] toward [back] (unit), [age] seconds after it. */
-internal fun DrawScope.drawSparks(p: Offset, back: Offset, age: Float, seed: Int, count: Int) {
+internal fun DrawScope.drawSparks(p: Offset, back: Offset, age: Float, seed: Int, count: Int, colors: ShotColors = ColdShot) {
     if (age < 0f || age > SPARK_LIFE) return
     val fade = 1f - age / SPARK_LIFE
     val base = atan2(back.y, back.x)
@@ -166,30 +169,30 @@ internal fun DrawScope.drawSparks(p: Offset, back: Offset, age: Float, seed: Int
         val speed = 520f + 900f * hash(seed + k + 40)
         val d = Offset(cos(a), sin(a))
         val pos = p + d * (speed * age) + Offset(0f, 900f * age * age)
-        drawLine(if (k % 3 == 0) Color.White else SparkColor, pos - d * (speed * 0.022f), pos, strokeWidth = 2.6f, cap = StrokeCap.Round, alpha = fade)
+        drawLine(if (k % 3 == 0) Color.White else colors.spark, pos - d * (speed * 0.022f), pos, strokeWidth = 2.6f, cap = StrokeCap.Round, alpha = fade)
     }
-    drawGlow(p, 60f + 60f * age, IntroEmberHot, 0.7f * fade)
+    drawGlow(p, 60f + 60f * age, colors.hot, 0.7f * fade)
 }
 
 private const val SPARK_LIFE = 0.32f
 
 /** A slug going off: white core, orange ball in a teal halo, a shock ring and flying debris. */
-internal fun DrawScope.drawFireball(c: Offset, age: Float, size: Float, seed: Int, life: Float = 0.5f) {
+internal fun DrawScope.drawFireball(c: Offset, age: Float, size: Float, seed: Int, life: Float = 0.5f, colors: ShotColors = ColdShot) {
     if (age < 0f || age > life) return
     val e = age / life
     val fade = 1f - e
     val r = size * (0.35f + 0.9f * easeOutCubic(progress(age, 0f, 0.16f)))
     drawGlow(c, r * 2.1f, IntroTeal, 0.45f * fade)
-    drawGlow(c, r, IntroEmber, 0.95f * fade.pow(0.6f))
-    drawGlow(c, r * 0.55f, IntroEmberHot, fade)
+    drawGlow(c, r, colors.glow, 0.95f * fade.pow(0.6f))
+    drawGlow(c, r * 0.55f, colors.hot, fade)
     drawGlow(c, r * 0.3f, Color.White, 1f - progress(age, 0f, 0.14f))
-    drawCircle(IntroEmberHot, size * (0.4f + 2.2f * easeOutCubic(e)), c, alpha = 0.6f * fade, style = Stroke(size * 0.07f * fade + 0.5f))
+    drawCircle(colors.hot, size * (0.4f + 2.2f * easeOutCubic(e)), c, alpha = 0.6f * fade, style = Stroke(size * 0.07f * fade + 0.5f))
     repeat(9) { k ->
         val a = hash(seed + k * 7) * TAU
         val d = Offset(cos(a), sin(a))
         val speed = size * (3.5f + 5f * hash(seed + k * 7 + 3))
         val pos = c + d * (speed * age) + Offset(0f, size * 9f * age * age)
-        drawLine(if (k % 2 == 0) IntroEmberHot else IntroTeal, pos - d * (speed * 0.03f), pos, strokeWidth = size * 0.07f, cap = StrokeCap.Round, alpha = fade)
+        drawLine(if (k % 2 == 0) colors.spark else colors.glow, pos - d * (speed * 0.03f), pos, strokeWidth = size * 0.07f, cap = StrokeCap.Round, alpha = fade)
     }
 }
 

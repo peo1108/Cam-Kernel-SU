@@ -1,6 +1,8 @@
 package cam.su.kernel.ui.screen.flash
 
+import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.component.CamToast
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +41,10 @@ fun FlashScreen(flashIt: FlashIt, onBackEnabledChange: (Boolean) -> Unit) {
     val backEnabled = flashingStatus != FlashingStatus.FLASHING
 
     SideEffect { onBackEnabledChange(backEnabled) }
+    // a module went in: the bunker background's reticle locks on
+    LaunchedEffect(flashingStatus) {
+        if (flashingStatus == FlashingStatus.SUCCESS && flashIt is FlashIt.FlashModules) BunkerSignals.lock()
+    }
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
         isBackEnabled = !backEnabled,

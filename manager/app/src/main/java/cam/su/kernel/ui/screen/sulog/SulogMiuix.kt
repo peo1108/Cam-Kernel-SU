@@ -1,5 +1,7 @@
 package cam.su.kernel.ui.screen.sulog
 
+import cam.su.kernel.ui.bunker.BunkerSignals
+import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.MorphIcon
@@ -124,6 +126,7 @@ fun SulogScreenMiuix(
     val blurActive = backdrop != null
     val barColor = if (blurActive) Color.Transparent else colorScheme.surface
     val pullToRefreshState = rememberPullToRefreshState()
+    ReportPullToBunker(pullToRefreshState)
     val listState = rememberLazyListState()
     val fileSelector = buildSulogFileSelector(state.files, state.selectedFilePath)
     var searchStatus by remember { mutableStateOf(SearchStatus("")) }
@@ -286,7 +289,10 @@ fun SulogScreenMiuix(
             PullToRefresh(
                 isRefreshing = state.isLoading || state.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
-                onRefresh = actions.onRefresh,
+                onRefresh = {
+                    BunkerSignals.discharge()
+                    actions.onRefresh()
+                },
                 refreshTexts = IosRefreshTexts,
                 contentPadding = PaddingValues(
                     top = innerPadding.calculateTopPadding() + 6.dp,

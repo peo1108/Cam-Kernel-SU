@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.draw.drawBehind
+import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.intro.IntroGate
 import cam.su.kernel.ui.intro.IntroLogo
 import cam.su.kernel.ui.intro.IntroPlayer
@@ -15,8 +16,8 @@ import cam.su.kernel.ui.component.hero.rememberHeroState
 import cam.su.kernel.update.UpdateNotifier
 import cam.su.kernel.update.UpdateSignal
 import androidx.activity.compose.BackHandler
-import cam.su.kernel.ui.component.glass.rememberGradientStandIn
-import cam.su.kernel.ui.component.glass.GlassSource
+import cam.su.kernel.ui.component.glass.rememberAnimatedStandIn
+import cam.su.kernel.ui.component.glass.animated
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.ui.component.glass.GlassBackgroundCache
 import cam.su.kernel.ui.component.liquid.rememberQuantizedGravityAngle
@@ -552,10 +553,10 @@ fun MainScreen(
     val glassBackdrop = LocalGlassBackdrop.current
     // Same rule as BlurredBar: an animated background is replaced by a static stand-in color
     // (sampling it would re-record every frame; sampling nothing renders black).
-    val animatedBackground = LocalGlassBackgroundState.current.source is GlassSource.Gradient
+    val animatedBackground = LocalGlassBackgroundState.current.source.animated
     val barBackground: Backdrop? = when {
         glassBackdrop == null -> null
-        animatedBackground -> rememberGradientStandIn()
+        animatedBackground -> rememberAnimatedStandIn()
         else -> glassBackdrop
     }
     val barBackdrop: Backdrop = if (barBackground != null) rememberCombinedBackdrop(barBackground, backdrop) else backdrop
@@ -567,6 +568,8 @@ fun MainScreen(
     val pagerSwipe = userScrollEnabled && settledPage != BottomBarDestination.Files.ordinal
     LaunchedEffect(settledPage) {
         onPageChanged(settledPage)
+        // the bunker background turns its triangle a chamber per tab
+        BunkerSignals.page(settledPage)
     }
 
     val currentPage = mainPagerState.pagerState.currentPage

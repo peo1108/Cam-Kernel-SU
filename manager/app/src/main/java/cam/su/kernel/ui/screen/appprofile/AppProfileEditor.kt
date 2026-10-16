@@ -1,5 +1,6 @@
 package cam.su.kernel.ui.screen.appprofile
 
+import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.component.CamToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -105,6 +106,8 @@ fun rememberAppProfileEditor(appGroup: GroupedApps, onSaved: () -> Unit = {}): A
                 if (!Cam.setAppProfile(profileToSave)) {
                     showMessage(failToUpdateAppProfile)
                 } else {
+                    // root just granted: the bunker background's reticle locks on
+                    if (profileToSave.allowSu && !profile.allowSu) BunkerSignals.lock()
                     profile = profileToSave
                     onSaved()
                 }

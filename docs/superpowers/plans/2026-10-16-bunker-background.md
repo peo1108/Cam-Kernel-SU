@@ -28,6 +28,8 @@ Một loại nền kính mới (thứ 4, cạnh Hình nền / Gradient động /
 
 - Bỏ đổi màu theo giờ và đèn báo động đỏ ban đêm (Cam thấy bẩn, rẻ tiền): luôn là màu gốc, ban đêm không dịu đi. `BunkerTime` đã xoá.
 
+- Bỏ xoay tam giác khi chuyển tab (120°, rồi đủ một vòng; Cam thấy quê) và bỏ sự kiện mảnh khung bật ra. Sự kiện chỉ còn đạn găm; vết găm là quầng mờ và vết nứt mảnh thay cho các hình tròn đặc (cả ở intro).
+
 ## Test
 
 JVM: `BunkerMotionTest` (`surge` trong biên, khoảng cách sự kiện 20–40 s, xoay tab kết thúc đúng góc, mảnh bật về chỗ cũ), `GlassSourceTest` (loại mới).

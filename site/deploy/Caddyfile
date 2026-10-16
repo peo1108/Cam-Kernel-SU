@@ -33,7 +33,8 @@ caesarvn.xyz, www.caesarvn.xyz {
 	@feed path /feed/*
 	header @feed Cache-Control "no-cache"
 	@dl path /dl/*
-	header @dl Cache-Control "public, max-age=86400"
+	# private: downloads sit behind the membership gate, so no shared cache may keep them
+	header @dl Cache-Control "private, max-age=86400"
 	header @dl Content-Disposition attachment
 	encode zstd gzip
 	file_server

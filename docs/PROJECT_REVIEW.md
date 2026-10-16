@@ -60,8 +60,8 @@ Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo 
 
 | # | Vấn đề | Mức | Tình trạng |
 |---|---|---|---|
-| 1 | Quyền cấp theo email nhận bởi ai đăng ký email đó trước (đăng ký không xác minh email) | Cao | **Sửa trong code** (2026-10-15, dòng 54 của `CAM_CHANGES.md`): quyền theo email chỉ có hiệu lực khi email đã được chứng minh; Google lấy lại email bị đăng ký trước. **Chờ deploy API** |
-| 2 | Bộ giới hạn đăng nhập reset khi đầy 20.000 khóa (botnet đoán mật khẩu một tài khoản) | Trung bình | **Sửa trong code**, chờ deploy cùng mục 1 |
+| 1 | Quyền cấp theo email nhận bởi ai đăng ký email đó trước (đăng ký không xác minh email) | Cao | **Sửa trong code** (2026-10-15, dòng 54 của `CAM_CHANGES.md`): quyền theo email chỉ có hiệu lực khi email đã được chứng minh; Google lấy lại email bị đăng ký trước. **Đã deploy** 2026-10-16 (dòng 64) |
+| 2 | Bộ giới hạn đăng nhập reset khi đầy 20.000 khóa (botnet đoán mật khẩu một tài khoản) | Trung bình | **Xong**, deploy cùng mục 1 |
 | 3 | Hai engine Filament giữ khoảng 470 MB đồ họa khi app nằm nền | Trung bình | **Xong** (dòng 53) |
 | 4 | Crash thẻ trạng thái khi cache vẽ dựng lại giữa đoạn mở màn (xoay máy, đổi kích thước, engine 3D làm lại) | Trung bình | **Xong** (dòng 53) |
 | 5 | `libcamd.so` gitignore, mất là không lấy lại được | Trung bình | **Xong** (dòng 52) |

@@ -1,7 +1,7 @@
 name: Test
 
 # Unit tests the build workflows do not run: the kernel's seed and Manager pin logic
-# (kernel/tests, on the host under ASan/UBSan), camd on the Linux host, and the Manager's JVM
+# (kernel/tests, on the host under ASan/UBSan), camd and caminit on the Linux host, and the Manager's JVM
 # tests (among them HidingRulesRepositoryTest, which fails when hiding-rules.json was edited
 # without re-signing it), the CHANGELOG.md extractor the Release workflow relies on, and the
 # caesarvn.xyz API that sells memberships and serves the OTA feed (site/api).
@@ -90,6 +90,11 @@ jobs:
       - name: cargo test
         working-directory: userspace/camd
         run: cargo test --target x86_64-unknown-linux-gnu
+
+      # the library only: the binary is #![no_main] (it runs as /init) and has no tests
+      - name: cargo test (caminit)
+        working-directory: userspace/caminit
+        run: cargo test --target x86_64-unknown-linux-gnu --lib
 
   manager:
     runs-on: ubuntu-latest

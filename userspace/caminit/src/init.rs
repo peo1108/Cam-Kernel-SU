@@ -103,6 +103,18 @@ pub fn init() -> Result<()> {
     // This relies on the fact that we have /proc mounted
     unlimit_kmsg();
 
+    let mut params = std::fs::read("/ksu_config").unwrap_or_default();
+    // Before first stage init reads modules.blocklist, see blocklist.rs
+    let text = String::from_utf8_lossy(&params).into_owned();
+    let loadable = caminit::blocklist::apply(&caminit::blocklist::block_modules_from_params(&text));
+    if !loadable.is_empty() {
+        log::warn!(
+            "Not blocking in the kernel, first stage init loads them: {}",
+            loadable.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+        params = caminit::blocklist::params_without(&text, &loadable).into_bytes();
+    }
+
     if caminit::has_kernelsu() {
         log::info!("KernelSU may be already loaded in kernel, skip!");
     } else {
@@ -113,7 +125,7 @@ pub fn init() -> Result<()> {
         } else {
             "/kernelsu.ko"
         };
-        if let Err(e) = load_module_from_path(path) {
+        if let Err(e) = load_module_from_path(path, params) {
             log::error!("Cannot load {path}: {:?}", e);
         }
     }
@@ -132,10 +144,9 @@ pub fn init() -> Result<()> {
     Ok(())
 }
 
-fn load_module_from_path(path: &str) -> Result<()> {
+fn load_module_from_path(path: &str, params: Vec<u8>) -> Result<()> {
     anyhow::ensure!(rustix::process::getpid().is_init(), "Invalid process");
     let buffer = std::fs::read(path).with_context(|| format!("Cannot read file {}", path))?;
-    let params = std::fs::read("/ksu_config").unwrap_or_default();
     let params = unsafe { CString::from_vec_unchecked(params) };
     log::info!("load camsu with params {params:?}");
     caminit::load_module(&buffer, &params)

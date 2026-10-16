@@ -8,6 +8,8 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, ErrorKind, Read, Seek, SeekFrom};
 use std::os::unix::fs::OpenOptionsExt;
 
+pub mod blocklist;
+
 struct Kptr {
     value: String,
 }

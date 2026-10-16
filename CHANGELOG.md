@@ -11,6 +11,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ### Sửa lỗi
 - Kiểm tra ẩn root: sau khi mở WebUI của module (hoặc app có WebView), trang báo "App đang nạp file root trong bộ nhớ" với các file của WebView. Đó là báo nhầm: tên thư mục cài app có mã ngẫu nhiên trùng chữ "edxp" (EdXposed). Giờ chỉ xét tên app, không xét mã ngẫu nhiên
 - Cài một file zip module bị hỏng giờ báo lỗi thay vì làm camd dừng đột ngột
+- Chặn module kernel (trang Cài đặt LKM): chặn nhầm module mà máy cần ngay lúc mới khởi động không còn làm máy bootloop. SU Kernel để module đó nạp bình thường và chỉ chặn những module chặn được an toàn. Có hiệu lực khi cài lại LKM
 ### Lưu ý
 - Bản này không đổi kernel: không cần cài lại LKM
 

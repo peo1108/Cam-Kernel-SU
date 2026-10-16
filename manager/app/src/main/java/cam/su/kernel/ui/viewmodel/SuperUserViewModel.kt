@@ -77,6 +77,14 @@ internal fun buildRecentlyInstalledGroups(
     ).map { it.first }
 }
 
+/**
+ * Whether a uid's modules are unmounted, from groups already built where they know it. Each root
+ * service answer is a binder call: a filter switch regroups the same apps, and asking again cost
+ * one call per uid (282 on the test tablet with system apps shown).
+ */
+internal fun umountLookup(known: Map<Int, Boolean>, ask: (Int) -> Boolean): (Int) -> Boolean =
+    { uid -> known[uid] ?: ask(uid) }
+
 class SuperUserViewModel(
     private val repo: SuperUserRepository = SuperUserRepositoryImpl(),
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl()
@@ -142,7 +150,8 @@ class SuperUserViewModel(
     private fun refilterVisibleApps(): Job = viewModelScope.launch {
         // Re-filter when a filter setting changes
         val grouped = withContext(Dispatchers.IO) {
-            buildGroups(filterApps(apps))
+            val known = synchronized(groupedAppsLock) { cachedGroupedApps }.associate { it.uid to it.shouldUmount }
+            buildGroups(filterApps(apps), umountLookup(known, Cam::uidShouldUmount))
         }
         updateVisibleApps(grouped)
     }
@@ -337,8 +346,8 @@ class SuperUserViewModel(
             repo.getAppList().onSuccess { (newApps, ids) ->
                 val (cachedGroups, grouped) = withContext(Dispatchers.IO) {
                     val cached = buildCachedGroups(newApps)
-                    val umountByUid = cached.associate { it.uid to it.shouldUmount }
-                    cached to buildGroups(filterApps(newApps)) { umountByUid[it] ?: Cam.uidShouldUmount(it) }
+                    val umount = umountLookup(cached.associate { it.uid to it.shouldUmount }, Cam::uidShouldUmount)
+                    cached to buildGroups(filterApps(newApps), umount)
                 }
 
                 // Update cache for static method
@@ -372,16 +381,14 @@ class SuperUserViewModel(
 
                 val (cachedGroups, grouped) = withContext(Dispatchers.IO) {
                     val cached = buildCachedGroups(updatedApps)
-                    val umountByUid = cached.associate { it.uid to it.shouldUmount }
-                    val visible = buildGroups(filterApps(updatedApps)) {
-                        umountByUid[it] ?: Cam.uidShouldUmount(it)
-                    }
+                    val umount = umountLookup(cached.associate { it.uid to it.shouldUmount }, Cam::uidShouldUmount)
+                    val visible = buildGroups(filterApps(updatedApps), umount)
                     val result = if (resort) {
                         visible
                     } else {
                         val byUid = visible.associateBy { it.uid }
                         _uiState.value.groupedApps.map { group ->
-                            byUid[group.uid] ?: group.copy(shouldUmount = Cam.uidShouldUmount(group.uid))
+                            byUid[group.uid] ?: group.copy(shouldUmount = umount(group.uid))
                         }
                     }
                     cached to result

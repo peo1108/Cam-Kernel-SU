@@ -93,6 +93,9 @@ import cam.su.kernel.ui.component.ScrollToTopOnChange
 import cam.su.kernel.ui.component.SearchStatus
 import cam.su.kernel.ui.component.dialog.ConfirmDialogHandle
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
+import cam.su.kernel.ui.component.skeleton.SkeletonKind
+import cam.su.kernel.ui.component.skeleton.SkeletonOverlay
+import cam.su.kernel.ui.component.skeleton.rememberSkeletonShown
 import cam.su.kernel.ui.component.markdown.GithubMarkdown
 import cam.su.kernel.ui.component.miuix.SearchBarFake
 import cam.su.kernel.ui.component.miuix.SearchBox
@@ -112,7 +115,6 @@ import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
-import top.yukonga.miuix.kmp.basic.RefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -386,159 +388,168 @@ fun ModuleRepoScreenMiuix(
                     end = innerPadding.calculateEndPadding(layoutDirection)
                 ),
             ) {
-                if (!contentReady || isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(
-                                top = innerPadding.calculateTopPadding(),
-                                start = innerPadding.calculateStartPadding(layoutDirection),
-                                end = innerPadding.calculateEndPadding(layoutDirection),
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (offline) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = stringResource(R.string.network_offline),
-                                    color = colorScheme.onSurfaceVariantSummary,
-                                    fontSize = 16.sp
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                TextButton(
-                                    modifier = Modifier
-                                        .padding(horizontal = 24.dp)
-                                        .fillMaxWidth(),
-                                    text = stringResource(R.string.network_retry),
-                                    onClick = actions.onRefresh,
-                                )
-                            }
-                        } else if (pullToRefreshState.refreshState == RefreshState.Idle) {
-                            InfiniteProgressIndicator()
-                        }
-                    }
-                } else {
-                    Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
-                        LazyColumn(
-                            state = lazyListState,
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (!contentReady || isLoading) {
+                        Box(
                             modifier = Modifier
-                                .fillMaxHeight()
-                                .scrollEndHaptic()
-                                .overScrollVertical()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection),
-                            contentPadding = PaddingValues(
-                                top = innerPadding.calculateTopPadding() + 6.dp,
-                                start = innerPadding.calculateStartPadding(layoutDirection),
-                                end = innerPadding.calculateEndPadding(layoutDirection)
-                            ),
-                            overscrollEffect = null,
+                                .fillMaxSize()
+                                .padding(
+                                    top = innerPadding.calculateTopPadding(),
+                                    start = innerPadding.calculateStartPadding(layoutDirection),
+                                    end = innerPadding.calculateEndPadding(layoutDirection),
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            items(items = state.modules, key = { it.moduleId }, contentType = { "module" }) { module ->
-                                val moduleAuthor = stringResource(id = R.string.module_author)
+                            if (offline) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = stringResource(R.string.network_offline),
+                                        color = colorScheme.onSurfaceVariantSummary,
+                                        fontSize = 16.sp
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    TextButton(
+                                        modifier = Modifier
+                                            .padding(horizontal = 24.dp)
+                                            .fillMaxWidth(),
+                                        text = stringResource(R.string.network_retry),
+                                        onClick = actions.onRefresh,
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
+                            LazyColumn(
+                                state = lazyListState,
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .scrollEndHaptic()
+                                    .overScrollVertical()
+                                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                                contentPadding = PaddingValues(
+                                    top = innerPadding.calculateTopPadding() + 6.dp,
+                                    start = innerPadding.calculateStartPadding(layoutDirection),
+                                    end = innerPadding.calculateEndPadding(layoutDirection)
+                                ),
+                                overscrollEffect = null,
+                            ) {
+                                items(items = state.modules, key = { it.moduleId }, contentType = { "module" }) { module ->
+                                    val moduleAuthor = stringResource(id = R.string.module_author)
 
-                                GlassListCard(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp)
-                                        .padding(bottom = 12.dp),
-                                    insideMargin = PaddingValues(16.dp),
-                                    showIndication = true,
-                                    onClick = { actions.onOpenRepoDetail(module) }) {
-                                    Column {
-                                        if (module.moduleName.isNotEmpty()) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    text = module.moduleName,
-                                                    fontSize = 17.sp,
-                                                    fontWeight = FontWeight(550),
-                                                    color = colorScheme.onSurface
-                                                )
-                                                if (module.metamodule) {
+                                    GlassListCard(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp)
+                                            .padding(bottom = 12.dp),
+                                        insideMargin = PaddingValues(16.dp),
+                                        showIndication = true,
+                                        onClick = { actions.onOpenRepoDetail(module) }) {
+                                        Column {
+                                            if (module.moduleName.isNotEmpty()) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Text(
-                                                        text = "META",
-                                                        fontSize = 12.sp,
-                                                        color = metaTint,
-                                                        modifier = Modifier
-                                                            .padding(start = 6.dp)
-                                                            .clip(RoundedCornerShape(6.dp))
-                                                            .background(metaBg)
-                                                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                                                        fontWeight = FontWeight(750),
-                                                        maxLines = 1
+                                                        text = module.moduleName,
+                                                        fontSize = 17.sp,
+                                                        fontWeight = FontWeight(550),
+                                                        color = colorScheme.onSurface
                                                     )
-                                                }
-                                            }
-                                        }
-                                        if (module.moduleId.isNotEmpty()) {
-                                            Text(
-                                                text = "ID: ${module.moduleId}",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight(550),
-                                                color = colorScheme.onSurfaceVariantSummary,
-                                            )
-                                        }
-                                        Text(
-                                            text = "$moduleAuthor: ${module.authors}",
-                                            fontSize = 12.sp,
-                                            modifier = Modifier.padding(bottom = 1.dp),
-                                            fontWeight = FontWeight(550),
-                                            color = colorScheme.onSurfaceVariantSummary,
-                                        )
-                                        if (module.summary.isNotEmpty()) {
-                                            Text(
-                                                text = module.summary,
-                                                fontSize = 14.sp,
-                                                color = colorScheme.onSurfaceVariantSummary,
-                                                modifier = Modifier.padding(top = 2.dp),
-                                                overflow = TextOverflow.Ellipsis,
-                                                maxLines = 4,
-                                            )
-                                        }
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(vertical = 8.dp),
-                                            thickness = 0.5.dp,
-                                            color = colorScheme.outline.copy(alpha = 0.5f)
-                                        )
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Row {
-                                                if (module.stargazerCount > 0) {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(
-                                                            imageVector = MiuixIcons.TopDownloads,
-                                                            contentDescription = "stars",
-                                                            tint = colorScheme.onSurfaceVariantSummary,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
+                                                    if (module.metamodule) {
                                                         Text(
-                                                            text = module.stargazerCount.toString(),
+                                                            text = "META",
                                                             fontSize = 12.sp,
-                                                            color = colorScheme.onSurfaceVariantSummary,
-                                                            modifier = Modifier.padding(start = 4.dp)
+                                                            color = metaTint,
+                                                            modifier = Modifier
+                                                                .padding(start = 6.dp)
+                                                                .clip(RoundedCornerShape(6.dp))
+                                                                .background(metaBg)
+                                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                            fontWeight = FontWeight(750),
+                                                            maxLines = 1
                                                         )
                                                     }
                                                 }
-                                                Spacer(Modifier.weight(1f))
-                                                if (module.latestReleaseTime.isNotEmpty()) {
-                                                    Text(
-                                                        text = module.latestReleaseTime,
-                                                        fontSize = 12.sp,
-                                                        color = colorScheme.onSurfaceVariantSummary,
-                                                        textAlign = TextAlign.End
-                                                    )
+                                            }
+                                            if (module.moduleId.isNotEmpty()) {
+                                                Text(
+                                                    text = "ID: ${module.moduleId}",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight(550),
+                                                    color = colorScheme.onSurfaceVariantSummary,
+                                                )
+                                            }
+                                            Text(
+                                                text = "$moduleAuthor: ${module.authors}",
+                                                fontSize = 12.sp,
+                                                modifier = Modifier.padding(bottom = 1.dp),
+                                                fontWeight = FontWeight(550),
+                                                color = colorScheme.onSurfaceVariantSummary,
+                                            )
+                                            if (module.summary.isNotEmpty()) {
+                                                Text(
+                                                    text = module.summary,
+                                                    fontSize = 14.sp,
+                                                    color = colorScheme.onSurfaceVariantSummary,
+                                                    modifier = Modifier.padding(top = 2.dp),
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    maxLines = 4,
+                                                )
+                                            }
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(vertical = 8.dp),
+                                                thickness = 0.5.dp,
+                                                color = colorScheme.outline.copy(alpha = 0.5f)
+                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Row {
+                                                    if (module.stargazerCount > 0) {
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Icon(
+                                                                imageVector = MiuixIcons.TopDownloads,
+                                                                contentDescription = "stars",
+                                                                tint = colorScheme.onSurfaceVariantSummary,
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                            Text(
+                                                                text = module.stargazerCount.toString(),
+                                                                fontSize = 12.sp,
+                                                                color = colorScheme.onSurfaceVariantSummary,
+                                                                modifier = Modifier.padding(start = 4.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                    Spacer(Modifier.weight(1f))
+                                                    if (module.latestReleaseTime.isNotEmpty()) {
+                                                        Text(
+                                                            text = module.latestReleaseTime,
+                                                            fontSize = 12.sp,
+                                                            color = colorScheme.onSurfaceVariantSummary,
+                                                            textAlign = TextAlign.End
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            item {
-                                Spacer(Modifier.height(WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()))
+                                item {
+                                    Spacer(Modifier.height(WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()))
+                                }
                             }
                         }
                     }
+                    SkeletonOverlay(
+                        visible = rememberSkeletonShown(loading = isLoading) && contentReady && !offline,
+                        kind = SkeletonKind.RepoModule,
+                        contentPadding = PaddingValues(
+                            top = innerPadding.calculateTopPadding() + 6.dp,
+                            start = innerPadding.calculateStartPadding(layoutDirection),
+                            end = innerPadding.calculateEndPadding(layoutDirection)
+                        ),
+                    )
                 }
             }
         }

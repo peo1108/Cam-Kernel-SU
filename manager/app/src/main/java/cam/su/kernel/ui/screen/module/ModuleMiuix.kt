@@ -127,6 +127,9 @@ import cam.su.kernel.ui.component.ScrollToTopOnChange
 import cam.su.kernel.ui.component.SearchStatus
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
 import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
+import cam.su.kernel.ui.component.skeleton.SkeletonKind
+import cam.su.kernel.ui.component.skeleton.SkeletonOverlay
+import cam.su.kernel.ui.component.skeleton.rememberSkeletonShown
 import cam.su.kernel.ui.component.miuix.SearchBarFake
 import cam.su.kernel.ui.component.miuix.SearchBox
 import cam.su.kernel.ui.component.miuix.SearchPager
@@ -453,55 +456,62 @@ fun ModulePagerMiuix(
                 refreshTexts = IosRefreshTexts,
                 contentPadding = contentPadding,
             ) {
-                if (modules.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(
-                                top = innerPadding.calculateTopPadding(),
-                                start = innerPadding.calculateStartPadding(layoutDirection),
-                                end = innerPadding.calculateEndPadding(layoutDirection),
-                                bottom = bottomInnerPadding
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // The refresh indicator doubles as the first-load hint;
-                        // only announce emptiness once loading has finished.
-                        if (uiState.hasLoaded) {
-                            Text(
-                                stringResource(R.string.module_empty),
-                                textAlign = TextAlign.Center,
-                                color = Color.Gray,
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (modules.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(
+                                    top = innerPadding.calculateTopPadding(),
+                                    start = innerPadding.calculateStartPadding(layoutDirection),
+                                    end = innerPadding.calculateEndPadding(layoutDirection),
+                                    bottom = bottomInnerPadding
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // The refresh indicator doubles as the first-load hint;
+                            // only announce emptiness once loading has finished.
+                            if (uiState.hasLoaded) {
+                                Text(
+                                    stringResource(R.string.module_empty),
+                                    textAlign = TextAlign.Center,
+                                    color = Color.Gray,
+                                )
+                            }
+                        }
+                    } else {
+                        val latestModules = rememberUpdatedState(modules)
+                        val latestRefreshing = rememberUpdatedState(uiState.isRefreshing)
+                        ScrollToTopOnChange(
+                            listState,
+                            uiState.sortEnabledFirst,
+                            uiState.sortActionFirst,
+                            refreshTick.intValue,
+                            isBusy = { latestRefreshing.value },
+                        ) { latestModules.value }
+                        Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
+                            ModuleList(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .scrollEndHaptic()
+                                    .overScrollVertical()
+                                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                                modules = modules,
+                                updateInfoMap = uiState.updateInfo,
+                                actions = actions,
+                                onModuleAddShortcut = { module, type ->
+                                    onModuleAddShortcut(module, type)
+                                },
+                                contentPadding = contentPadding,
+                                listState = listState,
                             )
                         }
                     }
-                } else {
-                    val latestModules = rememberUpdatedState(modules)
-                    val latestRefreshing = rememberUpdatedState(uiState.isRefreshing)
-                    ScrollToTopOnChange(
-                        listState,
-                        uiState.sortEnabledFirst,
-                        uiState.sortActionFirst,
-                        refreshTick.intValue,
-                        isBusy = { latestRefreshing.value },
-                    ) { latestModules.value }
-                    Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
-                        ModuleList(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .scrollEndHaptic()
-                                .overScrollVertical()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection),
-                            modules = modules,
-                            updateInfoMap = uiState.updateInfo,
-                            actions = actions,
-                            onModuleAddShortcut = { module, type ->
-                                onModuleAddShortcut(module, type)
-                            },
-                            contentPadding = contentPadding,
-                            listState = listState,
-                        )
-                    }
+                    SkeletonOverlay(
+                        visible = rememberSkeletonShown(loading = !uiState.hasLoaded && modules.isEmpty()),
+                        kind = SkeletonKind.Module,
+                        contentPadding = contentPadding,
+                    )
                 }
             }
         }

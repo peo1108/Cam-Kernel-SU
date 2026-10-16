@@ -58,6 +58,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import cam.su.kernel.ui.component.motion.cardEntrance
+import cam.su.kernel.ui.component.skeleton.SkeletonKind
+import cam.su.kernel.ui.component.skeleton.SkeletonOverlay
+import cam.su.kernel.ui.component.skeleton.rememberSkeletonShown
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -391,6 +394,15 @@ fun SuperUserPagerMiuix(
                             Spacer(Modifier.height(bottomInnerPadding))
                         }
                     }
+                    SkeletonOverlay(
+                        visible = rememberSkeletonShown(loading = !uiState.hasLoaded && uiState.groupedApps.isEmpty()),
+                        kind = SkeletonKind.App,
+                        contentPadding = PaddingValues(
+                            top = innerPadding.calculateTopPadding() + 6.dp,
+                            start = innerPadding.calculateStartPadding(layoutDirection),
+                            end = innerPadding.calculateEndPadding(layoutDirection)
+                        ),
+                    )
                 }
             }
         }

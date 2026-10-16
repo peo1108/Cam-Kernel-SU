@@ -75,6 +75,24 @@ class BunkerMotionTest {
     }
 
     @Test
+    fun wallpaperKeepsTheLogoAboveTheDock() {
+        // the tablet in landscape and in portrait, and a phone
+        for ((w, h) in listOf(3040f to 1904f, 1904f to 3040f, 1080f to 2400f)) {
+            val fit = bunkerWallpaperFit(w, h)
+            val top = fit.top + DRAWN_TOP * fit.scale
+            val bottom = fit.top + DRAWN_BOTTOM * fit.scale
+            assertTrue("$w x $h: top $top", top >= WALL_TOP * h - 0.5f)
+            assertTrue("$w x $h: bottom $bottom", bottom <= WALL_BOTTOM * h + 0.5f)
+            // centered across, inside the screen
+            assertEquals(w / 2f, fit.left + 625f * fit.scale, 0.5f)
+            assertTrue(fit.left + 111f * fit.scale >= 0f && fit.left + 1139f * fit.scale <= w)
+        }
+        // on the landscape tablet it fills the room it has
+        val fit = bunkerWallpaperFit(3040f, 1904f)
+        assertEquals((WALL_BOTTOM - WALL_TOP) * 1904f, (DRAWN_BOTTOM - DRAWN_TOP) * fit.scale, 0.5f)
+    }
+
+    @Test
     fun parallaxFollowsATiltAndDriftsBack() {
         val f = TiltFollower()
         f.update(0f, 1f, 0f)

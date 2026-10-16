@@ -18,10 +18,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.widget.Toast
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.R
+import cam.su.kernel.ui.bunker.BunkerWallpaperService
 import cam.su.kernel.ui.component.glass.GlassBackgroundType
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.LocalGlassBackgroundState
@@ -86,6 +89,26 @@ fun GlassBackgroundSection(
                 },
                 onClick = {
                     pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+            )
+        }
+        AnimatedVisibility(visible = type == GlassBackgroundType.BUNKER) {
+            val context = LocalContext.current
+            ArrowPreference(
+                title = stringResource(R.string.bunker_wallpaper_set),
+                summary = stringResource(R.string.bunker_wallpaper_set_summary),
+                startAction = {
+                    Icon(
+                        Icons.Rounded.Wallpaper,
+                        modifier = Modifier.padding(end = 6.dp),
+                        contentDescription = stringResource(R.string.bunker_wallpaper_set),
+                        tint = colorScheme.onBackground,
+                    )
+                },
+                onClick = {
+                    if (!BunkerWallpaperService.open(context)) {
+                        Toast.makeText(context, R.string.bunker_wallpaper_unavailable, Toast.LENGTH_SHORT).show()
+                    }
                 },
             )
         }

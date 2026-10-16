@@ -49,6 +49,8 @@ class CamApplication : Application(), ViewModelStoreOwner {
         if (Process.isIsolated() || !isUserUnlocked()) {
             return
         }
+        // the live wallpaper only draws the bunker
+        if (getProcessName().endsWith(":wallpaper")) return
 
         // the boot receiver was renamed, so its enabled state starts over; restore it from the setting
         SettingsRepositoryImpl().run { if (autoJailbreak) autoJailbreak = true }

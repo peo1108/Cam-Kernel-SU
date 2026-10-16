@@ -344,6 +344,11 @@
     <string name="glass_background_gradient">Animated gradient</string>
     <string name="glass_background_image">Custom image</string>
     <string name="glass_background_bunker">Inner Veterans bunker</string>
+    <string name="bunker_wallpaper">Inner Veterans bunker</string>
+    <string name="bunker_wallpaper_description">The command bunker, alive, with the logo kept clear of the dock</string>
+    <string name="bunker_wallpaper_set">Set as device wallpaper</string>
+    <string name="bunker_wallpaper_set_summary">Live wallpaper, the logo above the dock</string>
+    <string name="bunker_wallpaper_unavailable">This device has no live wallpaper picker</string>
     <string name="glass_background_pick_image">Choose image</string>
     <string name="glass_background_blur">Background blur</string>
     <string name="glass_background_dim">Background dim</string>

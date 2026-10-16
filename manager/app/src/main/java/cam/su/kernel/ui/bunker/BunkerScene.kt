@@ -86,9 +86,39 @@ internal fun bunkerFit(w: Float, h: Float): IntroGeometry.Fit {
     return IntroGeometry.Fit(side / SIZE, (w - side) / 2f, (h - side) / 2f)
 }
 
-internal fun DrawScope.drawBunker(art: IntroArt, f: BunkerFrame, paths: IntroPaths, light: BunkerPaths, text: IntroText) {
+/**
+ * Where the logo goes on a [w] x [h] home screen: what is drawn of it (not its empty margins) between
+ * the status bar and [WALL_BOTTOM] of the height, so the launcher's dock and page dots never cover
+ * the lettering; at most [WALL_WIDTH] of the width.
+ */
+internal fun bunkerWallpaperFit(w: Float, h: Float): IntroGeometry.Fit {
+    val top = WALL_TOP * h
+    val room = (WALL_BOTTOM - WALL_TOP) * h
+    val drawn = DRAWN_BOTTOM - DRAWN_TOP
+    val scale = min(room / drawn, WALL_WIDTH * w / (DRAWN_RIGHT - DRAWN_LEFT))
+    val left = (w - (DRAWN_LEFT + DRAWN_RIGHT) * scale) / 2f
+    return IntroGeometry.Fit(scale, left, top + (room - drawn * scale) / 2f - DRAWN_TOP * scale)
+}
+
+internal const val WALL_TOP = 0.06f
+internal const val WALL_BOTTOM = 0.8f
+private const val WALL_WIDTH = 0.9f
+
+/** What is drawn of the logo picture, in logo pixels: its black margins left out. */
+internal const val DRAWN_TOP = 55f
+internal const val DRAWN_BOTTOM = 1182f
+private const val DRAWN_LEFT = 111f
+private const val DRAWN_RIGHT = 1139f
+
+internal fun DrawScope.drawBunker(
+    art: IntroArt,
+    f: BunkerFrame,
+    paths: IntroPaths,
+    light: BunkerPaths,
+    text: IntroText,
+    fit: IntroGeometry.Fit = bunkerFit(size.width, size.height),
+) {
     drawRect(Color.Black)
-    val fit = bunkerFit(size.width, size.height)
     val shake = shakeAt(f) * fit.scale
     withTransform({
         translate(fit.left + shake.x, fit.top + shake.y)

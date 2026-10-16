@@ -14,6 +14,10 @@
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
+    <uses-feature
+        android:name="android.software.live_wallpaper"
+        android:required="false" />
+
     <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
 
     <application
@@ -120,6 +124,21 @@
             android:name=".files.FileOpService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- the Inner Veterans bunker as the device's live wallpaper; its own process keeps the app's setup out -->
+        <service
+            android:name=".ui.bunker.BunkerWallpaperService"
+            android:exported="true"
+            android:label="@string/bunker_wallpaper"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:process=":wallpaper">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/bunker_wallpaper" />
+        </service>
 
         <receiver
             android:name=".jailbreak.CamBootReceiver"

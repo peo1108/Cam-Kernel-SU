@@ -332,6 +332,11 @@
     <string name="glass_background_gradient">Gradient động</string>
     <string name="glass_background_image">Ảnh tự chọn</string>
     <string name="glass_background_bunker">Hầm chỉ huy Inner Veterans</string>
+    <string name="bunker_wallpaper">Hầm chỉ huy Inner Veterans</string>
+    <string name="bunker_wallpaper_description">Hầm chỉ huy sống động, logo nằm trên thanh dock</string>
+    <string name="bunker_wallpaper_set">Đặt làm hình nền máy</string>
+    <string name="bunker_wallpaper_set_summary">Hình nền động, logo không bị thanh dock che</string>
+    <string name="bunker_wallpaper_unavailable">Máy này không có trình chọn hình nền động</string>
     <string name="glass_background_pick_image">Chọn ảnh</string>
     <string name="glass_background_blur">Độ mờ nền</string>
     <string name="glass_background_dim">Độ tối nền</string>

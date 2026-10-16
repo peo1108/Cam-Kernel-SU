@@ -3,9 +3,16 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.1.9 - 2026-10-16
-- Trang Kiểm tra ẩn root không còn báo nhầm WebView là file root
+- Chặn module nguy hiểm, sao lưu và khôi phục chính các module, cài module không cần khởi động lại (với module có hỗ trợ)
+### Tính năng mới
+- Chặn module nguy hiểm (tab Tính năng): SU Kernel không cài module nằm trong danh sách mã độc hoặc phá máy. Danh sách có chữ ký và tự cập nhật cùng rule ẩn root. Module đã cài mà nằm trong danh sách có nhãn đỏ "Nguy hiểm", bấm vào để xem lý do và tắt. Tắt công tắc "Từ chối module nguy hiểm" thì chỉ cảnh báo rồi vẫn cài
+- Sao lưu module (Cài đặt → Sao lưu cấu hình → Module): lưu chính các module đã cài vào một file .tar. Khôi phục thì chọn từng module, module được thay ở lần khởi động sau như một lần cập nhật và giữ trạng thái bật hay tắt như lúc sao lưu
+- Cài module không cần khởi động lại, với module tự khai hỗ trợ (hot install, từ KernelSU). Module khác vẫn cần khởi động lại như cũ
 ### Sửa lỗi
 - Kiểm tra ẩn root: sau khi mở WebUI của module (hoặc app có WebView), trang báo "App đang nạp file root trong bộ nhớ" với các file của WebView. Đó là báo nhầm: tên thư mục cài app có mã ngẫu nhiên trùng chữ "edxp" (EdXposed). Giờ chỉ xét tên app, không xét mã ngẫu nhiên
+- Cài một file zip module bị hỏng giờ báo lỗi thay vì làm camd dừng đột ngột
+### Lưu ý
+- Bản này không đổi kernel: không cần cài lại LKM
 
 ## 1.1.8 - 2026-10-15
 - Bản cập nhật quan trọng, nên cài ngay: chống bootloop tắt hết module và chỉ ra module gây lỗi, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình

@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.draw.drawBehind
-import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.intro.IntroGate
 import cam.su.kernel.ui.intro.IntroLogo
 import cam.su.kernel.ui.intro.IntroPlayer
@@ -568,8 +567,6 @@ fun MainScreen(
     val pagerSwipe = userScrollEnabled && settledPage != BottomBarDestination.Files.ordinal
     LaunchedEffect(settledPage) {
         onPageChanged(settledPage)
-        // the bunker background turns its triangle a chamber per tab
-        BunkerSignals.page(settledPage)
     }
 
     val currentPage = mainPagerState.pagerState.currentPage

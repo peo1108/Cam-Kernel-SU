@@ -1,7 +1,6 @@
 package cam.su.kernel.ui.bunker
 
 import cam.su.kernel.ui.screen.home.arena.easeInOutCubic
-import cam.su.kernel.ui.screen.home.arena.easeOutBack
 import cam.su.kernel.ui.screen.home.arena.easeOutCubic
 import cam.su.kernel.ui.screen.home.arena.hash
 import cam.su.kernel.ui.screen.home.arena.progress
@@ -47,31 +46,10 @@ internal object BunkerMotion {
     /** The random events: one every 20 to 40 s. */
     fun eventGap(k: Int): Float = 20f + 20f * hash(k * 13 + 5)
 
-    /** Event [k] is a shot nailing the frame (0) or an outer plate popping out and back (1). */
-    fun eventKind(k: Int): Int = if (hash(k * 29 + 11) < 0.5f) SHOT else POP
-
+    /** The only event: a shot nailing the frame, cooling down over [SHOT_LEN] s. */
     const val SHOT = 0
-    const val POP = 1
     const val SHOT_LEN = 3.2f
-    const val POP_LEN = 0.75f
 
-    /** How far an outer plate is out (0..1) [age] seconds into a pop: up, a beat, slammed back. */
-    fun popOut(age: Float): Float = when {
-        age < 0f || age >= POP_LEN -> 0f
-        age < 0.25f -> easeOutCubic(age / 0.25f)
-        age < 0.5f -> 1f
-        else -> 1f - progress(age, 0.5f, 0.12f).let { it * it }
-    }
-
-    /** The triangle spins one full turn per tab, the way the tabs went, and stops upright. */
-    const val TURN_DEGREES = 360f
-    const val TURN_LEN = 0.7f
-
-    /** The triangle's angle at [now] after turning from [fromSteps] to [toSteps] tabs at [turnAt]. */
-    fun turnAngle(now: Float, turnAt: Float, fromSteps: Int, toSteps: Int): Float {
-        val e = easeOutBack(progress(now - turnAt, 0f, TURN_LEN), 1.3f)
-        return (fromSteps + (toSteps - fromSteps) * e) * TURN_DEGREES
-    }
 
     /** The rangefinder: a new target every [RANGE_CELL] s, counted to over its first second. */
     const val RANGE_CELL = 5f

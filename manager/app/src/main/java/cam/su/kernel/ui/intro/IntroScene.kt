@@ -309,7 +309,7 @@ private fun DrawScope.drawShots(t: Float, paths: IntroPaths) {
             drawBullet(paths, lerp(rv.point + rv.from * SHOT_RANGE, rv.point, e), -rv.from, (speed * 0.03f).coerceIn(24f, 560f), t)
         }
         val blowUp = IntroTimeline.explodeAt(i)
-        if (t >= rv.time && t < blowUp) drawEmbedded(rv.point, t - rv.time, t, i)
+        if (t >= rv.time && t < blowUp) drawEmbedded(rv.point, t - rv.time, i)
         drawSparks(rv.point, rv.from, t - rv.time, i * 50, 14)
         drawFireball(rv.point, t - blowUp, 46f, i * 31)
     }

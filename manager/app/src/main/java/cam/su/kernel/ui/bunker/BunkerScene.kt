@@ -59,15 +59,11 @@ internal class BunkerFrame {
     var tiltX = 0f
     var tiltY = 0f
 
-    /** The triangle's turn (degrees) and seconds since it last turned. */
-    var angle = 0f
-    var turnAge = 100f
-
     var pull = 0f
     var dischargeAge = 100f
     var lockAge = 100f
 
-    /** The random event playing ([BunkerMotion.SHOT] or [BunkerMotion.POP]), or -1. */
+    /** The random event playing ([BunkerMotion.SHOT]), or -1. */
     var event = -1
     var eventAge = 0f
     var eventSeed = 0
@@ -89,9 +85,6 @@ internal fun bunkerFit(w: Float, h: Float): IntroGeometry.Fit {
     val side = 0.92f * min(w, h)
     return IntroGeometry.Fit(side / SIZE, (w - side) / 2f, (h - side) / 2f)
 }
-
-/** Outer plate [k] of 12 that pops in event [seed]. */
-internal fun popPlate(seed: Int): Int = (hash(seed * 3 + 1) * 12f).toInt().coerceIn(0, 11)
 
 internal fun DrawScope.drawBunker(art: IntroArt, f: BunkerFrame, paths: IntroPaths, light: BunkerPaths, text: IntroText) {
     drawRect(Color.Black)
@@ -149,51 +142,30 @@ private fun DrawScope.drawHud(art: IntroArt, f: BunkerFrame, paths: IntroPaths, 
 
 private const val LOCK_LEN = 2.4f
 
-/** The plates, each ring at its own depth, all turned with the triangle; one may be popping out. */
+/** The plates, each ring at its own depth. */
 private fun DrawScope.drawPlates(art: IntroArt, f: BunkerFrame) {
-    val popping = if (f.event == BunkerMotion.POP) popPlate(f.eventSeed) else -1
-    eachPlate(f) { i ->
-        drawImage(art.plates[i], art.plateAt[i])
-        if (i == popping) {
-            val flash = 1f - progress(f.eventAge, POP_SLAM, 0.15f)
-            if (f.eventAge >= POP_SLAM && flash > 0f) drawImage(art.plates[i], art.plateAt[i], alpha = 0.8f * flash, colorFilter = WhiteFlash)
-        }
-    }
+    eachPlate(f) { i -> drawImage(art.plates[i], art.plateAt[i]) }
 }
 
-/** Runs [block] for each plate but the reticle, placed where it is this frame (depth, turn, pop). */
+/** Runs [block] for each plate but the reticle, at its ring's depth. */
 private inline fun DrawScope.eachPlate(f: BunkerFrame, block: DrawScope.(Int) -> Unit) {
     val plates = IntroTimeline.plates
-    val popping = if (f.event == BunkerMotion.POP) popPlate(f.eventSeed) else -1
     for (i in plates.indices) {
         val p = plates[i]
         if (p.ring == 3) continue
         val depth = RING_DEPTH[p.ring]
-        val out = if (i == popping) BunkerMotion.popOut(f.eventAge) else 0f
-        withTransform({
-            translate(f.tiltX * SHIFT * depth, f.tiltY * SHIFT * depth)
-            rotate(f.angle, centroid)
-            if (out > 0f) {
-                val n = IntroGeometry.edgeNormal(p.edge)
-                translate(n.x * 34f * out, n.y * 34f * out)
-                rotate(12f * out * (if (i % 2 == 0) 1f else -1f), p.center)
-                scale(1f + 0.06f * out, 1f + 0.06f * out, p.center)
-            }
-        }) { block(i) }
+        withTransform({ translate(f.tiltX * SHIFT * depth, f.tiltY * SHIFT * depth) }) { block(i) }
     }
 }
 
-/** Runs [block] in the outer frame's place: its depth, turned with the triangle. */
+/** Runs [block] at the outer frame's depth. */
 private inline fun DrawScope.withTriangle(f: BunkerFrame, block: DrawScope.() -> Unit) {
     val d = RING_DEPTH[0]
     withTransform({
         translate(f.tiltX * SHIFT * d, f.tiltY * SHIFT * d)
-        rotate(f.angle, centroid)
     }, block)
 }
 
-/** When a popped plate is slammed back home. */
-private const val POP_SLAM = 0.62f
 
 /** The reticle: turning slowly, whipped round and lit up teal on a lock. */
 private fun DrawScope.drawReticle(art: IntroArt, f: BunkerFrame) {
@@ -312,7 +284,6 @@ private fun band(s: Float, center: Float, width: Float): Float {
 private fun DrawScope.drawRim(f: BunkerFrame, paths: BunkerPaths) {
     var strength = 0.55f + 0.45f * BunkerMotion.surge(f.t)
     if (f.dischargeAge < 0.6f) strength = maxOf(strength, 1.4f * (1f - f.dischargeAge / 0.6f))
-    if (f.turnAge < 0.6f) strength = maxOf(strength, 1f - f.turnAge / 0.6f)
     val p1 = f.t * 0.5f
     val p2 = 2.2f - f.t * 0.33f
     val stops = Array(25) { k ->
@@ -358,7 +329,7 @@ private fun DrawScope.drawDischarge(f: BunkerFrame) {
     if (f.dischargeAge < 0.5f) drawGlow(aim, 240f, ColdBody, 1f - f.dischargeAge / 0.5f)
 }
 
-/** The random event playing: a shot nailing the frame, or the sparks of a plate slammed back. */
+/** The random event playing: a shot nailing the frame. */
 private fun DrawScope.drawEvent(f: BunkerFrame, paths: IntroPaths) {
     if (f.event < 0) return
     withTriangle(f) {
@@ -375,13 +346,9 @@ private fun DrawScope.drawEvent(f: BunkerFrame, paths: IntroPaths) {
                 drawBullet(paths, lerp(target + from * 1500f, target, e), -from, 420f, f.t, ColdShot)
             } else {
                 val hit = age - SHOT_FLIGHT
-                drawEmbedded(target, hit, f.t, f.eventSeed, heat = 1f - progress(hit, BunkerMotion.SHOT_LEN - 1.2f, 1f), colors = ColdShot)
+                drawEmbedded(target, hit, f.eventSeed, heat = 1f - progress(hit, BunkerMotion.SHOT_LEN - 1.2f, 1f), colors = ColdShot)
                 drawSparks(target, from, hit, f.eventSeed, 14, ColdShot)
             }
-        } else {
-            val k = popPlate(f.eventSeed)
-            val p = IntroTimeline.plates[k]
-            drawSparks(IntroGeometry.bandPoint(p.edge, p.along, IntroGeometry.BAND_OUT), IntroGeometry.edgeNormal(p.edge), age - POP_SLAM, f.eventSeed, 12, ColdShot)
         }
     }
 }
@@ -393,8 +360,6 @@ private const val SHOT_FLIGHT = 0.1f
 private fun shakeAt(f: BunkerFrame): Offset {
     var amount = 0f
     if (f.event == BunkerMotion.SHOT && f.eventAge >= SHOT_FLIGHT) amount += 7f * exp(-(f.eventAge - SHOT_FLIGHT) * 25f)
-    if (f.event == BunkerMotion.POP && f.eventAge >= POP_SLAM) amount += 6f * exp(-(f.eventAge - POP_SLAM) * 25f)
-    if (f.turnAge >= 0.3f) amount += 5f * exp(-(f.turnAge - 0.3f) * 20f)
     amount += 10f * exp(-f.dischargeAge * 10f)
     amount += 3f * exp(-f.lockAge * 20f)
     if (amount < 0.3f) return Offset.Zero

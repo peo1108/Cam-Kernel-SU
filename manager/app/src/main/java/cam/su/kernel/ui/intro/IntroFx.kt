@@ -148,16 +148,36 @@ internal fun DrawScope.drawBullet(paths: IntroPaths, head: Offset, dir: Offset, 
     drawCircle(Color.White, 4.5f, head)
 }
 
-/** A slug stuck in the frame, glowing cold; [age] seconds since it hit, [heat] 1 hot to 0 cold. */
-internal fun DrawScope.drawEmbedded(p: Offset, age: Float, t: Float, seed: Int, heat: Float = 1f, colors: ShotColors = ColdShot) {
+/**
+ * Where a shot struck the metal, [age] seconds ago: a faint cold haze and hairline cracks running
+ * out of the hit, cut dark into the steel with a pale edge. [heat] (1 fresh to 0) fades it all out.
+ */
+internal fun DrawScope.drawEmbedded(p: Offset, age: Float, seed: Int, heat: Float = 1f, colors: ShotColors = ColdShot) {
     if (heat <= 0.01f) return
-    val pulse = 0.5f + 0.5f * sin(t * 26f + seed * 1.7f)
-    val fresh = 1f - progress(age, 0f, 0.15f)
-    drawGlow(p, 34f + 30f * fresh, colors.glow, heat * (0.5f + 0.3f * pulse + 0.2f * fresh).coerceAtMost(1f))
-    drawCircle(colors.slug, 8f, p, alpha = heat)
-    drawCircle(colors.hot, 5.5f, p, alpha = heat * (0.75f + 0.25f * pulse))
-    drawCircle(Color.White, 2.4f, p, alpha = heat * (0.5f + 0.5f * fresh))
+    val fresh = 1f - progress(age, 0f, 0.2f)
+    // the cracks spread out quickly, then stay
+    val grow = easeOutCubic(progress(age, 0f, 0.12f))
+    drawGlow(p, 18f + 22f * fresh, colors.glow, heat * (0.18f + 0.3f * fresh))
+    for (k in 0 until CRACKS) {
+        val a = (k + 0.6f * hash(seed * 7 + k)) / CRACKS * TAU
+        val len = (12f + 26f * hash(seed * 11 + k)) * grow
+        var from = p
+        var dir = Offset(cos(a), sin(a))
+        // each crack bends twice on its way out
+        for (j in 0..2) {
+            val seg = len / 3f
+            val bend = (hash(seed * 13 + k * 5 + j) - 0.5f) * 0.9f
+            dir = Offset(dir.x * cos(bend) - dir.y * sin(bend), dir.x * sin(bend) + dir.y * cos(bend))
+            val to = from + dir * seg
+            val w = 1.6f * (1f - j * 0.28f)
+            drawLine(Color.Black, from, to, strokeWidth = w + 0.8f, cap = StrokeCap.Round, alpha = 0.55f * heat)
+            drawLine(colors.spark, from + Offset(0.7f, -0.7f), to + Offset(0.7f, -0.7f), strokeWidth = w * 0.5f, cap = StrokeCap.Round, alpha = heat * (0.18f + 0.3f * fresh), blendMode = BlendMode.Plus)
+            from = to
+        }
+    }
 }
+
+private const val CRACKS = 7
 
 /** Sparks thrown back out of an impact at [p] toward [back] (unit), [age] seconds after it. */
 internal fun DrawScope.drawSparks(p: Offset, back: Offset, age: Float, seed: Int, count: Int, colors: ShotColors = ColdShot) {

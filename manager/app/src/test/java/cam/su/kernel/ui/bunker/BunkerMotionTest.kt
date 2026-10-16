@@ -44,30 +44,7 @@ class BunkerMotionTest {
     fun eventsComeEvery20To40Seconds() {
         for (k in 0..200) {
             assertTrue(BunkerMotion.eventGap(k) in 20f..40f)
-            assertTrue(BunkerMotion.eventKind(k) in listOf(BunkerMotion.SHOT, BunkerMotion.POP))
         }
-        val kinds = (0..40).map { BunkerMotion.eventKind(it) }
-        assertTrue(kinds.contains(BunkerMotion.SHOT) && kinds.contains(BunkerMotion.POP))
-    }
-
-    @Test
-    fun aPoppedPlateComesHome() {
-        assertEquals(0f, BunkerMotion.popOut(-1f), 0f)
-        assertEquals(1f, BunkerMotion.popOut(0.3f), 0f)
-        assertEquals(0f, BunkerMotion.popOut(BunkerMotion.POP_LEN - 0.01f), 0f)
-        assertEquals(0f, BunkerMotion.popOut(5f), 0f)
-    }
-
-    @Test
-    fun aTurnIsOneFullSpinEndingUpright() {
-        assertEquals(720f, BunkerMotion.turnAngle(10f, 9f, 1, 2), 0.01f)
-        assertEquals(360f, BunkerMotion.turnAngle(9f, 9f, 1, 2), 0.01f)
-        assertEquals(-360f, BunkerMotion.turnAngle(20f, 0f, 0, -1), 0.01f)
-        // every turn ends on a whole turn: the logo is never left crooked
-        for (steps in -3..3) assertEquals(0f, BunkerMotion.turnAngle(50f, 40f, steps - 1, steps) % 360f, 0.01f)
-        // it overshoots a little before settling
-        val peak = (1..70).maxOf { BunkerMotion.turnAngle(9f + it / 100f, 9f, 0, 1) }
-        assertTrue(peak > 360f && peak < 400f)
     }
 
     @Test

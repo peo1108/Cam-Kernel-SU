@@ -116,7 +116,6 @@ internal class BunkerRun {
     /** Something is moving that wants every frame, not just 30 a second. */
     fun busy(now: Float): Boolean =
         eventKind >= 0 ||
-            now - BunkerSignals.turnAt < 1f ||
             BunkerSignals.pull > 0f ||
             now - BunkerSignals.dischargeAt < 1f ||
             now - BunkerSignals.lockAt < 2.5f ||
@@ -125,9 +124,9 @@ internal class BunkerRun {
 
     fun fill(f: BunkerFrame, now: Float) {
         if (nextEventAt.isNaN()) nextEventAt = now + FIRST_EVENT
-        if (eventKind >= 0 && now - eventStart > lengthOf(eventKind)) eventKind = -1
+        if (eventKind >= 0 && now - eventStart > BunkerMotion.SHOT_LEN) eventKind = -1
         if (eventKind < 0 && now >= nextEventAt) {
-            eventKind = BunkerMotion.eventKind(eventIndex)
+            eventKind = BunkerMotion.SHOT
             eventStart = now
             nextEventAt = now + BunkerMotion.eventGap(eventIndex)
             eventIndex++
@@ -135,8 +134,6 @@ internal class BunkerRun {
         f.t = now
         f.tiltX = tilt.x
         f.tiltY = tilt.y
-        f.angle = BunkerMotion.turnAngle(now, BunkerSignals.turnAt, BunkerSignals.turnFrom, BunkerSignals.turnSteps)
-        f.turnAge = now - BunkerSignals.turnAt
         f.pull = BunkerSignals.pull
         f.dischargeAge = now - BunkerSignals.dischargeAt
         f.lockAge = now - BunkerSignals.lockAt
@@ -145,7 +142,6 @@ internal class BunkerRun {
         f.eventSeed = eventIndex * 7 + 3
     }
 
-    private fun lengthOf(kind: Int) = if (kind == BunkerMotion.SHOT) BunkerMotion.SHOT_LEN else BunkerMotion.POP_LEN
 
 
     private companion object {

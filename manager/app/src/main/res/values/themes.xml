@@ -8,9 +8,15 @@
     <style name="Theme.Cam.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@android:color/black</item>
         <item name="windowSplashScreenIconBackgroundColor">@android:color/black</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <!-- plain black: the start intro picks up from it (the logo comes back without the intro) -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_blank</item>
         <item name="windowSplashScreenAnimationDuration">500</item>
         <item name="postSplashScreenTheme">@style/Theme.Cam</item>
+    </style>
+
+    <!-- The splash once the start intro is turned off (Android 13+, IntroSplash). -->
+    <style name="Theme.Cam.Starting.Logo">
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
     </style>
 
     <style name="Theme.Cam.WebUI" parent="Theme.Cam">

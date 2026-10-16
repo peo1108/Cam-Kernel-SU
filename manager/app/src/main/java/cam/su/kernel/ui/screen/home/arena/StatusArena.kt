@@ -77,6 +77,7 @@ import kotlin.math.sin
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.glass.GlassDefaults
 import cam.su.kernel.ui.component.glass.glassMaterial
+import cam.su.kernel.ui.intro.IntroGate
 import cam.su.kernel.ui.screen.home.arena.three.Arena3D
 import cam.su.kernel.ui.screen.home.arena.three.PanoramaMap
 import cam.su.kernel.ui.slime.SlimeHome
@@ -128,6 +129,8 @@ fun StatusArena(
     DisposableEffect(arena3d) {
         onDispose { arena3d?.destroy() }
     }
+    // The flat fallback has nothing to load: the start intro need not wait for it.
+    LaunchedEffect(arena3d) { if (arena3d == null) IntroGate.warm() }
     val fontResolver = LocalFontFamilyResolver.current
     val backdrop = remember { BackdropPainter(TextMeasurer(fontResolver, Density(1f), LayoutDirection.Ltr, 4)) }
 
@@ -155,6 +158,7 @@ fun StatusArena(
                         backdrop.paint(this, v, languages, t, split, map)
                     }
                     arena3d.render(nanos)
+                    if (arena3d.warm) IntroGate.warm()
                 }
             }
         }

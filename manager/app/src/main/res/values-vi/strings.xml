@@ -115,6 +115,8 @@
     <string name="settings_slime_count_random">Ngẫu nhiên (1–4)</string>
     <string name="settings_slime_night">Ngủ khi trời tối</string>
     <string name="settings_slime_night_summary">Từ 22h đến 6h chúng đi chậm, hay ngáp và ngủ gục trên mép thẻ</string>
+    <string name="settings_start_intro">Intro khi mở app</string>
+    <string name="settings_start_intro_summary">Logo Inner Veterans chạy trong lúc trang chủ khởi động, hết intro là slime đã chạy sẵn. Chạm để bỏ qua</string>
     <string name="settings_check_update_summary">Tự động kiểm tra cập nhật khi mở ứng dụng.</string>
     <string name="open">Mở</string>
     <string name="close">Đóng</string>

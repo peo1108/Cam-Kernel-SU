@@ -1,6 +1,14 @@
 package cam.su.kernel.ui
 
 import cam.su.kernel.ui.component.CamToastHost
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.view.ViewGroup
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.draw.drawBehind
+import cam.su.kernel.ui.intro.IntroGate
+import cam.su.kernel.ui.intro.IntroLogo
+import cam.su.kernel.ui.intro.IntroPlayer
 import cam.su.kernel.ui.component.hero.HeroOverlay
 import cam.su.kernel.ui.component.hero.LocalHero
 import cam.su.kernel.ui.component.hero.rememberHeroState
@@ -25,6 +33,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -174,6 +183,10 @@ class CamActivity : ComponentActivity() {
     private var splashStartedAt = 0L
     private val splashAnimationDurationMs = 500L
 
+    /** The start intro while it plays over everything, and the window background it borrowed. */
+    private var intro: IntroPlayer? = null
+    private val introRunning = MutableStateFlow(false)
+    private var windowBackground: Drawable? = null
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -182,14 +195,41 @@ class CamActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition {
             val elapsed = SystemClock.uptimeMillis() - splashStartedAt
-            // Also wait (briefly) for the liquid glass background so the app opens straight onto it.
-            !contentReady || elapsed < splashAnimationDurationMs ||
-                (!glassBackgroundReady && elapsed < GLASS_PRELOAD_TIMEOUT_MS)
+            val player = intro
+            val keep = if (player != null) {
+                // The splash is plain black: leave it as soon as the intro's pictures are cut,
+                // and let the intro cover the app starting up (root, the first composition).
+                !IntroLogo.settled && elapsed < INTRO_ART_TIMEOUT_MS
+            } else {
+                // Also wait (briefly) for the liquid glass background so the app opens straight onto it.
+                !contentReady || elapsed < splashAnimationDurationMs ||
+                    (!glassBackgroundReady && elapsed < GLASS_PRELOAD_TIMEOUT_MS)
+            }
+            if (!keep) player?.windowShown = true
+            keep
         }
         val settings = SettingsRepositoryImpl()
         lifecycleScope.launch {
             GlassBackgroundCache.preload(applicationContext, settings.glassBackgroundType, settings.glassBackgroundBlur)
             glassBackgroundReady = true
+        }
+
+        // The intro only greets a fresh start from the launcher: not a notification, a shortcut,
+        // a restore after rotation, or someone who turned animations off.
+        val launcher = intent?.action == Intent.ACTION_MAIN && intent?.hasCategory(Intent.CATEGORY_LAUNCHER) == true
+        val animations = Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) != 0f
+        val showIntro = savedInstanceState == null && launcher && animations && settings.startIntro
+        if (showIntro) {
+            IntroGate.reset()
+            IntroLogo.preload(lifecycleScope, applicationContext)
+            introRunning.value = true
+            // Black under the intro until the app draws, light status icons over it.
+            windowBackground = window.decorView.background
+            window.setBackgroundDrawable(ColorDrawable(android.graphics.Color.BLACK))
+            enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+                navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            )
         }
 
         // Root comes from the allowlist now: bind the uid 0 service first, and keep the
@@ -215,17 +255,20 @@ class CamActivity : ComponentActivity() {
             val selectedMainPage by viewModel.selectedMainPage.collectAsStateWithLifecycle()
             val appSettings = uiState.appSettings
             val darkMode = appSettings.colorMode.isDark || (appSettings.colorMode.isSystem && isSystemInDarkTheme())
+            val introOn by introRunning.collectAsStateWithLifecycle()
+            // light bar icons over the intro's black too
+            val darkBars = darkMode || introOn
 
-            DisposableEffect(darkMode) {
+            DisposableEffect(darkBars) {
                 enableEdgeToEdge(
                     statusBarStyle = SystemBarStyle.auto(
                         android.graphics.Color.TRANSPARENT,
                         android.graphics.Color.TRANSPARENT
-                    ) { darkMode },
+                    ) { darkBars },
                     navigationBarStyle = SystemBarStyle.auto(
                         android.graphics.Color.TRANSPARENT,
                         android.graphics.Color.TRANSPARENT
-                    ) { darkMode },
+                    ) { darkBars },
                 )
                 window.isNavigationBarContrastEnforced = false
                 onDispose { }
@@ -373,11 +416,43 @@ class CamActivity : ComponentActivity() {
                             }
                         }
                     }
+                    if (introOn) {
+                        // Tell the intro playing over all this what it is waiting for, and when it first drew.
+                        val expectArena = remember { selectedMainPage == 0 && Cam.isFullFeatured() }
+                        SideEffect { IntroGate.expect(expectArena) }
+                        Spacer(Modifier.fillMaxSize().drawBehind { IntroGate.shown() })
+                    }
                     CamToastHost()
                     SideEffect { contentReady = true }
                 }
             }
         }
+
+        // Over the whole window (stray slimes included) on its own thread, from the first frame on.
+        if (showIntro) {
+            intro = IntroPlayer(this, ::endIntro).also {
+                addContentView(it.view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            }
+        }
+    }
+
+    private fun endIntro() {
+        val player = intro ?: return
+        intro = null
+        (player.view.parent as? ViewGroup)?.removeView(player.view)
+        windowBackground?.let { window.setBackgroundDrawable(it) }
+        windowBackground = null
+        introRunning.value = false
+        IntroLogo.release()
+    }
+
+    override fun onDestroy() {
+        intro?.let {
+            it.stop()
+            intro = null
+            IntroLogo.release()
+        }
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -666,3 +741,6 @@ private fun MainScreenBackHandler(
 }
 
 private const val GLASS_PRELOAD_TIMEOUT_MS = 1200L
+
+/** How long the black splash waits for the intro's pictures before giving the app the screen. */
+private const val INTRO_ART_TIMEOUT_MS = 800L

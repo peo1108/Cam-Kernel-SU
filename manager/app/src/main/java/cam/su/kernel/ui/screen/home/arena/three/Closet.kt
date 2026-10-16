@@ -46,6 +46,14 @@ internal class Closet(
     private val tm get() = engine.transformManager
     private val rm get() = engine.renderableManager
 
+    /**
+     * How many slimes' outfits are done with (hung, or failed to sew), counted on the main thread.
+     * At [SLIME_COUNT] no more loading hitches are coming; a failed outfit counts too, so it does
+     * not keep the start intro waiting.
+     */
+    var settled = 0
+        private set
+
     /** Starts sewing the outfits; each slime's appears once its asset is ready. */
     fun open() {
         for (k in 0 until SLIME_COUNT) {
@@ -55,7 +63,10 @@ internal class Closet(
                 } catch (t: Throwable) {
                     null
                 }
-                if (glb != null) main.post { if (!closed) hang(k, glb) }
+                main.post {
+                    if (!closed && glb != null) hang(k, glb)
+                    settled++
+                }
             }
         }
     }

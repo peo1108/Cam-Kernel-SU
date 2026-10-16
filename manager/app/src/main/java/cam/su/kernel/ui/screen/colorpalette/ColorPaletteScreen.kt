@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import cam.su.kernel.CamApplication
+import cam.su.kernel.ui.intro.IntroSplash
 import cam.su.kernel.ui.navigation3.LocalNavigator
 import cam.su.kernel.ui.theme.ColorMode
 import cam.su.kernel.ui.viewmodel.SettingsViewModel
@@ -66,6 +67,10 @@ fun ColorPaletteScreen() {
         onSetRoamingSlimes = viewModel::setRoamingSlimes,
         onSetRoamingSlimeCount = viewModel::setRoamingSlimeCount,
         onSetSlimeNightNap = viewModel::setSlimeNightNap,
+        onSetStartIntro = {
+            viewModel.setStartIntro(it)
+            activity?.let { a -> IntroSplash.apply(a, it) }
+        },
     )
 
     ColorPaletteScreenMiuix(state, actions)

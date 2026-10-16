@@ -72,6 +72,9 @@ data class SettingsUiState(
     val roamingSlimes: Boolean = true,
     val roamingSlimeCount: Int = 0,
     val slimeNightNap: Boolean = true,
+
+    // Start intro
+    val startIntro: Boolean = true,
 )
 
 @Immutable

@@ -103,6 +103,7 @@ class SettingsViewModel(
             val roamingSlimes = repo.roamingSlimes
             val roamingSlimeCount = repo.roamingSlimeCount
             val slimeNightNap = repo.slimeNightNap
+            val startIntro = repo.startIntro
             val isLateLoadMode = Cam.isLateLoadMode
 
             _uiState.update {
@@ -150,6 +151,7 @@ class SettingsViewModel(
                     roamingSlimes = roamingSlimes,
                     roamingSlimeCount = roamingSlimeCount,
                     slimeNightNap = slimeNightNap,
+                    startIntro = startIntro,
                     isLateLoadMode = isLateLoadMode,
                 )
             }
@@ -388,6 +390,11 @@ class SettingsViewModel(
     fun setSlimeNightNap(enabled: Boolean) {
         repo.slimeNightNap = enabled
         _uiState.update { it.copy(slimeNightNap = enabled) }
+    }
+
+    fun setStartIntro(enabled: Boolean) {
+        repo.startIntro = enabled
+        _uiState.update { it.copy(startIntro = enabled) }
     }
 
     fun setSulogEnabled(enabled: Boolean) {

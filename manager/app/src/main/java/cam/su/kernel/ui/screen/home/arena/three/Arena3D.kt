@@ -532,8 +532,18 @@ internal class Arena3D private constructor() {
         if (renderer.beginFrame(chain, frameTimeNanos)) {
             renderer.render(view)
             renderer.endFrame()
+            if (warmFrames < WARM_FRAMES && latestPanorama != null && rig.dressed) warmFrames++
         }
     }
+
+    /** Frames shown with everything loaded: the panorama painted and every outfit in. */
+    private var warmFrames = 0
+
+    /**
+     * Past the start-up hitches: a few frames drawn with everything loaded, so the shaders the
+     * first of them compiled are behind too. The start intro opens once this is true.
+     */
+    val warm: Boolean get() = warmFrames >= WARM_FRAMES
 
     fun destroy() {
         if (destroyed) return
@@ -568,6 +578,7 @@ internal class Arena3D private constructor() {
 
     companion object {
         private const val MIN_FRAME_NANOS = 15_500_000L
+        private const val WARM_FRAMES = 3
         /** The soft panorama moves slowly; repainting it at 30 Hz is indistinguishable. */
         private const val PAINT_INTERVAL = 1f / 30f
 

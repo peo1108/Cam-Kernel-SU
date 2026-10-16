@@ -41,4 +41,5 @@ data class ColorPaletteScreenActions(
     val onSetRoamingSlimes: (Boolean) -> Unit,
     val onSetRoamingSlimeCount: (Int) -> Unit,
     val onSetSlimeNightNap: (Boolean) -> Unit,
+    val onSetStartIntro: (Boolean) -> Unit,
 )

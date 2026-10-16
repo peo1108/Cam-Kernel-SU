@@ -79,6 +79,9 @@ internal class SlimeRig(
     /** Starts sewing the outfits on a worker; each slime's appear once ready. */
     fun open() = closet.open()
 
+    /** Every slime's outfits are in (or gave up): the last start-up loads are behind. */
+    val dressed: Boolean get() = closet.settled >= SLIME_COUNT
+
     /** Adds the four slimes to [g] (with [placeholder] as the face texture until it is painted). */
     fun build(g: Glb, placeholder: Int): List<Int> {
         val bodyMesh = Shapes3D.body()

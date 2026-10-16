@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuOpen
 import androidx.compose.material.icons.rounded.AspectRatio
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.CallToAction
@@ -549,6 +550,20 @@ fun ColorPaletteScreenMiuix(
                                 )
                             }
                         }
+                        GlassSwitchPreference(
+                            title = stringResource(id = R.string.settings_start_intro),
+                            summary = stringResource(id = R.string.settings_start_intro_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.AutoAwesome,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.settings_start_intro),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            checked = uiState.startIntro,
+                            onCheckedChange = actions.onSetStartIntro,
+                        )
                     }
                 }
                 item {

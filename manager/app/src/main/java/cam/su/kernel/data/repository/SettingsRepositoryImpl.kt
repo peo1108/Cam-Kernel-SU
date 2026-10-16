@@ -210,6 +210,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("slime_night_nap", true)
         set(value) = prefs.edit { putBoolean("slime_night_nap", value) }
 
+    override var startIntro: Boolean
+        get() = prefs.getBoolean("start_intro", true)
+        set(value) = prefs.edit { putBoolean("start_intro", value) }
+
     override var conflictDetection: Boolean
         get() = prefs.getBoolean("conflict_detection", true)
         set(value) = prefs.edit { putBoolean("conflict_detection", value) }

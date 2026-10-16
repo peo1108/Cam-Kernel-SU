@@ -145,6 +145,8 @@
     <string name="settings_slime_count_random">Random (1–4)</string>
     <string name="settings_slime_night">Nap at night</string>
     <string name="settings_slime_night_summary">From 22:00 to 6:00 they slow down, yawn and doze off on the cards</string>
+    <string name="settings_start_intro">Intro on launch</string>
+    <string name="settings_start_intro_summary">The Inner Veterans logo plays while the home page starts, so the slimes are already running when it opens. Tap to skip</string>
     <string name="settings_check_update_summary">Automatically check for updates when opening the app.</string>
     <string name="settings_enable_predictive_back">Predictive back gesture</string>
     <string name="settings_enable_predictive_back_summary">Enable predictive back gesture support.</string>

@@ -1065,4 +1065,18 @@
     <string name="config_backup_restored">Restored: %1$d app profiles, %2$d modules, %3$d bookmarks.</string>
     <string name="config_backup_restore_failed">Failed: %1$s</string>
     <string name="config_backup_reboot">Module and SELinux hiding changes take effect after a reboot.</string>
+    <string name="module_backup_title">Modules</string>
+    <string name="module_backup_summary">The installed modules themselves, in one .tar file, to bring them back after a reset or on another phone. The configuration file above only keeps whether each module was on.</string>
+    <string name="module_backup_save">Back up modules</string>
+    <string name="module_backup_open">Restore modules</string>
+    <string name="module_backup_failed">Module backup failed</string>
+    <string name="module_backup_saved">Saved %d modules.</string>
+    <string name="module_backup_preview_title">%d modules in the backup</string>
+    <string name="module_backup_not_installed">not installed</string>
+    <string name="module_backup_same">same as installed</string>
+    <string name="module_backup_installed">installed: %s</string>
+    <string name="module_backup_was_off">was off</string>
+    <string name="module_backup_restore_note">Each chosen module replaces the installed one on the next boot, the way an update does, and comes back on or off as it was. Its installer does not run again.</string>
+    <string name="module_backup_restore">Restore %d</string>
+    <string name="module_backup_restored">%d modules restored.</string>
 </resources>

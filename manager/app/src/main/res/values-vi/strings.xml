@@ -1049,4 +1049,18 @@
     <string name="config_backup_restored">Đã khôi phục: %1$d hồ sơ app, %2$d module, %3$d bookmark.</string>
     <string name="config_backup_restore_failed">Lỗi: %1$s</string>
     <string name="config_backup_reboot">Thay đổi module và ẩn SELinux có hiệu lực sau khi khởi động lại.</string>
+    <string name="module_backup_title">Module</string>
+    <string name="module_backup_summary">Lưu chính các module đã cài vào một file .tar, để cài lại sau khi xoá máy hoặc trên máy khác. File cấu hình ở trên chỉ giữ module nào đang bật.</string>
+    <string name="module_backup_save">Sao lưu module</string>
+    <string name="module_backup_open">Khôi phục module</string>
+    <string name="module_backup_failed">Sao lưu module thất bại</string>
+    <string name="module_backup_saved">Đã lưu %d module.</string>
+    <string name="module_backup_preview_title">Bản sao lưu có %d module</string>
+    <string name="module_backup_not_installed">chưa cài</string>
+    <string name="module_backup_same">giống bản đang cài</string>
+    <string name="module_backup_installed">đang cài: %s</string>
+    <string name="module_backup_was_off">đang tắt lúc sao lưu</string>
+    <string name="module_backup_restore_note">Mỗi module được chọn sẽ thay bản đang cài ở lần khởi động sau, như một lần cập nhật, và bật hay tắt như lúc sao lưu. Trình cài của module không chạy lại.</string>
+    <string name="module_backup_restore">Khôi phục %d</string>
+    <string name="module_backup_restored">Đã khôi phục %d module.</string>
 </resources>

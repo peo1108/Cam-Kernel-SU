@@ -903,7 +903,7 @@ const STATE_FLAGS: [&str; 3] = [
 ];
 
 /// `cp -a` keeps modes, symlinks and whiteout device nodes, which a plain file copy would not.
-fn copy_module_tree(src: &Path, dst: &Path) -> Result<()> {
+pub fn copy_module_tree(src: &Path, dst: &Path) -> Result<()> {
     let status = Command::new(assets::BUSYBOX_PATH)
         .args(["cp", "-a"])
         .arg(src)
@@ -948,13 +948,27 @@ pub fn restore_module(id: &str) -> Result<()> {
         "No previous version of {id} kept"
     );
 
+    // restoring means wanting it on, also after the boot guard turned it off
+    stage_module_tree(&backup, id, true)?;
+
+    if let Err(e) = regenerate_preinit_rc() {
+        warn!("regenerate preinit rc failed: {e}");
+    }
+    info!("Module {id} restored from backup, reboot to apply");
+    Ok(())
+}
+
+/// Stage a module dir as a pending update of `id`; it replaces the installed one on the next
+/// boot. `enabled` false leaves it disabled.
+pub fn stage_module_tree(src: &Path, id: &str, enabled: bool) -> Result<()> {
+    validate_module_id(id)?;
     ensure_dir_exists(defs::MODULE_UPDATE_DIR)?;
     setsyscon(defs::MODULE_UPDATE_DIR)?;
     let staged = Path::new(defs::MODULE_UPDATE_DIR).join(id);
     if staged.exists() {
         remove_dir_all(&staged)?;
     }
-    copy_module_tree(&backup, &staged)?;
+    copy_module_tree(src, &staged)?;
     let staged_system = staged.join("system");
     if staged_system.exists() {
         restore_syscon(&staged_system)?;
@@ -964,13 +978,13 @@ pub fn restore_module(id: &str) -> Result<()> {
     ensure_dir_exists(&module_dir)?;
     copy(staged.join("module.prop"), module_dir.join("module.prop"))?;
     ensure_file_exists(module_dir.join(UPDATE_FILE_NAME))?;
-    // restoring means wanting it on, also after the boot guard turned it off
-    std::fs::remove_file(module_dir.join(defs::DISABLE_FILE_NAME)).ok();
-
-    if let Err(e) = regenerate_preinit_rc() {
-        warn!("regenerate preinit rc failed: {e}");
+    std::fs::remove_file(module_dir.join(defs::REMOVE_FILE_NAME)).ok();
+    let disable = module_dir.join(defs::DISABLE_FILE_NAME);
+    if enabled {
+        std::fs::remove_file(disable).ok();
+    } else {
+        ensure_file_exists(disable)?;
     }
-    info!("Module {id} restored from backup, reboot to apply");
     Ok(())
 }
 

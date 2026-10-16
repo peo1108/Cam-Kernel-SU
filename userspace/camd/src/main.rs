@@ -47,6 +47,7 @@ mod lkm_image_btf;
 mod metamodule;
 #[cfg(target_os = "android")]
 mod module;
+mod module_archive;
 #[cfg(target_os = "android")]
 mod module_config;
 mod module_conflicts;

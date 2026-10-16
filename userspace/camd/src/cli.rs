@@ -395,6 +395,27 @@ enum Module {
         id: String,
     },
 
+    /// write installed modules into one tar backup (all when no --id)
+    Export {
+        /// output file
+        out: String,
+        /// module ids to include
+        #[arg(long = "id")]
+        ids: Vec<String>,
+    },
+
+    /// stage modules from a backup made by export (applies after reboot)
+    Import {
+        /// backup file
+        input: String,
+        /// only print the backup's modules as JSON
+        #[arg(long)]
+        list: bool,
+        /// module ids to import (all when empty)
+        #[arg(long, value_delimiter = ',')]
+        only: Vec<String>,
+    },
+
     /// manage module configuration
     Config {
         /// target internal module name (resolved as internal.<name>)
@@ -642,6 +663,14 @@ pub fn run() -> Result<()> {
                 Module::List => module::list_modules(),
                 Module::Conflicts => module::list_module_conflicts(),
                 Module::Restore { id } => module::restore_module(&id),
+                Module::Export { out, ids } => crate::module_archive::export(&out, &ids),
+                Module::Import { input, list, only } => {
+                    if list {
+                        crate::module_archive::list(&input)
+                    } else {
+                        crate::module_archive::import(&input, &only)
+                    }
+                }
                 Module::Config { internal, command } => {
                     let module_id = match internal {
                         Some(internal_name) => format!("internal.{internal_name}"),

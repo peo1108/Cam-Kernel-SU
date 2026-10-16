@@ -69,6 +69,8 @@ import androidx.compose.ui.unit.sp
 import cam.su.kernel.CamNative
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.AppIconImage
+import cam.su.kernel.ui.component.hero.HeroPart
+import cam.su.kernel.ui.component.hero.heroTarget
 import cam.su.kernel.ui.component.ListPopupDefaults
 import cam.su.kernel.ui.component.profile.AppProfileConfig
 import cam.su.kernel.ui.component.profile.RootProfileConfig
@@ -157,7 +159,9 @@ fun AppProfileScreenMiuix(
                             AppIconImage(
                                 packageInfo = state.appGroup.primary.packageInfo,
                                 label = state.appGroup.primary.label,
-                                modifier = Modifier.size(64.dp)
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .heroTarget(state.uid, HeroPart.Icon)
                             )
                         },
                         appUid = state.uid,
@@ -241,6 +245,7 @@ private fun AppProfileInner(
                         color = colorScheme.onSurface,
                         fontWeight = FontWeight(550),
                         modifier = Modifier
+                            .heroTarget(appUid, HeroPart.Label)
                             .basicMarquee(),
                         maxLines = 1,
                         softWrap = false

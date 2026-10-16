@@ -1,6 +1,9 @@
 package cam.su.kernel.ui
 
 import cam.su.kernel.ui.component.CamToastHost
+import cam.su.kernel.ui.component.hero.HeroOverlay
+import cam.su.kernel.ui.component.hero.LocalHero
+import cam.su.kernel.ui.component.hero.rememberHeroState
 import cam.su.kernel.update.UpdateNotifier
 import cam.su.kernel.update.UpdateSignal
 import androidx.activity.compose.BackHandler
@@ -270,6 +273,7 @@ class CamActivity : ComponentActivity() {
                         )
                     }
 
+                    val hero = rememberHeroState()
                     val navDisplay = @Composable {
                         NavDisplay(
                             backStack = navigator.backStack,
@@ -361,7 +365,12 @@ class CamActivity : ComponentActivity() {
                             // Out of the way while something is being flashed, installed or run.
                             quiet = route is Route.Flash || route is Route.ExecuteModuleAction || route == Route.Install,
                         ) {
-                            Scaffold(containerColor = Color.Transparent) { navDisplay() }
+                            Scaffold(containerColor = Color.Transparent) {
+                                Box {
+                                    CompositionLocalProvider(LocalHero provides hero) { navDisplay() }
+                                    HeroOverlay(hero)
+                                }
+                            }
                         }
                     }
                     CamToastHost()

@@ -1,11 +1,13 @@
 package cam.su.kernel.ui.screen.appprofile
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cam.su.kernel.ui.component.hero.LocalHero
 import cam.su.kernel.ui.navigation3.LocalNavigator
 import cam.su.kernel.ui.navigation3.Route
 import cam.su.kernel.ui.util.forceStopApp
@@ -17,6 +19,11 @@ import cam.su.kernel.ui.viewmodel.SuperUserViewModel
 @Composable
 fun AppProfileScreen(uid: Int) {
     val navigator = LocalNavigator.current
+    // the header is a LazyColumn item and may leave while the page stays: the page ends the flight
+    val hero = LocalHero.current
+    DisposableEffect(hero, uid) {
+        onDispose { hero?.end(uid) }
+    }
     val viewModel: SuperUserViewModel = viewModel()
     val appGroupState = remember(uid) {
         derivedStateOf {

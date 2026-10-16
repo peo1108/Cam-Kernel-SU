@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cam.su.kernel.ui.component.SearchStatus
+import cam.su.kernel.ui.component.hero.LocalHero
+import cam.su.kernel.ui.util.ownerNameForUid
 import cam.su.kernel.ui.component.search.mainSearchQueryFor
 import cam.su.kernel.ui.navigation3.Navigator
 import cam.su.kernel.ui.navigation3.Route
@@ -66,7 +68,11 @@ fun SuperUserPager(
     val onToggleShowOnlyPrimaryUserApps: () -> Unit = {
         viewModel.toggleShowOnlyPrimaryUserApps()
     }
+    val hero = LocalHero.current
     val onOpenProfile: (GroupedApps) -> Unit = { group ->
+        // same label as the card and the App Profile header show
+        val label = if (group.apps.size > 1) ownerNameForUid(group.uid) else group.primary.label
+        hero?.launch(group.uid, group.primary.packageInfo, label)
         navigator.push(Route.AppProfile(group.uid))
         viewModel.markNeedRefresh()
     }

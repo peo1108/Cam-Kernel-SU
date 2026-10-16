@@ -57,6 +57,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import cam.su.kernel.ui.component.hero.HeroPart
+import cam.su.kernel.ui.component.hero.heroSource
 import cam.su.kernel.ui.component.motion.cardEntrance
 import cam.su.kernel.ui.component.skeleton.SkeletonKind
 import cam.su.kernel.ui.component.skeleton.SkeletonOverlay
@@ -509,6 +511,7 @@ private fun GroupItem(
                 modifier = Modifier
                     .padding(end = 10.dp)
                     .size(48.dp)
+                    .heroSource(group.uid, HeroPart.Icon)
             )
             Column(
                 modifier = Modifier
@@ -516,7 +519,7 @@ private fun GroupItem(
             ) {
                 Text(
                     text = if (group.apps.size > 1) ownerNameForUid(group.uid) else group.primary.label,
-                    modifier = Modifier.basicMarquee(),
+                    modifier = Modifier.heroSource(group.uid, HeroPart.Label).basicMarquee(),
                     fontWeight = FontWeight(550),
                     color = colorScheme.onSurface,
                     maxLines = 1,

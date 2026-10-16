@@ -8,6 +8,11 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Chặn module nguy hiểm (tab Tính năng): SU Kernel không cài module nằm trong danh sách mã độc hoặc phá máy. Danh sách có chữ ký và tự cập nhật cùng rule ẩn root. Module đã cài mà nằm trong danh sách có nhãn đỏ "Nguy hiểm", bấm vào để xem lý do và tắt. Tắt công tắc "Từ chối module nguy hiểm" thì chỉ cảnh báo rồi vẫn cài
 - Sao lưu module (Cài đặt → Sao lưu cấu hình → Module): lưu chính các module đã cài vào một file .tar. Khôi phục thì chọn từng module, module được thay ở lần khởi động sau như một lần cập nhật và giữ trạng thái bật hay tắt như lúc sao lưu
 - Cài module không cần khởi động lại, với module tự khai hỗ trợ (hot install, từ KernelSU). Module khác vẫn cần khởi động lại như cũ
+### Thay đổi
+- Superuser, Module và Thư viện module hiện các thẻ mờ trong lúc tải lần đầu thay cho vòng xoay
+- Bấm "Mở hồ sơ đầy đủ" trong Superuser: icon và tên app bay từ thẻ sang trang hồ sơ, quay lại thì bay về thẻ (theo cả thao tác vuốt)
+- Mở app nhanh hơn một chút sau mỗi lần cập nhật: các phần hay dùng được biên dịch sẵn
+- Bật/tắt "Hiện app hệ thống" trong Superuser nhanh hơn
 ### Sửa lỗi
 - Kiểm tra ẩn root: sau khi mở WebUI của module (hoặc app có WebView), trang báo "App đang nạp file root trong bộ nhớ" với các file của WebView. Đó là báo nhầm: tên thư mục cài app có mã ngẫu nhiên trùng chữ "edxp" (EdXposed). Giờ chỉ xét tên app, không xét mã ngẫu nhiên
 - Cài một file zip module bị hỏng giờ báo lỗi thay vì làm camd dừng đột ngột

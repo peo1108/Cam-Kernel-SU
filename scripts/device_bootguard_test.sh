@@ -68,10 +68,21 @@ STATE=/data/local/tmp/cam_bgtest.state
 MODS=/data/adb/modules
 UPD=/data/adb/modules_update
 INITRC=/data/adb/initrc.d
-if [ -d /metadata/watchdog ]; then D=/metadata/watchdog/cam; else D=/metadata/cam; fi
+# the dir camd writes modules.rc to (module::preinit_ksu_dir): vold when the kernel reads it
+D=
+for c in /metadata/vold/cam /metadata/watchdog/cam /metadata/cam; do
+    [ -f "$c/modules.rc" ] && { D=$c; break; }
+done
+if [ -z "$D" ]; then
+    if [ -d /metadata/watchdog ]; then D=/metadata/watchdog/cam; else D=/metadata/cam; fi
+fi
+case "$D" in
+/metadata/vold/*) CON=u:object_r:vold_metadata_file:s0 ;;
+*) CON=u:object_r:metadata_file:s0 ;;
+esac
 TEST_IDS="bgt-ok bgt-loop bgt-new bgt-pfd"
 
-label() { chcon u:object_r:metadata_file:s0 "$@" 2>/dev/null; }
+label() { chcon "$CON" "$@" 2>/dev/null; }
 
 # init rc that reboots at early-init while its queue (tl.next*) still holds itself
 loop_rc() {

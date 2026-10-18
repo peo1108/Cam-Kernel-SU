@@ -18,8 +18,8 @@ pub fn on_post_fs_data() -> Result<()> {
     // so write it afresh before anything below can return early; a boot that ran without the
     // rc keeps it held back (and its flag) until the boot guard has acted on it.
     let rc_held_back = crate::module::module_rc_held_back();
-    if !rc_held_back && let Err(e) = crate::module::regenerate_preinit_rc() {
-        warn!("regenerate preinit rc failed: {e}");
+    if !rc_held_back && let Err(e) = crate::module::regenerate_preinit() {
+        warn!("regenerate preinit failed: {e:#}");
     }
 
     if let Err(e) = ksucalls::ensure_uapi_version_matched() {
@@ -95,8 +95,8 @@ pub fn on_post_fs_data() -> Result<()> {
     // Refresh /metadata/watchdog/cam/modules.rc so the next boot's kernel hook sees the
     // current module set. Acts as a safety net when state was changed outside
     // of camd's normal mutation commands.
-    if let Err(e) = crate::module::regenerate_preinit_rc() {
-        warn!("regenerate preinit rc failed: {e}");
+    if let Err(e) = crate::module::regenerate_preinit() {
+        warn!("regenerate preinit failed: {e:#}");
     }
 
     if let Err(e) = restorecon::restorecon() {
@@ -335,6 +335,8 @@ pub fn on_boot_completed() {
 
     ksucalls::report_boot_complete();
     info!("on_boot_completed triggered!");
+
+    crate::preinit::on_boot_completed();
 
     // the framework sets some of them (sys.oem_unlock_allowed) once it is up
     crate::hide_bootloader::apply_if_enabled();

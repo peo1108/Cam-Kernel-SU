@@ -29,4 +29,6 @@ data class Module(
     val backupVersion: String? = null,
     /** on the signed rules' dangerous module list (by module.prop); null when not */
     val risk: ModuleRiskHit? = null,
+    // preinit state for the next boot: "", "ok", "no_space", "error" or "bootloop"
+    val preinit: String = "",
 )

@@ -843,6 +843,15 @@ fun ModuleItem(
                     color = colorScheme.onSurfaceVariantSummary,
                     textDecoration = textDecoration
                 )
+                module.preinitWarning()?.let {
+                    Text(
+                        text = stringResource(it),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 1.dp),
+                        fontWeight = FontWeight(550),
+                        color = colorScheme.error
+                    )
+                }
                 ModuleStatusBadges(
                     module = module,
                     onRestoreBackup = onRestoreBackup,

@@ -60,6 +60,10 @@
     <string name="module_uninstall_failed">Gỡ cài đặt %s thất bại!</string>
     <string name="module_version">Phiên bản</string>
     <string name="module_author">Tác giả</string>
+    <string name="module_preinit_no_space">Bỏ qua preinit: /metadata không đủ chỗ</string>
+    <string name="module_preinit_error">Bỏ qua preinit: thư mục preinit không hợp lệ</string>
+    <string name="module_preinit_bootloop">Đã tắt preinit vì khởi động lỗi nhiều lần</string>
+    <string name="module_preinit_unsupported">Bỏ qua preinit: kernel hiện tại không hỗ trợ</string>
     <string name="show_system_apps">Hiển thị các ứng dụng hệ thống</string>
     <string name="safe_mode">Chế độ An toàn</string>
     <string name="reboot_to_apply">Khởi động lại để có hiệu lực</string>

@@ -11,7 +11,9 @@
 // 4: add KSU_GET_INFO_FLAG_BUNDLED
 // 5: uid 0 is the manager, no apk detection
 // 6: add EVENT_SERVICES with a start/skip result
-static const __u32 KERNEL_SU_UAPI_VERSION = 6;
+// 7 (upstream 6): add KSU_IOCTL_LOOKUP_SYMBOLS and KSU_GET_INFO_FLAG_PREINIT; modules.rc and
+//    preinit may live under /metadata/vold/cam
+static const __u32 KERNEL_SU_UAPI_VERSION = 7;
 
 /* Magic numbers for reboot hook to install fd */
 static const __u32 KSU_INSTALL_MAGIC1 = 0xDEADBEEF;
@@ -31,6 +33,8 @@ static const __u32 KSU_GET_INFO_FLAG_MANAGER = (1U << 1);
 static const __u32 KSU_GET_INFO_FLAG_LATE_LOAD = (1U << 2);
 static const __u32 KSU_GET_INFO_FLAG_PR_BUILD = (1U << 3);
 static const __u32 KSU_GET_INFO_FLAG_BUNDLED = (1U << 4);
+/* The preinit runner will run module preinit actions on boot */
+static const __u32 KSU_GET_INFO_FLAG_PREINIT = (1U << 5);
 
 struct ksu_get_info_cmd {
     __u32 version; /* Output: KERNEL_SU_VERSION */
@@ -164,6 +168,22 @@ struct ksu_get_source_id_cmd {
     char id[48]; /* Output: NUL-terminated hex, "" when unknown */
 };
 
+/*
+ * Batch kernel image symbol lookup. Returns the number of symbols found; the
+ * address of a symbol that does not exist in the running kernel is set to 0.
+ * Matches like ksuinit's /proc/kallsyms walk: a kernel symbol name is cut at
+ * its first '$', else at ".llvm.", and the first match in kallsyms order wins.
+ * Module symbols are never returned.
+ */
+struct ksu_lookup_symbols_cmd {
+    __aligned_u64 names; /* Input: user pointer to `count` user pointers to null-terminated names */
+    __aligned_u64 addrs; /* Output: user pointer to `count` __u64 symbol addresses */
+    __u32 count; /* Input: number of symbols, at most KSU_LOOKUP_SYMBOLS_MAX */
+    __u32 flags; /* Input: reserved for future use, must be 0 */
+};
+
+static const __u32 KSU_LOOKUP_SYMBOLS_MAX = 1024;
+
 static const __u8 KSU_UMOUNT_WIPE = 0; /* ignore everything and wipe list */
 static const __u8 KSU_UMOUNT_ADD = 1; /* add entry (path + flags) */
 static const __u8 KSU_UMOUNT_DEL = 2; /* delete entry, strcmp */
@@ -196,6 +216,7 @@ static const __u32 KSU_IOCTL_ADD_TRY_UMOUNT = _IOC(_IOC_WRITE, 'K', 18, 0);
 static const __u32 KSU_IOCTL_SET_INIT_PGRP = _IO('K', 19);
 static const __u32 KSU_IOCTL_GET_SULOG_FD = _IOW('K', 20, struct ksu_get_sulog_fd_cmd);
 static const __u32 KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT = _IO('K', 21);
+static const __u32 KSU_IOCTL_LOOKUP_SYMBOLS = _IOW('K', 22, struct ksu_lookup_symbols_cmd);
 /* Cam-only, numbered far from upstream's sequence */
 static const __u32 KSU_IOCTL_GET_SOURCE_ID = _IOR('K', 100, struct ksu_get_source_id_cmd);
 

@@ -344,8 +344,8 @@ mod android {
                 }
             }
         }
-        if let Err(e) = module::regenerate_preinit_rc() {
-            warn!("regenerate preinit rc failed: {e}");
+        if let Err(e) = module::regenerate_preinit() {
+            warn!("regenerate preinit failed: {e:#}");
         }
         println!(
             "{}",

@@ -69,6 +69,7 @@ class ModuleRepositoryImpl : ModuleRepository {
                         conflicts = conflicts.forModule(id),
                         backupVersion = if (obj.has("backupVersion")) obj.optString("backupVersion") else null,
                         risk = risks.matchModule(id, name, author),
+                        preinit = obj.optString("preinit")
                     )
                 }.toList()
         }

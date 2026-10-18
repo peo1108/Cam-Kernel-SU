@@ -4,15 +4,30 @@ use std::{ffi::CString, fs, path::Path};
 use crate::ksucalls;
 
 pub fn insmod(module: &Path, params: &[String]) -> Result<()> {
+    // KSU_IOCTL_LOOKUP_SYMBOLS was introduced in Cam UAPI v7 (upstream v6; Cam's v6 is
+    // EVENT_SERVICES). Prefer resolving the module's undefined (non-exported) symbols
+    // through it; older kernels, or a failed lookup, fall back to /proc/kallsyms.
+    const LOOKUP_SYMBOL_UAPI_VERSION: u32 = 7;
+
     let module = module
         .canonicalize()
         .with_context(|| format!("resolve module path failed: {}", module.display()))?;
+    let cparams = CString::new(params.join(" "))?;
     let module_data =
         fs::read(&module).with_context(|| format!("read module failed: {}", module.display()))?;
-    let cparams = CString::new(params.join(" "))?;
 
-    caminit::load_module(&module_data, &cparams)
-        .with_context(|| format!("load module failed: {}", module.display()))?;
+    if ksucalls::get_info().uapi_version >= LOOKUP_SYMBOL_UAPI_VERSION {
+        caminit::load_module_with_resolver(&module_data, &cparams, |names| {
+            ksucalls::lookup_symbols(names).or_else(|e| {
+                log::warn!("kernel symbol lookup failed: {e:#}, using /proc/kallsyms");
+                caminit::resolve_kallsyms(names)
+            })
+        })
+    } else {
+        log::info!("kernel symbol lookup unsupported, using /proc/kallsyms");
+        caminit::load_module(&module_data, &cparams)
+    }
+    .with_context(|| format!("load module failed: {}", module.display()))?;
 
     println!("Loaded kernel module: {}", module.display());
     Ok(())

@@ -68,6 +68,9 @@ s/KSUD/CAMD/g
 s#/data/adb/ksu\b#/data/adb/cam#g
 s#/metadata/watchdog/ksu/#/metadata/watchdog/cam/#g
 s#/metadata/ksu/#/metadata/cam/#g
+s#/metadata/vold/ksu\b#/metadata/vold/cam#g
+s#/metadata/watchdog/ksu\b#/metadata/watchdog/cam#g
+s#/metadata/ksu\b#/metadata/cam#g
 s/\.ksurc\b/.camrc/g
 s/ksu_backup_/cam_backup_/g
 s/libksucam/libcamd/g

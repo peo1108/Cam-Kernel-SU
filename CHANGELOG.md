@@ -11,6 +11,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Intro khi mở app: logo Inner Veterans được ráp lại từ từng mảnh giáp, đạn găm vào khung, điện chạy quanh viền rồi nổ tung, mở ra trang chủ với slime đã chạy sẵn. Chạm để bỏ qua, tắt trong Cài đặt → Chủ đề (tắt thì màn hình chờ có logo như cũ)
 - Nền kính mới "Hầm chỉ huy Inner Veterans" (Cài đặt → Chủ đề → Nền kính): logo làm nền sống động, ánh sáng lạnh lướt trên các mảnh thép và viền chrome, thỉnh thoảng một viên đạn găm vào khung. Nghiêng máy thấy chiều sâu và vệt phản chiếu trượt theo, kéo để làm mới thì viền nung sáng rồi chớp, cấp root hay cài module xong thì tâm ngắm khoá mục tiêu
 - Hầm chỉ huy làm hình nền máy: chọn nền "Hầm chỉ huy Inner Veterans" rồi bấm "Đặt làm hình nền máy". Hình nền động, logo nằm phía trên thanh dock nên không bị che, chỉ chạy khi đang nhìn thấy
+- Module preinit (từ KernelSU): module có thư mục `preinit/` chạy được vài việc trước khi Android nạp SELinux (nạp kernel module, chạy chương trình, ghi vào /proc, /sys). Khởi động lỗi 3 lần liên tiếp thì preinit tự tắt; module nào không chạy được preinit có dòng cảnh báo đỏ dưới thẻ module
 ### Thay đổi
 - Superuser, Module và Thư viện module hiện các thẻ mờ trong lúc tải lần đầu thay cho vòng xoay
 - Bấm "Mở hồ sơ đầy đủ" trong Superuser: icon và tên app bay từ thẻ sang trang hồ sơ, quay lại thì bay về thẻ (theo cả thao tác vuốt)
@@ -22,8 +23,9 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Chặn module kernel (trang Cài đặt LKM): chặn nhầm module mà máy cần ngay lúc mới khởi động không còn làm máy bootloop. SU Kernel để module đó nạp bình thường và chỉ chặn những module chặn được an toàn. Có hiệu lực khi cài lại LKM
 - Quyền root và hồ sơ của các app không còn có thể bị xoá hàng loạt khi danh sách gói của Android có một dòng đọc không được
 - Root của SU Kernel chỉ được cấp lại khi chữ ký khớp đúng bản app đang cài (chặt hơn lúc gỡ rồi cài lại app)
+- Máy Android 17 QPR3 khởi động được với SU Kernel (từ KernelSU)
 ### Lưu ý
-- Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" (thẻ trên trang chủ) rồi khởi động lại
+- Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" (thẻ trên trang chủ) rồi khởi động lại. Chưa cài lại LKM thì module sẽ không chạy ở lần khởi động sau
 
 ## 1.1.8 - 2026-10-15
 - Bản cập nhật quan trọng, nên cài ngay: chống bootloop tắt hết module và chỉ ra module gây lỗi, flash phân vùng an toàn hơn, trang ẩn root có nút sửa ngay, sao lưu cấu hình

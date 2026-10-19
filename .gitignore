@@ -18,3 +18,5 @@ __pycache__
 /vps.txt
 # encrypted signing key backups (scripts/backup_signing_keys.sh); keep them outside the repo
 cam-signing-keys-*.enc
+# brainstorming companion mockups (superpowers)
+/.superpowers/

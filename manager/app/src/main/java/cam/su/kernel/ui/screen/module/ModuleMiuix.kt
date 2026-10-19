@@ -168,6 +168,12 @@ import top.yukonga.miuix.kmp.icon.extended.UploadCloud
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
+import cam.su.kernel.ui.component.glass.GlassDefaults
+
+// the button the module library grows out of (expandSource key)
+private const val SOURCE_REPO = "module/repo"
 
 @SuppressLint("StringFormatInvalid", "LocalContextGetResourceValueCall")
 @Composable
@@ -332,7 +338,8 @@ fun ModulePagerMiuix(
                         },
                         navigationIcon = {
                             GlassIconButton(
-                                onClick = actions.onOpenRepo,
+                                onClick = expandClick(SOURCE_REPO, actions.onOpenRepo),
+                                modifier = Modifier.expandSource(SOURCE_REPO, corner = GlassDefaults.dropletSize / 2),
                             ) {
                                 Icon(
                                     imageVector = MiuixIcons.Download,

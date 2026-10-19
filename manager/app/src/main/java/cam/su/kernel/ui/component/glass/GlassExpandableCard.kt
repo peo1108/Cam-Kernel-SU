@@ -51,6 +51,7 @@ fun GlassExpandableCard(
     onToggle: () -> Unit,
     enabled: Boolean = true,
     header: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val arrowRotation by animateFloatAsState(
@@ -61,7 +62,8 @@ fun GlassExpandableCard(
     GlassListCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .then(modifier),
         insideMargin = PaddingValues(0.dp),
     ) {
         Column(

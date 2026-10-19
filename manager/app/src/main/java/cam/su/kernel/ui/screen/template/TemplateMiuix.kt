@@ -106,6 +106,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
+import cam.su.kernel.ui.component.glass.GlassDefaults
+
+// the button a new template's editor grows out of (expandSource key)
+private const val SOURCE_NEW_TEMPLATE = "template/new"
 
 /**
  * @author weishu
@@ -170,7 +176,7 @@ fun AppProfileTemplateScreenMiuix(
             GlassFab(
                 containerColor = colorScheme.primary,
                 shadowElevation = 0.dp,
-                onClick = actions.onCreateTemplate,
+                onClick = expandClick(SOURCE_NEW_TEMPLATE, actions.onCreateTemplate),
                 modifier = Modifier
                     .offset {
                         IntOffset(x = 0, y = offsetHeight.roundToPx())
@@ -180,6 +186,7 @@ fun AppProfileTemplateScreenMiuix(
                                 WindowInsets.captionBar.asPaddingValues().calculateBottomPadding() + 20.dp,
                         end = 20.dp
                     )
+                    .expandSource(SOURCE_NEW_TEMPLATE, corner = GlassDefaults.fabSize / 2)
                     .border(0.05.dp, colorScheme.outline.copy(alpha = 0.5f), CircleShape),
                 content = {
                     Icon(
@@ -289,9 +296,10 @@ private fun TemplateItem(
     template: TemplateInfo,
     onClick: () -> Unit,
 ) {
+    val source = "template/${template.id}"
     GlassListCard(
-        modifier = modifier.padding(bottom = 12.dp),
-        onClick = onClick,
+        modifier = modifier.padding(bottom = 12.dp).expandSource(source),
+        onClick = expandClick(source, onClick),
         showIndication = true,
         pressFeedbackType = PressFeedbackType.Sink
     ) {

@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.derivedStateOf
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
+import top.yukonga.miuix.kmp.nav.core.NavKey
+import cam.su.kernel.ui.component.expand.LocalExpandPage
+import cam.su.kernel.ui.component.expand.rememberExpandPage
 import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.Image
@@ -222,15 +225,17 @@ fun rememberGlassBackgroundState(type: Int, blur: Float, dim: Float, imageVersio
 /**
  * A navigation page: paints the glass background behind [content] and records it into a
  * backdrop that glass surfaces in [content] sample through [LocalGlassBackdrop]. Each page paints
- * its own copy so outgoing pages never show through during transitions.
+ * its own copy so outgoing pages never show through during transitions. [navKey] is the page's
+ * route; with it the page can grow out of the element that opened it ([LocalExpandPage]).
  */
 @Composable
-fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun GlassPage(navKey: NavKey? = null, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val pageBackdrop = rememberLayerBackdrop()
     val overlayBackdrop = rememberLayerBackdrop()
     val anchor = remember { GlassPageAnchor() }
     val state = LocalGlassBackgroundState.current
     val transition = LocalNavTransitionScope.current
+    val expandPage = rememberExpandPage(navKey, transition, anchor)
     // Only flips at the start and end of a transition, so pages recompose twice per navigation.
     val moving by remember(transition) { derivedStateOf { transition?.isRunning == true } }
     Box(
@@ -251,6 +256,7 @@ fun GlassPage(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
             LocalGlassOverlayBackdrop provides overlayBackdrop,
             LocalGlassPageAnchor provides anchor,
             LocalGlassPageMoving provides moving,
+            LocalExpandPage provides expandPage,
         ) {
             content()
         }

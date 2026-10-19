@@ -137,6 +137,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
+
+// the card a module's detail page grows out of (expandSource key)
+private fun repoSourceKey(moduleId: String) = "repo/$moduleId"
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
@@ -276,11 +281,12 @@ fun ModuleRepoScreenMiuix(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
+                                .padding(bottom = 12.dp)
+                                .expandSource(repoSourceKey(module.moduleId)),
                             insideMargin = PaddingValues(16.dp),
                             showIndication = true,
                             pressFeedbackType = PressFeedbackType.Sink,
-                            onClick = {
+                            onClick = expandClick(repoSourceKey(module.moduleId)) {
                                 actions.onOpenRepoDetail(module)
                             }
                         ) {
@@ -445,10 +451,11 @@ fun ModuleRepoScreenMiuix(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = 12.dp)
-                                            .padding(bottom = 12.dp),
+                                            .padding(bottom = 12.dp)
+                                            .expandSource(repoSourceKey(module.moduleId)),
                                         insideMargin = PaddingValues(16.dp),
                                         showIndication = true,
-                                        onClick = { actions.onOpenRepoDetail(module) }) {
+                                        onClick = expandClick(repoSourceKey(module.moduleId)) { actions.onOpenRepoDetail(module) }) {
                                         Column {
                                             if (module.moduleName.isNotEmpty()) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {

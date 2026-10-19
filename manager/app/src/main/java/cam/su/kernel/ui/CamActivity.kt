@@ -29,6 +29,9 @@ import cam.su.kernel.ui.component.glass.rememberGlassBackgroundState
 import cam.su.kernel.ui.component.glass.LocalGlassBackgroundState
 import cam.su.kernel.ui.component.glass.LocalGlassBackdrop
 import cam.su.kernel.ui.component.glass.GlassPage
+import cam.su.kernel.ui.component.expand.ExpandTransition
+import cam.su.kernel.ui.component.expand.LocalExpand
+import cam.su.kernel.ui.component.expand.rememberExpandState
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
@@ -317,10 +320,18 @@ class CamActivity : ComponentActivity() {
                     }
 
                     val hero = rememberHeroState()
+                    val expand = rememberExpandState(
+                        isTop = { navigator.current() == it },
+                        onBackStack = { it in navigator.backStack },
+                    )
+                    val expandTransition = remember(expand) { ExpandTransition(expand) }
                     val navDisplay = @Composable {
+                        val cornerRadius = rememberNavSystemCornerRadius()
+                        expand.screenCorner = cornerRadius
                         NavDisplay(
                             backStack = navigator.backStack,
-                            effects = NavDisplayEffects(cornerClipRadius = rememberNavSystemCornerRadius()),
+                            transition = expandTransition,
+                            effects = NavDisplayEffects(cornerClipRadius = cornerRadius),
                             onBack = {
                                 when (val top = navigator.current()) {
                                     is Route.TemplateEditor -> {
@@ -334,33 +345,33 @@ class CamActivity : ComponentActivity() {
                                     else -> navigator.pop()
                                 }
                             }) {
-                            entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
-                            entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPage { AboutScreen() } }
-                            entry<Route.Account>(swipeDismiss = swipeDismiss) { GlassPage { AccountScreen() } }
+                            entry<Route.Main>(swipeDismiss = swipeDismiss) { GlassPage(it) { mainScreenEntry() } }
+                            entry<Route.About>(swipeDismiss = swipeDismiss) { GlassPage(it) { AboutScreen() } }
+                            entry<Route.Account>(swipeDismiss = swipeDismiss) { GlassPage(it) { AccountScreen() } }
                             entry<Route.ConfigBackup>(swipeDismiss = swipeDismiss) {
-                                GlassPage { cam.su.kernel.ui.screen.configbackup.ConfigBackupScreen() }
+                                GlassPage(it) { cam.su.kernel.ui.screen.configbackup.ConfigBackupScreen() }
                             }
-                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPage { SulogScreen() } }
-                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPage { ColorPaletteScreen() } }
-                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPage { AppProfileTemplateScreen() } }
-                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> GlassPage { TemplateEditorScreen(key.template, key.readOnly) } }
-                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> GlassPage { AppProfileScreen(key.uid) } }
+                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { GlassPage(it) { SulogScreen() } }
+                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { GlassPage(it) { ColorPaletteScreen() } }
+                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { GlassPage(it) { AppProfileTemplateScreen() } }
+                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> GlassPage(key) { TemplateEditorScreen(key.template, key.readOnly) } }
+                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> GlassPage(key) { AppProfileScreen(key.uid) } }
                             entry<Route.HidingCheck>(swipeDismiss = swipeDismiss) { key ->
-                                GlassPage { HidingCheckScreen(key.uid.takeIf { it != Route.HidingCheck.DEVICE }, key.scanNow) }
+                                GlassPage(key) { HidingCheckScreen(key.uid.takeIf { it != Route.HidingCheck.DEVICE }, key.scanNow) }
                             }
-                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage { ModuleRepoScreen() } }
+                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage(it) { ModuleRepoScreen() } }
                             // no swipe to close: a stray swipe while typing must not drop the edits
-                            entry<Route.TextEditor>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { TextEditorScreen(key.path, key.line) } }
-                            entry<Route.Diff>(swipeDismiss = swipeDismiss) { key -> GlassPage { DiffScreen(key.left, key.right) } }
-                            entry<Route.HexViewer>(swipeDismiss = swipeDismiss) { key -> GlassPage { HexViewerScreen(key.path) } }
+                            entry<Route.TextEditor>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage(key) { TextEditorScreen(key.path, key.line) } }
+                            entry<Route.Diff>(swipeDismiss = swipeDismiss) { key -> GlassPage(key) { DiffScreen(key.left, key.right) } }
+                            entry<Route.HexViewer>(swipeDismiss = swipeDismiss) { key -> GlassPage(key) { HexViewerScreen(key.path) } }
                             // no swipe to close: it would stop a running script without asking
-                            entry<Route.Script>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { ScriptScreen(key.path) } }
+                            entry<Route.Script>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage(key) { ScriptScreen(key.path) } }
                             // no swipe to close: horizontal swipes belong to the terminal (and it would end the shell)
-                            entry<Route.Terminal>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage { TerminalScreen(key.cwd, key.script) } }
-                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage { ModuleRepoDetailScreen(key.module) } }
-                            entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage { InstallScreen() } }
+                            entry<Route.Terminal>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage(key) { TerminalScreen(key.cwd, key.script) } }
+                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> GlassPage(key) { ModuleRepoDetailScreen(key.module) } }
+                            entry<Route.Install>(swipeDismiss = swipeDismiss) { GlassPage(it) { InstallScreen() } }
                             entry<Route.Flash>(swipeDismiss = if (flashBackEnabled) swipeDismiss else NavSwipeDirection.None) { key ->
-                                GlassPage {
+                                GlassPage(key) {
                                     FlashScreen(
                                         key.flashIt,
                                         onBackEnabledChange = { enabled ->
@@ -370,17 +381,17 @@ class CamActivity : ComponentActivity() {
                                 }
                             }
                             entry<Route.ExecuteModuleAction>(swipeDismiss = swipeDismiss) { key ->
-                                GlassPage {
+                                GlassPage(key) {
                                     ExecuteModuleActionScreen(
                                         key.moduleId,
                                         key.fromShortcut
                                     )
                                 }
                             }
-                            entry<Route.Home>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
-                            entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
-                            entry<Route.Module>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
-                            entry<Route.Settings>(swipeDismiss = swipeDismiss) { GlassPage { mainScreenEntry() } }
+                            entry<Route.Home>(swipeDismiss = swipeDismiss) { GlassPage(it) { mainScreenEntry() } }
+                            entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { GlassPage(it) { mainScreenEntry() } }
+                            entry<Route.Module>(swipeDismiss = swipeDismiss) { GlassPage(it) { mainScreenEntry() } }
+                            entry<Route.Settings>(swipeDismiss = swipeDismiss) { GlassPage(it) { mainScreenEntry() } }
                         }
                     }
 
@@ -410,7 +421,7 @@ class CamActivity : ComponentActivity() {
                         ) {
                             Scaffold(containerColor = Color.Transparent) {
                                 Box {
-                                    CompositionLocalProvider(LocalHero provides hero) { navDisplay() }
+                                    CompositionLocalProvider(LocalHero provides hero, LocalExpand provides expand) { navDisplay() }
                                     HeroOverlay(hero)
                                 }
                             }

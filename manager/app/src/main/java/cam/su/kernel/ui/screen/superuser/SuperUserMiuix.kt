@@ -130,6 +130,13 @@ import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
+import cam.su.kernel.ui.component.glass.GlassDefaults
+
+// what pages grow out of here (expandSource keys): the su log button and each app's card
+private const val SOURCE_SULOG = "superuser/sulog"
+private fun appSourceKey(uid: Int) = "superuser/app/$uid"
 
 @Composable
 fun SuperUserPagerMiuix(
@@ -160,7 +167,8 @@ fun SuperUserPagerMiuix(
                         title = stringResource(R.string.superuser),
                         navigationIcon = {
                             GlassIconButton(
-                                onClick = actions.onOpenSulog,
+                                onClick = expandClick(SOURCE_SULOG, actions.onOpenSulog),
+                                modifier = Modifier.expandSource(SOURCE_SULOG, corner = GlassDefaults.dropletSize / 2),
                             ) {
                                 Icon(
                                     imageVector = MiuixIcons.Notes,
@@ -372,7 +380,7 @@ fun SuperUserPagerMiuix(
                                     profileContent = {
                                         InlineAppProfile(
                                             group = group,
-                                            onOpenFullProfile = { actions.onOpenProfile(group) },
+                                            onOpenFullProfile = expandClick(appSourceKey(group.uid)) { actions.onOpenProfile(group) },
                                             onEdited = actions.onProfileEdited,
                                         )
                                     },
@@ -486,7 +494,8 @@ private fun GroupItem(
     GlassListCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .expandSource(appSourceKey(group.uid)),
         insideMargin = PaddingValues(0.dp)
     ) {
         Row(

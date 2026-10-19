@@ -64,6 +64,15 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
+
+// rows pages grow out of (keys of expandSource, unique across the app)
+private const val SOURCE_ACCOUNT = "settings/account"
+private const val SOURCE_THEME = "settings/theme"
+private const val SOURCE_TEMPLATES = "settings/templates"
+private const val SOURCE_BACKUP = "settings/backup"
+private const val SOURCE_ABOUT = "settings/about"
 
 /**
  * @author weishu
@@ -116,6 +125,7 @@ fun SettingPagerMiuix(
                             .fillMaxWidth(),
                     ) {
                         ArrowPreference(
+                            modifier = Modifier.expandSource(SOURCE_ACCOUNT),
                             title = stringResource(id = R.string.account_title),
                             summary = uiState.accountEmail ?: stringResource(id = R.string.account_unlinked),
                             startAction = {
@@ -126,7 +136,7 @@ fun SettingPagerMiuix(
                                     tint = colorScheme.onBackground
                                 )
                             },
-                            onClick = actions.onOpenAccount,
+                            onClick = expandClick(SOURCE_ACCOUNT, actions.onOpenAccount),
                         )
                     }
 
@@ -188,6 +198,7 @@ fun SettingPagerMiuix(
                             .fillMaxWidth(),
                     ) {
                         ArrowPreference(
+                            modifier = Modifier.expandSource(SOURCE_THEME),
                             title = stringResource(id = R.string.settings_theme),
                             summary = stringResource(id = R.string.settings_theme_summary),
                             startAction = {
@@ -198,7 +209,7 @@ fun SettingPagerMiuix(
                                     tint = colorScheme.onBackground
                                 )
                             },
-                            onClick = actions.onOpenTheme
+                            onClick = expandClick(SOURCE_THEME, actions.onOpenTheme)
                         )
                     }
 
@@ -210,6 +221,7 @@ fun SettingPagerMiuix(
                         ) {
                             val profileTemplate = stringResource(id = R.string.settings_profile_template)
                             ArrowPreference(
+                                modifier = Modifier.expandSource(SOURCE_TEMPLATES),
                                 title = profileTemplate,
                                 summary = stringResource(id = R.string.settings_profile_template_summary),
                                 startAction = {
@@ -220,10 +232,11 @@ fun SettingPagerMiuix(
                                         tint = colorScheme.onBackground
                                     )
                                 },
-                                onClick = actions.onOpenProfileTemplate
+                                onClick = expandClick(SOURCE_TEMPLATES, actions.onOpenProfileTemplate)
                             )
                             val configBackup = stringResource(id = R.string.config_backup_title)
                             ArrowPreference(
+                                modifier = Modifier.expandSource(SOURCE_BACKUP),
                                 title = configBackup,
                                 summary = stringResource(id = R.string.config_backup_entry_summary),
                                 startAction = {
@@ -234,7 +247,7 @@ fun SettingPagerMiuix(
                                         tint = colorScheme.onBackground
                                     )
                                 },
-                                onClick = actions.onOpenConfigBackup
+                                onClick = expandClick(SOURCE_BACKUP, actions.onOpenConfigBackup)
                             )
                         }
                     }
@@ -503,6 +516,7 @@ fun SettingPagerMiuix(
                         )
                         val about = stringResource(id = R.string.about)
                         ArrowPreference(
+                            modifier = Modifier.expandSource(SOURCE_ABOUT),
                             title = about,
                             startAction = {
                                 Icon(
@@ -512,7 +526,7 @@ fun SettingPagerMiuix(
                                     tint = colorScheme.onBackground
                                 )
                             },
-                            onClick = actions.onOpenAbout,
+                            onClick = expandClick(SOURCE_ABOUT, actions.onOpenAbout),
                         )
                     }
                     Spacer(Modifier.height(bottomInnerPadding))

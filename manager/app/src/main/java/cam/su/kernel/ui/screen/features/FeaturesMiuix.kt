@@ -73,6 +73,8 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.text.DateFormat
 import java.util.Date
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
 
 @Composable
 fun FeaturesPagerMiuix(
@@ -369,9 +371,13 @@ private fun HidingCheckEntry(state: FeaturesUiState, actions: FeaturesActions) {
         title = stringResource(R.string.audit_title),
         summary = if (time == null) status else "$status · ${dates.format(Date(time))}",
         expanded = false,
-        onToggle = actions.onOpenHidingCheck,
+        onToggle = expandClick(SOURCE_HIDING_CHECK, actions.onOpenHidingCheck),
+        modifier = Modifier.expandSource(SOURCE_HIDING_CHECK),
     ) { }
 }
+
+// the card the hiding check grows out of (expandSource key)
+private const val SOURCE_HIDING_CHECK = "features/hiding"
 
 @Composable
 private fun WirelessAdbCard(state: FeaturesUiState, actions: FeaturesActions) {

@@ -100,6 +100,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
+
+// the status arena the install page grows out of (expandSource key)
+private const val SOURCE_INSTALL = "home/install"
 
 @Composable
 fun HomePagerMiuix(
@@ -391,7 +396,8 @@ private fun StatusCard(
                         if (state.showCustomLkmBadge) add(stringResource(R.string.home_lkm_custom))
                     },
                     active = active,
-                    onClick = if (state.isLateLoadMode) null else actions.onInstallClick,
+                    onClick = if (state.isLateLoadMode) null else expandClick(SOURCE_INSTALL, actions.onInstallClick),
+                    modifier = Modifier.expandSource(SOURCE_INSTALL),
                 )
             }
 

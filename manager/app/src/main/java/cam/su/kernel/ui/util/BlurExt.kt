@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.ui.component.glass.GlassDefaults
+import cam.su.kernel.ui.component.expand.expandBar
 import cam.su.kernel.ui.component.glass.LocalGlassBackdrop
 import cam.su.kernel.ui.component.glass.LocalGlassInBar
 import cam.su.kernel.ui.component.liquid.lens
@@ -73,7 +74,7 @@ fun BlurredBar(
     }
     if (!glass || sample == null || backdrop == null || !blurActive) {
         CompositionLocalProvider(LocalGlassBackdrop provides sample, LocalGlassInBar provides true) {
-            Box {
+            Box(modifier = Modifier.expandBar()) {
                 if (sample != null && backdrop != null && blurActive) ScrollEdge(sample, scrollBehavior)
                 content()
             }
@@ -82,7 +83,7 @@ fun BlurredBar(
     }
     val surface = MiuixTheme.colorScheme.surface
     Box(
-        modifier = Modifier.drawBackdrop(
+        modifier = Modifier.expandBar().drawBackdrop(
             backdrop = sample,
             shape = { BarShape },
             effects = {

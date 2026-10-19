@@ -101,6 +101,8 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.su.kernel.ui.component.expand.expandClick
+import cam.su.kernel.ui.component.expand.expandSource
 
 /**
  * @author weishu
@@ -383,7 +385,8 @@ private fun HidingCheckEntry(allowSu: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .expandSource(SOURCE_HIDING_CHECK),
     ) {
         ArrowPreference(
             title = stringResource(R.string.hiding_app_entry),
@@ -396,10 +399,13 @@ private fun HidingCheckEntry(allowSu: Boolean, onClick: () -> Unit) {
                     tint = colorScheme.onBackground,
                 )
             },
-            onClick = onClick,
+            onClick = expandClick(SOURCE_HIDING_CHECK, onClick),
         )
     }
 }
+
+// the card this app's hiding check grows out of (expandSource key)
+private const val SOURCE_HIDING_CHECK = "appprofile/hiding"
 
 @Composable
 private fun TopBar(

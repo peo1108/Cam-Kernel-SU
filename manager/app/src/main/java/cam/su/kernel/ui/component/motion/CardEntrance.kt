@@ -12,13 +12,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import cam.su.kernel.ui.component.expand.LocalExpandPage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
-private class EntranceState(val fromAbove: Boolean, val staggerSteps: Int) {
-    val progress = Animatable(0f)
-    var started = false
+private class EntranceState(val fromAbove: Boolean, val staggerSteps: Int, skip: Boolean) {
+    val progress = Animatable(if (skip) 1f else 0f)
+    var started = skip
 }
 
 /**
@@ -29,16 +30,20 @@ private class EntranceState(val fromAbove: Boolean, val staggerSteps: Int) {
  *
  * Only translation and alpha are animated: glass cards track their layer position to sample the
  * page background, and a scale would shrink the sampled region along with the card.
+ *
+ * Cards on a page that is growing out of a tapped element skip it: they fly out of that element.
  */
 @Composable
 fun Modifier.cardEntrance(listState: LazyListState, index: Int): Modifier {
     val distance = with(LocalDensity.current) { 56.dp.toPx() }
     val scope = rememberCoroutineScope()
+    val expandPage = LocalExpandPage.current
     val state = remember {
         val untouched = !listState.lastScrolledForward && !listState.lastScrolledBackward
         EntranceState(
             fromAbove = listState.lastScrolledBackward,
             staggerSteps = if (untouched) (index - listState.firstVisibleItemIndex).coerceIn(0, 8) else 0,
+            skip = expandPage?.isMovingNow() == true,
         )
     }
     return this

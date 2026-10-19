@@ -13,6 +13,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Hầm chỉ huy làm hình nền máy: chọn nền "Hầm chỉ huy Inner Veterans" rồi bấm "Đặt làm hình nền máy". Hình nền động, logo nằm phía trên thanh dock nên không bị che, chỉ chạy khi đang nhìn thấy
 - Module preinit (từ KernelSU): module có thư mục `preinit/` chạy được vài việc trước khi Android nạp SELinux (nạp kernel module, chạy chương trình, ghi vào /proc, /sys). Khởi động lỗi 3 lần liên tiếp thì preinit tự tắt; module nào không chạy được preinit có dòng cảnh báo đỏ dưới thẻ module
 ### Thay đổi
+- Hiệu ứng chuyển trang mới: trang mở ra từ đúng dòng hoặc thẻ vừa bấm (Cài đặt, Superuser, Module, Thư viện module, Trang chủ, Tính năng, Mẫu hồ sơ), các thẻ bay ra lần lượt, trang cũ lùi xuống phía sau. Quay lại thì trang thu về chỗ cũ, theo cả thao tác vuốt
 - Superuser, Module và Thư viện module hiện các thẻ mờ trong lúc tải lần đầu thay cho vòng xoay
 - Bấm "Mở hồ sơ đầy đủ" trong Superuser: icon và tên app bay từ thẻ sang trang hồ sơ, quay lại thì bay về thẻ (theo cả thao tác vuốt)
 - Mở app nhanh hơn một chút sau mỗi lần cập nhật: các phần hay dùng được biên dịch sẵn

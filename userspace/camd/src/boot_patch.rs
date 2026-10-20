@@ -569,6 +569,10 @@ pub struct KsuConfigArgs {
 
     /// Block a kernel module from loading at boot by name, e.g.
     /// `oplus_secure_guard`. Comma-separated and/or repeated. Omitting clears it.
+    /// Blocked modules fail to load with EPERM. For the ones first stage init loads
+    /// (modules.load / modules.load.recovery), caminit adds them to modules.blocklist
+    /// or lets them load, so they cannot bootloop it; blocking one that second stage
+    /// or another module needs can still hang the boot.
     #[arg(long = "block-module", value_name = "NAME", value_delimiter = ',', value_parser = parse_block_module)]
     block_module: Vec<String>,
 }

@@ -25,7 +25,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Quyền root và hồ sơ của các app không còn có thể bị xoá hàng loạt khi danh sách gói của Android có một dòng đọc không được
 - Root của SU Kernel chỉ được cấp lại khi chữ ký khớp đúng bản app đang cài (chặt hơn lúc gỡ rồi cài lại app)
 - Máy Android 17 QPR3 khởi động được với SU Kernel (từ KernelSU)
-- Ẩn root: trên máy có file init.rc được gắn từ chỗ khác, phần kernel chạy lúc khởi động không còn ở lại sau khi máy lên, nên app không đo được nó để nhận ra root nữa (Duck Detector mới thêm cách đo này; sửa từ KernelSU). Có hiệu lực khi cài lại LKM
+- Ẩn root: trên máy có file init.rc được gắn từ chỗ khác, phần kernel chạy lúc khởi động giờ cũng được gỡ sau khi máy lên như các máy khác, để app không đo được nó (Duck Detector mới thêm cách đo này; sửa từ KernelSU). Đã đo trên máy thử, chưa thử trên máy có init.rc gắn từ chỗ khác. Có hiệu lực khi cài lại LKM
 ### Lưu ý
 - Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" (thẻ trên trang chủ) rồi khởi động lại. Chưa cài lại LKM thì module sẽ không chạy ở lần khởi động sau
 

@@ -28,12 +28,10 @@ jobs:
         run: |
           set -euo pipefail
           pinned=$(jq -r .duckDetector manager/app/src/main/assets/hiding-rules.json)
-          # since 2026-10-18 each nightly is its own release, tagged nightly-YYYY-MM-DD-<sha>
-          tag=$(gh api "repos/$DUCK/releases?per_page=30" --jq '[.[] | select(.tag_name | startswith("nightly-"))] | sort_by(.published_at) | last | .tag_name // empty')
-          [ -n "$tag" ] || { echo "no nightly-* release in $DUCK"; exit 1; }
-          compare=$(gh api "repos/$DUCK/compare/$pinned...$tag")
+          read -r nightly tag < <(bash scripts/duck_nightly.sh)
+          compare=$(gh api "repos/$DUCK/compare/$pinned...$nightly")
           ahead=$(jq -r .ahead_by <<<"$compare")
-          echo "pinned $pinned, nightly $tag is $ahead commit(s) ahead"
+          echo "pinned $pinned, nightly $tag ($nightly) is $ahead commit(s) ahead"
           [ "$ahead" -gt 0 ] || exit 0
 
           # probes live in feature/<name>/data (Kotlin probes, native code); presentation,
@@ -44,7 +42,6 @@ jobs:
             exit 0
           fi
           features=$(sed -E 's#^feature/([^/]+)/.*#\1#' <<<"$probes" | sort -u | paste -sd, - | sed 's/,/, /g')
-          nightly=$(jq -r '.commits[-1].sha' <<<"$compare")
 
           {
             echo "Duck Detector nightly is **$ahead** commit(s) past the hiding rules (\`${pinned:0:8}\` → \`${nightly:0:8}\`) and changes probes in: **$features**."

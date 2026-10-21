@@ -26,9 +26,10 @@ import java.util.jar.JarFile
  * - A constant with RECEIVER_NOT_EXPORTED fails: put the permission back (drop the two
  *   `tools:node="remove"` entries in AndroidManifest.xml).
  * - Flags that are not a constant (passed in, computed, chosen by a branch), every call to
- *   core-ktx's `receiveBroadcasts` (flags is not its last argument), and every other use of these
- *   methods (a method reference such as `ContextCompat::registerReceiver`) fail until someone
- *   reads the call and lists it in [REVIEWED].
+ *   core-ktx's `receiveBroadcasts` (flags is not its last argument), every call to
+ *   `ContextCompat.obtainAndCheckReceiverPermission` (the check that throws, open to every AndroidX
+ *   library), and every other use of these methods (a method reference such as
+ *   `ContextCompat::registerReceiver`) fail until someone reads the call and lists it in [REVIEWED].
  *
  * Cam's own classes come from the debug build (the unit test build): [releaseHasNoCodeOfItsOwn]
  * keeps release-only code from slipping past.
@@ -41,12 +42,17 @@ class ReceiverPermissionTest {
         private const val REGISTER = "$CONTEXT_COMPAT.registerReceiver"
         private const val NOT_EXPORTED = ContextCompat.RECEIVER_NOT_EXPORTED
 
-        /** Methods that reach ContextCompat.registerReceiver with the flags their caller gives. */
+        /**
+         * Methods that reach ContextCompat.registerReceiver with the flags their caller gives, and
+         * the permission check itself (another AndroidX library may call it without registerReceiver).
+         */
         private val CALLS = setOf(
             REGISTER,
             // core-ktx suspend helpers, their flags argument goes straight through
             "$CONTEXT_KT.receiveBroadcasts",
             "$CONTEXT_KT.receiveBroadcastsAsync",
+            // RestrictTo(LIBRARY_GROUP_PREFIX): throws without the removed permission
+            "$CONTEXT_COMPAT.obtainAndCheckReceiverPermission",
         )
 
         /** Where [CALLS] are defined: their callers are what counts. */
@@ -60,7 +66,7 @@ class ReceiverPermissionTest {
         private val REVIEWED = setOf<String>()
 
         /** Names [CALLS] by: a class file without one of them is not parsed at all. */
-        private val NEEDLES = listOf("registerReceiver", "receiveBroadcasts")
+        private val NEEDLES = listOf("registerReceiver", "receiveBroadcasts", "obtainAndCheckReceiverPermission")
     }
 
     /**
@@ -81,9 +87,8 @@ class ReceiverPermissionTest {
 
         var sawContextCompat = false
         val calls = ArrayList<Site>()
-        forEachClass(roots) { path, bytes ->
+        forEachClass(roots) { path, content ->
             if (path == "$CONTEXT_COMPAT.class") sawContextCompat = true
-            val content = bytes()
             // a byte-for-char view, only to skip the class files that cannot use these methods
             val text = String(content, Charsets.ISO_8859_1)
             if (NEEDLES.any { text.contains(it) }) calls += sites(content)
@@ -148,10 +153,10 @@ class ReceiverPermissionTest {
         }
     }
 
-    private fun forEachClass(roots: List<File>, action: (path: String, bytes: () -> ByteArray) -> Unit) {
+    private fun forEachClass(roots: List<File>, action: (path: String, bytes: ByteArray) -> Unit) {
         fun visit(path: String, bytes: () -> ByteArray) {
             if (!path.endsWith(".class") || path.endsWith("module-info.class")) return
-            action(path.replace(Regex("^META-INF/versions/\\d+/"), ""), bytes)
+            action(path.replace(Regex("^META-INF/versions/\\d+/"), ""), bytes())
         }
         for (root in roots) when {
             root.isDirectory -> root.walk().filter { it.isFile }.forEach { f ->
@@ -160,6 +165,8 @@ class ReceiverPermissionTest {
             root.isFile && root.extension == "jar" -> JarFile(root).use { jar ->
                 for (e in jar.entries()) visit(e.name) { jar.getInputStream(e).use { it.readBytes() } }
             }
+            // a missing or unknown root would leave its classes unread without failing
+            else -> error("not a class directory or jar: $root")
         }
     }
 

@@ -20,9 +20,9 @@ data class HidingRulesStatus(
     val checkedAt: Long?,
     /** the last check brought newer rules */
     val updated: Boolean = false,
-    /** the last check could not reach the repo or GitHub */
+    /** the last check could not get the rules */
     val failed: Boolean = false,
-    /** the newest Duck Detector nightly commit and its time; null until known */
+    /** the newest Duck Detector nightly commit and its time; null until known, or when the last check could not get it */
     val duckLatest: String? = null,
     val duckLatestAt: String? = null,
 ) {
@@ -45,8 +45,18 @@ class HidingRulesRepository(private val context: Context = camApp) {
         // Byte-for-byte copy of assets/$ASSET (and .sig) published by site/scripts/build-feed.mjs
         // on every change, so rule updates keep working once the repository is private.
         private const val RULES_URL = "https://caesarvn.xyz/feed/$ASSET"
-        private const val DUCK_URL = "https://api.github.com/repos/eltavine/Duck-Detector-Refactoring/commits/nightly"
+        // Duck Detector's newest nightly, picked by scripts/duck_nightly.sh (the one place that knows
+        // how Duck tags its nightlies) and published by deploy-site.yml every day.
+        private const val DUCK_URL = "https://caesarvn.xyz/feed/duck-nightly.json"
         const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
+
+        /** The commit and its date from feed/duck-nightly.json (`{"sha", "tag", "date"}`). */
+        fun parseDuck(json: String): Pair<String, String> {
+            val obj = JSONObject(json)
+            val sha = obj.getString("sha")
+            require(sha.matches(Regex("[0-9a-f]{40}"))) { "not a commit: $sha" }
+            return sha to obj.getString("date")
+        }
 
         /** ECDSA P-256 public key (SubjectPublicKeyInfo, base64) the rules are signed with. */
         private const val PUBLIC_KEY =
@@ -94,7 +104,7 @@ class HidingRulesRepository(private val context: Context = camApp) {
         duckLatestAt = prefs.getString("duckLatestAt", null),
     )
 
-    /** Asks the repo and GitHub, unless that happened less than [CHECK_INTERVAL_MS] ago and [force] is off. Blocking. */
+    /** Asks the feed, unless the rules came less than [CHECK_INTERVAL_MS] ago and [force] is off. Blocking. */
     fun check(force: Boolean): HidingRulesStatus {
         val before = status()
         val now = System.currentTimeMillis()
@@ -103,12 +113,16 @@ class HidingRulesRepository(private val context: Context = camApp) {
         var failed = false
         var updated = false
         runCatching { fetchRules(before.rules) }
-            .onSuccess { updated = it }
+            .onSuccess { updated = it; prefs.edit { putLong("rulesCheckedAt", now) } }
             .onFailure { failed = true; Log.w(TAG, "rules check failed", it) }
+        // An answer that could not be refreshed is dropped, not shown: an old one can point at a
+        // commit behind the rules' pin and claim Duck moved ahead.
         runCatching { fetchDuck() }
             .onSuccess { (sha, at) -> prefs.edit { putString("duckLatest", sha); putString("duckLatestAt", at) } }
-            .onFailure { failed = true; Log.w(TAG, "Duck Detector check failed", it) }
-        if (!failed) prefs.edit { putLong("rulesCheckedAt", now) }
+            .onFailure {
+                prefs.edit { remove("duckLatest"); remove("duckLatestAt") }
+                Log.w(TAG, "Duck Detector check failed", it)
+            }
 
         return status().copy(updated = updated, failed = failed)
     }
@@ -137,10 +151,7 @@ class HidingRulesRepository(private val context: Context = camApp) {
     }
 
     /** The Duck Detector nightly commit and when it was made. */
-    private fun fetchDuck(): Pair<String, String> {
-        val obj = JSONObject(String(get(DUCK_URL), Charsets.UTF_8))
-        return obj.getString("sha") to obj.getJSONObject("commit").getJSONObject("committer").getString("date")
-    }
+    private fun fetchDuck(): Pair<String, String> = parseDuck(String(get(DUCK_URL), Charsets.UTF_8))
 
     /** The body as sent: the signature covers these exact bytes. */
     private fun get(url: String): ByteArray {

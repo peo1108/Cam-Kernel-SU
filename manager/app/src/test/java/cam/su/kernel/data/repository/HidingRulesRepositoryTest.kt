@@ -44,4 +44,13 @@ class HidingRulesRepositoryTest {
         assertFalse(status.copy(duckLatest = parsed.duckDetector).duckAhead)
         assertTrue(status.copy(duckLatest = "a1b2c3d4").duckAhead)
     }
+
+    @Test
+    fun duckFeedParses() {
+        // what deploy-site.yml writes from scripts/duck_nightly.sh
+        val json = """{"sha":"41b35fec8838961c64437a90333c6bc49779a71c","tag":"nightly-2026-10-21-41b35fec","date":"2026-10-21T10:07:48Z"}"""
+        assertEquals("41b35fec8838961c64437a90333c6bc49779a71c" to "2026-10-21T10:07:48Z", HidingRulesRepository.parseDuck(json))
+        assertTrue(runCatching { HidingRulesRepository.parseDuck("""{"sha":"","date":"x"}""") }.isFailure)
+        assertTrue(runCatching { HidingRulesRepository.parseDuck("<html>404</html>") }.isFailure)
+    }
 }

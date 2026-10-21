@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.1.9 - 2026-10-16
+## 1.1.9 - 2026-10-21
 - Chặn module nguy hiểm, sao lưu và khôi phục chính các module, cài module không cần khởi động lại (với module có hỗ trợ)
 ### Tính năng mới
 - Chặn module nguy hiểm (tab Tính năng): SU Kernel không cài module nằm trong danh sách mã độc hoặc phá máy. Danh sách có chữ ký và tự cập nhật cùng rule ẩn root. Module đã cài mà nằm trong danh sách có nhãn đỏ "Nguy hiểm", bấm vào để xem lý do và tắt. Tắt công tắc "Từ chối module nguy hiểm" thì chỉ cảnh báo rồi vẫn cài

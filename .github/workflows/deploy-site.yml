@@ -72,8 +72,8 @@ jobs:
       # daily with the schedule above; `checked` is when GitHub answered. When it gives no usable
       # answer (none, a hang: timeout, or one that fails the check below), the live file is
       # published again as it is, so its `checked` ages until the Manager stops showing it
-      # (DUCK_MAX_AGE); with no usable live file there is none, and the Manager says it could not
-      # check. A Duck lookup never holds back a release: the step cannot fail the job.
+      # (DUCK_MAX_AGE). When even that copy cannot be read, the upload leaves the live file alone
+      # (see below). A Duck lookup never holds back a release: the step cannot fail the job.
       - name: Duck Detector nightly
         continue-on-error: true
         timeout-minutes: 3
@@ -98,7 +98,7 @@ jobs:
             cat "$out"
           else
             rm -f "$out.tmp"
-            echo "::warning::no usable duck-nightly.json this run; the Manager shows the Duck lookup as failed"
+            echo "::warning::no usable duck-nightly.json this run; the live one stays as it is"
           fi
 
       # The deploy key only runs rrsync, write-only into /var/www/caesarvn (no shell).
@@ -115,8 +115,13 @@ jobs:
           ssh_cmd="ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
           # Two passes so no page ever links to a missing file: new release files and feed first
           # (nothing deleted), then pages; files no longer listed go only after everything is in.
+          # A run with no duck-nightly.json (GitHub and the live copy both failed) must not delete
+          # the live one: it is still good for up to DUCK_MAX_AGE. Retiring that feed means dropping
+          # this filter too.
+          keep=()
+          [ -f docs/.vitepress/dist/feed/duck-nightly.json ] || keep=(--filter='P /feed/duck-nightly.json')
           rsync -rlz --checksum -e "$ssh_cmd" docs/.vitepress/dist/dl docs/.vitepress/dist/feed "deploy@$HOST:/"
-          rsync -rlz --checksum --delete --delete-delay --delay-updates -e "$ssh_cmd" \
+          rsync -rlz --checksum --delete --delete-delay --delay-updates "${keep[@]}" -e "$ssh_cmd" \
             docs/.vitepress/dist/ "deploy@$HOST:/"
 
       # What the Manager will see: the live feed must list the newest release and its APK must load.

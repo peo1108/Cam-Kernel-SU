@@ -16,6 +16,9 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Base64
 
+/** A Duck Detector nightly from the feed: commit, commit date, and how much longer it may be shown. */
+data class DuckNightly(val sha: String, val date: String, val freshFor: Duration)
+
 /** Where the rules stand after a check, for the page to show. */
 data class HidingRulesStatus(
     val rules: HidingRules,
@@ -28,7 +31,7 @@ data class HidingRulesStatus(
     /** the newest Duck Detector nightly commit and its time; null until known, or when the last check could not get it */
     val duckLatest: String? = null,
     val duckLatestAt: String? = null,
-    /** the last check could not get a recent Duck Detector nightly */
+    /** the last Duck Detector lookup could not get a recent nightly (saved, so it shows before the next one ends) */
     val duckFailed: Boolean = false,
 ) {
     /**
@@ -77,12 +80,12 @@ class HidingRulesRepository(private val context: Context = camApp) {
         private val CLOCK_SLACK: Duration = Duration.ofHours(1)
 
         /**
-         * The commit and its date from feed/duck-nightly.json (`{"sha", "tag", "date", "checked"}`).
-         * Refused when the date is unreadable (it could not be compared with the pin), or when
-         * `checked` (when the site last asked GitHub) is more than [DUCK_MAX_AGE] before [now].
-         * [now] is the site's clock (the response's Date header), so a wrong device clock does not count.
+         * The nightly in feed/duck-nightly.json (`{"sha", "tag", "date", "checked"}`). Refused when
+         * the date is unreadable (it could not be compared with the pin), or when `checked` (when
+         * the site last asked GitHub) is more than [DUCK_MAX_AGE] before [now]. [now] is the site's
+         * clock (the response's Date header), so a wrong device clock does not count.
          */
-        fun parseDuck(json: String, now: Instant): Pair<String, String> {
+        fun parseDuck(json: String, now: Instant): DuckNightly {
             val obj = JSONObject(json)
             val sha = obj.getString("sha")
             require(sha.matches(Regex("[0-9a-f]{40}"))) { "not a commit: $sha" }
@@ -91,7 +94,7 @@ class HidingRulesRepository(private val context: Context = camApp) {
             val checked = Instant.parse(obj.getString("checked"))
             val age = Duration.between(checked, now)
             require(age <= DUCK_MAX_AGE && age >= CLOCK_SLACK.negated()) { "Duck Detector nightly checked $checked, site time $now" }
-            return sha to date
+            return DuckNightly(sha, date, DUCK_MAX_AGE - age.coerceAtLeast(Duration.ZERO))
         }
 
         /** ECDSA P-256 public key (SubjectPublicKeyInfo, base64) the rules are signed with. */
@@ -134,16 +137,24 @@ class HidingRulesRepository(private val context: Context = camApp) {
 
     /** What the page shows before (or without) a check. */
     fun status(): HidingRulesStatus {
-        // an answer saved without duckCheckedAt came from the old GitHub lookup (before 2026-10-21),
-        // which kept it when a refresh failed: not shown, the next check asks again
-        val duckKnown = prefs.getLong("duckCheckedAt", 0L) > 0
+        val duckKnown = duckKnown(System.currentTimeMillis())
         return HidingRulesStatus(
             rules = current(),
             checkedAt = prefs.getLong("rulesCheckedAt", 0L).takeIf { it > 0 },
             duckLatest = prefs.getString("duckLatest", null)?.takeIf { duckKnown },
             duckLatestAt = prefs.getString("duckLatestAt", null)?.takeIf { duckKnown },
+            duckFailed = prefs.getBoolean("duckFailed", false),
         )
     }
+
+    /**
+     * The saved Duck Detector answer may be shown: it is still under [DUCK_MAX_AGE] (counted from
+     * when the site asked GitHub, `duckValidUntil`), and the clock has not gone back past when it
+     * came. One saved without `duckValidUntil` came from an older build (the GitHub lookup before
+     * 2026-10-21 kept stale answers): not shown, the next check asks again.
+     */
+    private fun duckKnown(now: Long): Boolean =
+        now < prefs.getLong("duckValidUntil", 0L) && prefs.getLong("duckCheckedAt", 0L) in 1..now
 
     /**
      * Asks the feed for whatever is due: the rules and the Duck Detector nightly each at most
@@ -154,28 +165,36 @@ class HidingRulesRepository(private val context: Context = camApp) {
         val before = status()
         val now = System.currentTimeMillis()
         val rulesDue = force || isDue("rulesCheckedAt", now)
-        val duckDue = force || isDue("duckCheckedAt", now)
+        val duckDue = force || isDue("duckCheckedAt", now) || !duckKnown(now)
         if (!rulesDue && !duckDue) return before
 
         var failed = false
-        var duckFailed = false
         var updated = false
         if (rulesDue) runCatching { fetchRules(before.rules) }
             .onSuccess { updated = it; markRulesChecked(now) }
             .onFailure { failed = true; Log.w(TAG, "rules check failed", it) }
         // An answer that could not be refreshed is dropped, not shown: an old one can point at a
-        // commit behind the rules' pin and claim Duck moved ahead.
+        // commit behind the rules' pin and claim Duck moved ahead. The failure is saved, so a page
+        // opened again shows it while the next lookup runs.
         if (duckDue) runCatching { fetchDuck() }
-            .onSuccess { (sha, at) ->
-                prefs.edit { putString("duckLatest", sha); putString("duckLatestAt", at); putLong("duckCheckedAt", now) }
+            .onSuccess { duck ->
+                prefs.edit {
+                    putString("duckLatest", duck.sha)
+                    putString("duckLatestAt", duck.date)
+                    putLong("duckCheckedAt", now)
+                    putLong("duckValidUntil", now + duck.freshFor.toMillis())
+                    remove("duckFailed")
+                }
             }
             .onFailure {
-                duckFailed = true
-                prefs.edit { remove("duckLatest"); remove("duckLatestAt"); remove("duckCheckedAt") }
+                prefs.edit {
+                    remove("duckLatest"); remove("duckLatestAt"); remove("duckCheckedAt"); remove("duckValidUntil")
+                    putBoolean("duckFailed", true)
+                }
                 Log.w(TAG, "Duck Detector check failed", it)
             }
 
-        return status().copy(updated = updated, failed = failed, duckFailed = duckFailed)
+        return status().copy(updated = updated, failed = failed)
     }
 
     /**
@@ -212,8 +231,8 @@ class HidingRulesRepository(private val context: Context = camApp) {
         return true
     }
 
-    /** The Duck Detector nightly commit and when it was made. */
-    private fun fetchDuck(): Pair<String, String> {
+    /** The Duck Detector nightly the feed names. */
+    private fun fetchDuck(): DuckNightly {
         // past the cache every time (a no-cache request skips OkHttp's conditional GET: a full,
         // small download), so the Date header is the site's clock now and not a cached copy's
         val (body, siteTime) = download(DUCK_URL, skipCache = true)

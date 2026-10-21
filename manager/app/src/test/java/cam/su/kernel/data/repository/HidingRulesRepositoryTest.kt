@@ -69,15 +69,18 @@ class HidingRulesRepositoryTest {
         // what deploy-site.yml writes from scripts/duck_nightly.sh
         val json = """{"sha":"41b35fec8838961c64437a90333c6bc49779a71c","tag":"nightly-2026-10-21-41b35fec","date":"2026-10-21T10:07:48Z","checked":"2026-10-21T12:34:44Z"}"""
         val checked = Instant.parse("2026-10-21T12:34:44Z")
+        // asked 30 hours ago: may be shown for the rest of the 3 days, not 3 days from now
         assertEquals(
-            "41b35fec8838961c64437a90333c6bc49779a71c" to "2026-10-21T10:07:48Z",
+            DuckNightly("41b35fec8838961c64437a90333c6bc49779a71c", "2026-10-21T10:07:48Z", Duration.ofHours(42)),
             HidingRulesRepository.parseDuck(json, checked.plus(Duration.ofHours(30))),
         )
+        // checked a little after the site's clock (runner and VPS differ): the full 3 days
+        assertEquals(HidingRulesRepository.DUCK_MAX_AGE, HidingRulesRepository.parseDuck(json, checked.minus(Duration.ofMinutes(5))).freshFor)
         // the site kept an old answer because GitHub did not answer for days
         assertTrue(runCatching { HidingRulesRepository.parseDuck(json, checked.plus(HidingRulesRepository.DUCK_MAX_AGE).plusSeconds(1)) }.isFailure)
         // checked well after the site's own clock: not an answer to trust
         assertTrue(runCatching { HidingRulesRepository.parseDuck(json, checked.minus(Duration.ofHours(2))) }.isFailure)
-        assertEquals("2026-10-21T10:07:48Z", HidingRulesRepository.parseDuck(json, checked.minus(Duration.ofMinutes(5))).second)
+        assertEquals("2026-10-21T10:07:48Z", HidingRulesRepository.parseDuck(json, checked.minus(Duration.ofMinutes(5))).date)
         // without a readable date the nightly cannot be compared with the pin
         for (date in listOf("\"\"", "\"yesterday\"", "null")) {
             val bad = json.replace("\"2026-10-21T10:07:48Z\"", date)

@@ -20,6 +20,7 @@ on:
       - 'CHANGELOG.md'
       - 'manager/app/src/main/assets/hiding-rules.json'
       - 'manager/app/src/main/assets/hiding-rules.json.sig'
+      - 'scripts/duck_nightly.sh'
       - '.github/workflows/deploy-site.yml'
   # Releases made by hand in the GitHub UI (with a personal token, not GITHUB_TOKEN).
   release:
@@ -68,11 +69,11 @@ jobs:
 
       # The Duck Detector nightly the hiding check page compares the rules with
       # (HidingRulesRepository), picked by scripts/duck_nightly.sh like duck-watch.yml does. Runs
-      # daily with the schedule above; `checked` is when GitHub answered. When it does not answer
-      # (or hangs: timeout), the live file is published again as it is, so its `checked` ages until
-      # the Manager stops showing it (DUCK_MAX_AGE); with no usable live file there is none, and the
-      # Manager says it could not check. A Duck lookup never holds back a release: the step cannot
-      # fail the job.
+      # daily with the schedule above; `checked` is when GitHub answered. When it gives no usable
+      # answer (none, a hang: timeout, or one that fails the check below), the live file is
+      # published again as it is, so its `checked` ages until the Manager stops showing it
+      # (DUCK_MAX_AGE); with no usable live file there is none, and the Manager says it could not
+      # check. A Duck lookup never holds back a release: the step cannot fail the job.
       - name: Duck Detector nightly
         continue-on-error: true
         timeout-minutes: 3
@@ -81,15 +82,18 @@ jobs:
         run: |
           out=docs/.vitepress/dist/feed/duck-nightly.json
           valid='(.sha | test("^[0-9a-f]{40}$")) and (.date | fromdateiso8601 | . > 0) and (.checked | fromdateiso8601 | . > 0)'
+          usable() { [ -s "$out.tmp" ] && jq -e "$valid" "$out.tmp" >/dev/null 2>&1; }
           rm -f "$out" "$out.tmp"
           if read -r sha tag date < <(timeout 90 bash ../scripts/duck_nightly.sh); then
             jq -n --arg sha "$sha" --arg tag "$tag" --arg date "$date" --arg checked "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              '{sha: $sha, tag: $tag, date: $date, checked: $checked}' > "$out.tmp"
-          else
-            echo "::warning::GitHub gave no Duck Detector nightly; publishing the live duck-nightly.json again"
+              '{sha: $sha, tag: $tag, date: $date, checked: $checked}' > "$out.tmp" || true
+          fi
+          if ! usable; then
+            echo "::warning::GitHub gave no usable Duck Detector nightly; publishing the live duck-nightly.json again"
+            rm -f "$out.tmp"
             curl -fsS --max-time 20 -o "$out.tmp" https://caesarvn.xyz/feed/duck-nightly.json || true
           fi
-          if [ -s "$out.tmp" ] && jq -e "$valid" "$out.tmp" >/dev/null 2>&1; then
+          if usable; then
             mv "$out.tmp" "$out"
             cat "$out"
           else

@@ -1,11 +1,13 @@
 package cam.su.kernel
 
 import android.content.Context
+import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 import cam.su.kernel.jailbreak.CamBootReceiver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.DataInputStream
 import java.io.File
@@ -23,9 +25,13 @@ import java.util.jar.JarFile
  * argument, so the instruction just before the call shows them when they are a constant.
  * - A constant with RECEIVER_NOT_EXPORTED fails: put the permission back (drop the two
  *   `tools:node="remove"` entries in AndroidManifest.xml).
- * - Flags that are not a constant (passed in, computed, chosen by a branch), and every call to
- *   core-ktx's `receiveBroadcasts` (flags is not its last argument), fail until someone reads the
- *   call and lists it in [REVIEWED].
+ * - Flags that are not a constant (passed in, computed, chosen by a branch), every call to
+ *   core-ktx's `receiveBroadcasts` (flags is not its last argument), and every other use of these
+ *   methods (a method reference such as `ContextCompat::registerReceiver`) fail until someone
+ *   reads the call and lists it in [REVIEWED].
+ *
+ * Cam's own classes come from the debug build (the unit test build): [releaseHasNoCodeOfItsOwn]
+ * keeps release-only code from slipping past.
  */
 class ReceiverPermissionTest {
 
@@ -46,20 +52,28 @@ class ReceiverPermissionTest {
         /** Where [CALLS] are defined: their callers are what counts. */
         private val WRAPPERS = setOf(CONTEXT_COMPAT, CONTEXT_KT)
 
-        /** Calls whose flags are not a constant, read and found never to carry RECEIVER_NOT_EXPORTED ("class.method"). */
+        /**
+         * Calls whose flags are not a constant, read and found never to carry RECEIVER_NOT_EXPORTED,
+         * each as [Site.where] prints it: one call in one method, so another call in the same method
+         * (or an overload) is read on its own.
+         */
         private val REVIEWED = setOf<String>()
 
-        /** Names [CALLS] by, as bytes: a class file without one of them is not parsed at all. */
-        private val NEEDLES = listOf("registerReceiver", "receiveBroadcasts").map { it.toByteArray() }
+        /** Names [CALLS] by: a class file without one of them is not parsed at all. */
+        private val NEEDLES = listOf("registerReceiver", "receiveBroadcasts")
     }
 
-    /** A call to one of [CALLS]: the method it sits in, and its flags when they are a constant. */
+    /**
+     * A use of one of [CALLS]: where it is (`class.method(descriptor)#n`, the method's n-th use;
+     * `class.<reference>#n` outside method code), and its flags when they are a constant.
+     */
     private data class Site(val where: String, val call: String, val flags: Int?)
 
     @Test
     fun noReceiverNeedsTheRemovedPermission() {
         val jars = System.getProperty("cam.releaseClassJars")
-        assertTrue("cam.releaseClassJars missing: run through Gradle", !jars.isNullOrEmpty())
+        assertTrue("cam.releaseClassJars missing: run through Gradle's testDebugUnitTest", !jars.isNullOrEmpty())
+        assumeTrue("only testDebugUnitTest scans the release classpath (build.gradle.kts)", jars != "skip")
         // Cam's own classes (Kotlin and Java, AIDL included): the debug build's runtime classes jar
         val own = listOf(CamApplication::class.java, CamBootReceiver::class.java)
             .map { File(it.protectionDomain.codeSource.location.toURI()) }
@@ -70,7 +84,9 @@ class ReceiverPermissionTest {
         forEachClass(roots) { path, bytes ->
             if (path == "$CONTEXT_COMPAT.class") sawContextCompat = true
             val content = bytes()
-            if (NEEDLES.any { content.contains(it) }) calls += sites(content)
+            // a byte-for-char view, only to skip the class files that cannot use these methods
+            val text = String(content, Charsets.ISO_8859_1)
+            if (NEEDLES.any { text.contains(it) }) calls += sites(content)
         }
         // the scan is only worth something when it sees the libraries
         assertTrue("$CONTEXT_COMPAT not among the release class jars", sawContextCompat)
@@ -83,15 +99,39 @@ class ReceiverPermissionTest {
     }
 
     @Test
+    fun releaseHasNoCodeOfItsOwn() {
+        // the scan reads Cam's classes from the debug build; code only in another source set
+        // (src/release, a flavor) would ship without being read
+        val code = File("src").listFiles()!!
+            .filter { it.name !in setOf("main", "debug", "test", "androidTest") }
+            .flatMap { dir -> dir.walk().filter { it.isFile && it.extension in setOf("kt", "java") }.toList() }
+        assertEquals(emptyList<File>(), code)
+    }
+
+    @Test
     fun readsTheFlagsAtEachCall() {
-        val bytes = javaClass.classLoader!!.getResourceAsStream("${ReceiverCalls::class.java.name.replace('.', '/')}.class")!!.use { it.readBytes() }
-        val flags = sites(bytes).associate { it.where.substringAfterLast('.') to it.flags }
+        val found = sites(classBytes(ReceiverCalls::class.java))
+        val flags = found.associate { it.where.substringAfterLast('.').substringBefore('(') to it.flags }
         assertEquals(ContextCompat.RECEIVER_EXPORTED, flags["exported"])
         assertEquals(NOT_EXPORTED, flags["notExported"])
         assertEquals(null, flags["chosen"])
         assertEquals(null, flags["passed"])
-        assertEquals(setOf("exported", "notExported", "chosen", "passed"), flags.keys)
+        assertEquals(setOf("exported", "notExported", "chosen", "passed", "twice"), flags.keys)
+        // each call is its own entry, so approving one does not approve the next
+        val twice = found.filter { it.where.contains(".twice(") }.map { it.where.substringAfterLast(')') }
+        assertEquals(listOf("Landroid/content/Intent;#0", "Landroid/content/Intent;#1"), twice)
     }
+
+    @Test
+    fun seesMethodReferences() {
+        // javac turns ContextCompat::registerReceiver into an invokedynamic with a method handle,
+        // no invokestatic: the call cannot be read, so it must be listed
+        val found = sites(classBytes(ReceiverMethodRef::class.java))
+        assertEquals(listOf(Site("cam/su/kernel/ReceiverMethodRef.<reference>#0", REGISTER, null)), found)
+    }
+
+    private fun classBytes(type: Class<*>) =
+        javaClass.classLoader!!.getResourceAsStream("${type.name.replace('.', '/')}.class")!!.use { it.readBytes() }
 
     /** Calls this test must read right; never shipped (test sources are not scanned). */
     @Suppress("unused")
@@ -102,6 +142,10 @@ class ReceiverPermissionTest {
             c, null, IntentFilter(), if (open) ContextCompat.RECEIVER_EXPORTED else ContextCompat.RECEIVER_NOT_EXPORTED,
         )
         fun passed(c: Context, flags: Int) = ContextCompat.registerReceiver(c, null, IntentFilter(), flags)
+        fun twice(c: Context, flags: Int): Intent? {
+            ContextCompat.registerReceiver(c, null, IntentFilter(), flags)
+            return ContextCompat.registerReceiver(c, null, IntentFilter(), flags)
+        }
     }
 
     private fun forEachClass(roots: List<File>, action: (path: String, bytes: () -> ByteArray) -> Unit) {
@@ -119,15 +163,7 @@ class ReceiverPermissionTest {
         }
     }
 
-    private fun ByteArray.contains(needle: ByteArray): Boolean {
-        outer@ for (start in 0..size - needle.size) {
-            for (k in needle.indices) if (this[start + k] != needle[k]) continue@outer
-            return true
-        }
-        return false
-    }
-
-    /** Every call to one of [CALLS] in a class file, read from its constant pool and method code. */
+    /** Every use of one of [CALLS] in a class file, read from its constant pool and method code. */
     private fun sites(bytes: ByteArray): List<Site> {
         val input = DataInputStream(bytes.inputStream())
         if (input.readInt() != 0xCAFEBABE.toInt()) return emptyList()
@@ -136,7 +172,7 @@ class ReceiverPermissionTest {
         val tags = IntArray(count)
         val utf8 = arrayOfNulls<String>(count)
         val ints = arrayOfNulls<Int>(count)
-        val first = IntArray(count) // Class: name; Methodref: class; NameAndType: name
+        val first = IntArray(count) // Class: name; Methodref: class; NameAndType: name; MethodHandle: Methodref
         val second = IntArray(count) // Methodref: name and type
         var i = 1
         while (i < count) {
@@ -149,7 +185,7 @@ class ReceiverPermissionTest {
                 5, 6 -> { input.skipBytes(8); i++ } // takes two slots
                 7, 8, 16, 19, 20 -> first[i] = input.readUnsignedShort()
                 9, 10, 11, 12, 17, 18 -> { first[i] = input.readUnsignedShort(); second[i] = input.readUnsignedShort() }
-                15 -> input.skipBytes(3)
+                15 -> { input.skipBytes(1); first[i] = input.readUnsignedShort() } // kind, then the Methodref
                 else -> error("constant pool tag $tag")
             }
             i++
@@ -167,10 +203,11 @@ class ReceiverPermissionTest {
         repeat(input.readUnsignedShort()) { input.skipBytes(6); skipAttributes() } // fields
 
         val found = ArrayList<Site>()
+        val called = HashSet<Int>() // Methodrefs some invokestatic below uses
         repeat(input.readUnsignedShort()) {
             input.skipBytes(2)
-            val method = utf8[input.readUnsignedShort()]
-            input.skipBytes(2) // descriptor
+            val method = utf8[input.readUnsignedShort()] + utf8[input.readUnsignedShort()]
+            var n = 0
             repeat(input.readUnsignedShort()) {
                 val name = utf8[input.readUnsignedShort()]
                 val length = input.readInt()
@@ -183,9 +220,19 @@ class ReceiverPermissionTest {
                 input.skipBytes(length - 8 - code.size) // exception table, attributes
                 for ((_, index, flags) in invokeStatics(code, ints)) {
                     val target = call(index)?.takeIf { it in CALLS } ?: continue
-                    found += Site("$self.$method", target, flags.takeIf { target == REGISTER })
+                    called += index
+                    found += Site("$self.$method#${n++}", target, flags.takeIf { target == REGISTER })
                 }
             }
+        }
+        // Any other use: a method handle (method reference, invokedynamic), or a Methodref no
+        // invokestatic here explains. Their flags cannot be read.
+        val handled = (1 until count).filter { tags[it] == 15 }.map { first[it] }
+        val unexplained = (1 until count).filter { tags[it] == 10 || tags[it] == 11 }.filter { it !in called && it !in handled }
+        var n = 0
+        for (index in handled + unexplained) {
+            val target = call(index)?.takeIf { it in CALLS } ?: continue
+            found += Site("$self.<reference>#${n++}", target, null)
         }
         return found
     }

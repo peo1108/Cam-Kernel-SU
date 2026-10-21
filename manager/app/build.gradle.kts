@@ -306,7 +306,9 @@ baselineProfile {
 }
 
 // The libraries the release APK ships, as class jars: ReceiverPermissionTest scans these rather than
-// the unit test classpath, which also holds test and debug-only libraries.
+// the unit test classpath, which also holds test and debug-only libraries. Only testDebugUnitTest
+// (the app's one unit test task, what CI runs) resolves them; a test task added later is told to
+// skip that scan instead of paying for it.
 // (lazy: AGP creates the configuration after this script runs)
 val releaseClassJars = files(provider {
     configurations.getByName("releaseRuntimeClasspath").incoming.artifactView {
@@ -319,8 +321,12 @@ val releaseClassJars = files(provider {
 tasks.withType<Test>().configureEach {
     inputs.dir("src/main/assets").withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.file(rootProject.file("../CHANGELOG.md")).withPathSensitivity(PathSensitivity.NONE)
-    inputs.files(releaseClassJars).withPropertyName("releaseClassJars").withNormalizer(ClasspathNormalizer::class)
-    jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Dcam.releaseClassJars=${releaseClassJars.asPath}") })
+    if (name == "testDebugUnitTest") {
+        inputs.files(releaseClassJars).withPropertyName("releaseClassJars").withNormalizer(ClasspathNormalizer::class)
+        jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Dcam.releaseClassJars=${releaseClassJars.asPath}") })
+    } else {
+        systemProperty("cam.releaseClassJars", "skip")
+    }
 }
 
 base {

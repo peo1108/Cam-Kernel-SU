@@ -640,6 +640,7 @@
     <string name="hiding_duck_following">Following %1$s</string>
     <string name="hiding_duck_ahead">new nightly %1$s (%2$s)</string>
     <string name="hiding_duck_current">up to date</string>
+    <string name="hiding_duck_failed">could not check the latest nightly</string>
     <string name="hiding_duck_pending">not in this app yet: %1$s</string>
     <string name="hiding_check_updates">Check for updates</string>
     <string name="hiding_checking">Checking…</string>

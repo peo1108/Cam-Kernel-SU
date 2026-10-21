@@ -7,6 +7,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.time.Duration
+import java.time.Instant
 
 class HidingRulesRepositoryTest {
 
@@ -37,20 +39,41 @@ class HidingRulesRepositoryTest {
     }
 
     @Test
-    fun duckAheadComparesCommits() {
+    fun shippedRulesDateTheirPin() {
+        // the date scripts/duck_nightly.sh prints next to the commit; duckAhead compares it
         val parsed = HidingRules.parse(rules.readText())!!
+        assertTrue(parsed.duckDetector.matches(Regex("[0-9a-f]{40}")))
+        Instant.parse(parsed.duckDetectorAt)
+    }
+
+    @Test
+    fun duckAheadComparesCommitDates() {
+        val parsed = HidingRules.parse(rules.readText())!!
+        val pinAt = Instant.parse(parsed.duckDetectorAt)
         val status = HidingRulesStatus(parsed, checkedAt = null)
         assertFalse(status.duckAhead)
-        assertFalse(status.copy(duckLatest = parsed.duckDetector).duckAhead)
-        assertTrue(status.copy(duckLatest = "a1b2c3d4").duckAhead)
+        assertFalse(status.copy(duckLatest = parsed.duckDetector, duckLatestAt = parsed.duckDetectorAt).duckAhead)
+        assertTrue(status.copy(duckLatest = "a1b2c3d4", duckLatestAt = pinAt.plusSeconds(60).toString()).duckAhead)
+        // a nightly older than the pin (the pin can be a commit no nightly has yet) is not ahead
+        assertFalse(status.copy(duckLatest = "a1b2c3d4", duckLatestAt = pinAt.minusSeconds(60).toString()).duckAhead)
+        // rules from before version 13 carry no date: any other commit counts
+        val undated = HidingRulesStatus(parsed.copy(duckDetectorAt = ""), checkedAt = null)
+        assertTrue(undated.copy(duckLatest = "a1b2c3d4", duckLatestAt = pinAt.minusSeconds(60).toString()).duckAhead)
     }
 
     @Test
     fun duckFeedParses() {
         // what deploy-site.yml writes from scripts/duck_nightly.sh
-        val json = """{"sha":"41b35fec8838961c64437a90333c6bc49779a71c","tag":"nightly-2026-10-21-41b35fec","date":"2026-10-21T10:07:48Z"}"""
-        assertEquals("41b35fec8838961c64437a90333c6bc49779a71c" to "2026-10-21T10:07:48Z", HidingRulesRepository.parseDuck(json))
-        assertTrue(runCatching { HidingRulesRepository.parseDuck("""{"sha":"","date":"x"}""") }.isFailure)
-        assertTrue(runCatching { HidingRulesRepository.parseDuck("<html>404</html>") }.isFailure)
+        val json = """{"sha":"41b35fec8838961c64437a90333c6bc49779a71c","tag":"nightly-2026-10-21-41b35fec","date":"2026-10-21T10:07:48Z","checked":"2026-10-21T12:34:44Z"}"""
+        val checked = Instant.parse("2026-10-21T12:34:44Z")
+        assertEquals(
+            "41b35fec8838961c64437a90333c6bc49779a71c" to "2026-10-21T10:07:48Z",
+            HidingRulesRepository.parseDuck(json, checked.plus(Duration.ofHours(30))),
+        )
+        // the site kept an old answer because GitHub did not answer for days
+        assertTrue(runCatching { HidingRulesRepository.parseDuck(json, checked.plus(HidingRulesRepository.DUCK_MAX_AGE).plusSeconds(1)) }.isFailure)
+        assertTrue(runCatching { HidingRulesRepository.parseDuck(json.replace(""","checked":"2026-10-21T12:34:44Z"""", ""), checked) }.isFailure)
+        assertTrue(runCatching { HidingRulesRepository.parseDuck("""{"sha":"","date":"x","checked":"2026-10-21T12:34:44Z"}""", checked) }.isFailure)
+        assertTrue(runCatching { HidingRulesRepository.parseDuck("<html>404</html>", checked) }.isFailure)
     }
 }

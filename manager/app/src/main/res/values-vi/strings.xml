@@ -625,6 +625,7 @@
     <string name="hiding_duck_following">Đang theo %1$s</string>
     <string name="hiding_duck_ahead">có bản nightly mới %1$s (%2$s)</string>
     <string name="hiding_duck_current">đã là bản mới nhất</string>
+    <string name="hiding_duck_failed">không kiểm tra được bản nightly mới nhất</string>
     <string name="hiding_duck_pending">app này chưa có: %1$s</string>
     <string name="hiding_check_updates">Kiểm tra cập nhật</string>
     <string name="hiding_checking">Đang kiểm tra…</string>

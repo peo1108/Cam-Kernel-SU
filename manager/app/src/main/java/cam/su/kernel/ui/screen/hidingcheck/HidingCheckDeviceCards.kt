@@ -56,6 +56,7 @@ internal fun DetectorCard(
             summary = buildList {
                 add(stringResource(R.string.hiding_duck_following, rules.duckDetector.take(7)))
                 when {
+                    status.duckFailed -> add(stringResource(R.string.hiding_duck_failed))
                     status.duckAhead -> add(
                         stringResource(R.string.hiding_duck_ahead, status.duckLatest.orEmpty().take(7), status.duckLatestAt.orEmpty().take(10))
                     )

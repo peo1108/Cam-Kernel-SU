@@ -24,11 +24,14 @@ data class HidingRules(
     val duckPending: List<String> = emptyList(),
     /** modules the Manager refuses to install or warns about; absent before version 9 */
     val moduleRisks: List<ModuleRisk> = emptyList(),
+    /** committer date of [duckDetector], ISO 8601 UTC (scripts/duck_nightly.sh prints it); absent before version 13 */
+    val duckDetectorAt: String = "",
 ) {
     fun toJson(): String = JSONObject()
         .put("version", version)
         .put("updated", updated)
         .put("duckDetector", duckDetector)
+        .put("duckDetectorAt", duckDetectorAt)
         .put("mountSources", JSONArray(mountSources.toList()))
         .put("mapMarkers", JSONArray(mapMarkers))
         .put("suPaths", JSONArray(suPaths))
@@ -51,6 +54,7 @@ data class HidingRules(
                 safeProps = props.keys().asSequence().associateWith { props.getString(it) },
                 duckPending = obj.optJSONArray("duckPending")?.let(::strings).orEmpty(),
                 moduleRisks = ModuleRisk.parseList(obj.optJSONArray("moduleRisks")),
+                duckDetectorAt = obj.optString("duckDetectorAt"),
             )
         }.getOrNull()
 

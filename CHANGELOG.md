@@ -26,7 +26,8 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Root của SU Kernel chỉ được cấp lại khi chữ ký khớp đúng bản app đang cài (chặt hơn lúc gỡ rồi cài lại app)
 - Máy Android 17 QPR3 khởi động được với SU Kernel (từ KernelSU)
 - Ẩn root: trên máy có file init.rc được gắn từ chỗ khác, phần kernel chạy lúc khởi động giờ cũng được gỡ sau khi máy lên như các máy khác, để app không đo được nó (Duck Detector mới thêm cách đo này; sửa từ KernelSU). Đã đo trên máy thử, chưa thử trên máy có init.rc gắn từ chỗ khác. Có hiệu lực khi cài lại LKM
-- Ẩn root: app SU Kernel không còn mang một quyền hệ thống tự thêm mà app phát hiện root có thể dò để tìm ra trình quản lý root (từ KernelSU)
+- Ẩn root: bỏ một quyền mà thư viện AndroidX tự thêm vào app. Duck Detector dò quyền này để tìm app quản lý của KernelSU gốc; SU Kernel chưa từng bị tìm ra theo cách này, bỏ đi để sau này cũng không bị (từ KernelSU)
+- Kiểm tra ẩn root: mục Duck Detector luôn báo "không kiểm tra được" từ khi Duck Detector đổi cách phát hành bản nightly (18/10), và có máy báo nhầm "có bản nightly mới" với một bản cũ hơn rule đang dùng. Giờ SU Kernel lấy bản nightly mới nhất từ caesarvn.xyz, không hỏi GitHub nữa
 ### Lưu ý
 - Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" (thẻ trên trang chủ) rồi khởi động lại. Chưa cài lại LKM thì module sẽ không chạy ở lần khởi động sau
 

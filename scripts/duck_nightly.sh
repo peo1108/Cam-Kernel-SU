@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Prints "<sha> <tag> <date>" of Duck Detector's newest nightly, the commit hiding-rules.json
-# ("duckDetector") should follow. The only place that decides it: duck-watch.yml uses it, and
+# Prints "<sha> <tag> <date>" of Duck Detector's newest nightly: the commit hiding-rules.json
+# should follow ("duckDetector") and its committer date ("duckDetectorAt"). The only place that
+# decides it: duck-watch.yml uses it, and
 # deploy-site.yml publishes it as feed/duck-nightly.json for the Manager's hiding check page.
 # Also run by hand (docs/CAM_CHANGES.md section 12). Needs gh (logged in, or GH_TOKEN).
 #

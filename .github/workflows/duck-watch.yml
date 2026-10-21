@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           pinned=$(jq -r .duckDetector manager/app/src/main/assets/hiding-rules.json)
-          read -r nightly tag _ < <(bash scripts/duck_nightly.sh)
+          read -r nightly tag nightly_at < <(bash scripts/duck_nightly.sh)
           compare=$(gh api "repos/$DUCK/compare/$pinned...$nightly")
           ahead=$(jq -r .ahead_by <<<"$compare")
           echo "pinned $pinned, nightly $tag ($nightly) is $ahead commit(s) ahead"
@@ -55,7 +55,7 @@ jobs:
             echo "### What to do"
             echo "1. Read the changed probes and test the device with Duck Detector."
             echo "2. Port what Cam lacks to the hiding check (\`AppViewProbe\` / \`hiding_probe.cc\`) or fix the kernel, or list it in \`duckPending\`."
-            echo "3. Set \`duckDetector\` to \`$nightly\`, bump \`version\`, re-sign (\`scripts/sign_hiding_rules.py\`). This issue is updated, not closed, by the next run; close it by hand."
+            echo "3. Set \`duckDetector\` to \`$nightly\` and \`duckDetectorAt\` to \`$nightly_at\`, bump \`version\`, re-sign (\`scripts/sign_hiding_rules.py\`). This issue is updated, not closed, by the next run; close it by hand."
           } > body.md
 
           gh label create "$LABEL" --color FBCA04 --description "Duck Detector changed its probes" 2>/dev/null || true

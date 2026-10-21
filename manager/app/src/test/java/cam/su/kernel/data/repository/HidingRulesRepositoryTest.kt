@@ -56,6 +56,9 @@ class HidingRulesRepositoryTest {
         assertTrue(status.copy(duckLatest = "a1b2c3d4", duckLatestAt = pinAt.plusSeconds(60).toString()).duckAhead)
         // a nightly older than the pin (the pin can be a commit no nightly has yet) is not ahead
         assertFalse(status.copy(duckLatest = "a1b2c3d4", duckLatestAt = pinAt.minusSeconds(60).toString()).duckAhead)
+        // an answer without a readable date cannot be compared, so it is not ahead either
+        assertFalse(status.copy(duckLatest = "a1b2c3d4", duckLatestAt = "").duckAhead)
+        assertFalse(status.copy(duckLatest = "a1b2c3d4", duckLatestAt = null).duckAhead)
         // rules from before version 13 carry no date: any other commit counts
         val undated = HidingRulesStatus(parsed.copy(duckDetectorAt = ""), checkedAt = null)
         assertTrue(undated.copy(duckLatest = "a1b2c3d4", duckLatestAt = pinAt.minusSeconds(60).toString()).duckAhead)
@@ -72,6 +75,15 @@ class HidingRulesRepositoryTest {
         )
         // the site kept an old answer because GitHub did not answer for days
         assertTrue(runCatching { HidingRulesRepository.parseDuck(json, checked.plus(HidingRulesRepository.DUCK_MAX_AGE).plusSeconds(1)) }.isFailure)
+        // checked well after the site's own clock: not an answer to trust
+        assertTrue(runCatching { HidingRulesRepository.parseDuck(json, checked.minus(Duration.ofHours(2))) }.isFailure)
+        assertEquals("2026-10-21T10:07:48Z", HidingRulesRepository.parseDuck(json, checked.minus(Duration.ofMinutes(5))).second)
+        // without a readable date the nightly cannot be compared with the pin
+        for (date in listOf("\"\"", "\"yesterday\"", "null")) {
+            val bad = json.replace("\"2026-10-21T10:07:48Z\"", date)
+            assertTrue(date, runCatching { HidingRulesRepository.parseDuck(bad, checked) }.isFailure)
+        }
+        assertTrue(runCatching { HidingRulesRepository.parseDuck(json.replace(""""date":"2026-10-21T10:07:48Z",""", ""), checked) }.isFailure)
         assertTrue(runCatching { HidingRulesRepository.parseDuck(json.replace(""","checked":"2026-10-21T12:34:44Z"""", ""), checked) }.isFailure)
         assertTrue(runCatching { HidingRulesRepository.parseDuck("""{"sha":"","date":"x","checked":"2026-10-21T12:34:44Z"}""", checked) }.isFailure)
         assertTrue(runCatching { HidingRulesRepository.parseDuck("<html>404</html>", checked) }.isFailure)

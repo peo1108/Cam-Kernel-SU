@@ -69,9 +69,10 @@ jobs:
       # The Duck Detector nightly the hiding check page compares the rules with
       # (HidingRulesRepository), picked by scripts/duck_nightly.sh like duck-watch.yml does. Runs
       # daily with the schedule above; `checked` is when GitHub answered. When it does not answer
-      # (or hangs: timeout), no file is written and the upload keeps the live one (P filter below),
-      # whose `checked` ages until the Manager stops showing it (DUCK_MAX_AGE). A Duck lookup never
-      # holds back a release: the step cannot fail the job.
+      # (or hangs: timeout), the live file is published again as it is, so its `checked` ages until
+      # the Manager stops showing it (DUCK_MAX_AGE); with no usable live file there is none, and the
+      # Manager says it could not check. A Duck lookup never holds back a release: the step cannot
+      # fail the job.
       - name: Duck Detector nightly
         continue-on-error: true
         timeout-minutes: 3
@@ -79,13 +80,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           out=docs/.vitepress/dist/feed/duck-nightly.json
+          valid='(.sha | test("^[0-9a-f]{40}$")) and (.date | fromdateiso8601 | . > 0) and (.checked | fromdateiso8601 | . > 0)'
+          rm -f "$out" "$out.tmp"
           if read -r sha tag date < <(timeout 90 bash ../scripts/duck_nightly.sh); then
             jq -n --arg sha "$sha" --arg tag "$tag" --arg date "$date" --arg checked "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
               '{sha: $sha, tag: $tag, date: $date, checked: $checked}' > "$out.tmp"
+          else
+            echo "::warning::GitHub gave no Duck Detector nightly; publishing the live duck-nightly.json again"
+            curl -fsS --max-time 20 -o "$out.tmp" https://caesarvn.xyz/feed/duck-nightly.json || true
+          fi
+          if [ -s "$out.tmp" ] && jq -e "$valid" "$out.tmp" >/dev/null 2>&1; then
             mv "$out.tmp" "$out"
             cat "$out"
           else
-            echo "::warning::GitHub gave no Duck Detector nightly; the live duck-nightly.json stays as it is"
+            rm -f "$out.tmp"
+            echo "::warning::no usable duck-nightly.json this run; the Manager shows the Duck lookup as failed"
           fi
 
       # The deploy key only runs rrsync, write-only into /var/www/caesarvn (no shell).
@@ -102,9 +111,8 @@ jobs:
           ssh_cmd="ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
           # Two passes so no page ever links to a missing file: new release files and feed first
           # (nothing deleted), then pages; files no longer listed go only after everything is in.
-          # duck-nightly.json is never deleted: a run that could not ask GitHub keeps the live one.
           rsync -rlz --checksum -e "$ssh_cmd" docs/.vitepress/dist/dl docs/.vitepress/dist/feed "deploy@$HOST:/"
-          rsync -rlz --checksum --delete --delete-delay --delay-updates --filter='P /feed/duck-nightly.json' -e "$ssh_cmd" \
+          rsync -rlz --checksum --delete --delete-delay --delay-updates -e "$ssh_cmd" \
             docs/.vitepress/dist/ "deploy@$HOST:/"
 
       # What the Manager will see: the live feed must list the newest release and its APK must load.

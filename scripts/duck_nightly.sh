@@ -12,6 +12,7 @@
 set -euo pipefail
 DUCK=${DUCK:-eltavine/Duck-Detector-Refactoring}
 
+# shellcheck disable=SC2016 # $owner and $name are GraphQL variables, not shell ones
 best=$(gh api graphql -f owner="${DUCK%/*}" -f name="${DUCK#*/}" -f query='
 query($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {

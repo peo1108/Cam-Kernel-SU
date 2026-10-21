@@ -305,11 +305,22 @@ baselineProfile {
     automaticGenerationDuringBuild = false
 }
 
+// The libraries the release APK ships, as class jars: ReceiverPermissionTest scans these rather than
+// the unit test classpath, which also holds test and debug-only libraries.
+// (lazy: AGP creates the configuration after this script runs)
+val releaseClassJars = files(provider {
+    configurations.getByName("releaseRuntimeClasspath").incoming.artifactView {
+        attributes { attribute(Attribute.of("artifactType", String::class.java), "android-classes-jar") }
+    }.files
+})
+
 // Unit tests read the shipped assets and CHANGELOG.md straight from disk (HidingRulesRepositoryTest,
 // ChangelogParserTest); declare them so editing either re-runs the tests instead of "up-to-date".
 tasks.withType<Test>().configureEach {
     inputs.dir("src/main/assets").withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.file(rootProject.file("../CHANGELOG.md")).withPathSensitivity(PathSensitivity.NONE)
+    inputs.files(releaseClassJars).withPropertyName("releaseClassJars").withNormalizer(ClasspathNormalizer::class)
+    jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Dcam.releaseClassJars=${releaseClassJars.asPath}") })
 }
 
 base {

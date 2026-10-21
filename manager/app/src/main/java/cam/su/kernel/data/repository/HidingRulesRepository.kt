@@ -161,7 +161,7 @@ class HidingRulesRepository(private val context: Context = camApp) {
         var duckFailed = false
         var updated = false
         if (rulesDue) runCatching { fetchRules(before.rules) }
-            .onSuccess { updated = it; prefs.edit { putLong("rulesCheckedAt", now) } }
+            .onSuccess { updated = it; markRulesChecked(now) }
             .onFailure { failed = true; Log.w(TAG, "rules check failed", it) }
         // An answer that could not be refreshed is dropped, not shown: an old one can point at a
         // commit behind the rules' pin and claim Duck moved ahead.
@@ -187,9 +187,12 @@ class HidingRulesRepository(private val context: Context = camApp) {
         val now = System.currentTimeMillis()
         if (!isDue("rulesCheckedAt", now)) return
         runCatching { fetchRules(current()) }
-            .onSuccess { prefs.edit { putLong("rulesCheckedAt", now) } }
+            .onSuccess { markRulesChecked(now) }
             .onFailure { Log.w(TAG, "rules refresh failed", it) }
     }
+
+    /** Also drops `rulesFetchedAt`, refreshRules' own timer before both shared this one (2026-10-21). */
+    private fun markRulesChecked(now: Long) = prefs.edit { putLong("rulesCheckedAt", now); remove("rulesFetchedAt") }
 
     /**
      * No success saved under [key] within [CHECK_INTERVAL_MS] of [now]. A time in the future (the

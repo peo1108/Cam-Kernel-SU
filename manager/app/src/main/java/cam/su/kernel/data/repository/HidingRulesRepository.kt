@@ -133,12 +133,17 @@ class HidingRulesRepository(private val context: Context = camApp) {
     }
 
     /** What the page shows before (or without) a check. */
-    fun status(): HidingRulesStatus = HidingRulesStatus(
-        rules = current(),
-        checkedAt = prefs.getLong("rulesCheckedAt", 0L).takeIf { it > 0 },
-        duckLatest = prefs.getString("duckLatest", null),
-        duckLatestAt = prefs.getString("duckLatestAt", null),
-    )
+    fun status(): HidingRulesStatus {
+        // an answer saved without duckCheckedAt came from the old GitHub lookup (before 2026-10-21),
+        // which kept it when a refresh failed: not shown, the next check asks again
+        val duckKnown = prefs.getLong("duckCheckedAt", 0L) > 0
+        return HidingRulesStatus(
+            rules = current(),
+            checkedAt = prefs.getLong("rulesCheckedAt", 0L).takeIf { it > 0 },
+            duckLatest = prefs.getString("duckLatest", null)?.takeIf { duckKnown },
+            duckLatestAt = prefs.getString("duckLatestAt", null)?.takeIf { duckKnown },
+        )
+    }
 
     /**
      * Asks the feed for whatever is due: the rules and the Duck Detector nightly each at most
@@ -148,10 +153,8 @@ class HidingRulesRepository(private val context: Context = camApp) {
     fun check(force: Boolean): HidingRulesStatus {
         val before = status()
         val now = System.currentTimeMillis()
-        // a clock set back counts as due, or nothing would be asked until it caught up
-        fun due(key: String) = force || prefs.getLong(key, 0L).let { it <= 0 || now - it !in 0 until CHECK_INTERVAL_MS }
-        val rulesDue = due("rulesCheckedAt")
-        val duckDue = due("duckCheckedAt")
+        val rulesDue = force || isDue("rulesCheckedAt", now)
+        val duckDue = force || isDue("duckCheckedAt", now)
         if (!rulesDue && !duckDue) return before
 
         var failed = false
@@ -177,15 +180,23 @@ class HidingRulesRepository(private val context: Context = camApp) {
 
     /**
      * The rules only (no Duck Detector lookup), at most every [CHECK_INTERVAL_MS]: what a module
-     * install checks against. Failures leave [current] as it is. Blocking.
+     * install checks against. Shares [check]'s timer, so the page does not download them again
+     * right after an install did. Failures leave [current] as it is. Blocking.
      */
     fun refreshRules() {
         val now = System.currentTimeMillis()
-        if (now - prefs.getLong("rulesFetchedAt", 0L) < CHECK_INTERVAL_MS) return
+        if (!isDue("rulesCheckedAt", now)) return
         runCatching { fetchRules(current()) }
-            .onSuccess { prefs.edit { putLong("rulesFetchedAt", now) } }
+            .onSuccess { prefs.edit { putLong("rulesCheckedAt", now) } }
             .onFailure { Log.w(TAG, "rules refresh failed", it) }
     }
+
+    /**
+     * No success saved under [key] within [CHECK_INTERVAL_MS] of [now]. A time in the future (the
+     * clock was set back) counts as due, or nothing would be asked until the clock caught up.
+     */
+    private fun isDue(key: String, now: Long): Boolean =
+        prefs.getLong(key, 0L).let { it <= 0 || now - it !in 0 until CHECK_INTERVAL_MS }
 
     /** Downloads the rules and their signature; true when a newer, verified copy was saved. */
     private fun fetchRules(have: HidingRules): Boolean {
@@ -200,8 +211,9 @@ class HidingRulesRepository(private val context: Context = camApp) {
 
     /** The Duck Detector nightly commit and when it was made. */
     private fun fetchDuck(): Pair<String, String> {
-        // revalidated every time, so the Date header is the site's clock now and not a cached copy's
-        val (body, siteTime) = download(DUCK_URL, revalidate = true)
+        // past the cache every time (a no-cache request skips OkHttp's conditional GET: a full,
+        // small download), so the Date header is the site's clock now and not a cached copy's
+        val (body, siteTime) = download(DUCK_URL, skipCache = true)
         return parseDuck(String(body, Charsets.UTF_8), siteTime ?: Instant.now())
     }
 
@@ -209,10 +221,10 @@ class HidingRulesRepository(private val context: Context = camApp) {
     private fun get(url: String): ByteArray = download(url).first
 
     /** The body as sent, and the server's Date header. */
-    private fun download(url: String, revalidate: Boolean = false): Pair<ByteArray, Instant?> {
-        // the client's cache revalidates with ETag, so an unchanged file costs a 304
+    private fun download(url: String, skipCache: Boolean = false): Pair<ByteArray, Instant?> {
+        // otherwise the client's cache revalidates with ETag, so an unchanged file costs a 304
         val request = Request.Builder().url(url)
-            .apply { if (revalidate) cacheControl(CacheControl.Builder().noCache().build()) }
+            .apply { if (skipCache) cacheControl(CacheControl.Builder().noCache().build()) }
             .build()
         return camApp.okhttpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) error("HTTP ${response.code} for $url")

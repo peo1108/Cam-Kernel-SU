@@ -1,7 +1,7 @@
 {
-  "version": 11,
-  "updated": "2026-10-20",
-  "duckDetector": "f4cbd8471478e5fc0be0f0156f69d4d352079780",
+  "version": 12,
+  "updated": "2026-10-21",
+  "duckDetector": "b535675003503dc318ca2354d6c858c8c58a28ba",
   "duckPending": ["heap residue"],
   "mountSources": ["KSU", "APatch", "magisk", "worker"],
   "mapMarkers": [

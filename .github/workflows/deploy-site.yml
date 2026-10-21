@@ -66,6 +66,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run feed
 
+      # The Duck Detector nightly the hiding check page compares the rules with
+      # (HidingRulesRepository), picked by scripts/duck_nightly.sh like duck-watch.yml does. Runs
+      # daily with the schedule above. When GitHub does not answer, the live copy is kept; a Duck
+      # lookup never holds back a release.
+      - name: Duck Detector nightly
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          out=docs/.vitepress/dist/feed/duck-nightly.json
+          if read -r sha tag date < <(bash ../scripts/duck_nightly.sh); then
+            jq -n --arg sha "$sha" --arg tag "$tag" --arg date "$date" '{sha: $sha, tag: $tag, date: $date}' > "$out"
+          elif ! curl -fsS -o "$out" https://caesarvn.xyz/feed/duck-nightly.json; then
+            rm -f "$out"
+            echo "::warning::no Duck Detector nightly: the hiding check page shows none until the next run"
+          fi
+          cat "$out" 2>/dev/null || true
+
       # The deploy key only runs rrsync, write-only into /var/www/caesarvn (no shell).
       - name: Upload to the VPS
         env:

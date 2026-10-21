@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           pinned=$(jq -r .duckDetector manager/app/src/main/assets/hiding-rules.json)
-          read -r nightly tag < <(bash scripts/duck_nightly.sh)
+          read -r nightly tag _ < <(bash scripts/duck_nightly.sh)
           compare=$(gh api "repos/$DUCK/compare/$pinned...$nightly")
           ahead=$(jq -r .ahead_by <<<"$compare")
           echo "pinned $pinned, nightly $tag ($nightly) is $ahead commit(s) ahead"

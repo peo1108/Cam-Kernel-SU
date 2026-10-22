@@ -2,6 +2,15 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.2.0 - 2026-10-23
+- Kiểm tra ẩn root chính xác hơn: hết báo nhầm file của WebView, bắt thêm vài kiểu file root trước đây lọt qua
+### Sửa lỗi
+- Kiểm tra ẩn root: vẫn còn báo nhầm "App đang nạp file root trong bộ nhớ" với file của WebView khi mã ngẫu nhiên trong tên thư mục cài app có chữ giống "Riru" (bản 1.1.9 mới sửa được trường hợp "edxp"). Giờ mã ngẫu nhiên được nhận đúng và bỏ qua, chỉ xét tên app
+- Kiểm tra ẩn root: chỉ bỏ qua mã ngẫu nhiên trong thư mục cài app. File root đặt ở chỗ khác mà tên trông giống mã ngẫu nhiên vẫn bị báo
+- Kiểm tra ẩn root: phần "nhìn từ trong app" giờ bắt được vùng nhớ ẩn danh có dấu cách trong tên và tên viết bằng chữ giống chữ thường (như ký hiệu Kelvin thay cho chữ k), giống kết quả của camd. Một thư viện đã bị xoá không còn hiện hai lần
+### Thay đổi
+- Rule ẩn root v14: theo Duck Detector tới bản nightly 21/10 (không có kiểm tra mới nhắm vào SU Kernel)
+
 ## 1.1.9 - 2026-10-21
 - Chặn module nguy hiểm, sao lưu và khôi phục chính các module, cài module không cần khởi động lại (với module có hỗ trợ)
 ### Tính năng mới

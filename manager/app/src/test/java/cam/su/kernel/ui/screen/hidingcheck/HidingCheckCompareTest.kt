@@ -28,6 +28,23 @@ class HidingCheckCompareTest {
         assertEquals(listOf("props"), gone.map { it.id })
     }
 
+    /** 1.1.9 kept " (deleted)" and named a mapping from its first '/' */
+    @Test
+    fun appMapsSavedBefore120StillCompare() {
+        val previous = audit(finding("appMaps", "/memfd:zygisk-loader (deleted)", "/data/adb/x.dex]", appView = true))
+        val current = audit(
+            finding(
+                "appMaps",
+                "/memfd:zygisk-loader",
+                "[anon:dalvik-classes.dex extracted in memory from /data/adb/x.dex]",
+                "/data/adb/y.so",
+                appView = true,
+            ),
+        )
+        val (checked, _, _) = HidingCheckUiState.compare(current, previous, emptySet())
+        assertEquals(setOf("/data/adb/y.so"), checked[0].newItems)
+    }
+
     @Test
     fun ignoredFindingsStayAside() {
         val previous = audit(finding("props", "x"))

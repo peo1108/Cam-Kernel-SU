@@ -5,9 +5,12 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ## 1.2.0 - 2026-10-23
 - Kiểm tra ẩn root chính xác hơn: hết báo nhầm file của WebView, bắt thêm vài kiểu file root trước đây lọt qua
 ### Sửa lỗi
-- Kiểm tra ẩn root: vẫn còn báo nhầm "App đang nạp file root trong bộ nhớ" với file của WebView khi mã ngẫu nhiên trong tên thư mục cài app có chữ giống "Riru" (bản 1.1.9 mới sửa được trường hợp "edxp"). Giờ mã ngẫu nhiên được nhận đúng và bỏ qua, chỉ xét tên app
+- Kiểm tra ẩn root: vẫn còn báo nhầm "App đang nạp file root trong bộ nhớ" với file của WebView khi mã ngẫu nhiên trong tên thư mục cài app có chữ giống "Riru" (bản 1.1.9 mới sửa được trường hợp "edxp"). Giờ mã ngẫu nhiên được nhận đúng và bỏ qua, chỉ xét tên app, cả trong tên vùng nhớ Android đặt theo app (dex và app image giải nén trong bộ nhớ)
 - Kiểm tra ẩn root: chỉ bỏ qua mã ngẫu nhiên trong thư mục cài app. File root đặt ở chỗ khác mà tên trông giống mã ngẫu nhiên vẫn bị báo
 - Kiểm tra ẩn root: phần "nhìn từ trong app" giờ bắt được vùng nhớ ẩn danh có dấu cách trong tên và tên viết bằng chữ giống chữ thường (như ký hiệu Kelvin thay cho chữ k), giống kết quả của camd. Một thư viện đã bị xoá không còn hiện hai lần
+- Kiểm tra ẩn root: một tên file có ký tự lạ (không phải UTF-8) trong bộ nhớ của app không còn khiến camd bỏ qua cả app đó hay cả danh sách mount
+- Kiểm tra ẩn root: phần "nhìn từ trong app" luôn báo file trong `/data/adb` và `/debug_ramdisk`, kể cả khi rule tải về không liệt kê
+- Kiểm tra ẩn root: lần quét đầu sau khi cập nhật từ 1.1.9 không còn đánh dấu "mới" cho những mục đã có từ trước
 ### Thay đổi
 - Rule ẩn root v14: theo Duck Detector tới bản nightly 21/10 (không có kiểm tra mới nhắm vào SU Kernel)
 

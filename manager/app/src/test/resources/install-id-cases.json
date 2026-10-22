@@ -32,6 +32,23 @@
       "cut": "[anon:dalvik-classes.dex extracted in memory from /data/app/com.google.android.webview/base.apk]"
     },
     {
+      "why": "ART names an app image it unpacks after the image, right after dalvik-",
+      "path": "[anon:dalvik-/data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/oat/arm64/base.art]",
+      "marked": false,
+      "cut": "[anon:dalvik-/data/app/com.google.android.webview/oat/arm64/base.art]"
+    },
+    {
+      "why": "an app image on adopted storage",
+      "path": "[anon:dalvik-/mnt/expand/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/oat/arm64/base.art]",
+      "marked": false,
+      "cut": "[anon:dalvik-/mnt/expand/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/app/com.google.android.webview/oat/arm64/base.art]"
+    },
+    {
+      "why": "a dex ART unpacks from a module",
+      "path": "[anon:dalvik-classes.dex extracted in memory from /data/adb/modules/x/framework.jar]",
+      "marked": true
+    },
+    {
       "why": "the marker is in the package, not the id",
       "path": "/data/app/~~8rp2opmxolCN3y7a8E81Og==/org.lsposed.manager-OIOc2PFaZuoaEdXpOQh3UA==/base.apk",
       "marked": true,
@@ -48,6 +65,12 @@
       "path": "/data/local/tmp/app/x-zygiskAbCdEfGhIjKlMnOp==/libx.so",
       "marked": true,
       "cut": "/data/local/tmp/app/x-zygiskabcdefghijklmnop==/libx.so"
+    },
+    {
+      "why": "a file is in an install folder from its start only",
+      "path": "/data/local/tmp/data/app/x-zygiskAbCdEfGhIjKlMnOp==/libx.so",
+      "marked": true,
+      "cut": "/data/local/tmp/data/app/x-zygiskabcdefghijklmnop==/libx.so"
     },
     {
       "why": "shaped like an id, but not in an install folder",

@@ -82,8 +82,11 @@ object AppViewProbe {
         val path = mappedPath(line) ?: return@mapNotNull null
         // lowercase() is Unicode, as apps that look for root lower case (the Kelvin sign is a k)
         val lower = withoutInstallIds(path.lowercase())
-        path.takeIf { rules.mapMarkers.any { it in lower } }
+        path.takeIf { ROOT_PREFIXES.any { path.startsWith(it) } || rules.mapMarkers.any { it in lower } }
     }.distinct().toList()
+
+    // root tooling's folders, flagged whatever the rules say, as camd's ROOT_PREFIXES
+    private val ROOT_PREFIXES = listOf("/data/adb/", "/debug_ramdisk/")
 
     // address perms offset dev inode path: the path is the rest of the line, spaces and all
     // ([anon:dalvik-main space]), without " (deleted)"
@@ -97,37 +100,62 @@ object AppViewProbe {
     }
 
     // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk, also without ~~
-    // (Android 8 to 10), under /mnt/expand/<uuid>/app, and in ART's [anon:dalvik-classes.dex
-    // extracted in memory from /data/app/...]: the random ids can hold a marker (WebView's
-    // -...EdXpOQh3UA== reads as EdXposed, -aRiRuQ3-... as Riru). Only those install folders
-    // are cut, so an id shaped name elsewhere keeps its marker, and any other path comes back
-    // as it is. camd's without_install_ids (hiding_audit.rs) does the same; both tests read
-    // install-id-cases.json.
+    // (Android 8 to 10), under /mnt/expand/<uuid>/app, and in names ART gives memory it fills
+    // from an app ([anon:dalvik-classes.dex extracted in memory from /data/app/...], an app
+    // image's [anon:dalvik-/data/app/.../oat/arm64/base.art]): the random ids can hold a
+    // marker (WebView's -...EdXpOQh3UA== reads as EdXposed, -aRiRuQ3-... as Riru). Only those
+    // install folders are cut, so an id shaped name elsewhere keeps its marker, and a path
+    // with nothing cut comes back as it is. camd's without_install_ids (hiding_audit.rs) does
+    // the same; both tests read install-id-cases.json.
     internal fun withoutInstallIds(path: String): String {
-        val start = path.indexOf('/')
-        if (start < 0 || (start > 0 && path[start - 1] != ' ')) return path
-        if (!path.startsWith("/data/app/", start) && !path.startsWith("/mnt/expand/", start)) return path
-        val parts = path.substring(start + 1).split('/')
-        val root = when {
-            parts.size > 2 && parts[0] == "data" && parts[1] == "app" -> 2
-            parts.size > 4 && parts[0] == "mnt" && parts[1] == "expand" && parts[3] == "app" -> 4
-            else -> return path
+        var out: StringBuilder? = null
+        var copied = 0
+        // a file is in an install folder from its start only; a name can hold one anywhere
+        val file = path.startsWith('/')
+        var start = path.indexOf('/')
+        while (start >= 0 && (start == 0 || !file)) {
+            if (start >= copied) {
+                for (cut in installIds(path, start)) {
+                    out = (out ?: StringBuilder()).append(path, copied, cut.first)
+                    copied = cut.last + 1
+                }
+            }
+            start = path.indexOf('/', start + 1)
         }
-        var at = root
-        if (parts[at].startsWith("~~") && isInstallId(parts[at], 2)) at++
-        val pkg = parts.getOrNull(at)?.let { part ->
-            val dash = part.length - INSTALL_ID_LENGTH - 1
-            if (dash >= 0 && part[dash] == '-' && isInstallId(part, dash + 1)) part.substring(0, dash) else part
+        return out?.append(path, copied, path.length)?.toString() ?: path
+    }
+
+    // Where the random ids are when path has an install folder at start: ~~<id>/, and the
+    // -<id> after the package
+    private fun installIds(path: String, start: Int): List<IntRange> {
+        var at = when {
+            path.startsWith("/data/app/", start) -> start + "/data/app/".length
+            path.startsWith("/mnt/expand/", start) -> {
+                val end = path.indexOf('/', start + "/mnt/expand/".length)
+                if (end < 0 || !path.startsWith("/app/", end)) return emptyList()
+                end + "/app/".length
+            }
+            else -> return emptyList()
         }
-        return path.substring(0, start) + "/" + (parts.subList(0, root) + listOfNotNull(pkg) + parts.drop(at + 1)).joinToString("/")
+        val cuts = ArrayList<IntRange>(2)
+        var end = path.indexOf('/', at)
+        if (end >= 0 && path.startsWith("~~", at) && isInstallId(path, at + 2, end)) {
+            cuts += at..end
+            at = end + 1
+            end = path.indexOf('/', at)
+        }
+        if (end < 0) end = path.length
+        val dash = end - INSTALL_ID_LENGTH - 1
+        if (dash >= at && path[dash] == '-' && isInstallId(path, dash + 1, end)) cuts += dash until end
+        return cuts
     }
 
     private const val INSTALL_ID_LENGTH = 24
 
-    // 16 random bytes in URL-safe base64 from start to the end: 22 characters and ==. They
-    // can hold a '-', so an id is found by its length, not at the last '-'.
-    private fun isInstallId(s: String, start: Int): Boolean =
-        s.length - start == INSTALL_ID_LENGTH && s.endsWith("==") && (start until s.length - 2).all {
+    // 16 random bytes in URL-safe base64 from `from` to `to`: 22 characters and ==. They can
+    // hold a '-', so an id is found by its length, not at the last '-'.
+    private fun isInstallId(s: String, from: Int, to: Int): Boolean =
+        to - from == INSTALL_ID_LENGTH && s.startsWith("==", to - 2) && (from until to - 2).all {
             val c = s[it]
             c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9' || c == '-' || c == '_'
         }
@@ -146,16 +174,15 @@ object AppViewProbe {
      * change between two reads on their own.
      */
     fun hookedMounts(raw: String, libc: String): List<String> {
-        // the native side turns every non-ASCII byte into '?'; do the same here
-        val seen = String(libc.toByteArray().map { if (it < 0) '?'.code.toByte() else it }.toByteArray())
-            .lines().toSet()
+        // both reads decode their bytes with text(), so the same bytes give the same lines
+        val seen = libc.lines().toSet()
         val hidden = raw.lines().filter { it.isNotBlank() && it !in seen }
         return if (hidden.isEmpty()) emptyList() else listOf("$MOUNTINFO: ${hidden.size} hidden from libc") +
                 hidden.take(3).map { "  ${it.substringAfter(" - ", it)}" }
     }
 
     private fun hooked(rules: HidingRules): List<String> {
-        val raw = NativeProbe.read(MOUNTINFO)
+        val raw = rawRead(MOUNTINFO)
         val mounts = if (raw == null) emptyList() else hookedMounts(raw, libcRead(MOUNTINFO))
         val su = rules.suPaths.filter { path ->
             val kernel = NativeProbe.access(path)
@@ -172,9 +199,18 @@ object AppViewProbe {
         e.errno == OsConstants.EACCES
     }
 
-    private fun libcRead(path: String): String = runCatching { File(path).readText() }.getOrDefault("")
+    /**
+     * Bytes read from a proc file as UTF-8 text, a byte that is not UTF-8 turned into U+FFFD:
+     * the kernel prints file names as they are, and a Kelvin sign (U+212A) standing for the
+     * k of libmagisk.so must reach [maps] whole.
+     */
+    internal fun text(bytes: ByteArray): String = bytes.toString(Charsets.UTF_8)
 
-    private fun rawOrLibc(path: String): String = NativeProbe.read(path) ?: libcRead(path)
+    private fun rawRead(path: String): String? = NativeProbe.read(path)?.let(::text)
+
+    private fun libcRead(path: String): String = runCatching { text(File(path).readBytes()) }.getOrDefault("")
+
+    private fun rawOrLibc(path: String): String = rawRead(path) ?: libcRead(path)
 
     private fun finding(id: String, items: List<String>, fix: String?, modules: List<String> = emptyList()) =
         if (items.isEmpty()) {

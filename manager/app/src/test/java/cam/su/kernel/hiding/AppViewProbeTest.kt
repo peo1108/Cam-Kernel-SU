@@ -62,6 +62,29 @@ class AppViewProbeTest {
         )
     }
 
+    /** what camd's ROOT_PREFIXES flag, even with rules that list no marker for them */
+    @Test
+    fun rootFoldersNeedNoMarker() {
+        val maps = """
+            7f0000-7f1000 r-xp 00000000 fd:05 1   /data/adb/modules/x/lib.so
+            7f1000-7f2000 r-xp 00000000 fd:05 2   /debug_ramdisk/su
+            7f2000-7f3000 r-xp 00000000 fd:05 3   /system/lib64/libc.so
+        """.trimIndent()
+        assertEquals(
+            listOf("/data/adb/modules/x/lib.so", "/debug_ramdisk/su"),
+            AppViewProbe.maps(maps, rules.copy(mapMarkers = emptyList())),
+        )
+    }
+
+    /** the raw read hands over bytes: the Kelvin sign stays one, and a byte that is not UTF-8 loses no line */
+    @Test
+    fun mapsAreReadAsUtf8() {
+        val magisk = "/system/lib64/libmagis${Char(0x212A)}.so"
+        val bytes = "7f0000-7f1000 r--p 00000000 fd:05 1 /data/data/x/caf".toByteArray() + byteArrayOf(0xE9.toByte()) +
+                "\n7f1000-7f2000 r-xp 00000000 fd:05 2 $magisk\n".toByteArray()
+        assertEquals(listOf(magisk), AppViewProbe.maps(AppViewProbe.text(bytes), rules))
+    }
+
     /** the same cases as camd's cuts_install_ids_like_the_manager */
     @Test
     fun installIdsAreCutLikeCamd() {

@@ -11,6 +11,8 @@
 #![cfg_attr(not(target_os = "android"), allow(dead_code))]
 
 use std::borrow::Cow;
+use std::ops::Range;
+use std::path::Path;
 
 use serde_json::{Value, json};
 
@@ -264,45 +266,76 @@ pub fn mapped_path<'a>(line: &'a str, markers: &[String]) -> Option<&'a str> {
     .then_some(path)
 }
 
+/// A proc file such as maps or mountinfo as text. The kernel prints file names as they
+/// are, so a byte that is not UTF-8 turns into U+FFFD instead of losing the whole file.
+fn read_text(path: impl AsRef<Path>) -> std::io::Result<String> {
+    std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+}
+
 /// `/data/app/~~<id>==/<pkg>-<id>==/base.apk` -> `/data/app/<pkg>/base.apk`, also without
-/// `~~` (Android 8 to 10), under `/mnt/expand/<uuid>/app`, and in ART's
-/// `[anon:dalvik-classes.dex extracted in memory from /data/app/...]`: the random ids can
+/// `~~` (Android 8 to 10), under `/mnt/expand/<uuid>/app`, and in names ART gives memory
+/// it fills from an app (`[anon:dalvik-classes.dex extracted in memory from /data/app/...]`,
+/// an app image's `[anon:dalvik-/data/app/.../oat/arm64/base.art]`): the random ids can
 /// hold a marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed, `-aRiRuQ3-...` as Riru).
 /// Only those install folders are cut, so an id shaped name elsewhere keeps its marker,
-/// and any other path comes back as it is. The Manager's `AppViewProbe.withoutInstallIds`
-/// does the same; both tests read `install-id-cases.json`.
+/// and a path with nothing cut comes back as it is. The Manager's
+/// `AppViewProbe.withoutInstallIds` does the same; both tests read `install-id-cases.json`.
 fn without_install_ids(path: &str) -> Cow<'_, str> {
-    let Some(start) = path
-        .find('/')
-        .filter(|&i| i == 0 || path[..i].ends_with(' '))
-    else {
+    let mut out = String::new();
+    let mut copied = 0;
+    // a file is in an install folder from its start only; a name can hold one anywhere
+    let file = path.starts_with('/');
+    for (start, _) in path.match_indices('/') {
+        if file && start > 0 {
+            break;
+        }
+        if start < copied {
+            continue;
+        }
+        for cut in install_ids(path, start).into_iter().flatten() {
+            out.push_str(&path[copied..cut.start]);
+            copied = cut.end;
+        }
+    }
+    if copied == 0 {
         return Cow::Borrowed(path);
-    };
+    }
+    out.push_str(&path[copied..]);
+    Cow::Owned(out)
+}
+
+/// Where the random ids are when `path` has an install folder at `start`: `~~<id>/`, and
+/// the `-<id>` after the package.
+fn install_ids(path: &str, start: usize) -> [Option<Range<usize>>; 2] {
     let rest = &path[start..];
-    if !rest.starts_with("/data/app/") && !rest.starts_with("/mnt/expand/") {
-        return Cow::Borrowed(path);
-    }
-    let parts: Vec<&str> = rest[1..].split('/').collect();
-    let root = match parts.as_slice() {
-        ["data", "app", _, ..] => 2,
-        ["mnt", "expand", _, "app", _, ..] => 4,
-        _ => return Cow::Borrowed(path),
-    };
-    let mut at = root;
-    if parts[at].strip_prefix("~~").is_some_and(is_install_id) {
-        at += 1;
-    }
-    let mut kept = parts[..root].to_vec();
-    if let Some(part) = parts.get(at) {
-        kept.push(match part.len().checked_sub(INSTALL_ID_LEN + 1) {
-            Some(dash) if part.as_bytes()[dash] == b'-' && is_install_id(&part[dash + 1..]) => {
-                &part[..dash]
+    let mut at = if rest.starts_with("/data/app/") {
+        start + "/data/app/".len()
+    } else if let Some(uuid) = rest.strip_prefix("/mnt/expand/") {
+        match uuid.find('/') {
+            Some(end) if uuid[end..].starts_with("/app/") => {
+                start + "/mnt/expand/".len() + end + "/app/".len()
             }
-            _ => part,
-        });
-        kept.extend(&parts[at + 1..]);
+            _ => return [None, None],
+        }
+    } else {
+        return [None, None];
+    };
+    let part_end = |at: usize| path[at..].find('/').map(|i| at + i);
+    let mut cuts = [None, None];
+    if let Some(end) = part_end(at)
+        && path[at..end].strip_prefix("~~").is_some_and(is_install_id)
+    {
+        cuts[0] = Some(at..end + 1);
+        at = end + 1;
     }
-    Cow::Owned(format!("{}/{}", &path[..start], kept.join("/")))
+    let end = part_end(at).unwrap_or(path.len());
+    if let Some(dash) = (end - at).checked_sub(INSTALL_ID_LEN + 1).map(|d| at + d)
+        && path.as_bytes()[dash] == b'-'
+        && is_install_id(&path[dash + 1..end])
+    {
+        cuts[1] = Some(dash..end);
+    }
+    cuts
 }
 
 const INSTALL_ID_LEN: usize = 24;
@@ -618,7 +651,7 @@ mod device {
     fn mapped(pids: &[PathBuf], markers: &[String]) -> Vec<String> {
         let mut found = BTreeSet::new();
         for pid in pids {
-            let Ok(maps) = std::fs::read_to_string(pid.join("maps")) else {
+            let Ok(maps) = super::read_text(pid.join("maps")) else {
                 continue;
             };
             for line in maps.lines() {
@@ -653,7 +686,7 @@ mod device {
             props: resetprop::list_props().unwrap_or_default(),
             hide_bootloader: hide_bootloader::is_enabled(),
             boot_args: hide_bootloader::parse_boot_args(&bootconfig, &cmdline),
-            mountinfo: std::fs::read_to_string("/proc/1/mountinfo").unwrap_or_default(),
+            mountinfo: super::read_text("/proc/1/mountinfo").unwrap_or_default(),
             kernel_umount: feature(FeatureId::KernelUmount),
             selinux_hide: feature(FeatureId::SelinuxHide),
             app_maps: mapped(&pids(is_app_uid), &rules.map_markers),
@@ -699,7 +732,7 @@ mod device {
         let pids = pids(|u| u == uid);
         let mountinfo = pids
             .first()
-            .and_then(|pid| std::fs::read_to_string(pid.join("mountinfo")).ok())
+            .and_then(|pid| super::read_text(pid.join("mountinfo")).ok())
             .unwrap_or_default();
         let findings = super::app_findings(&mountinfo, mapped(&pids, &rules.map_markers), rules);
         let mut report = super::report_json(&findings, &json!({ "processes": pids.len() }));
@@ -850,6 +883,26 @@ mod tests {
             mapped_path("7f00-7f10 rw-p 00000000 00:00 0", &markers),
             None
         );
+    }
+
+    /// A file name that is not UTF-8 must not hide the rest of a process's maps.
+    #[test]
+    fn reads_maps_with_names_that_are_not_utf8() {
+        let dir = tempfile::tempdir().unwrap();
+        let maps = dir.path().join("maps");
+        std::fs::write(
+            &maps,
+            b"7f00-7f10 r--p 00000000 fe:2a 1 /data/data/x/caf\xe9.db\n\
+              7f10-7f20 r-xp 00000000 fe:2a 2 /data/adb/modules/z/libzygisk.so\n",
+        )
+        .unwrap();
+        let text = read_text(&maps).unwrap();
+        let markers = Rules::default().map_markers;
+        let found: Vec<&str> = text
+            .lines()
+            .filter_map(|line| mapped_path(line, &markers))
+            .collect();
+        assert_eq!(found, ["/data/adb/modules/z/libzygisk.so"]);
     }
 
     /// The same cases as AppViewProbeTest, with the markers the APK ships.

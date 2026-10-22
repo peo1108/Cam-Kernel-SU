@@ -149,18 +149,20 @@ Java_cam_su_kernel_hiding_NativeProbe_attrTiming0(JNIEnv *env, jclass) {
     return out;
 }
 
-extern "C" JNIEXPORT jstring JNICALL
+extern "C" JNIEXPORT jbyteArray JNICALL
 Java_cam_su_kernel_hiding_NativeProbe_read0(JNIEnv *env, jclass, jstring jpath) {
     const char *path = env->GetStringUTFChars(jpath, nullptr);
     std::string data;
     bool ok = raw_read(path, data);
     env->ReleaseStringUTFChars(jpath, path);
     if (!ok) return nullptr;
-    // proc files are text; drop any byte NewStringUTF would choke on
-    for (char &c : data) {
-        if (static_cast<unsigned char>(c) >= 0x80 || c == '\0') c = '?';
+    // the bytes as read: Kotlin decodes them as UTF-8 (AppViewProbe.text), so a Kelvin sign
+    // (U+212A) standing for the k of libmagisk.so stays one
+    jbyteArray out = env->NewByteArray(static_cast<jsize>(data.size()));
+    if (out != nullptr) {
+        env->SetByteArrayRegion(out, 0, static_cast<jsize>(data.size()), reinterpret_cast<const jbyte *>(data.data()));
     }
-    return env->NewStringUTF(data.c_str());
+    return out;
 }
 
 extern "C" JNIEXPORT jint JNICALL

@@ -57,7 +57,7 @@ class AppViewProbeTest {
             7f5000-7f6000 r--p 00000000 fd:05 126   /data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/base.apk
         """.trimIndent()
         assertEquals(
-            listOf("/data/adb/modules/zygisk_lsposed/lib/liblspd.so", "/memfd:zygisk-loader (deleted)"),
+            listOf("/data/adb/modules/zygisk_lsposed/lib/liblspd.so", "/memfd:zygisk-loader"),
             AppViewProbe.maps(maps, rules),
         )
     }
@@ -72,7 +72,7 @@ class AppViewProbeTest {
             val line = "7f00-7f10 r--p 00000000 fe:2a 1 $path"
             assertEquals(path, case.getBoolean("marked"), AppViewProbe.maps(line, rules).isNotEmpty())
             if (case.has("cut")) {
-                assertEquals(path, case.getString("cut"), AppViewProbe.withoutInstallIds(AppViewProbe.asciiLowercase(path)))
+                assertEquals(path, case.getString("cut"), AppViewProbe.withoutInstallIds(path.lowercase()))
             }
         }
     }

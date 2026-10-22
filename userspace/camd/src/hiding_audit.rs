@@ -10,6 +10,8 @@
 //! signed hiding rules (`--rules`), so what is looked for can change without a camd update.
 #![cfg_attr(not(target_os = "android"), allow(dead_code))]
 
+use std::borrow::Cow;
+
 use serde_json::{Value, json};
 
 use crate::hide_bootloader;
@@ -79,7 +81,7 @@ impl Rules {
         Ok(Self {
             su_paths: list("suPaths").unwrap_or(default.su_paths),
             map_markers: list("mapMarkers").map_or(default.map_markers, |markers| {
-                markers.iter().map(|m| m.to_ascii_lowercase()).collect()
+                markers.iter().map(|m| m.to_lowercase()).collect()
             }),
             mount_sources: list("mountSources").unwrap_or(default.mount_sources),
         })
@@ -254,39 +256,53 @@ pub fn mapped_path<'a>(line: &'a str, markers: &[String]) -> Option<&'a str> {
     let start = line.find(path)?;
     let path = line[start..].trim_end();
     let path = path.strip_suffix(" (deleted)").unwrap_or(path);
-    let lower = path.to_ascii_lowercase();
-    let marked = |p: &str| markers.iter().any(|m| p.contains(m.as_str()));
-    // cutting ids only takes text away, so most of the thousands of lines need no cut
+    // Unicode, as apps that look for root lower case (the Kelvin sign is a k)
+    let lower = path.to_lowercase();
+    let lower = without_install_ids(&lower);
     (ROOT_PREFIXES.iter().any(|prefix| path.starts_with(prefix))
-        || (marked(&lower) && marked(&without_install_ids(&lower))))
+        || markers.iter().any(|m| lower.contains(m.as_str())))
     .then_some(path)
 }
 
 /// `/data/app/~~<id>==/<pkg>-<id>==/base.apk` -> `/data/app/<pkg>/base.apk`, also without
-/// `~~` (Android 8 to 10) and under `/mnt/expand/<uuid>/app`: the random ids can hold a
-/// marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed, `-aRiRuQ3-...` as Riru). Only
-/// the install folders are cut, so an id shaped name elsewhere keeps its marker. The
-/// Manager's `AppViewProbe.withoutInstallIds` does the same; both tests read
-/// `install-id-cases.json`.
-fn without_install_ids(path: &str) -> String {
-    let mut parts = Vec::new();
-    // the part before is `app`, or the `~~<id>` folder in it
-    let mut in_app = false;
-    for part in path.split('/') {
-        if in_app && part.strip_prefix("~~").is_some_and(is_install_id) {
-            continue;
-        }
-        parts.push(match part.len().checked_sub(INSTALL_ID_LEN + 1) {
-            Some(dash)
-                if in_app && part.as_bytes()[dash] == b'-' && is_install_id(&part[dash + 1..]) =>
-            {
+/// `~~` (Android 8 to 10), under `/mnt/expand/<uuid>/app`, and in ART's
+/// `[anon:dalvik-classes.dex extracted in memory from /data/app/...]`: the random ids can
+/// hold a marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed, `-aRiRuQ3-...` as Riru).
+/// Only those install folders are cut, so an id shaped name elsewhere keeps its marker,
+/// and any other path comes back as it is. The Manager's `AppViewProbe.withoutInstallIds`
+/// does the same; both tests read `install-id-cases.json`.
+fn without_install_ids(path: &str) -> Cow<'_, str> {
+    let Some(start) = path
+        .find('/')
+        .filter(|&i| i == 0 || path[..i].ends_with(' '))
+    else {
+        return Cow::Borrowed(path);
+    };
+    let rest = &path[start..];
+    if !rest.starts_with("/data/app/") && !rest.starts_with("/mnt/expand/") {
+        return Cow::Borrowed(path);
+    }
+    let parts: Vec<&str> = rest[1..].split('/').collect();
+    let root = match parts.as_slice() {
+        ["data", "app", _, ..] => 2,
+        ["mnt", "expand", _, "app", _, ..] => 4,
+        _ => return Cow::Borrowed(path),
+    };
+    let mut at = root;
+    if parts[at].strip_prefix("~~").is_some_and(is_install_id) {
+        at += 1;
+    }
+    let mut kept = parts[..root].to_vec();
+    if let Some(part) = parts.get(at) {
+        kept.push(match part.len().checked_sub(INSTALL_ID_LEN + 1) {
+            Some(dash) if part.as_bytes()[dash] == b'-' && is_install_id(&part[dash + 1..]) => {
                 &part[..dash]
             }
             _ => part,
         });
-        in_app = part == "app";
+        kept.extend(&parts[at + 1..]);
     }
-    parts.join("/")
+    Cow::Owned(format!("{}/{}", &path[..start], kept.join("/")))
 }
 
 const INSTALL_ID_LEN: usize = 24;
@@ -857,7 +873,7 @@ mod tests {
                 "{path}"
             );
             if let Some(cut) = case["cut"].as_str() {
-                assert_eq!(without_install_ids(&path.to_ascii_lowercase()), cut);
+                assert_eq!(without_install_ids(&path.to_lowercase()), cut, "{path}");
             }
         }
     }

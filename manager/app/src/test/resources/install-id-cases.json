@@ -1,5 +1,5 @@
 {
-  "about": "Mapped paths checked against the mapMarkers of hiding-rules.json, read by both AppViewProbeTest (Manager) and reads_mapped_root_files (camd hiding_audit.rs), so the two cut install ids alike. marked: the path is reported. cut, when given: the path in ASCII lower case with its install ids cut.",
+  "about": "Mapped paths checked against the mapMarkers of hiding-rules.json, read by both AppViewProbeTest.installIdsAreCutLikeCamd (Manager) and cuts_install_ids_like_the_manager (camd hiding_audit.rs), so the two cut install ids alike. path: the maps line from its 6th field. marked: the path is reported. cut, when given: the path in lower case with its install ids cut.",
   "cases": [
     {
       "why": "WebView's id holds EdXp",
@@ -26,10 +26,28 @@
       "cut": "/mnt/expand/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/app/com.google.android.webview/base.apk"
     },
     {
+      "why": "ART names a dex it unpacks after the APK",
+      "path": "[anon:dalvik-classes.dex extracted in memory from /data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/base.apk]",
+      "marked": false,
+      "cut": "[anon:dalvik-classes.dex extracted in memory from /data/app/com.google.android.webview/base.apk]"
+    },
+    {
       "why": "the marker is in the package, not the id",
       "path": "/data/app/~~8rp2opmxolCN3y7a8E81Og==/org.lsposed.manager-OIOc2PFaZuoaEdXpOQh3UA==/base.apk",
       "marked": true,
       "cut": "/data/app/org.lsposed.manager/base.apk"
+    },
+    {
+      "why": "what the cut path holds counts, also across a cut",
+      "path": "/data/app/~~8rp2opmxolCN3y7a8E81Og==/sbin-OIOc2PFaZuoaEdXpOQh3UA==/lib.so",
+      "marked": true,
+      "cut": "/data/app/sbin/lib.so"
+    },
+    {
+      "why": "an app folder that is not where apps are installed",
+      "path": "/data/local/tmp/app/x-zygiskAbCdEfGhIjKlMnOp==/libx.so",
+      "marked": true,
+      "cut": "/data/local/tmp/app/x-zygiskabcdefghijklmnop==/libx.so"
     },
     {
       "why": "shaped like an id, but not in an install folder",
@@ -56,8 +74,18 @@
       "cut": "/data/app/p-riru.so.abcdefghijklmn==/base.apk"
     },
     {
-      "why": "lower case is ASCII only: the Kelvin sign is not k",
-      "path": "/system/lib64/libmagisK.so",
+      "why": "lower case is Unicode, as in apps that look for root: the Kelvin sign is a k",
+      "path": "/system/lib64/libmagis\u212a.so",
+      "marked": true
+    },
+    {
+      "why": "an anonymous mapping named with a space",
+      "path": "[anon:zygisk loader]",
+      "marked": true
+    },
+    {
+      "why": "ART's heap, named with a space",
+      "path": "[anon:dalvik-main space]",
       "marked": false
     },
     {

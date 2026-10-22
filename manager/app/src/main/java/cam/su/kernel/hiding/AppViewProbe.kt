@@ -77,35 +77,49 @@ object AppViewProbe {
         if (suspicious) SeenMount("$point ($type, $source)", "$root $options") else null
     }.distinctBy { it.item }.toList()
 
+    /** Mapped paths from root or hook tooling, matched and named as camd's mapped_path does. */
     fun maps(maps: String, rules: HidingRules): List<String> = maps.lineSequence().mapNotNull { line ->
-        val path = line.substringAfter('/', "").let { if (it.isEmpty()) null else "/$it" }
-            ?: line.split(' ').lastOrNull()?.takeIf { it.startsWith("[anon:") || it.startsWith("memfd:") }
-            ?: return@mapNotNull null
-        // what camd matches: no " (deleted)", ASCII lower case (lowercase() turns the Kelvin sign into k)
-        val lower = asciiLowercase(path.removeSuffix(" (deleted)"))
-        fun marked(p: String) = rules.mapMarkers.any { it in p }
-        // cutting ids only takes text away, so most of the thousands of lines need no cut
-        path.takeIf { marked(lower) && marked(withoutInstallIds(lower)) }
+        val path = mappedPath(line) ?: return@mapNotNull null
+        // lowercase() is Unicode, as apps that look for root lower case (the Kelvin sign is a k)
+        val lower = withoutInstallIds(path.lowercase())
+        path.takeIf { rules.mapMarkers.any { it in lower } }
     }.distinct().toList()
 
-    internal fun asciiLowercase(s: String) = String(CharArray(s.length) { s[it].let { c -> if (c in 'A'..'Z') c + 32 else c } })
+    // address perms offset dev inode path: the path is the rest of the line, spaces and all
+    // ([anon:dalvik-main space]), without " (deleted)"
+    private fun mappedPath(line: String): String? {
+        var at = 0
+        repeat(5) {
+            while (at < line.length && line[at].isWhitespace()) at++
+            while (at < line.length && !line[at].isWhitespace()) at++
+        }
+        return line.substring(at).trim().removeSuffix(" (deleted)").ifEmpty { null }
+    }
 
     // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk, also without ~~
-    // (Android 8 to 10) and under /mnt/expand/<uuid>/app: the random ids can hold a marker
-    // (WebView's -...EdXpOQh3UA== reads as EdXposed, -aRiRuQ3-... as Riru). Only the install
-    // folders are cut, so an id shaped name elsewhere keeps its marker. camd's
-    // without_install_ids (hiding_audit.rs) does the same; both tests read install-id-cases.json.
+    // (Android 8 to 10), under /mnt/expand/<uuid>/app, and in ART's [anon:dalvik-classes.dex
+    // extracted in memory from /data/app/...]: the random ids can hold a marker (WebView's
+    // -...EdXpOQh3UA== reads as EdXposed, -aRiRuQ3-... as Riru). Only those install folders
+    // are cut, so an id shaped name elsewhere keeps its marker, and any other path comes back
+    // as it is. camd's without_install_ids (hiding_audit.rs) does the same; both tests read
+    // install-id-cases.json.
     internal fun withoutInstallIds(path: String): String {
-        val parts = ArrayList<String>()
-        // the part before is app, or the ~~<id> folder in it
-        var inApp = false
-        for (part in path.split('/')) {
-            if (inApp && part.startsWith("~~") && isInstallId(part, 2)) continue
-            val dash = part.length - INSTALL_ID_LENGTH - 1
-            parts += if (inApp && dash >= 0 && part[dash] == '-' && isInstallId(part, dash + 1)) part.substring(0, dash) else part
-            inApp = part == "app"
+        val start = path.indexOf('/')
+        if (start < 0 || (start > 0 && path[start - 1] != ' ')) return path
+        if (!path.startsWith("/data/app/", start) && !path.startsWith("/mnt/expand/", start)) return path
+        val parts = path.substring(start + 1).split('/')
+        val root = when {
+            parts.size > 2 && parts[0] == "data" && parts[1] == "app" -> 2
+            parts.size > 4 && parts[0] == "mnt" && parts[1] == "expand" && parts[3] == "app" -> 4
+            else -> return path
         }
-        return parts.joinToString("/")
+        var at = root
+        if (parts[at].startsWith("~~") && isInstallId(parts[at], 2)) at++
+        val pkg = parts.getOrNull(at)?.let { part ->
+            val dash = part.length - INSTALL_ID_LENGTH - 1
+            if (dash >= 0 && part[dash] == '-' && isInstallId(part, dash + 1)) part.substring(0, dash) else part
+        }
+        return path.substring(0, start) + "/" + (parts.subList(0, root) + listOfNotNull(pkg) + parts.drop(at + 1)).joinToString("/")
     }
 
     private const val INSTALL_ID_LENGTH = 24

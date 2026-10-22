@@ -1,0 +1,74 @@
+{
+  "about": "Mapped paths checked against the mapMarkers of hiding-rules.json, read by both AppViewProbeTest (Manager) and reads_mapped_root_files (camd hiding_audit.rs), so the two cut install ids alike. marked: the path is reported. cut, when given: the path in ASCII lower case with its install ids cut.",
+  "cases": [
+    {
+      "why": "WebView's id holds EdXp",
+      "path": "/data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/base.apk",
+      "marked": false,
+      "cut": "/data/app/com.google.android.webview/base.apk"
+    },
+    {
+      "why": "Duck #400: the id holds Riru, and a '-' after it",
+      "path": "/data/app/~~k9ZpLm2Aq1w-Xy_8rp2opA==/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/oat/arm64/base.odex",
+      "marked": false,
+      "cut": "/data/app/com.google.android.webview/oat/arm64/base.odex"
+    },
+    {
+      "why": "Android 8 to 10 have no ~~ folder",
+      "path": "/data/app/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/base.apk",
+      "marked": false,
+      "cut": "/data/app/com.google.android.webview/base.apk"
+    },
+    {
+      "why": "an app on adopted storage",
+      "path": "/mnt/expand/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/base.apk",
+      "marked": false,
+      "cut": "/mnt/expand/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/app/com.google.android.webview/base.apk"
+    },
+    {
+      "why": "the marker is in the package, not the id",
+      "path": "/data/app/~~8rp2opmxolCN3y7a8E81Og==/org.lsposed.manager-OIOc2PFaZuoaEdXpOQh3UA==/base.apk",
+      "marked": true,
+      "cut": "/data/app/org.lsposed.manager/base.apk"
+    },
+    {
+      "why": "shaped like an id, but not in an install folder",
+      "path": "/vendor/lib64/lib-zygisk_lsposed_riru_ab==",
+      "marked": true,
+      "cut": "/vendor/lib64/lib-zygisk_lsposed_riru_ab=="
+    },
+    {
+      "why": "'=' only ends an id",
+      "path": "/data/app/x-=====lsposed============/base.apk",
+      "marked": true,
+      "cut": "/data/app/x-=====lsposed============/base.apk"
+    },
+    {
+      "why": "too short for an id",
+      "path": "/data/app/riru-x==/base.apk",
+      "marked": true,
+      "cut": "/data/app/riru-x==/base.apk"
+    },
+    {
+      "why": "'.' is not base64",
+      "path": "/data/app/p-riru.so.abcdefghijklmn==/base.apk",
+      "marked": true,
+      "cut": "/data/app/p-riru.so.abcdefghijklmn==/base.apk"
+    },
+    {
+      "why": "lower case is ASCII only: the Kelvin sign is not k",
+      "path": "/system/lib64/libmagisK.so",
+      "marked": false
+    },
+    {
+      "why": "a deleted module library",
+      "path": "/data/adb/modules/z/lib.so (deleted)",
+      "marked": true
+    },
+    {
+      "why": "a stock library",
+      "path": "/system/lib64/libc.so",
+      "marked": false
+    }
+  ]
+}

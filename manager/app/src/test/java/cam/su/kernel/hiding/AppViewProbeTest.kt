@@ -2,6 +2,7 @@ package cam.su.kernel.hiding
 
 import cam.su.kernel.data.model.HidingAudit
 import org.junit.Assert.assertEquals
+import org.json.JSONObject
 import org.junit.Test
 import java.io.File
 
@@ -54,7 +55,6 @@ class AppViewProbeTest {
             7f3000-7f4000 rw-p 00000000 00:00 0     [anon:dalvik-main space]
             7f4000-7f5000 r-xp 00000000 fd:05 124   /data/adb/modules/zygisk_lsposed/lib/liblspd.so
             7f5000-7f6000 r--p 00000000 fd:05 126   /data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/base.apk
-            7f6000-7f7000 r--p 00000000 fd:05 127   /data/app/~~k9ZpLm2Aq1w-Xy_8rp2opA==/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/base.apk
         """.trimIndent()
         assertEquals(
             listOf("/data/adb/modules/zygisk_lsposed/lib/liblspd.so", "/memfd:zygisk-loader (deleted)"),
@@ -62,16 +62,19 @@ class AppViewProbeTest {
         )
     }
 
-    /** the same cases as camd's reads_mapped_root_files */
+    /** the same cases as camd's cuts_install_ids_like_the_manager */
     @Test
-    fun installIdsAreCutByLength() {
-        assertEquals(
-            "/data/app/com.google.android.webview/base.apk",
-            AppViewProbe.withoutInstallIds("/data/app/com.google.android.webview-ariruq3-k9zplm2aq1wxyz==/base.apk"),
-        )
-        // not an install id: too short, or not base64
-        assertEquals("/a/riru-x==/b", AppViewProbe.withoutInstallIds("/a/riru-x==/b"))
-        assertEquals("/a/p-riru.so.abcdefghijklmn==/b", AppViewProbe.withoutInstallIds("/a/p-riru.so.abcdefghijklmn==/b"))
+    fun installIdsAreCutLikeCamd() {
+        val cases = JSONObject(File("src/test/resources/install-id-cases.json").readText()).getJSONArray("cases")
+        for (i in 0 until cases.length()) {
+            val case = cases.getJSONObject(i)
+            val path = case.getString("path")
+            val line = "7f00-7f10 r--p 00000000 fe:2a 1 $path"
+            assertEquals(path, case.getBoolean("marked"), AppViewProbe.maps(line, rules).isNotEmpty())
+            if (case.has("cut")) {
+                assertEquals(path, case.getString("cut"), AppViewProbe.withoutInstallIds(AppViewProbe.asciiLowercase(path)))
+            }
+        }
     }
 
     @Test

@@ -81,25 +81,42 @@ object AppViewProbe {
         val path = line.substringAfter('/', "").let { if (it.isEmpty()) null else "/$it" }
             ?: line.split(' ').lastOrNull()?.takeIf { it.startsWith("[anon:") || it.startsWith("memfd:") }
             ?: return@mapNotNull null
-        val lower = withoutInstallIds(path.lowercase())
-        path.takeIf { rules.mapMarkers.any { it in lower } }
+        // what camd matches: no " (deleted)", ASCII lower case (lowercase() turns the Kelvin sign into k)
+        val lower = asciiLowercase(path.removeSuffix(" (deleted)"))
+        fun marked(p: String) = rules.mapMarkers.any { it in p }
+        // cutting ids only takes text away, so most of the thousands of lines need no cut
+        path.takeIf { marked(lower) && marked(withoutInstallIds(lower)) }
     }.distinct().toList()
 
-    // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk: the random
-    // base64 ids can hold a marker (WebView's -...EdXpOQh3UA== reads as EdXposed). An id is
-    // 16 bytes in URL-safe base64, so it can hold a '-' too: cut it by length, not at the
-    // last '-'. camd's without_install_ids (hiding_audit.rs) does the same.
-    internal fun withoutInstallIds(path: String): String = path.split('/')
-        .filterNot { it.startsWith("~~") }
-        .joinToString("/") { part ->
+    internal fun asciiLowercase(s: String) = String(CharArray(s.length) { s[it].let { c -> if (c in 'A'..'Z') c + 32 else c } })
+
+    // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk, also without ~~
+    // (Android 8 to 10) and under /mnt/expand/<uuid>/app: the random ids can hold a marker
+    // (WebView's -...EdXpOQh3UA== reads as EdXposed, -aRiRuQ3-... as Riru). Only the install
+    // folders are cut, so an id shaped name elsewhere keeps its marker. camd's
+    // without_install_ids (hiding_audit.rs) does the same; both tests read install-id-cases.json.
+    internal fun withoutInstallIds(path: String): String {
+        val parts = ArrayList<String>()
+        // the part before is app, or the ~~<id> folder in it
+        var inApp = false
+        for (part in path.split('/')) {
+            if (inApp && part.startsWith("~~") && isInstallId(part, 2)) continue
             val dash = part.length - INSTALL_ID_LENGTH - 1
-            if (dash >= 0 && part[dash] == '-' && isInstallId(part.substring(dash + 1))) part.substring(0, dash) else part
+            parts += if (inApp && dash >= 0 && part[dash] == '-' && isInstallId(part, dash + 1)) part.substring(0, dash) else part
+            inApp = part == "app"
         }
+        return parts.joinToString("/")
+    }
 
     private const val INSTALL_ID_LENGTH = 24
 
-    private fun isInstallId(id: String): Boolean =
-        id.endsWith("==") && id.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in "-_=" }
+    // 16 random bytes in URL-safe base64 from start to the end: 22 characters and ==. They
+    // can hold a '-', so an id is found by its length, not at the last '-'.
+    private fun isInstallId(s: String, start: Int): Boolean =
+        s.length - start == INSTALL_ID_LENGTH && s.endsWith("==") && (start until s.length - 2).all {
+            val c = s[it]
+            c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9' || c == '-' || c == '_'
+        }
 
     fun props(rules: HidingRules, get: (String) -> String): List<String> = rules.safeProps.mapNotNull { (name, safe) ->
         val value = get(name)

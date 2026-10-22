@@ -254,36 +254,52 @@ pub fn mapped_path<'a>(line: &'a str, markers: &[String]) -> Option<&'a str> {
     let start = line.find(path)?;
     let path = line[start..].trim_end();
     let path = path.strip_suffix(" (deleted)").unwrap_or(path);
-    let lower = without_install_ids(&path.to_ascii_lowercase());
+    let lower = path.to_ascii_lowercase();
+    let marked = |p: &str| markers.iter().any(|m| p.contains(m.as_str()));
+    // cutting ids only takes text away, so most of the thousands of lines need no cut
     (ROOT_PREFIXES.iter().any(|prefix| path.starts_with(prefix))
-        || markers.iter().any(|m| lower.contains(m.as_str())))
+        || (marked(&lower) && marked(&without_install_ids(&lower))))
     .then_some(path)
 }
 
-/// `/data/app/~~<id>==/<pkg>-<id>==/base.apk` -> `/data/app/<pkg>/base.apk`: the random
-/// base64 ids can hold a marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed). An id is
-/// 16 bytes in URL-safe base64, so it can hold a '-' too: cut it by length, not at the
-/// last '-'. `AppViewProbe.withoutInstallIds` in the Manager does the same.
+/// `/data/app/~~<id>==/<pkg>-<id>==/base.apk` -> `/data/app/<pkg>/base.apk`, also without
+/// `~~` (Android 8 to 10) and under `/mnt/expand/<uuid>/app`: the random ids can hold a
+/// marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed, `-aRiRuQ3-...` as Riru). Only
+/// the install folders are cut, so an id shaped name elsewhere keeps its marker. The
+/// Manager's `AppViewProbe.withoutInstallIds` does the same; both tests read
+/// `install-id-cases.json`.
 fn without_install_ids(path: &str) -> String {
-    path.split('/')
-        .filter(|part| !part.starts_with("~~"))
-        .map(|part| match part.len().checked_sub(INSTALL_ID_LEN + 1) {
-            Some(dash) if part.as_bytes()[dash] == b'-' && is_install_id(&part[dash + 1..]) => {
+    let mut parts = Vec::new();
+    // the part before is `app`, or the `~~<id>` folder in it
+    let mut in_app = false;
+    for part in path.split('/') {
+        if in_app && part.strip_prefix("~~").is_some_and(is_install_id) {
+            continue;
+        }
+        parts.push(match part.len().checked_sub(INSTALL_ID_LEN + 1) {
+            Some(dash)
+                if in_app && part.as_bytes()[dash] == b'-' && is_install_id(&part[dash + 1..]) =>
+            {
                 &part[..dash]
             }
             _ => part,
-        })
-        .collect::<Vec<_>>()
-        .join("/")
+        });
+        in_app = part == "app";
+    }
+    parts.join("/")
 }
 
 const INSTALL_ID_LEN: usize = 24;
 
+/// 16 random bytes in URL-safe base64: 22 characters and `==`. They can hold a '-', so an
+/// id is found by its length, not at the last '-'.
 fn is_install_id(id: &str) -> bool {
-    id.ends_with("==")
-        && id
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'='))
+    let id = id.as_bytes();
+    id.len() == INSTALL_ID_LEN
+        && id.ends_with(b"==")
+        && id[..INSTALL_ID_LEN - 2]
+            .iter()
+            .all(|&b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
 }
 
 fn is_lsposed(id: &str) -> bool {
@@ -818,43 +834,32 @@ mod tests {
             mapped_path("7f00-7f10 rw-p 00000000 00:00 0", &markers),
             None
         );
-        // the install ids are random base64: this one holds "edxp"
-        let markers = vec!["edxp".to_owned(), "lsposed".to_owned()];
-        assert_eq!(
-            mapped_path(
-                "7f00-7f10 r--p 00000000 fe:2a 1 /data/app/~~8rp2opmxolCN3y7a8E81Og==/com.google.android.webview-OIOc2PFaZuoaEdXpOQh3UA==/base.apk",
-                &markers
-            ),
-            None
-        );
-        assert_eq!(
-            mapped_path(
-                "7f00-7f10 r--p 00000000 fe:2a 1 /data/app/~~AAAA==/org.lsposed.manager-BBBB==/base.apk",
-                &markers
-            ),
-            Some("/data/app/~~AAAA==/org.lsposed.manager-BBBB==/base.apk")
-        );
-        // Duck #400: "riru" in WebView's id, and a '-' after it
-        let markers = Rules::default().map_markers;
-        assert_eq!(
-            mapped_path(
-                "7f00-7f10 r--p 00000000 fe:2a 1 /data/app/~~k9ZpLm2Aq1w-Xy_8rp2opA==/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/base.apk",
-                &markers
-            ),
-            None
-        );
-        assert_eq!(
-            without_install_ids(
-                "/data/app/com.google.android.webview-ariruq3-k9zplm2aq1wxyz==/base.apk"
-            ),
-            "/data/app/com.google.android.webview/base.apk"
-        );
-        // not an install id: too short, or not base64
-        assert_eq!(without_install_ids("/a/riru-x==/b"), "/a/riru-x==/b");
-        assert_eq!(
-            without_install_ids("/a/p-riru.so.abcdefghijklmn==/b"),
-            "/a/p-riru.so.abcdefghijklmn==/b"
-        );
+    }
+
+    /// The same cases as AppViewProbeTest, with the markers the APK ships.
+    #[test]
+    fn cuts_install_ids_like_the_manager() {
+        let rules = Rules::parse(include_str!(
+            "../../../manager/app/src/main/assets/hiding-rules.json"
+        ))
+        .unwrap();
+        assert!(rules.map_markers.iter().any(|m| m == "riru"));
+        let cases: Value = serde_json::from_str(include_str!(
+            "../../../manager/app/src/test/resources/install-id-cases.json"
+        ))
+        .unwrap();
+        for case in cases["cases"].as_array().unwrap() {
+            let path = case["path"].as_str().unwrap();
+            let line = format!("7f00-7f10 r--p 00000000 fe:2a 1 {path}");
+            assert_eq!(
+                mapped_path(&line, &rules.map_markers).is_some(),
+                case["marked"].as_bool().unwrap(),
+                "{path}"
+            );
+            if let Some(cut) = case["cut"].as_str() {
+                assert_eq!(without_install_ids(&path.to_ascii_lowercase()), cut);
+            }
+        }
     }
 
     #[test]

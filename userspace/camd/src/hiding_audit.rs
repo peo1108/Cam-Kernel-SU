@@ -250,8 +250,9 @@ pub fn app_view_mounts(mountinfo: &str, rules: &Rules) -> (Vec<String>, Vec<Stri
     (items, module_ids(texts))
 }
 
-/// `/data/adb/modules/x/lib.so (deleted)` -> `/data/adb/modules/x/lib.so`, for a path
-/// under root tooling's folders or holding one of `markers`.
+/// `/data/adb/modules/x/lib.so (deleted)` -> `/data/adb/modules/x/lib.so`, for a file
+/// under root tooling's folders (also one ART names memory after) or a path holding one
+/// of `markers`.
 pub fn mapped_path<'a>(line: &'a str, markers: &[String]) -> Option<&'a str> {
     // address perms offset dev inode path
     let path = line.split_whitespace().nth(5)?;
@@ -261,44 +262,63 @@ pub fn mapped_path<'a>(line: &'a str, markers: &[String]) -> Option<&'a str> {
     // Unicode, as apps that look for root lower case (the Kelvin sign is a k)
     let lower = path.to_lowercase();
     let lower = without_install_ids(&lower);
-    (ROOT_PREFIXES.iter().any(|prefix| path.starts_with(prefix))
-        || markers.iter().any(|m| lower.contains(m.as_str())))
-    .then_some(path)
+    let in_root =
+        file_start(path).is_some_and(|at| ROOT_PREFIXES.iter().any(|p| path[at..].starts_with(p)));
+    (in_root || markers.iter().any(|m| lower.contains(m.as_str()))).then_some(path)
 }
 
 /// A proc file such as maps or mountinfo as text. The kernel prints file names as they
 /// are, so a byte that is not UTF-8 turns into U+FFFD instead of losing the whole file.
 fn read_text(path: impl AsRef<Path>) -> std::io::Result<String> {
-    std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+    std::fs::read(path).map(|bytes| {
+        String::from_utf8(bytes)
+            .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned())
+    })
+}
+
+/// Names ART gives memory it fills from a file: the file follows right after, or after
+/// [`EXTRACTED_FROM`]. Android 8 to 10 name it in ashmem.
+const ART_NAMES: [&str; 2] = ["[anon:dalvik-", "/dev/ashmem/dalvik-"];
+const EXTRACTED_FROM: &str = " extracted in memory from ";
+
+/// Where the file a mapping comes from starts in its name: at 0 for a file, or in an
+/// [`ART_NAMES`] name (`[anon:dalvik-/data/app/.../base.art]`, `[anon:dalvik-classes.dex
+/// extracted in memory from /data/app/...]`). The Manager's `AppViewProbe.fileStart` is
+/// the same.
+fn file_start(name: &str) -> Option<usize> {
+    for prefix in ART_NAMES {
+        if let Some(rest) = name.strip_prefix(prefix) {
+            let at = if rest.starts_with('/') {
+                0
+            } else {
+                rest.find(EXTRACTED_FROM)? + EXTRACTED_FROM.len()
+            };
+            return Some(prefix.len() + at);
+        }
+    }
+    name.starts_with('/').then_some(0)
 }
 
 /// `/data/app/~~<id>==/<pkg>-<id>==/base.apk` -> `/data/app/<pkg>/base.apk`, also without
-/// `~~` (Android 8 to 10), under `/mnt/expand/<uuid>/app`, and in names ART gives memory
-/// it fills from an app (`[anon:dalvik-classes.dex extracted in memory from /data/app/...]`,
-/// an app image's `[anon:dalvik-/data/app/.../oat/arm64/base.art]`): the random ids can
-/// hold a marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed, `-aRiRuQ3-...` as Riru).
-/// Only those install folders are cut, so an id shaped name elsewhere keeps its marker,
-/// and a path with nothing cut comes back as it is. The Manager's
-/// `AppViewProbe.withoutInstallIds` does the same; both tests read `install-id-cases.json`.
+/// `~~` (Android 8 to 10), under `/mnt/expand/<uuid>/app`, and for the file in an ART name
+/// ([`file_start`]): the random ids can hold a marker (WebView's `-...EdXpOQh3UA==` reads
+/// as EdXposed, `-aRiRuQ3-...` as Riru). Only a file in those install folders is cut, so
+/// an id shaped name elsewhere keeps its marker, and a path with nothing cut comes back as
+/// it is. The Manager's `AppViewProbe.withoutInstallIds` does the same; both tests read
+/// `install-id-cases.json`.
 fn without_install_ids(path: &str) -> Cow<'_, str> {
-    let mut out = String::new();
-    let mut copied = 0;
-    // a file is in an install folder from its start only; a name can hold one anywhere
-    let file = path.starts_with('/');
-    for (start, _) in path.match_indices('/') {
-        if file && start > 0 {
-            break;
-        }
-        if start < copied {
-            continue;
-        }
-        for cut in install_ids(path, start).into_iter().flatten() {
-            out.push_str(&path[copied..cut.start]);
-            copied = cut.end;
-        }
-    }
-    if copied == 0 {
+    let Some(start) = file_start(path) else {
         return Cow::Borrowed(path);
+    };
+    let cuts = install_ids(path, start);
+    if cuts.iter().all(Option::is_none) {
+        return Cow::Borrowed(path);
+    }
+    let mut out = String::with_capacity(path.len());
+    let mut copied = 0;
+    for cut in cuts.into_iter().flatten() {
+        out.push_str(&path[copied..cut.start]);
+        copied = cut.end;
     }
     out.push_str(&path[copied..]);
     Cow::Owned(out)
@@ -618,7 +638,8 @@ mod device {
     }
 
     fn uid_of(pid: &Path) -> Option<u32> {
-        let status = std::fs::read_to_string(pid.join("status")).ok()?;
+        // a thread name that is not UTF-8 must not hide the process
+        let status = super::read_text(pid.join("status")).ok()?;
         status
             .lines()
             .find_map(|line| line.strip_prefix("Uid:"))?
@@ -903,6 +924,19 @@ mod tests {
             .filter_map(|line| mapped_path(line, &markers))
             .collect();
         assert_eq!(found, ["/data/adb/modules/z/libzygisk.so"]);
+    }
+
+    /// Root tooling's folders count whatever the rules list, also in ART's names.
+    #[test]
+    fn root_folders_need_no_marker() {
+        let jar =
+            "[anon:dalvik-classes.dex extracted in memory from /data/adb/modules/x/framework.jar]";
+        for path in ["/data/adb/modules/x/lib.so", "/debug_ramdisk/su", jar] {
+            let line = format!("7f00-7f10 r--p 00000000 fe:2a 1 {path}");
+            assert_eq!(mapped_path(&line, &[]), Some(path));
+        }
+        let line = "7f00-7f10 r--p 00000000 fe:2a 1 /system/lib64/libc.so";
+        assert_eq!(mapped_path(line, &[]), None);
     }
 
     /// The same cases as AppViewProbeTest, with the markers the APK ships.

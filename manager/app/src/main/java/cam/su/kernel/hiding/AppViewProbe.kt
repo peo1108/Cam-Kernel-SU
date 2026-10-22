@@ -18,6 +18,9 @@ object AppViewProbe {
 
     private val PARTITIONS = listOf("/system", "/vendor", "/product", "/system_ext", "/odm")
 
+    /** Root tooling's folders: a mount or a mapped file in them counts whatever the rules say, as camd's ROOT_PREFIXES. */
+    private val ROOT_FOLDERS = listOf("/data/adb", "/debug_ramdisk")
+
     private const val MOUNTINFO = "/proc/self/mountinfo"
 
     /** One mount: the item shown, and the text naming the module behind it. */
@@ -71,7 +74,7 @@ object AppViewProbe {
         // a bind from the data partition shows its root as /adb/...
         val suspicious = source in rules.mountSources ||
                 root.startsWith("/adb/") ||
-                listOf(root, point, options).any { "/data/adb" in it || "/debug_ramdisk" in it } ||
+                listOf(root, point, options).any { text -> ROOT_FOLDERS.any { it in text } } ||
                 (onPartition && type == "overlay") ||
                 (onPartition && type == "tmpfs" && point != "/system")
         if (suspicious) SeenMount("$point ($type, $source)", "$root $options") else null
@@ -82,11 +85,13 @@ object AppViewProbe {
         val path = mappedPath(line) ?: return@mapNotNull null
         // lowercase() is Unicode, as apps that look for root lower case (the Kelvin sign is a k)
         val lower = withoutInstallIds(path.lowercase())
-        path.takeIf { ROOT_PREFIXES.any { path.startsWith(it) } || rules.mapMarkers.any { it in lower } }
+        path.takeIf { inRootFolder(path) || rules.mapMarkers.any { it in lower } }
     }.distinct().toList()
 
-    // root tooling's folders, flagged whatever the rules say, as camd's ROOT_PREFIXES
-    private val ROOT_PREFIXES = listOf("/data/adb/", "/debug_ramdisk/")
+    private fun inRootFolder(path: String): Boolean {
+        val start = fileStart(path) ?: return false
+        return ROOT_FOLDERS.any { path.startsWith(it, start) && path.startsWith("/", start + it.length) }
+    }
 
     // address perms offset dev inode path: the path is the rest of the line, spaces and all
     // ([anon:dalvik-main space]), without " (deleted)"
@@ -99,30 +104,41 @@ object AppViewProbe {
         return line.substring(at).trim().removeSuffix(" (deleted)").ifEmpty { null }
     }
 
-    // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk, also without ~~
-    // (Android 8 to 10), under /mnt/expand/<uuid>/app, and in names ART gives memory it fills
-    // from an app ([anon:dalvik-classes.dex extracted in memory from /data/app/...], an app
-    // image's [anon:dalvik-/data/app/.../oat/arm64/base.art]): the random ids can hold a
-    // marker (WebView's -...EdXpOQh3UA== reads as EdXposed, -aRiRuQ3-... as Riru). Only those
-    // install folders are cut, so an id shaped name elsewhere keeps its marker, and a path
-    // with nothing cut comes back as it is. camd's without_install_ids (hiding_audit.rs) does
-    // the same; both tests read install-id-cases.json.
-    internal fun withoutInstallIds(path: String): String {
-        var out: StringBuilder? = null
-        var copied = 0
-        // a file is in an install folder from its start only; a name can hold one anywhere
-        val file = path.startsWith('/')
-        var start = path.indexOf('/')
-        while (start >= 0 && (start == 0 || !file)) {
-            if (start >= copied) {
-                for (cut in installIds(path, start)) {
-                    out = (out ?: StringBuilder()).append(path, copied, cut.first)
-                    copied = cut.last + 1
-                }
-            }
-            start = path.indexOf('/', start + 1)
+    // Names ART gives memory it fills from a file: the file follows right after, or after
+    // EXTRACTED_FROM. Android 8 to 10 name it in ashmem.
+    private val ART_NAMES = listOf("[anon:dalvik-", "/dev/ashmem/dalvik-")
+    private const val EXTRACTED_FROM = " extracted in memory from "
+
+    // Where the file a mapping comes from starts in its name: at 0 for a file, or in an
+    // ART_NAMES name ([anon:dalvik-/data/app/.../base.art], [anon:dalvik-classes.dex
+    // extracted in memory from /data/app/...]). camd's file_start is the same.
+    private fun fileStart(name: String): Int? {
+        for (prefix in ART_NAMES) {
+            if (!name.startsWith(prefix)) continue
+            if (name.startsWith("/", prefix.length)) return prefix.length
+            val from = name.indexOf(EXTRACTED_FROM, prefix.length)
+            return if (from < 0) null else from + EXTRACTED_FROM.length
         }
-        return out?.append(path, copied, path.length)?.toString() ?: path
+        return if (name.startsWith('/')) 0 else null
+    }
+
+    // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk, also without ~~
+    // (Android 8 to 10), under /mnt/expand/<uuid>/app, and for the file in an ART name
+    // (fileStart): the random ids can hold a marker (WebView's -...EdXpOQh3UA== reads as
+    // EdXposed, -aRiRuQ3-... as Riru). Only a file in those install folders is cut, so an id
+    // shaped name elsewhere keeps its marker, and a path with nothing cut comes back as it is.
+    // camd's without_install_ids (hiding_audit.rs) does the same; both tests read
+    // install-id-cases.json.
+    internal fun withoutInstallIds(path: String): String {
+        val cuts = installIds(path, fileStart(path) ?: return path)
+        if (cuts.isEmpty()) return path
+        val out = StringBuilder(path.length)
+        var copied = 0
+        for (cut in cuts) {
+            out.append(path, copied, cut.first)
+            copied = cut.last + 1
+        }
+        return out.append(path, copied, path.length).toString()
     }
 
     // Where the random ids are when path has an install folder at start: ~~<id>/, and the

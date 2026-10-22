@@ -1,7 +1,10 @@
 package cam.su.kernel.ui.screen.hidingcheck
 
 import cam.su.kernel.data.model.HidingAudit
+import cam.su.kernel.data.repository.SavedHidingScan
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HidingCheckCompareTest {
@@ -28,21 +31,16 @@ class HidingCheckCompareTest {
         assertEquals(listOf("props"), gone.map { it.id })
     }
 
-    /** 1.1.9 kept " (deleted)" and named a mapping from its first '/' */
+    /** 1.1.9 named items another way and saved no number: its scans are not compared with */
     @Test
-    fun appMapsSavedBefore120StillCompare() {
-        val previous = audit(finding("appMaps", "/memfd:zygisk-loader (deleted)", "/data/adb/x.dex]", appView = true))
-        val current = audit(
-            finding(
-                "appMaps",
-                "/memfd:zygisk-loader",
-                "[anon:dalvik-classes.dex extracted in memory from /data/adb/x.dex]",
-                "/data/adb/y.so",
-                appView = true,
-            ),
-        )
-        val (checked, _, _) = HidingCheckUiState.compare(current, previous, emptySet())
-        assertEquals(setOf("/data/adb/y.so"), checked[0].newItems)
+    fun scansNamedBeforeDoNotCompare() {
+        val old = SavedHidingScan.parse("""{"time":1,"audit":${audit(finding("appMaps", "/memfd:x (deleted)")).toJson()}}""")!!
+        assertEquals(1, old.names)
+        val now = SavedHidingScan(2, audit(finding("appMaps", "/memfd:x")))
+        assertFalse(now.comparesWith(old))
+        val saved = SavedHidingScan.parse(now.toJson().toString())!!
+        assertEquals(now, saved)
+        assertTrue(now.comparesWith(saved))
     }
 
     @Test

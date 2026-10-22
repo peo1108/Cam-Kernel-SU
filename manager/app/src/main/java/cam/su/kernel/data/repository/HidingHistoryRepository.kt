@@ -7,8 +7,29 @@ import cam.su.kernel.data.model.HidingAudit
 import org.json.JSONObject
 import java.io.File
 
-/** A hiding audit with the time it ran. */
-data class SavedHidingScan(val time: Long, val audit: HidingAudit)
+/** A hiding audit with the time it ran, its items named the [names] way. */
+data class SavedHidingScan(val time: Long, val audit: HidingAudit, val names: Int = NAMES) {
+
+    /** false when the two name their items differently: every item would look new */
+    fun comparesWith(other: SavedHidingScan): Boolean = names == other.names
+
+    fun toJson(): JSONObject = JSONObject().put("time", time).put("audit", audit.toJson()).put("names", names)
+
+    companion object {
+        /**
+         * How items are named. 2 since 1.2.0: the app view names a mapping by its whole
+         * name ([anon:...] with spaces), without " (deleted)", and keeps non-ASCII letters.
+         * Scans saved before have no number and read as 1.
+         */
+        const val NAMES = 2
+
+        fun parse(json: String): SavedHidingScan? = runCatching {
+            val obj = JSONObject(json)
+            val audit = HidingAudit.parse(obj.getJSONObject("audit").toString()) ?: return null
+            SavedHidingScan(obj.getLong("time"), audit, obj.optInt("names", 1))
+        }.getOrNull()
+    }
+}
 
 /**
  * Keeps the last two hiding audits so the page can tell what is new and what got hidden,
@@ -35,7 +56,7 @@ class HidingHistoryRepository(
             dir.mkdirs()
             val last = File(dir, "last.json")
             if (last.exists()) last.copyTo(File(dir, "previous.json"), overwrite = true)
-            last.writeText(JSONObject().put("time", scan.time).put("audit", scan.audit.toJson()).toString())
+            last.writeText(scan.toJson().toString())
         }
     }
 
@@ -47,9 +68,6 @@ class HidingHistoryRepository(
         get() = prefs.getStringSet("ignored", emptySet()).orEmpty().toSet()
         set(value) = prefs.edit { putStringSet("ignored", value) }
 
-    private fun read(name: String): SavedHidingScan? = runCatching {
-        val obj = JSONObject(File(dir, name).readText())
-        val audit = HidingAudit.parse(obj.getJSONObject("audit").toString()) ?: return null
-        SavedHidingScan(obj.getLong("time"), audit)
-    }.getOrNull()
+    private fun read(name: String): SavedHidingScan? =
+        runCatching { File(dir, name).readText() }.getOrNull()?.let(SavedHidingScan::parse)
 }

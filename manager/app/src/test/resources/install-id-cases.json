@@ -44,6 +44,24 @@
       "cut": "[anon:dalvik-/mnt/expand/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/app/com.google.android.webview/oat/arm64/base.art]"
     },
     {
+      "why": "Android 8 to 10 name a dex ART unpacks in ashmem",
+      "path": "/dev/ashmem/dalvik-classes.dex extracted in memory from /data/app/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/base.apk (deleted)",
+      "marked": false,
+      "cut": "/dev/ashmem/dalvik-classes.dex extracted in memory from /data/app/com.google.android.webview/base.apk (deleted)"
+    },
+    {
+      "why": "and an app image they unpack",
+      "path": "/dev/ashmem/dalvik-/data/app/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/oat/arm64/base.art (deleted)",
+      "marked": false,
+      "cut": "/dev/ashmem/dalvik-/data/app/com.google.android.webview/oat/arm64/base.art (deleted)"
+    },
+    {
+      "why": "in an ART name too, the file is in an install folder from its start only",
+      "path": "[anon:dalvik-classes.dex extracted in memory from /data/local/tmp/data/app/x-zygiskAbCdEfGhIjKlMnOp==/libx.jar]",
+      "marked": true,
+      "cut": "[anon:dalvik-classes.dex extracted in memory from /data/local/tmp/data/app/x-zygiskabcdefghijklmnop==/libx.jar]"
+    },
+    {
       "why": "a dex ART unpacks from a module",
       "path": "[anon:dalvik-classes.dex extracted in memory from /data/adb/modules/x/framework.jar]",
       "marked": true

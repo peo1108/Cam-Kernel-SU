@@ -147,7 +147,7 @@ data class HidingCheckUiState(
                         old == null -> FindingChange.NEW
                         else -> FindingChange.SAME
                     },
-                    newItems = if (old == null) emptySet() else newItems(f, old),
+                    newItems = if (old == null) emptySet() else f.items.toSet() - old.items.toSet(),
                 )
             }
             val now = current.findings.mapTo(mutableSetOf()) { it.id }
@@ -155,21 +155,6 @@ data class HidingCheckUiState(
             val ignoredNow = current.findings.filter { it.id in ignored }
             return Triple(checked, gone, ignoredNow)
         }
-
-        private fun newItems(current: HidingAudit.Finding, previous: HidingAudit.Finding): Set<String> {
-            val before = previous.items.toSet()
-            return current.items.filterTo(LinkedHashSet()) { item ->
-                item !in before && (current.id != "appMaps" || olderMapNames(item).none { it in before })
-            }
-        }
-
-        /**
-         * What the app view before 1.2.0 called a mapping, so a scan it saved still compares:
-         * the line from its first '/' on, " (deleted)" kept, so [anon:dalvik-classes.dex
-         * extracted in memory from /data/adb/x] read /data/adb/x].
-         */
-        private fun olderMapNames(item: String) =
-            listOf("$item (deleted)", item.substring(item.indexOf('/').coerceAtLeast(0)))
 
         /** The checks [audit] ran that found nothing, from what its stats say ran. */
         fun passed(audit: HidingAudit, ignored: Set<String>): List<PassedCheck> {

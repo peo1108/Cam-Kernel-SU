@@ -62,16 +62,19 @@ class AppViewProbeTest {
         )
     }
 
-    /** what camd's ROOT_PREFIXES flag, even with rules that list no marker for them */
+    /** what camd's ROOT_PREFIXES flag, also in ART's names, even with rules that list no marker for them */
     @Test
     fun rootFoldersNeedNoMarker() {
+        val jar = "[anon:dalvik-classes.dex extracted in memory from /data/adb/modules/x/framework.jar]"
         val maps = """
             7f0000-7f1000 r-xp 00000000 fd:05 1   /data/adb/modules/x/lib.so
             7f1000-7f2000 r-xp 00000000 fd:05 2   /debug_ramdisk/su
             7f2000-7f3000 r-xp 00000000 fd:05 3   /system/lib64/libc.so
+            7f3000-7f4000 r--p 00000000 00:00 0   $jar
+            7f4000-7f5000 r--p 00000000 fd:05 4   /data/adbx/lib.so
         """.trimIndent()
         assertEquals(
-            listOf("/data/adb/modules/x/lib.so", "/debug_ramdisk/su"),
+            listOf("/data/adb/modules/x/lib.so", "/debug_ramdisk/su", jar),
             AppViewProbe.maps(maps, rules.copy(mapMarkers = emptyList())),
         )
     }

@@ -356,11 +356,13 @@ class HidingCheckViewModel(
             return
         }
         val ignoredIds = history.ignored
-        val (findings, gone, ignored) = HidingCheckUiState.compare(scan.audit, previous?.audit, ignoredIds)
+        // a scan saved before an update that renamed items is shown as a first scan
+        val before = previous?.takeIf(scan::comparesWith)
+        val (findings, gone, ignored) = HidingCheckUiState.compare(scan.audit, before?.audit, ignoredIds)
         _uiState.update {
             it.copy(
                 scanTime = scan.time,
-                previousTime = previous?.time,
+                previousTime = before?.time,
                 findings = findings,
                 gone = gone,
                 ignored = ignored,

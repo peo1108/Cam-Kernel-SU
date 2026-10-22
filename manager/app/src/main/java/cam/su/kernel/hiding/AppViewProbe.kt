@@ -86,13 +86,20 @@ object AppViewProbe {
     }.distinct().toList()
 
     // /data/app/~~<id>==/<pkg>-<id>==/base.apk -> /data/app/<pkg>/base.apk: the random
-    // base64 ids can hold a marker (WebView's -...EdXpOQh3UA== reads as EdXposed)
-    private fun withoutInstallIds(path: String): String = path.split('/')
+    // base64 ids can hold a marker (WebView's -...EdXpOQh3UA== reads as EdXposed). An id is
+    // 16 bytes in URL-safe base64, so it can hold a '-' too: cut it by length, not at the
+    // last '-'. camd's without_install_ids (hiding_audit.rs) does the same.
+    internal fun withoutInstallIds(path: String): String = path.split('/')
         .filterNot { it.startsWith("~~") }
         .joinToString("/") { part ->
-            val dash = part.lastIndexOf('-')
-            if (dash >= 0 && part.endsWith("==")) part.substring(0, dash) else part
+            val dash = part.length - INSTALL_ID_LENGTH - 1
+            if (dash >= 0 && part[dash] == '-' && isInstallId(part.substring(dash + 1))) part.substring(0, dash) else part
         }
+
+    private const val INSTALL_ID_LENGTH = 24
+
+    private fun isInstallId(id: String): Boolean =
+        id.endsWith("==") && id.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in "-_=" }
 
     fun props(rules: HidingRules, get: (String) -> String): List<String> = rules.safeProps.mapNotNull { (name, safe) ->
         val value = get(name)

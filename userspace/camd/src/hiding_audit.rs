@@ -261,16 +261,29 @@ pub fn mapped_path<'a>(line: &'a str, markers: &[String]) -> Option<&'a str> {
 }
 
 /// `/data/app/~~<id>==/<pkg>-<id>==/base.apk` -> `/data/app/<pkg>/base.apk`: the random
-/// base64 ids can hold a marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed).
+/// base64 ids can hold a marker (WebView's `-...EdXpOQh3UA==` reads as EdXposed). An id is
+/// 16 bytes in URL-safe base64, so it can hold a '-' too: cut it by length, not at the
+/// last '-'. `AppViewProbe.withoutInstallIds` in the Manager does the same.
 fn without_install_ids(path: &str) -> String {
     path.split('/')
         .filter(|part| !part.starts_with("~~"))
-        .map(|part| match part.rsplit_once('-') {
-            Some((pkg, id)) if id.ends_with("==") => pkg,
+        .map(|part| match part.len().checked_sub(INSTALL_ID_LEN + 1) {
+            Some(dash) if part.as_bytes()[dash] == b'-' && is_install_id(&part[dash + 1..]) => {
+                &part[..dash]
+            }
             _ => part,
         })
         .collect::<Vec<_>>()
         .join("/")
+}
+
+const INSTALL_ID_LEN: usize = 24;
+
+fn is_install_id(id: &str) -> bool {
+    id.ends_with("==")
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'='))
 }
 
 fn is_lsposed(id: &str) -> bool {
@@ -820,6 +833,27 @@ mod tests {
                 &markers
             ),
             Some("/data/app/~~AAAA==/org.lsposed.manager-BBBB==/base.apk")
+        );
+        // Duck #400: "riru" in WebView's id, and a '-' after it
+        let markers = Rules::default().map_markers;
+        assert_eq!(
+            mapped_path(
+                "7f00-7f10 r--p 00000000 fe:2a 1 /data/app/~~k9ZpLm2Aq1w-Xy_8rp2opA==/com.google.android.webview-aRiRuQ3-k9ZpLm2Aq1wXyZ==/base.apk",
+                &markers
+            ),
+            None
+        );
+        assert_eq!(
+            without_install_ids(
+                "/data/app/com.google.android.webview-ariruq3-k9zplm2aq1wxyz==/base.apk"
+            ),
+            "/data/app/com.google.android.webview/base.apk"
+        );
+        // not an install id: too short, or not base64
+        assert_eq!(without_install_ids("/a/riru-x==/b"), "/a/riru-x==/b");
+        assert_eq!(
+            without_install_ids("/a/p-riru.so.abcdefghijklmn==/b"),
+            "/a/p-riru.so.abcdefghijklmn==/b"
         );
     }
 

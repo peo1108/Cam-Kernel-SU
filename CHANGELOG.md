@@ -3,8 +3,9 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.2.0 - 2026-10-23
-- Kiểm tra ẩn root chính xác hơn: hết báo nhầm file của WebView, bắt thêm vài kiểu file root trước đây lọt qua
+- Ẩn SELinux trước cách đo mới của Duck Detector; kiểm tra ẩn root chính xác hơn: hết báo nhầm file của WebView, bắt thêm vài kiểu file root trước đây lọt qua
 ### Sửa lỗi
+- Ẩn root: Duck Detector mới thêm cách đo thời gian ghi context SELinux từ App Zygote. Phần ẩn SELinux của SU Kernel làm lần ghi sai chậm hơn máy gốc 0,1-0,26 µs, đủ để đo ra (Duck Detector hiện số đo này như thông tin, chưa tính là dấu hiệu root). Giờ chênh dưới 0,02 µs, Duck Detector không phân biệt được với máy gốc. Có hiệu lực khi cài lại LKM
 - Kiểm tra ẩn root: vẫn còn báo nhầm "App đang nạp file root trong bộ nhớ" với file của WebView khi mã ngẫu nhiên trong tên thư mục cài app có chữ giống "Riru" (bản 1.1.9 mới sửa được trường hợp "edxp"). Giờ mã ngẫu nhiên được nhận đúng và bỏ qua, chỉ xét tên app, cả trong tên vùng nhớ Android đặt theo app (dex và app image giải nén trong bộ nhớ)
 - Kiểm tra ẩn root: chỉ bỏ qua mã ngẫu nhiên trong thư mục cài app. File root đặt ở chỗ khác mà tên trông giống mã ngẫu nhiên vẫn bị báo
 - Kiểm tra ẩn root: phần "nhìn từ trong app" giờ bắt được vùng nhớ ẩn danh có dấu cách trong tên và tên viết bằng chữ giống chữ thường (như ký hiệu Kelvin thay cho chữ k), giống kết quả của camd. Một thư viện đã bị xoá không còn hiện hai lần
@@ -12,7 +13,9 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Kiểm tra ẩn root: phần "nhìn từ trong app" luôn báo file trong `/data/adb` và `/debug_ramdisk`, kể cả khi rule tải về không liệt kê
 - Kiểm tra ẩn root: lần quét đầu sau khi cập nhật hiện như lần đầu thay vì so với lần quét cũ (tên mục đã đổi), nên không còn đánh dấu "mới" nhầm
 ### Thay đổi
-- Rule ẩn root v14: theo Duck Detector tới bản nightly 21/10 (không có kiểm tra mới nhắm vào SU Kernel)
+- Rule ẩn root v15: theo Duck Detector tới bản nightly 22/10. Cách đo thời gian SELinux mới của Duck Detector đã được xử lý ở kernel; trang Kiểm tra ẩn root chưa có cách đo này và ghi nó trong mục Duck Detector
+### Lưu ý
+- Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" (thẻ trên trang chủ) rồi khởi động lại. Chưa cài lại LKM thì phần sửa ẩn SELinux chưa có hiệu lực
 
 ## 1.1.9 - 2026-10-21
 - Chặn module nguy hiểm, sao lưu và khôi phục chính các module, cài module không cần khởi động lại (với module có hỗ trợ)

@@ -1,9 +1,9 @@
 {
-  "version": 14,
-  "updated": "2026-10-22",
-  "duckDetector": "41b35fec8838961c64437a90333c6bc49779a71c",
-  "duckDetectorAt": "2026-10-21T10:07:48Z",
-  "duckPending": ["heap residue"],
+  "version": 15,
+  "updated": "2026-10-23",
+  "duckDetector": "089b452fdc689e57a32e41d4a89b4cbb00b85fab",
+  "duckDetectorAt": "2026-10-22T14:21:13Z",
+  "duckPending": ["heap residue", "App Zygote attr/current timing"],
   "mountSources": ["KSU", "APatch", "magisk", "worker"],
   "mapMarkers": [
     "/data/adb/", "/debug_ramdisk/", "/sbin/",

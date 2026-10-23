@@ -282,12 +282,20 @@ static int __nocfi my_setprocattr(const char *name, void *value, size_t size)
     int error, error2;
     char *str = value;
 
+    // No context to parse, so nothing to hide: stock does it, in stock's time.
+    // Duck's App Zygote timing compares this payload (a leading newline) with
+    // an invalid context of the same length. Our copy of this path ran ~100 ns
+    // faster than stock and the two-policy parse made the other one slower, so
+    // apps saw invalid contexts cost more than they do on stock.
+    if (!size || !str[0] || str[0] == '\n')
+        goto call_orig;
+
     error = ksu_avc_has_perm_compat(mysid, mysid, SECCLASS_PROCESS, PROCESS__SETCURRENT, NULL);
     if (error)
         return error;
 
-    /* Obtain a SID for the context, if one was specified. */
-    if (size && str[0] && str[0] != '\n') {
+    /* Obtain a SID for the context. */
+    {
         struct selinux_policy *policy = backup_get();
 
         if (!policy)
@@ -680,111 +688,78 @@ void ksu_selinux_hide_drop_backup_if_unused()
 /*
  * Caveat:  Mutates scontext.
  */
-static int string_to_context_struct(struct policydb *pol, struct policydb *orig_pol, struct sidtab *sidtabp,
-                                    struct sidtab *orig_sidtabp, char *scontext, char *orig_scontext,
-                                    struct context *ctx, struct context *orig_ctx, u32 def_sid, int *orig_rc_p)
+static int string_to_context_struct(struct policydb *pol, struct sidtab *sidtabp, char *scontext, struct context *ctx,
+                                    u32 def_sid)
 {
-    struct role_datum *role, *orig_role;
-    struct type_datum *typdatum, *orig_typdatum;
-    struct user_datum *usrdatum, *orig_usrdatum;
-    char *scontextp, *orig_scontextp, *p, *orig_p, oldc, orig_oldc;
-    int rc = 0, orig_rc = 0;
+    struct role_datum *role;
+    struct type_datum *typdatum;
+    struct user_datum *usrdatum;
+    char *scontextp, *p, oldc;
+    int rc = 0;
 
     context_init(ctx);
-    context_init(orig_ctx);
 
     /* Parse the security context. */
 
-    orig_rc = rc = -EINVAL;
+    rc = -EINVAL;
     scontextp = scontext;
-    orig_scontextp = orig_scontext;
 
     /* Extract the user. */
     p = scontextp;
-    orig_p = orig_scontextp;
-    while (*p && *p != ':') {
+    while (*p && *p != ':')
         p++;
-        orig_p++;
-    }
 
     if (*p == 0)
         goto out;
 
-    *orig_p++ = *p++ = 0;
+    *p++ = 0;
 
     usrdatum = symtab_search(&pol->p_users, scontextp);
-    orig_usrdatum = symtab_search(&orig_pol->p_users, orig_scontextp);
     if (!usrdatum)
         goto out;
 
     ctx->user = usrdatum->value;
-    if (orig_usrdatum)
-        orig_ctx->user = orig_usrdatum->value;
 
     /* Extract role. */
     scontextp = p;
-    orig_scontextp = orig_p;
-    while (*p && *p != ':') {
+    while (*p && *p != ':')
         p++;
-        orig_p++;
-    }
 
     if (*p == 0)
         goto out;
 
-    *orig_p++ = *p++ = 0;
+    *p++ = 0;
 
     role = symtab_search(&pol->p_roles, scontextp);
-    orig_role = symtab_search(&orig_pol->p_roles, orig_scontextp);
     if (!role)
         goto out;
     ctx->role = role->value;
-    if (orig_role)
-        orig_ctx->role = orig_role->value;
 
     /* Extract type. */
     scontextp = p;
-    orig_scontextp = orig_p;
-    while (*p && *p != ':') {
+    while (*p && *p != ':')
         p++;
-        orig_p++;
-    }
     oldc = *p;
-    orig_oldc = *orig_p;
-    *orig_p++ = *p++ = 0;
+    *p++ = 0;
 
     typdatum = symtab_search(&pol->p_types, scontextp);
-    orig_typdatum = symtab_search(&orig_pol->p_types, orig_scontextp);
     if (!typdatum || typdatum->attribute)
         goto out;
 
     ctx->type = typdatum->value;
-    if (orig_typdatum && !orig_typdatum->attribute)
-        orig_ctx->type = orig_typdatum->value;
 
     rc = mls_context_to_sid(pol, oldc, p, ctx, sidtabp, def_sid);
-    orig_rc = mls_context_to_sid(orig_pol, orig_oldc, orig_p, orig_ctx, orig_sidtabp, def_sid);
-    if (rc) {
-        orig_rc = -EINVAL;
+    if (rc)
         goto out;
-    }
 
     /* Check the validity of the new context. */
     rc = -EINVAL;
-    if (policydb_context_isvalid(pol, ctx)) {
-        rc = 0;
-    }
-    // orig_ctx carries the live policy's own values and MLS result; callers
-    // only use it when the backup accepted the context too
-    if (rc || (!orig_rc && !policydb_context_isvalid(orig_pol, orig_ctx))) {
-        orig_rc = -EINVAL;
-    }
+    if (!policydb_context_isvalid(pol, ctx))
+        goto out;
+    rc = 0;
 out:
     if (rc)
         context_destroy(ctx);
-    if (orig_rc)
-        context_destroy(orig_ctx);
-    *orig_rc_p = orig_rc;
     return rc;
 }
 
@@ -794,9 +769,9 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
     struct selinux_policy *orig_policy;
     struct policydb *policydb, *orig_policydb;
     struct sidtab *sidtab, *orig_sidtab;
-    char *scontext2, *scontext3;
+    char *scontext2;
     struct context context, orig_context;
-    int rc = 0, orig_rc = 0;
+    int rc = 0, orig_rc = -EINVAL;
     u32 orig_sid;
 
     /* An empty security context is never valid. */
@@ -807,12 +782,6 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
     scontext2 = kmemdup_nul(scontext, scontext_len, gfp_flags);
     if (!scontext2)
         return -ENOMEM;
-
-    scontext3 = kmemdup_nul(scontext, scontext_len, gfp_flags);
-    if (!scontext3) {
-        kfree(scontext2);
-        return -ENOMEM;
-    }
 
     // removed: if (!selinux_initialized())
     *sid = SECSID_NULL;
@@ -826,13 +795,17 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
     orig_sidtab = orig_policy->sidtab;
     policydb = &policy->policydb;
     sidtab = policy->sidtab;
-    rc = string_to_context_struct(policydb, orig_policydb, sidtab, orig_sidtab, scontext2, scontext3, &context,
-                                  &orig_context, def_sid, &orig_rc);
+    rc = string_to_context_struct(policydb, sidtab, scontext2, &context, def_sid);
     if (!rc) {
         rc = sidtab_context_to_sid(sidtab, &context, sid);
         // rc should not be frozen
         context_destroy(&context);
         // removed: if (rc == -ESTALE)
+        // The live policy only counts once the backup took the context, so a
+        // rejected one costs what it costs stock: one copy, one parse. Apps time
+        // that path (Duck's App Zygote attr/current timing).
+        memcpy(scontext2, scontext, scontext_len);
+        orig_rc = string_to_context_struct(orig_policydb, orig_sidtab, scontext2, &orig_context, def_sid);
         if (!orig_rc) {
             // sync to global sidtab
             orig_rc = sidtab_context_to_sid(orig_sidtab, &orig_context, &orig_sid);
@@ -844,7 +817,6 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
     rcu_read_unlock();
     if (orig_rc_p)
         *orig_rc_p = orig_rc;
-    kfree(scontext3);
     kfree(scontext2);
     return rc;
 }

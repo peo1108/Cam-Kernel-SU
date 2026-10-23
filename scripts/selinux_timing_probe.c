@@ -6,6 +6,19 @@
 //                       on one pinned CPU: A names a type no policy has, B is A with a leading
 //                       newline; both must fail with EINVAL. Prints the A-B trimmed mean (middle
 //                       80% of the sorted pair deltas), the lower median and how often A was slower.
+//   duck <mode> <runs>  the same payloads the way Duck's App Zygote timing takes them (nightly
+//                       e0a57418): not pinned, 32 warmups and 512 pairs, a pair dropped only when
+//                       the CPU changes between its two writes; each run gets Duck's verdict, and
+//                       the last line the trimmed mean of every kept pair of every run.
+//                       mode free leaves the CPU to the scheduler, hop moves to the next CPU
+//                       every 32 pairs (one run spans every CPU class), split moves in the
+//                       middle of every 4th pair (128 dropped: Duck's partial-sample path).
+//                       This carrier is not Duck's preload: on a TB323FU stock reads A-B >= 0
+//                       here and -53..-104 ns in Duck, so only hook against stock means much.
+//   jostle <name> <us> <s>  as root: waits up to s seconds for a new process named <name> (Duck's
+//                       com.eltavine.duckdetector_zygote, whose preload takes the real sample),
+//                       then moves its main thread to the next CPU every <us> microseconds until
+//                       it exits, so Duck itself measures across CPU changes. Prints the moves.
 //   write <context>     one write, then the context the thread has afterwards.
 //   status              reads /sys/fs/selinux/status, the page the hook may fake for apps.
 //   rootstatus          reads that page as root instead, which the hook never fakes.
@@ -16,6 +29,7 @@
 //
 // app_zygote may not write to the adb terminal: run it with its output into a pipe (`| cat`).
 #define _GNU_SOURCE
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -32,6 +46,8 @@
 #define STATUS "/sys/fs/selinux/status"
 #define SIDTAB_STATS "/sys/fs/selinux/ss/sidtab_hash_stats"
 #define WARMUP 32
+#define DUCK_PAIRS 512
+#define DUCK_BLOCK 32
 
 static const char payload_a[] = "u:r:__selinux_hide_probe_invalid__:s0";
 static char payload_b[sizeof(payload_a)];
@@ -120,6 +136,205 @@ static int run_time(int cpu, int pairs)
         sum += (double)delta[i];
     printf("cpu=%d pairs=%d mean=%.1f median=%lld slower=%d\n", sched_getcpu(), pairs, sum / (high - low),
            (long long)delta[(pairs - 1) / 2], slower);
+    return 0;
+}
+
+// the next CPU after `cpu` this process may run on, wrapping around
+static int next_cpu(const cpu_set_t *allowed, int cpu)
+{
+    for (int i = 1; i <= CPU_SETSIZE; i++) {
+        int next = (cpu + i) % CPU_SETSIZE;
+        if (CPU_ISSET(next, allowed))
+            return next;
+    }
+    return cpu;
+}
+
+// pinning to a CPU the thread is not on moves it there before this returns
+static void move_to(int cpu)
+{
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(cpu, &set);
+    sched_setaffinity(0, sizeof(set), &set);
+}
+
+// Duck's median(): the lower middle of the sorted values
+static int64_t lower_median(const int64_t *values, int n, int64_t *scratch)
+{
+    memcpy(scratch, values, sizeof(*values) * (size_t)n);
+    qsort(scratch, (size_t)n, sizeof(*scratch), compare);
+    return scratch[(n - 1) / 2];
+}
+
+// timingVerdict in Duck's SelinuxAvcLookupReading.kt (b63d6f62): a full sample goes by the sign
+// of the median; one with dropped pairs is Positive only when the drops were all CPU changes,
+// at least 256 pairs are left, the median is positive and A was slower in 90% of them.
+static const char *duck_verdict(int pairs, int migrations, int slower, int64_t median)
+{
+    if (pairs == DUCK_PAIRS && migrations == 0)
+        return median > 0 ? "positive" : median < 0 ? "negative" : "baseline";
+    if (migrations > 0 && pairs + migrations == DUCK_PAIRS && pairs >= 256 && median > 0 &&
+        (long)slower * 10 >= (long)pairs * 9)
+        return "positive";
+    return "inconclusive";
+}
+
+static int run_duck(const char *mode, int runs)
+{
+    int hop = !strcmp(mode, "hop"), split = !strcmp(mode, "split");
+    if (!hop && !split && strcmp(mode, "free"))
+        return 2;
+    cpu_set_t allowed;
+    if (sched_getaffinity(0, sizeof(allowed), &allowed)) {
+        printf("error: sched_getaffinity: %s\n", strerror(errno));
+        return 1;
+    }
+    attr_fd = open(ATTR, O_WRONLY);
+    if (attr_fd < 0) {
+        printf("error: open %s: %s\n", ATTR, strerror(errno));
+        return 1;
+    }
+    memcpy(payload_b, payload_a, sizeof(payload_a));
+    payload_b[0] = '\n';
+    static int64_t delta[DUCK_PAIRS], scratch[DUCK_PAIRS];
+    int64_t *kept = malloc(sizeof(*kept) * DUCK_PAIRS * (size_t)runs);
+    if (!kept)
+        return 1;
+    int total = 0;
+    int positive = 0, negative = 0, baseline = 0, inconclusive = 0;
+    int cpu = sched_getcpu();
+    for (int run = 0; run < runs; run++) {
+        if (hop || split) {
+            cpu = next_cpu(&allowed, cpu);
+            move_to(cpu);
+        }
+        int pairs = 0, migrations = 0, slower = 0;
+        cpu_set_t seen;
+        CPU_ZERO(&seen);
+        for (int i = -WARMUP; i < DUCK_PAIRS; i++) {
+            if (hop && i > 0 && i % DUCK_BLOCK == 0) {
+                cpu = next_cpu(&allowed, cpu);
+                move_to(cpu);
+            }
+            int moves = split && i >= 0 && i % 4 == 3;
+            int before = sched_getcpu();
+            int64_t a, b;
+            if (i & 1) {
+                b = timed_write(payload_b);
+                if (moves)
+                    move_to(cpu = next_cpu(&allowed, cpu));
+                a = timed_write(payload_a);
+            } else {
+                a = timed_write(payload_a);
+                if (moves)
+                    move_to(cpu = next_cpu(&allowed, cpu));
+                b = timed_write(payload_b);
+            }
+            if (i < 0)
+                continue;
+            int after = sched_getcpu();
+            if (before < 0 || after < 0 || before != after) {
+                migrations++;
+                continue;
+            }
+            CPU_SET(before, &seen);
+            kept[total++] = a - b;
+            delta[pairs++] = a - b;
+            slower += a > b;
+        }
+        int up = 0, down = 0, zero = 0;
+        for (int k = 0; k + DUCK_BLOCK <= pairs; k += DUCK_BLOCK) {
+            int64_t block = lower_median(delta + k, DUCK_BLOCK, scratch);
+            up += block > 0;
+            down += block < 0;
+            zero += block == 0;
+        }
+        int64_t median = pairs ? lower_median(delta, pairs, scratch) : 0;
+        const char *verdict = pairs ? duck_verdict(pairs, migrations, slower, median) : "inconclusive";
+        positive += !strcmp(verdict, "positive");
+        negative += !strcmp(verdict, "negative");
+        baseline += !strcmp(verdict, "baseline");
+        inconclusive += !strcmp(verdict, "inconclusive");
+        printf("run=%d cpus=%d pairs=%d migrations=%d median=%lld slower=%d blocks=%d/%d/%d verdict=%s\n", run,
+               CPU_COUNT(&seen), pairs, migrations, (long long)median, slower, up, down, zero, verdict);
+    }
+    qsort(kept, (size_t)total, sizeof(*kept), compare);
+    double sum = 0;
+    int low = total / 10, high = total - total / 10;
+    for (int i = low; i < high; i++)
+        sum += (double)kept[i];
+    printf("duck mode=%s runs=%d mean=%.1f positive=%d negative=%d baseline=%d inconclusive=%d\n", mode, runs,
+           high > low ? sum / (high - low) : 0.0, positive, negative, baseline, inconclusive);
+    free(kept);
+    return 0;
+}
+
+// a process above `after` whose cmdline is `name`, or 0
+static pid_t find_process(const char *name, pid_t after)
+{
+    DIR *proc = opendir("/proc");
+    pid_t found = 0;
+    struct dirent *entry;
+    while (proc && !found && (entry = readdir(proc))) {
+        pid_t pid = (pid_t)atoi(entry->d_name);
+        if (pid <= after)
+            continue;
+        char path[64], cmdline[128] = { 0 };
+        snprintf(path, sizeof(path), "/proc/%d/cmdline", pid);
+        int fd = open(path, O_RDONLY);
+        if (fd < 0)
+            continue;
+        if (read(fd, cmdline, sizeof(cmdline) - 1) > 0 && !strcmp(cmdline, name))
+            found = pid;
+        close(fd);
+    }
+    if (proc)
+        closedir(proc);
+    return found;
+}
+
+static int run_jostle(const char *name, int interval_us, int seconds)
+{
+    pid_t newest = 0;
+    DIR *proc = opendir("/proc");
+    struct dirent *entry;
+    while (proc && (entry = readdir(proc)))
+        if (atoi(entry->d_name) > newest)
+            newest = (pid_t)atoi(entry->d_name);
+    if (proc)
+        closedir(proc);
+    cpu_set_t allowed;
+    CPU_ZERO(&allowed);
+    for (int cpu = 0; cpu < (int)sysconf(_SC_NPROCESSORS_CONF) && cpu < CPU_SETSIZE; cpu++)
+        CPU_SET(cpu, &allowed);
+    uint64_t deadline = now_ns() + (uint64_t)seconds * 1000000000ull;
+    pid_t pid = 0;
+    while (!(pid = find_process(name, newest))) {
+        if (now_ns() > deadline) {
+            printf("error: no new %s within %d s\n", name, seconds);
+            return 1;
+        }
+        usleep(200);
+    }
+    int cpu = 0, moves = 0, failed = 0;
+    uint64_t start = now_ns();
+    for (;;) {
+        cpu = next_cpu(&allowed, cpu);
+        cpu_set_t set;
+        CPU_ZERO(&set);
+        CPU_SET(cpu, &set);
+        if (sched_setaffinity(pid, sizeof(set), &set)) {
+            if (errno == ESRCH)
+                break;
+            failed++;
+        } else {
+            moves++;
+        }
+        for (uint64_t until = now_ns() + (uint64_t)interval_us * 1000u; now_ns() < until;)
+            ;
+    }
+    printf("pid=%d moves=%d failed=%d for %.1f ms\n", pid, moves, failed, (double)(now_ns() - start) / 1e6);
     return 0;
 }
 
@@ -245,6 +460,14 @@ int main(int argc, char **argv)
             return 2;
         return become_carrier() ? 1 : run_time(atoi(argv[2]), pairs);
     }
+    if (argc == 4 && !strcmp(argv[1], "duck")) {
+        int runs = atoi(argv[3]);
+        if (runs < 1)
+            return 2;
+        return become_carrier() ? 1 : run_duck(argv[2], runs);
+    }
+    if (argc == 5 && !strcmp(argv[1], "jostle"))
+        return run_jostle(argv[2], atoi(argv[3]), atoi(argv[4]));
     if (argc == 3 && !strcmp(argv[1], "write"))
         return become_carrier() ? 1 : run_write(argv[2]);
     if (argc == 2 && !strcmp(argv[1], "status"))
@@ -262,7 +485,8 @@ int main(int argc, char **argv)
         return become_carrier() ? 1 : run_selfattr(argv[2]);
 #endif
     fprintf(stderr,
-            "usage: %s time <cpu> <pairs> | write <context> | status | rootstatus | "
+            "usage: %s time <cpu> <pairs> | duck <free|hop|split> <runs> | jostle <name> <us> <s> | "
+            "write <context> | status | rootstatus | "
             "sidtab <context|access> <count> | selfattr <context>\n",
             argv[0]);
     return 2;

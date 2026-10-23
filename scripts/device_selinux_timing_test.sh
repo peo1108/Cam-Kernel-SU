@@ -11,6 +11,13 @@
 # the CPU and its clock (stock can read either way), so the test compares the hook against stock
 # on the same CPU: selinux_hide on, then off (the hook removed), three times each. Before the
 # 2026-10-23 fix the hook made A ~110-260 ns slower than stock on a TB323FU; after it, 6-15 ns.
+# Then it takes the payloads Duck's way (probe duck, nightly e0a57418): not pinned, pairs from
+# every CPU class counted (0477552f) and samples with dropped pairs judged too (b63d6f62), in
+# three modes (scheduler's choice, a run spread over all CPUs, every 4th pair dropped), and
+# holds the hook to the same limit over stock. Duck's verdicts per run are printed, but this
+# carrier does not read like Duck's preload (TB323FU stock: A-B >= 0 here, -53..-104 ns in
+# Duck), so they are no pass mark. Duck itself across CPU changes: probe jostle (its header)
+# while Duck scans, then read "Parent preload" in Duck's exported report (CAM_CHANGES row 71).
 # It also checks what the hook is for: root contexts unknown with hiding on, known with it off,
 # and a stock transition still allowed.
 #
@@ -35,6 +42,7 @@ CAMD=/data/adb/camd
 PROBE=/data/local/tmp/cam_selinux_timing
 PAIRS=20000
 LIMIT=50 # ns the hook may add to A-B over stock
+RUNS=20  # Duck-style runs per mode
 pass=0
 fail=0
 ok() { pass=$((pass + 1)); echo "PASS  $1"; }
@@ -141,6 +149,20 @@ for cpu in 0 $((last / 2)) "$last"; do
     fi
     extra=$(awk -v a="$on_mid" -v b="$off_mid" 'BEGIN { printf "%.1f", a - b }')
     line="CPU $cpu: A-B $on_mid ns with the hook, $off_mid ns stock, hook adds $extra ns (limit $LIMIT)"
+    if awk -v e="$extra" -v l="$LIMIT" 'BEGIN { exit !(e < l) }'; then ok "$line"; else bad "$line"; fi
+done
+
+for mode in free hop split; do
+    set_hide 1
+    on=$(probe duck "$mode" "$RUNS" | grep '^duck ')
+    set_hide 0
+    off=$(probe duck "$mode" "$RUNS" | grep '^duck ')
+    if [ -z "$on" ] || [ -z "$off" ]; then
+        bad "Duck $mode: no timing" "$(probe duck "$mode" 1)"
+        continue
+    fi
+    extra=$(awk -v a="$(mean_of <<<"$on")" -v b="$(mean_of <<<"$off")" 'BEGIN { printf "%.1f", a - b }')
+    line="Duck $mode: hook adds $extra ns (limit $LIMIT); hook ${on#duck mode=$mode }; stock ${off#duck mode=$mode }"
     if awk -v e="$extra" -v l="$LIMIT" 'BEGIN { exit !(e < l) }'; then ok "$line"; else bad "$line"; fi
 done
 

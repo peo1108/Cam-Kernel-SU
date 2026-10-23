@@ -427,7 +427,9 @@ static sel_open_handle_status_fn orig_sel_open_handle_status, *sel_open_handle_s
 static bool status_open_hooked;
 static int my_sel_open_handle_status(struct inode *inode, struct file *filp)
 {
-    if (likely(current_uid().val >= 10000 && ksu_selinux_hide_enabled)) {
+    // running, not enabled: a switch-on waiting for the next boot has no
+    // context/access/attr hooks yet, so the fake page alone would not match them
+    if (likely(current_uid().val >= 10000 && READ_ONCE(ksu_selinux_hide_running))) {
         void *data;
         mutex_lock(&selinux_state.status_lock);
         data = fake_status;
@@ -524,11 +526,11 @@ static void ksu_selinux_hide_unhook()
             access_write_hooked = false;
         }
     }
-    // The status-open hook is owned by init/exit and self-gates on
-    // ksu_selinux_hide_enabled, so it stays installed across enable failures
-    // and disable; only module exit removes it. Removing it here would, on an
-    // enable that failed after init hooked it, leave the fake status page
-    // unserved while enabled stayed set (apps would read the real page).
+    // The status-open hook is owned by init/exit, not by enable/disable: it
+    // also captures the stock page at its first open (fake_status_initialize_key)
+    // and serves the fake page only while ksu_selinux_hide_running is set, so
+    // it stays installed across enable failures and disable; only module exit
+    // removes it.
     ksu_lsm_unhook(&selinux_setprocattr_hook);
 }
 
@@ -559,6 +561,12 @@ static int selinux_hide_feature_set(u64 value)
     int ret = 0;
     pr_info("selinux_hide: set to %d\n", enable);
     mutex_lock(&selinux_hide_mutex);
+    // The switch keeps what was asked even when the hooks cannot start: after
+    // boot_completed the backup is gone and enable fails with -EAGAIN, and
+    // camd feature save (the Manager runs it after every switch) persists this
+    // value so the next boot starts hiding. Whether the hooks run is
+    // ksu_selinux_hide_running, which the status-open hook checks.
+    ksu_selinux_hide_enabled = enable;
     if (enable) {
         if (!ksu_selinux_hide_running) {
             ret = ksu_selinux_hide_enable();
@@ -566,13 +574,7 @@ static int selinux_hide_feature_set(u64 value)
                 WRITE_ONCE(ksu_selinux_hide_running, true);
             }
         }
-        // Report on only when the hooks are really installed. An enable that
-        // failed (no backup, write_op not found) left enabled=1 before, so the
-        // Manager showed hiding on and the fake status page was served while the
-        // context/access/attr hooks were absent.
-        ksu_selinux_hide_enabled = ksu_selinux_hide_running;
     } else {
-        ksu_selinux_hide_enabled = false;
         if (ksu_selinux_hide_running) {
             // stop gating the netlink notify before tearing the hooks down
             WRITE_ONCE(ksu_selinux_hide_running, false);

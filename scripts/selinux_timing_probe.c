@@ -1,4 +1,5 @@
-// Probe for scripts/device_selinux_timing_test.sh (run as root on the device).
+// Probe for scripts/device_selinux_timing_test.sh and scripts/device_selinux_hide_pending_test.sh
+// (run as root on the device).
 //
 // Becomes what Duck Detector's App Zygote carrier is (u:r:app_zygote:s0, an app uid) and then:
 //   time <cpu> <pairs>  writes Duck's payloads to /proc/thread-self/attr/current in AB/BA pairs
@@ -6,6 +7,8 @@
 //                       newline; both must fail with EINVAL. Prints the A-B trimmed mean (middle
 //                       80% of the sorted pair deltas), the lower median and how often A was slower.
 //   write <context>     one write, then the context the thread has afterwards.
+//   status              reads /sys/fs/selinux/status, the page the hook may fake for apps.
+// rootstatus reads that page as root instead, which the hook never fakes.
 //
 // app_zygote may not write to the adb terminal: run it with its output into a pipe (`| cat`).
 #define _GNU_SOURCE
@@ -21,6 +24,7 @@
 #include <unistd.h>
 
 #define ATTR "/proc/thread-self/attr/current"
+#define STATUS "/sys/fs/selinux/status"
 #define WARMUP 32
 
 static const char payload_a[] = "u:r:__selinux_hide_probe_invalid__:s0";
@@ -127,6 +131,20 @@ static int run_write(const char *context)
     return 0;
 }
 
+static int run_status(void)
+{
+    // struct selinux_kernel_status: version, sequence, enforcing, policyload, deny_unknown
+    uint32_t status[5] = { 0 };
+    int fd = open(STATUS, O_RDONLY);
+    if (fd < 0 || read(fd, status, sizeof(status)) != (ssize_t)sizeof(status)) {
+        printf("error: read %s: %s\n", STATUS, strerror(errno));
+        return 1;
+    }
+    close(fd);
+    printf("sequence=%u enforcing=%u policyload=%u\n", status[1], status[2], status[3]);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 4 && !strcmp(argv[1], "time")) {
@@ -137,6 +155,10 @@ int main(int argc, char **argv)
     }
     if (argc == 3 && !strcmp(argv[1], "write"))
         return become_carrier() ? 1 : run_write(argv[2]);
-    fprintf(stderr, "usage: %s time <cpu> <pairs> | write <context>\n", argv[0]);
+    if (argc == 2 && !strcmp(argv[1], "status"))
+        return become_carrier() ? 1 : run_status();
+    if (argc == 2 && !strcmp(argv[1], "rootstatus"))
+        return run_status();
+    fprintf(stderr, "usage: %s time <cpu> <pairs> | write <context> | status | rootstatus\n", argv[0]);
     return 2;
 }

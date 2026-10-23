@@ -60,7 +60,9 @@ bin=$(mktemp)
 trap 'rm -f "$bin"' EXIT
 # The Windows NDK's clang.exe and adb.exe want Windows paths.
 native() { if command -v cygpath >/dev/null; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
-if ! "$clang" --target=aarch64-linux-android31 -O2 -o "$(native "$bin")" "$(native "$here/selinux_timing_probe.c")"; then
+# -DCAM_NR... so the selfattr mode builds even if this NDK's libc predates the syscall number
+if ! "$clang" --target=aarch64-linux-android31 -O2 -DCAM_NR_LSM_SET_SELF_ATTR=460 \
+    -o "$(native "$bin")" "$(native "$here/selinux_timing_probe.c")"; then
     echo "cannot build the probe" >&2
     exit 2
 fi
@@ -96,6 +98,30 @@ case "$out" in *now=u:r:isolated_app:s0*) ok "hide on: app_zygote -> isolated_ap
 set_hide 0
 out=$(probe write u:r:cam:s0)
 case "$out" in *errno=13*) ok "hide off: u:r:cam:s0 is known (EACCES)" ;; *) bad "hide off: u:r:cam:s0" "$out" ;; esac
+
+grew_of() { sed -n 's/.*grew=\(-\{0,1\}[0-9]\{1,\}\).*/\1/p'; }
+# New contexts checked through selinuxfs grow the live sidtab; stock does, so the hook must too,
+# or an app reads the gap in ss/sidtab_hash_stats (an app_zygote can read that file).
+g=$(probe sidtab context 40)
+if [ "$(grew_of <<<"$g")" -gt 0 ] 2>/dev/null; then ok "hide off: new contexts grow the live sidtab"; else bad "hide off: sidtab did not grow" "$g"; fi
+set_hide 1
+g=$(probe sidtab context 40)
+if [ "$(grew_of <<<"$g")" -gt 0 ] 2>/dev/null; then ok "hide on: new contexts still grow the live sidtab"; else bad "hide on: sidtab did not grow, an app reads the gap" "$g"; fi
+g=$(probe sidtab access 40)
+if [ "$(grew_of <<<"$g")" -gt 0 ] 2>/dev/null; then ok "hide on: access checks still grow the live sidtab"; else bad "hide on: access sidtab did not grow" "$g"; fi
+# lsm_set_self_attr(2) must hide like attr/current (kernel 6.8+); older kernels have no syscall.
+out=$(probe selfattr u:r:cam:s0)
+case "$out" in
+*errno=38*) ok "hide on: lsm_set_self_attr not on this kernel, skipped" ;;
+*errno=22*) ok "hide on: lsm_set_self_attr u:r:cam:s0 is not a context (EINVAL)" ;;
+*) bad "hide on: lsm_set_self_attr u:r:cam:s0 leaks (want EINVAL)" "$out" ;;
+esac
+out=$(probe selfattr u:r:isolated_app:s0)
+case "$out" in
+*errno=38*) : ;;
+*now=u:r:isolated_app:s0*) ok "hide on: lsm_set_self_attr app_zygote -> isolated_app still allowed" ;;
+*) bad "hide on: lsm_set_self_attr app_zygote -> isolated_app" "$out" ;;
+esac
 
 possible=$("${ADB[@]}" shell cat /sys/devices/system/cpu/possible | tr -d '\r')
 last=${possible##*-}

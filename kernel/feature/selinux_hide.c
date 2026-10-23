@@ -31,6 +31,10 @@
 #include "ksu.h"
 #include "policy/feature.h"
 #include "hook/lsm_hook.h"
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+// struct lsm_ctx, LSM_ATTR_CURRENT for the lsm_set_self_attr(2) hook
+#include <uapi/linux/lsm.h>
+#endif
 
 static DEFINE_MUTEX(selinux_hide_mutex);
 static bool ksu_selinux_hide_enabled __read_mostly = false;
@@ -368,6 +372,30 @@ call_orig:
     return ((setprocattr_fn)selinux_setprocattr_hook.original)(name, value, size);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+typedef int (*setselfattr_fn)(unsigned int attr, struct lsm_ctx *ctx, u32 size, u32 flags);
+static int my_setselfattr(unsigned int attr, struct lsm_ctx *ctx, u32 size, u32 flags);
+static struct ksu_lsm_hook selinux_setselfattr_hook =
+    KSU_LSM_HOOK_INIT(setselfattr, "selinux_setselfattr", my_setselfattr, 0);
+
+// lsm_set_self_attr(2) (kernel 6.8+) writes an attr through selinux_setselfattr
+// -> selinux_lsm_setattr, not through setprocattr, so without this an app could
+// set its context here and tell a root type apart by errno (EACCES when the live
+// policy knows it, EINVAL when it does not) while the setprocattr hook hid it.
+// selinux_lsm_setattr's LSM_ATTR_CURRENT branch is exactly what
+// my_setprocattr("current", ...) reproduces, so route through it and keep one
+// copy of the hide logic; other attrs and non-app uids go to the original.
+static int __nocfi my_setselfattr(unsigned int attr, struct lsm_ctx *ctx, u32 size, u32 flags)
+{
+    if (attr == LSM_ATTR_CURRENT && current_uid().val >= 10000) {
+        // selinux_setselfattr maps a positive return to 0 (see its caller)
+        int rc = my_setprocattr("current", ctx->ctx, ctx->ctx_len);
+        return rc > 0 ? 0 : rc;
+    }
+    return ((setselfattr_fn)selinux_setselfattr_hook.original)(attr, ctx, size, flags);
+}
+#endif
+
 static DEFINE_STATIC_KEY_FALSE(fake_status_initialize_key);
 static struct page *fake_status = NULL;
 
@@ -466,10 +494,21 @@ static int ksu_selinux_hide_enable()
     hook_selinux_status_open();
 
     write_op_fn my;
+    // write_op is a generic symbol name; confirm the slots hold selinuxfs's own
+    // write handlers before patching, so we never clobber another subsystem's
+    // table that happens to share the name. A symbol we cannot resolve is not
+    // treated as a mismatch (keep the older behaviour: patch unverified).
+    write_op_fn want_context = (write_op_fn)find_kernel_symbol_exact("sel_write_context");
+    write_op_fn want_access = (write_op_fn)find_kernel_symbol_exact("sel_write_access");
     context_write = &selinux_write_op[SEL_CONTEXT];
     pr_info("selinux_hide: context_write: 0x%lx [%pSb]\n", (unsigned long)*context_write, *context_write);
     // a failed restore leaves the slot pointing at us: do not take that as orig
     if (!context_write_hooked) {
+        if (want_context && *context_write != want_context) {
+            pr_err("selinux_hide: context_write slot [%pSb] is not sel_write_context, aborting\n", *context_write);
+            ret = -ENXIO;
+            goto unhook;
+        }
         my = my_write_context;
         orig_context_write = *context_write;
         ret = ksu_patch_text(context_write, &my, sizeof(my), KSU_PATCH_TEXT_FLUSH_DCACHE);
@@ -483,6 +522,11 @@ static int ksu_selinux_hide_enable()
     access_write = &selinux_write_op[SEL_ACCESS];
     pr_info("selinux_hide: access_write: 0x%lx [%pSb]\n", (unsigned long)*access_write, *access_write);
     if (!access_write_hooked) {
+        if (want_access && *access_write != want_access) {
+            pr_err("selinux_hide: access_write slot [%pSb] is not sel_write_access, aborting\n", *access_write);
+            ret = -ENXIO;
+            goto unhook;
+        }
         my = my_write_access;
         orig_access_write = *access_write;
         ret = ksu_patch_text(access_write, &my, sizeof(my), KSU_PATCH_TEXT_FLUSH_DCACHE);
@@ -498,6 +542,15 @@ static int ksu_selinux_hide_enable()
         pr_err("selinux_hide: init: selinux_setprocattr_hook err: %d\n", ret);
         goto unhook;
     }
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+    // lsm_set_self_attr(2) reaches the same attr/current path without setprocattr
+    ret = ksu_lsm_hook(&selinux_setselfattr_hook);
+    if (ret) {
+        pr_err("selinux_hide: init: selinux_setselfattr_hook err: %d\n", ret);
+        goto unhook;
+    }
+#endif
 
     return 0;
 
@@ -532,6 +585,9 @@ static void ksu_selinux_hide_unhook()
     // it stays installed across enable failures and disable; only module exit
     // removes it.
     ksu_lsm_unhook(&selinux_setprocattr_hook);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+    ksu_lsm_unhook(&selinux_setselfattr_hook);
+#endif
 }
 
 static void ksu_selinux_hide_disable()
@@ -819,20 +875,21 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
         // removed: if (rc == -ESTALE)
         // The live policy only counts once the backup took the context, so a
         // rejected one costs what it costs stock: one copy, one parse. Apps time
-        // that path (Duck's App Zygote attr/current timing). Only the setprocattr
-        // path wants the live SID/rc (for the transition); the context and access
-        // writes discard it, so skip the second parse for them and keep a valid
-        // context as cheap as stock there too.
-        if (orig_sid_p || orig_rc_p) {
-            memcpy(scontext2, scontext, scontext_len);
-            orig_rc = string_to_context_struct(orig_policydb, orig_sidtab, scontext2, &orig_context, def_sid);
-            if (!orig_rc) {
-                // sync to global sidtab
-                orig_rc = sidtab_context_to_sid(orig_sidtab, &orig_context, &orig_sid);
-                if (orig_sid_p)
-                    *orig_sid_p = orig_sid;
-                context_destroy(&orig_context);
-            }
+        // that path (Duck's App Zygote attr/current timing). A context the backup
+        // accepted is parsed against the live policy too and synced into the live
+        // sidtab, as stock does: stock grows the live sidtab for every new context
+        // checked through selinuxfs, and an app (app_zygote) reads that growth in
+        // ss/sidtab_hash_stats, so skipping it on the context/access writes was a
+        // tell of its own. setprocattr additionally takes the live SID/rc for the
+        // transition (orig_sid_p/orig_rc_p); the other callers discard them.
+        memcpy(scontext2, scontext, scontext_len);
+        orig_rc = string_to_context_struct(orig_policydb, orig_sidtab, scontext2, &orig_context, def_sid);
+        if (!orig_rc) {
+            // sync to global sidtab
+            orig_rc = sidtab_context_to_sid(orig_sidtab, &orig_context, &orig_sid);
+            if (orig_sid_p)
+                *orig_sid_p = orig_sid;
+            context_destroy(&orig_context);
         }
     }
     rcu_read_unlock();

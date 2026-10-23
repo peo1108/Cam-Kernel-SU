@@ -474,8 +474,10 @@ Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã d
 Một lệnh build cả `camsu.ko` (từng KMI) lẫn camd **từ cùng một commit**, rồi chép về repo Windows (`userspace/camd/bin/aarch64/<kmi>_camsu.ko` và `manager/app/src/main/jniLibs/arm64-v8a/libcamd.so`):
 
 ```bash
-# trong WSL (root); tham số là nhánh cần build, mặc định feat/managerless-seed
+# trong WSL (root); tham số là nhánh cần build, mặc định main; repo nguồn là repo chứa script
 bash "/mnt/c/Users/cam/Desktop/dự án đã done/Cam Kernel SU/scripts/build_lkm_camd.sh" main
+# chỉ thử trên tablet: một KMI là đủ, nhanh gấp đôi
+KMIS="android16-6.12:clang-r536225" bash ".../scripts/build_lkm_camd.sh" main
 # sau đó trên Windows, KHÔNG commit gì thêm ở giữa:
 cd manager && ./gradlew :app:assembleRelease
 ```
@@ -490,6 +492,8 @@ Những bẫy khi build ksud trong WSL (script đã xử lý sẵn):
 | `build.rs` báo `llvm-mc: No such file` (assemble LKM bootstrap) | `KSU_LKM_BOOTSTRAP_CC=<clang AOSP>` |
 | `bindgen`: `Unable to find libclang` | `LIBCLANG_PATH=<clang AOSP>/lib` và `BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=... --sysroot=..."` |
 | Không thấy file `camd` sau khi build | camd là thành viên workspace: file nằm ở `target/` của **gốc repo**, không phải `userspace/camd/target/` |
+| `cargo: command not found` sau khi đã build xong `.ko` (chạy bằng `wsl -- bash`, không phải login shell) | Script tự thêm `~/.cargo/bin` vào `PATH` và kiểm tra `cargo` trước khi build kernel |
+| Script build commit cũ, thiếu sửa đổi vừa làm | Script `git clone` nhánh từ repo: chỉ thấy những gì **đã commit**, file sửa chưa commit không được build |
 | `caminit` không có trong git | Script lấy bản trong `userspace/camd/bin/aarch64/` của repo Windows (file tên `caminit`, LKM tên `<kmi>_camsu.ko`; tên cũ `ksuinit` / `_kernelsu.ko` sẽ không được nhúng) |
 
 Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `userspace/camd` chạy `cargo ndk -t arm64-v8a check`, `cargo ndk -t arm64-v8a clippy`, `cargo fmt`, với `LIBCLANG_PATH=<NDK>/toolchains/llvm/prebuilt/linux-x86_64/lib` và `CARGO_TARGET_DIR` nằm ngoài `/mnt/c` cho nhanh.

@@ -11,13 +11,18 @@
 #   manager/app/src/main/jniLibs/arm64-v8a/libcamd.so
 #
 # Environment (defaults match Cam's machine):
-#   SRC    Windows repo seen from WSL     KW   kernel trees + toolchains (scune-kmod-work)
+#   SRC    Windows repo seen from WSL (default: the repo this script is in)
+#   KW     kernel trees + toolchains (scune-kmod-work)
 #   NDK    NDK llvm prebuilt dir (the Windows NDK works: only its sysroot and runtime libs are used)
-#   KMIS   "kmi:clang ..." pairs to build
+#   KMIS   "kmi:clang ..." pairs to build (one pair is enough to test on a single device)
 set -euo pipefail
 
 BRANCH="${1:-main}"
-SRC="${SRC:-/mnt/c/Users/cam/Desktop/Cam Kernel SU}"
+SRC="${SRC:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# `wsl -- bash script` is not a login shell, so ~/.cargo/bin is not on PATH.
+export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:$PATH"
+# Check before the kernel builds, not after them.
+command -v cargo >/dev/null || { echo "cargo not found (looked in PATH and ~/.cargo/bin)" >&2; exit 1; }
 WORK="${WORK:-/root/ksu-git}"
 KW="${KW:-/root/scune-kmod-work}"
 NDK="${NDK:-/mnt/c/Users/cam/AppData/Local/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/windows-x86_64}"
@@ -75,5 +80,5 @@ CAMD="$WORK/target/aarch64-linux-android/release/camd"
 
 cp "$CAMD" "$SRC/manager/app/src/main/jniLibs/arm64-v8a/libcamd.so"
 cp "$WORK/userspace/camd/bin/aarch64/"*_camsu.ko "$SRC/userspace/camd/bin/aarch64/"
-echo "== camd $(strings "$CAMD" | grep -m1 -oE '3\.[0-9]+\.[0-9]+-[0-9]+-g[0-9a-f]+ \(uapi: [0-9]+\)')"
+echo "== camd $(strings "$CAMD" | grep -m1 -oE '[0-9]+\.[0-9]+\.[0-9]+[^ ]* \(uapi: [0-9]+\)')"
 echo "== copied libcamd.so and camsu.ko back; now build the Manager from the same commit"

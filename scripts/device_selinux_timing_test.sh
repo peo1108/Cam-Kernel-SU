@@ -162,7 +162,7 @@ for mode in free hop split; do
         continue
     fi
     extra=$(awk -v a="$(mean_of <<<"$on")" -v b="$(mean_of <<<"$off")" 'BEGIN { printf "%.1f", a - b }')
-    line="Duck $mode: hook adds $extra ns (limit $LIMIT); hook ${on#duck mode=$mode }; stock ${off#duck mode=$mode }"
+    line="Duck $mode: hook adds $extra ns (limit $LIMIT); hook ${on#duck mode="$mode" }; stock ${off#duck mode="$mode" }"
     if awk -v e="$extra" -v l="$LIMIT" 'BEGIN { exit !(e < l) }'; then ok "$line"; else bad "$line"; fi
 done
 

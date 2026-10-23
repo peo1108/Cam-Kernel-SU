@@ -2,6 +2,14 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.2.1 - 2026-10-23
+- Rule ẩn root v16 theo Duck Detector mới nhất; ẩn SELinux đã được thử lại với cách chấm mới, nghiêm hơn của Duck Detector
+### Thay đổi
+- Rule ẩn root v16: theo Duck Detector tới bản nightly 23/10. Duck Detector giờ coi chênh lệch thời gian khi App Zygote ghi context SELinux là dấu hiệu nguy hiểm (trước chỉ là thông tin). Đã thử với kernel 1.2.0: thẻ SELinux của Duck Detector vẫn sạch, không cần sửa kernel. Trang Kiểm tra ẩn root vẫn chưa có cách đo này và ghi nó trong mục Duck Detector
+- Duck Detector bản mới không còn tính "OEM unlock allowed" là dấu hiệu. Trên Android 16, bản cũ báo nguy hiểm mỗi khi có `sys.oem_unlock_allowed`, kể cả giá trị 0 do Ẩn bootloader đặt; giờ chỉ hiện giá trị
+### Lưu ý
+- Bản này không đổi kernel: không cần cài lại LKM. Ai chưa cài lại LKM sau khi lên 1.2.0 thì vẫn nên cài lại để có phần sửa ẩn SELinux của 1.2.0
+
 ## 1.2.0 - 2026-10-23
 - Ẩn SELinux trước cách đo mới của Duck Detector; kiểm tra ẩn root chính xác hơn: hết báo nhầm file của WebView, bắt thêm vài kiểu file root trước đây lọt qua
 ### Sửa lỗi

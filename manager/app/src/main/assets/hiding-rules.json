@@ -1,8 +1,8 @@
 {
-  "version": 15,
+  "version": 16,
   "updated": "2026-10-23",
-  "duckDetector": "089b452fdc689e57a32e41d4a89b4cbb00b85fab",
-  "duckDetectorAt": "2026-10-22T14:21:13Z",
+  "duckDetector": "e7f8fe5b980a9318a052c845ced1890b6295b435",
+  "duckDetectorAt": "2026-10-23T11:39:30Z",
   "duckPending": ["heap residue", "App Zygote attr/current timing"],
   "mountSources": ["KSU", "APatch", "magisk", "worker"],
   "mapMarkers": [

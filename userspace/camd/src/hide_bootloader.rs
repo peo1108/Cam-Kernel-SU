@@ -25,6 +25,15 @@ const EXACT_RULES: [(&str, &str); 4] = [
     ("ro.secure", "1"),
 ];
 
+/// Rewritten like the rest, but not a tell: "OEM unlocking" may be allowed on a locked
+/// bootloader too. Duck Detector only shows it since `84370394`.
+const NOT_TELLS: [&str; 1] = ["sys.oem_unlock_allowed"];
+
+/// Whether an app reading a wrong value of `name` learns the bootloader is unlocked.
+pub fn is_tell(name: &str) -> bool {
+    !NOT_TELLS.contains(&name)
+}
+
 /// The value a locked, verified device reports for `name`, if it is a property we hide.
 pub fn safe_value(name: &str) -> Option<&'static str> {
     if let Some((_, safe)) = EXACT_RULES.iter().find(|(exact, _)| *exact == name) {
@@ -215,6 +224,16 @@ mod tests {
         assert_eq!(safe_value("ro.secureboot.lockstate"), Some("locked"));
         assert_eq!(safe_value("ro.debuggable"), Some("0"));
         assert_eq!(safe_value("ro.secure"), Some("1"));
+    }
+
+    #[test]
+    fn oem_unlock_allowed_is_hidden_but_not_a_tell() {
+        assert_eq!(
+            plan(&props(&[("sys.oem_unlock_allowed", "1")])),
+            vec![("sys.oem_unlock_allowed".to_owned(), "0")]
+        );
+        assert!(!is_tell("sys.oem_unlock_allowed"));
+        assert!(is_tell("ro.boot.verifiedbootstate"));
     }
 
     #[test]

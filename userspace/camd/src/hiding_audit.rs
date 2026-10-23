@@ -440,6 +440,7 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
     if !s.hide_bootloader {
         let props: Vec<String> = hide_bootloader::plan(&s.props)
             .into_iter()
+            .filter(|(name, _)| hide_bootloader::is_tell(name))
             .map(|(name, _)| format!("{name}={}", prop(&s.props, &name).unwrap_or_default()))
             .collect();
         if !props.is_empty() {
@@ -1051,6 +1052,15 @@ mod tests {
             ..s
         };
         assert!(audit(&hidden).is_empty());
+    }
+
+    #[test]
+    fn oem_unlock_allowed_is_not_a_leak() {
+        let s = Snapshot {
+            props: props(&[("sys.oem_unlock_allowed", "1")]),
+            ..snapshot()
+        };
+        assert!(audit(&s).is_empty());
     }
 
     #[test]

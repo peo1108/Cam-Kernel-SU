@@ -14,6 +14,12 @@
 # It also checks what the hook is for: root contexts unknown with hiding on, known with it off,
 # and a stock transition still allowed.
 #
+# Known residual, not measured here: a context valid in both policies (a successful attr/current
+# transition) is parsed twice by the hook (backup to decide hiding, live for the transition SID)
+# where stock parses once. It cannot be dropped without ceasing to hide, and a successful write
+# mutates the thread's creds, so it does not micro-time in a tight loop like the invalid payloads.
+# The context/access selinuxfs writes no longer double-parse (they discard the live result).
+#
 # Needs root granted to Shell and the NDK (NDK_CLANG=<clang> to pick one). Changes selinux_hide
 # in the kernel only (camd feature set, not saved) and puts it back, even when interrupted.
 set -u

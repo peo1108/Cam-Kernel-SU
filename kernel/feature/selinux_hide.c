@@ -296,6 +296,15 @@ static int __nocfi my_setprocattr(const char *name, void *value, size_t size)
 
     /* Obtain a SID for the context. */
     {
+        // Residual timing tell we cannot remove here: a context valid in both
+        // policies (a normal transition) is parsed twice, once against the
+        // backup to decide whether to hide it and once against the live policy
+        // for the SID the transition needs, where stock parses once. Rejected
+        // and empty contexts already match stock (see the early-out above and
+        // security_context_to_sid_with_policy); only a successful transition
+        // pays the extra parse, and dropping it would mean no longer parsing
+        // the backup, i.e. no longer hiding. scripts/device_selinux_timing_test.sh
+        // tracks the invalid-context gap, which is the one Duck times.
         struct selinux_policy *policy = backup_get();
 
         if (!policy)
@@ -550,7 +559,6 @@ static int selinux_hide_feature_set(u64 value)
     int ret = 0;
     pr_info("selinux_hide: set to %d\n", enable);
     mutex_lock(&selinux_hide_mutex);
-    ksu_selinux_hide_enabled = enable;
     if (enable) {
         if (!ksu_selinux_hide_running) {
             ret = ksu_selinux_hide_enable();
@@ -558,7 +566,13 @@ static int selinux_hide_feature_set(u64 value)
                 WRITE_ONCE(ksu_selinux_hide_running, true);
             }
         }
+        // Report on only when the hooks are really installed. An enable that
+        // failed (no backup, write_op not found) left enabled=1 before, so the
+        // Manager showed hiding on and the fake status page was served while the
+        // context/access/attr hooks were absent.
+        ksu_selinux_hide_enabled = ksu_selinux_hide_running;
     } else {
+        ksu_selinux_hide_enabled = false;
         if (ksu_selinux_hide_running) {
             // stop gating the netlink notify before tearing the hooks down
             WRITE_ONCE(ksu_selinux_hide_running, false);
@@ -803,15 +817,20 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
         // removed: if (rc == -ESTALE)
         // The live policy only counts once the backup took the context, so a
         // rejected one costs what it costs stock: one copy, one parse. Apps time
-        // that path (Duck's App Zygote attr/current timing).
-        memcpy(scontext2, scontext, scontext_len);
-        orig_rc = string_to_context_struct(orig_policydb, orig_sidtab, scontext2, &orig_context, def_sid);
-        if (!orig_rc) {
-            // sync to global sidtab
-            orig_rc = sidtab_context_to_sid(orig_sidtab, &orig_context, &orig_sid);
-            if (orig_sid_p)
-                *orig_sid_p = orig_sid;
-            context_destroy(&orig_context);
+        // that path (Duck's App Zygote attr/current timing). Only the setprocattr
+        // path wants the live SID/rc (for the transition); the context and access
+        // writes discard it, so skip the second parse for them and keep a valid
+        // context as cheap as stock there too.
+        if (orig_sid_p || orig_rc_p) {
+            memcpy(scontext2, scontext, scontext_len);
+            orig_rc = string_to_context_struct(orig_policydb, orig_sidtab, scontext2, &orig_context, def_sid);
+            if (!orig_rc) {
+                // sync to global sidtab
+                orig_rc = sidtab_context_to_sid(orig_sidtab, &orig_context, &orig_sid);
+                if (orig_sid_p)
+                    *orig_sid_p = orig_sid;
+                context_destroy(&orig_context);
+            }
         }
     }
     rcu_read_unlock();

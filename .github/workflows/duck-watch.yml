@@ -34,14 +34,18 @@ jobs:
           echo "pinned $pinned, nightly $tag ($nightly) is $ahead commit(s) ahead"
           [ "$ahead" -gt 0 ] || exit 0
 
-          # probes live in feature/<name>/data (Kotlin probes, native code); presentation,
-          # docs and research changes do not change what Duck detects
-          probes=$(jq -r '[.files[].filename | select(test("^feature/[^/]+/data/src/main/"))] | unique | .[]' <<<"$compare")
+          # What Duck measures lives in feature/<name>/data and capability/<name>/data (Kotlin
+          # and native probes; capability/selinuxpolicy holds the App Zygote timing), the shared
+          # native code in core/native and the zygote preload carrier in sdk/runtime. What it
+          # concludes lives in domain (verdicts), detector and presentation (a card row's
+          # severity: e5351fce made App Zygote timing Danger in domain and presentation). ui
+          # modules, the other core modules, docs, tests and build files do not.
+          probes=$(jq -r '[.files[].filename | select(test("^((feature|capability)/[^/]+/(data|domain|detector|presentation)|core/native|sdk/runtime)/src/main/"))] | unique | .[]' <<<"$compare")
           if [ -z "$probes" ]; then
             echo "no probe changes"
             exit 0
           fi
-          features=$(sed -E 's#^feature/([^/]+)/.*#\1#' <<<"$probes" | sort -u | paste -sd, - | sed 's/,/, /g')
+          features=$(sed -E 's#^(feature|capability)/([^/]+)/.*#\2#; t; s#^([^/]+/[^/]+)/.*#\1#' <<<"$probes" | sort -u | paste -sd, - | sed 's/,/, /g')
 
           {
             echo "Duck Detector nightly is **$ahead** commit(s) past the hiding rules (\`${pinned:0:8}\` → \`${nightly:0:8}\`) and changes probes in: **$features**."

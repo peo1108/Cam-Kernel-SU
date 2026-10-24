@@ -118,9 +118,36 @@ pub struct Snapshot {
     pub selinux_enforcing: Option<bool>,
     /// Duck Detector's AVC lookup probe ([`crate::avc_lookup`]); None when it did not answer
     pub avc_lookup: Option<crate::avc_lookup::Reading>,
-    /// /dev/socket/adbd exists: init creates it when adbd starts and unlinks it when adbd is
-    /// reaped, before it publishes `init.svc.adbd=stopped`
-    pub adbd_socket: bool,
+    /// [`Adbd`] read at the start and at the end of the snapshot
+    pub adbd: Vec<Adbd>,
+    /// files that name `init.svc.adbd`, looked for only when [`adbd_hidden`]
+    pub adbd_files: Vec<String>,
+}
+
+/// `init.svc.adbd`, and right after it whether /dev/socket/adbd exists: init creates the
+/// socket when adbd starts and unlinks it when adbd is reaped, before it publishes `stopped`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Adbd {
+    pub state: Option<String>,
+    pub socket: bool,
+}
+
+impl Adbd {
+    /// The socket next to a state init never shows with it: something rewrote or deleted
+    /// the property to hide adbd.
+    fn hidden(&self) -> bool {
+        self.socket
+            && !matches!(
+                self.state.as_deref(),
+                Some("starting" | "running" | "stopping" | "restarting")
+            )
+    }
+}
+
+/// Every reading, and at least two, shows adbd hidden: one alone can be adbd starting or
+/// stopping between the property and the socket (Duck Detector also wants two).
+pub fn adbd_hidden(readings: &[Adbd]) -> bool {
+    readings.len() >= 2 && readings.iter().all(Adbd::hidden)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -522,25 +549,26 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
 
     // Duck Detector's ADB Runtime warns on a running adbd too: wireless debugging runs it
     // without the USB function
-    let adbd = prop(&s.props, "init.svc.adbd");
     let adb = ["sys.usb.config", "persist.sys.usb.config"]
         .iter()
         .any(|name| prop(&s.props, name).is_some_and(|v| v.split(',').any(|f| f == "adb")))
-        || adbd == Some("running")
-        || s.adbd_socket;
+        || s.adbd
+            .iter()
+            .any(|r| r.socket || r.state.as_deref() == Some("running"));
     if adb {
         push(&mut out, "adb", Level::Warn, Vec::new(), None);
     }
     // init never leaves the socket behind a stopped adbd, so something rewrote the property
-    // (Duck Detector a5b72479 reports it as Danger)
-    if adbd == Some("stopped") && s.adbd_socket {
-        push(
-            &mut out,
-            "adbStopped",
-            Level::Leak,
-            vec!["init.svc.adbd=stopped".to_owned()],
-            None,
-        );
+    // (Duck Detector a5b72479 reports `stopped` as Danger) or deleted it; the files that
+    // name it come along, so do the modules they belong to
+    if adbd_hidden(&s.adbd) {
+        let state = s.adbd.last().and_then(|r| r.state.as_deref());
+        let mut items = vec![state.map_or_else(
+            || "init.svc.adbd (deleted)".to_owned(),
+            |v| format!("init.svc.adbd={v}"),
+        )];
+        items.extend(s.adbd_files.iter().cloned());
+        push(&mut out, "adbStopped", Level::Leak, items, None);
     }
 
     out
@@ -647,9 +675,9 @@ mod device {
     use anyhow::Result;
     use serde_json::json;
 
-    use super::{Fix, RECOVERY_PATHS, Rules, Snapshot};
+    use super::{Adbd, Fix, PARTITIONS, RECOVERY_PATHS, Rules, Snapshot};
     use crate::feature_id::FeatureId;
-    use crate::{hide_bootloader, ksucalls, resetprop};
+    use crate::{defs, hide_bootloader, ksucalls, resetprop};
 
     /// Android app uids (per user), isolated processes included.
     fn is_app_uid(uid: u32) -> bool {
@@ -720,10 +748,73 @@ mod device {
             .map(|state| state.value != 0)
     }
 
+    fn adbd() -> Adbd {
+        Adbd {
+            state: crate::utils::getprop("init.svc.adbd"),
+            socket: Path::new("/dev/socket/adbd").exists(),
+        }
+    }
+
+    /// Larger files are payload (libraries, images), not what a module runs.
+    const SCANNED_MAX: u64 = 1 << 20;
+
+    /// Small files under `dir`, `depth` folders down and outside the partitions modules
+    /// overlay, that hold `needle`.
+    fn files_naming(dir: &Path, needle: &[u8], depth: u32, out: &mut Vec<String>) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        let mut entries: Vec<_> = entries.flatten().collect();
+        entries.sort_by_key(std::fs::DirEntry::file_name);
+        for entry in entries {
+            // symlinks are not followed
+            let Ok(meta) = entry.metadata() else {
+                continue;
+            };
+            let path = entry.path();
+            if meta.is_dir() {
+                let name = entry.file_name();
+                let overlaid = PARTITIONS.iter().any(|p| name.to_str() == p.get(1..));
+                if depth > 0 && !overlaid {
+                    files_naming(&path, needle, depth - 1, out);
+                }
+            } else if meta.is_file()
+                && meta.len() <= SCANNED_MAX
+                && std::fs::read(&path).is_ok_and(|b| b.windows(needle.len()).any(|w| w == needle))
+            {
+                out.push(path.display().to_string());
+            }
+        }
+    }
+
+    /// What may have rewritten `init.svc.adbd`: files of enabled modules and of /data/adb's
+    /// script folders (`service.d`, ...) that name it.
+    fn adbd_files() -> Vec<String> {
+        let mut roots: Vec<PathBuf> = crate::module::enabled_module_ids()
+            .into_iter()
+            .map(|id| Path::new(defs::MODULE_DIR).join(id))
+            .collect();
+        if let Ok(entries) = std::fs::read_dir(defs::ADB_DIR) {
+            let mut scripts: Vec<PathBuf> = entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| p.extension().is_some_and(|ext| ext == "d"))
+                .collect();
+            scripts.sort();
+            roots.extend(scripts);
+        }
+        let mut out = Vec::new();
+        for root in roots {
+            files_naming(&root, b"init.svc.adbd", 2, &mut out);
+        }
+        out
+    }
+
     pub fn snapshot(rules: &Rules) -> Snapshot {
+        let first = adbd();
         let bootconfig = std::fs::read_to_string("/proc/bootconfig").unwrap_or_default();
         let cmdline = std::fs::read_to_string("/proc/cmdline").unwrap_or_default();
-        Snapshot {
+        let mut snapshot = Snapshot {
             props: resetprop::list_props().unwrap_or_default(),
             hide_bootloader: hide_bootloader::is_enabled(),
             boot_args: hide_bootloader::parse_boot_args(&bootconfig, &cmdline),
@@ -743,8 +834,14 @@ mod device {
                 .map(|v| v.trim() != "0"),
             avc_lookup: crate::avc_lookup::device::collect()
                 .and_then(|report| crate::avc_lookup::Reading::from_json(&report)),
-            adbd_socket: Path::new("/dev/socket/adbd").exists(),
+            ..Snapshot::default()
+        };
+        // the AVC probe in between puts time between the two readings
+        snapshot.adbd = vec![first, adbd()];
+        if super::adbd_hidden(&snapshot.adbd) {
+            snapshot.adbd_files = adbd_files();
         }
+        snapshot
     }
 
     /// Turns a KernelSU feature on now and in the saved config, like the Manager's switch;
@@ -1124,33 +1221,104 @@ mod tests {
         assert!(findings.iter().all(|f| f.fix.is_none()));
     }
 
+    fn adbd(state: Option<&str>, socket: bool) -> Adbd {
+        Adbd {
+            state: state.map(str::to_owned),
+            socket,
+        }
+    }
+
+    fn adbd_ids(readings: Vec<Adbd>) -> Vec<&'static str> {
+        let s = Snapshot {
+            adbd: readings,
+            ..snapshot()
+        };
+        audit(&s).iter().map(|f| f.id).collect()
+    }
+
     #[test]
     fn running_adbd_is_adb_without_the_usb_function() {
+        let running = adbd(Some("running"), true);
         let s = Snapshot {
-            props: props(&[("sys.usb.config", "mtp"), ("init.svc.adbd", "running")]),
-            adbd_socket: true,
+            props: props(&[("sys.usb.config", "mtp")]),
+            adbd: vec![running.clone(), running],
             ..snapshot()
         };
         let ids: Vec<&str> = audit(&s).iter().map(|f| f.id).collect();
         assert_eq!(ids, vec!["adb"]);
+        // between init starting adbd and adbd making its socket
+        let running = adbd(Some("running"), false);
+        assert_eq!(adbd_ids(vec![running.clone(), running]), vec!["adb"]);
     }
 
     #[test]
     fn adbd_socket_behind_a_stopped_prop_is_a_leak() {
+        let stopped = adbd(Some("stopped"), true);
         let s = Snapshot {
-            props: props(&[("init.svc.adbd", "stopped")]),
-            adbd_socket: true,
+            adbd: vec![stopped.clone(), stopped],
             ..snapshot()
         };
         let findings = audit(&s);
         let ids: Vec<&str> = findings.iter().map(|f| f.id).collect();
         assert_eq!(ids, vec!["adb", "adbStopped"]);
         assert_eq!(findings[1].level, Level::Leak);
-        let gone = Snapshot {
-            adbd_socket: false,
-            ..s
+        assert_eq!(findings[1].items, vec!["init.svc.adbd=stopped"]);
+        let gone = adbd(Some("stopped"), false);
+        assert!(adbd_ids(vec![gone.clone(), gone]).is_empty());
+    }
+
+    #[test]
+    fn adbd_socket_behind_a_deleted_prop_is_a_leak() {
+        let deleted = adbd(None, true);
+        let s = Snapshot {
+            adbd: vec![deleted.clone(), deleted],
+            ..snapshot()
         };
-        assert!(audit(&gone).is_empty());
+        let findings = audit(&s);
+        assert_eq!(findings[1].id, "adbStopped");
+        assert_eq!(findings[1].items, vec!["init.svc.adbd (deleted)"]);
+    }
+
+    /// init shows these while it starts, stops or restarts adbd, socket or not.
+    #[test]
+    fn adbd_changing_state_is_only_adb() {
+        for state in ["starting", "running", "stopping", "restarting"] {
+            let reading = adbd(Some(state), true);
+            assert_eq!(
+                adbd_ids(vec![reading.clone(), reading]),
+                vec!["adb"],
+                "{state}"
+            );
+        }
+    }
+
+    /// adbd started or stopped between the two readings: one alone is not enough.
+    #[test]
+    fn adbd_hidden_in_one_reading_is_only_adb() {
+        let hidden = adbd(Some("stopped"), true);
+        let running = adbd(Some("running"), true);
+        let stopped = adbd(Some("stopped"), false);
+        assert_eq!(adbd_ids(vec![hidden.clone(), running.clone()]), vec!["adb"]);
+        assert_eq!(adbd_ids(vec![running, hidden.clone()]), vec!["adb"]);
+        assert_eq!(adbd_ids(vec![hidden.clone(), stopped]), vec!["adb"]);
+        assert_eq!(adbd_ids(vec![hidden]), vec!["adb"]);
+    }
+
+    #[test]
+    fn adbd_hidden_names_the_files_and_modules_behind_it() {
+        let stopped = adbd(Some("stopped"), true);
+        let s = Snapshot {
+            adbd: vec![stopped.clone(), stopped],
+            adbd_files: vec![
+                "/data/adb/modules/hide_adb/service.sh".to_owned(),
+                "/data/adb/modules/hide_adb/system.prop".to_owned(),
+                "/data/adb/service.d/adb.sh".to_owned(),
+            ],
+            ..snapshot()
+        };
+        let findings = audit(&s);
+        assert_eq!(findings[1].items.len(), 4);
+        assert_eq!(findings[1].modules, vec!["hide_adb"]);
     }
 
     #[test]

@@ -10,6 +10,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Rule ẩn root v17: theo Duck Detector tới bản nightly 23/10 (e0a57418). Duck Detector giờ vẫn chấm phép đo thời gian khi App Zygote ghi context SELinux kể cả khi máy đổi nhân CPU giữa lúc đo (trước đó lượt đo như vậy bị bỏ). Đã thử với kernel 1.2.0, có cả những lượt cố ý chuyển Duck Detector qua lại giữa các nhân CPU: thẻ SELinux vẫn sạch, không cần sửa kernel. Trang Kiểm tra ẩn root vẫn chưa có cách đo này và ghi nó trong mục Duck Detector
 - Duck Detector bản mới không còn tính "OEM unlock allowed" là dấu hiệu. Trên Android 16, bản cũ báo nguy hiểm mỗi khi có `sys.oem_unlock_allowed`, kể cả giá trị 0 do Ẩn bootloader đặt; giờ chỉ hiện giá trị. Trang Kiểm tra ẩn root cũng thôi báo lộ khi máy cho phép mở khóa OEM (Ẩn bootloader vẫn sửa giá trị này như cũ)
 ### Sửa lỗi
+- Kiểm tra ẩn root: hết báo "ADB đang bật" khi đã tắt cả gỡ lỗi USB lẫn không dây. ROM của Lenovo vẫn để lại một giá trị cũ báo ADB sau khi tắt; giờ trang xem ADB có thật sự đang chạy hay không, giống Duck Detector, và ghi rõ dấu hiệu nào cho thấy ADB đang bật
 - Khởi động lại mềm: sửa lỗi crash của chương trình nhỏ chờ Android dừng hẳn trước khi khởi động lại (từ KernelSU)
 ### Lưu ý
 - Bản này không đổi kernel: không cần cài lại LKM. Ai chưa cài lại LKM sau khi lên 1.2.0 thì vẫn nên cài lại để có phần sửa ẩn SELinux của 1.2.0

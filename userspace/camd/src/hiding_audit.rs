@@ -617,16 +617,27 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
         );
     }
 
-    // Duck Detector's ADB Runtime warns on a running adbd too: wireless debugging runs it
-    // without the USB function
-    let adb = ["sys.usb.config", "persist.sys.usb.config"]
+    // Like Duck Detector: the USB function in use (sys.usb.state, not the sys.usb.config asked
+    // for, which ZUI leaves at `adb` after debugging is turned off), USB debugging kept on
+    // (persist.sys.usb.config, Duck's System Properties), and a running adbd, which wireless
+    // debugging runs without the USB function. The items say which.
+    let mut adb: Vec<String> = ["sys.usb.state", "persist.sys.usb.config"]
         .iter()
-        .any(|name| prop(&s.props, name).is_some_and(|v| v.split(',').any(|f| f == "adb")))
-        || s.adbd
-            .iter()
-            .any(|r| r.socket || r.state.as_deref() == Some("running"));
-    if adb {
-        push(&mut out, "adb", Level::Warn, Vec::new(), None);
+        .filter_map(|name| {
+            let v = prop(&s.props, name)?;
+            v.split(',')
+                .any(|f| f == "adb")
+                .then(|| format!("{name}={v}"))
+        })
+        .collect();
+    if s.adbd.iter().any(|r| r.state.as_deref() == Some("running")) {
+        adb.push("init.svc.adbd=running".to_owned());
+    }
+    if s.adbd.iter().any(|r| r.socket) {
+        adb.push("/dev/socket/adbd".to_owned());
+    }
+    if !adb.is_empty() {
+        push(&mut out, "adb", Level::Warn, adb, None);
     }
     // init never leaves the socket behind a stopped adbd, so something rewrote the property
     // (Duck Detector a5b72479 reports `stopped` as Danger) or deleted it; the files that
@@ -1228,12 +1239,56 @@ mod tests {
     fn selinux_and_adb_are_reported_without_fix() {
         let s = Snapshot {
             selinux_enforcing: Some(false),
-            props: props(&[("sys.usb.config", "mtp,adb")]),
+            props: props(&[("sys.usb.state", "mtp,adb")]),
             ..snapshot()
         };
         let findings = audit(&s);
         assert_eq!(findings.len(), 2);
         assert!(findings.iter().all(|f| f.fix.is_none()));
+        assert_eq!(findings[1].items, vec!["sys.usb.state=mtp,adb"]);
+    }
+
+    /// What a Lenovo TB323FU (ZUI, Android 16) shows with USB and wireless debugging turned
+    /// off: sys.usb.config keeps `adb`, nothing else does.
+    #[test]
+    fn usb_config_left_at_adb_is_not_adb() {
+        let stopped = adbd(Some("stopped"), false);
+        let s = Snapshot {
+            props: props(&[
+                ("sys.usb.config", "adb"),
+                ("persist.sys.usb.config", ""),
+                ("sys.usb.state", ""),
+            ]),
+            adbd: vec![stopped.clone(), stopped],
+            ..snapshot()
+        };
+        assert!(audit(&s).is_empty());
+    }
+
+    /// And with USB debugging on, the props and adbd all say so.
+    #[test]
+    fn adb_items_say_what_shows_adb() {
+        let running = adbd(Some("running"), true);
+        let s = Snapshot {
+            props: props(&[
+                ("sys.usb.config", "adb"),
+                ("persist.sys.usb.config", "adb"),
+                ("sys.usb.state", "adb"),
+            ]),
+            adbd: vec![running.clone(), running],
+            ..snapshot()
+        };
+        let findings = audit(&s);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(
+            findings[0].items,
+            vec![
+                "sys.usb.state=adb",
+                "persist.sys.usb.config=adb",
+                "init.svc.adbd=running",
+                "/dev/socket/adbd",
+            ]
+        );
     }
 
     fn adbd(state: Option<&str>, socket: bool) -> Adbd {
@@ -1255,7 +1310,7 @@ mod tests {
     fn running_adbd_is_adb_without_the_usb_function() {
         let running = adbd(Some("running"), true);
         let s = Snapshot {
-            props: props(&[("sys.usb.config", "mtp")]),
+            props: props(&[("sys.usb.state", "mtp")]),
             adbd: vec![running.clone(), running],
             ..snapshot()
         };

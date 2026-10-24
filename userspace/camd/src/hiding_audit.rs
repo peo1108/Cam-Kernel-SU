@@ -120,7 +120,7 @@ pub struct Snapshot {
     pub avc_lookup: Option<crate::avc_lookup::Reading>,
     /// [`Adbd`] read at the start and at the end of the snapshot
     pub adbd: Vec<Adbd>,
-    /// files that name `init.svc.adbd`, looked for only when [`adbd_hidden`]
+    /// [`adbd_files`], looked for only when [`adbd_hidden`]
     pub adbd_files: Vec<String>,
 }
 
@@ -148,6 +148,76 @@ impl Adbd {
 /// stopping between the property and the socket (Duck Detector also wants two).
 pub fn adbd_hidden(readings: &[Adbd]) -> bool {
     readings.len() >= 2 && readings.iter().all(Adbd::hidden)
+}
+
+/// Larger files are payload (libraries, images), not a script that sets a property.
+const SCANNED_MAX: u64 = 1 << 20;
+
+/// A line that sets `init.svc.adbd`: resetprop or setprop, or `name=value` as in system.prop.
+/// Reading it (getprop, an rc trigger) does not count.
+fn sets_adbd_state(text: &[u8]) -> bool {
+    String::from_utf8_lossy(text).lines().any(|line| {
+        line.contains("init.svc.adbd")
+            && (line.contains("setprop") || line.trim_start().starts_with("init.svc.adbd="))
+    })
+}
+
+/// Files under `dir`, `depth` folders down, that [`sets_adbd_state`]; symlinks are not
+/// followed. In a `module`, its partition folders (`system`, ...) are left out: they are
+/// what it mounts, not what it runs.
+fn adbd_setters(dir: &Path, depth: u32, module: bool, out: &mut Vec<String>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let mut entries: Vec<_> = entries.flatten().collect();
+    entries.sort_by_key(std::fs::DirEntry::file_name);
+    for entry in entries {
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        let path = entry.path();
+        if meta.is_dir() {
+            let name = entry.file_name();
+            let mounted = module && PARTITIONS.iter().any(|p| name.to_str() == p.get(1..));
+            if depth > 0 && !mounted {
+                adbd_setters(&path, depth - 1, false, out);
+            }
+        } else if meta.is_file()
+            && meta.len() <= SCANNED_MAX
+            && std::fs::read(&path).is_ok_and(|text| sets_adbd_state(&text))
+        {
+            out.push(path.display().to_string());
+        }
+    }
+}
+
+fn sorted_dirs(dir: &Path) -> Vec<std::path::PathBuf> {
+    let mut out: Vec<_> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+        .map(|e| e.path())
+        .collect();
+    out.sort();
+    out
+}
+
+/// What may have set `init.svc.adbd` this boot, under `adb_dir` (/data/adb): files of every
+/// module, also one turned off or marked for removal since (it ran at boot and the value
+/// stays until a reboot), then of the script folders (`service.d`, ...).
+pub fn adbd_files(adb_dir: &Path) -> Vec<String> {
+    let mut out = Vec::new();
+    for module in sorted_dirs(&adb_dir.join("modules")) {
+        adbd_setters(&module, 2, true, &mut out);
+    }
+    for scripts in sorted_dirs(adb_dir)
+        .into_iter()
+        .filter(|p| p.extension().is_some_and(|ext| ext == "d"))
+    {
+        adbd_setters(&scripts, 2, false, &mut out);
+    }
+    out
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -560,7 +630,7 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
     }
     // init never leaves the socket behind a stopped adbd, so something rewrote the property
     // (Duck Detector a5b72479 reports `stopped` as Danger) or deleted it; the files that
-    // name it come along, so do the modules they belong to
+    // set it come along, so do the modules they belong to
     if adbd_hidden(&s.adbd) {
         let state = s.adbd.last().and_then(|r| r.state.as_deref());
         let mut items = vec![state.map_or_else(
@@ -675,7 +745,7 @@ mod device {
     use anyhow::Result;
     use serde_json::json;
 
-    use super::{Adbd, Fix, PARTITIONS, RECOVERY_PATHS, Rules, Snapshot};
+    use super::{Adbd, Fix, RECOVERY_PATHS, Rules, Snapshot};
     use crate::feature_id::FeatureId;
     use crate::{defs, hide_bootloader, ksucalls, resetprop};
 
@@ -755,61 +825,6 @@ mod device {
         }
     }
 
-    /// Larger files are payload (libraries, images), not what a module runs.
-    const SCANNED_MAX: u64 = 1 << 20;
-
-    /// Small files under `dir`, `depth` folders down and outside the partitions modules
-    /// overlay, that hold `needle`.
-    fn files_naming(dir: &Path, needle: &[u8], depth: u32, out: &mut Vec<String>) {
-        let Ok(entries) = std::fs::read_dir(dir) else {
-            return;
-        };
-        let mut entries: Vec<_> = entries.flatten().collect();
-        entries.sort_by_key(std::fs::DirEntry::file_name);
-        for entry in entries {
-            // symlinks are not followed
-            let Ok(meta) = entry.metadata() else {
-                continue;
-            };
-            let path = entry.path();
-            if meta.is_dir() {
-                let name = entry.file_name();
-                let overlaid = PARTITIONS.iter().any(|p| name.to_str() == p.get(1..));
-                if depth > 0 && !overlaid {
-                    files_naming(&path, needle, depth - 1, out);
-                }
-            } else if meta.is_file()
-                && meta.len() <= SCANNED_MAX
-                && std::fs::read(&path).is_ok_and(|b| b.windows(needle.len()).any(|w| w == needle))
-            {
-                out.push(path.display().to_string());
-            }
-        }
-    }
-
-    /// What may have rewritten `init.svc.adbd`: files of enabled modules and of /data/adb's
-    /// script folders (`service.d`, ...) that name it.
-    fn adbd_files() -> Vec<String> {
-        let mut roots: Vec<PathBuf> = crate::module::enabled_module_ids()
-            .into_iter()
-            .map(|id| Path::new(defs::MODULE_DIR).join(id))
-            .collect();
-        if let Ok(entries) = std::fs::read_dir(defs::ADB_DIR) {
-            let mut scripts: Vec<PathBuf> = entries
-                .flatten()
-                .map(|e| e.path())
-                .filter(|p| p.extension().is_some_and(|ext| ext == "d"))
-                .collect();
-            scripts.sort();
-            roots.extend(scripts);
-        }
-        let mut out = Vec::new();
-        for root in roots {
-            files_naming(&root, b"init.svc.adbd", 2, &mut out);
-        }
-        out
-    }
-
     pub fn snapshot(rules: &Rules) -> Snapshot {
         let first = adbd();
         let bootconfig = std::fs::read_to_string("/proc/bootconfig").unwrap_or_default();
@@ -834,12 +849,12 @@ mod device {
                 .map(|v| v.trim() != "0"),
             avc_lookup: crate::avc_lookup::device::collect()
                 .and_then(|report| crate::avc_lookup::Reading::from_json(&report)),
-            ..Snapshot::default()
+            // after the AVC probe, which puts time between the two readings
+            adbd: vec![first, adbd()],
+            adbd_files: Vec::new(),
         };
-        // the AVC probe in between puts time between the two readings
-        snapshot.adbd = vec![first, adbd()];
         if super::adbd_hidden(&snapshot.adbd) {
-            snapshot.adbd_files = adbd_files();
+            snapshot.adbd_files = super::adbd_files(Path::new(defs::ADB_DIR));
         }
         snapshot
     }
@@ -1319,6 +1334,85 @@ mod tests {
         let findings = audit(&s);
         assert_eq!(findings[1].items.len(), 4);
         assert_eq!(findings[1].modules, vec!["hide_adb"]);
+    }
+
+    #[test]
+    fn only_lines_that_set_adbd_state_count() {
+        for text in [
+            "resetprop -n init.svc.adbd stopped",
+            "resetprop --delete init.svc.adbd",
+            "  setprop init.svc.adbd stopped # hide",
+            "init.svc.adbd=stopped",
+        ] {
+            assert!(sets_adbd_state(text.as_bytes()), "{text}");
+        }
+        for text in [
+            "[ \"$(getprop init.svc.adbd)\" = running ] && echo on",
+            "on property:init.svc.adbd=running",
+            "resetprop -n sys.usb.config mtp",
+        ] {
+            assert!(!sets_adbd_state(text.as_bytes()), "{text}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn finds_what_set_adbd_state_in_modules_and_script_folders() {
+        let d = tempfile::tempdir().unwrap();
+        let adb = d.path().join("adb");
+        let write = |path: &str, text: &str| {
+            let path = adb.join(path);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, text).unwrap();
+        };
+        let sets = "resetprop -n init.svc.adbd stopped\n";
+        write("modules/hide/service.sh", sets);
+        // what the module mounts, not what it runs
+        write("modules/hide/system/bin/hideadb", sets);
+        write("modules/props/system.prop", "init.svc.adbd=stopped\n");
+        // turned off since: it ran at boot, and the value stays until a reboot
+        write("modules/off/disable", "");
+        write("modules/off/common/hide.sh", sets);
+        write("modules/reader/service.sh", "getprop init.svc.adbd\n");
+        write(
+            "modules/reader/init.rc",
+            "on property:init.svc.adbd=running\n",
+        );
+        write("modules/deep/a/b/hide.sh", sets);
+        write("modules/deep/a/b/c/hide.sh", sets);
+        let big = format!("{sets}{}", "#".repeat(SCANNED_MAX as usize));
+        write("modules/big/hide.sh", &big);
+        write("service.d/adb.sh", sets);
+        write("other/hide.sh", sets);
+        // symlinks are not followed, to a file or to a folder
+        let link = std::os::unix::fs::symlink;
+        link(
+            adb.join("service.d/adb.sh"),
+            adb.join("modules/reader/hide.sh"),
+        )
+        .unwrap();
+        link(adb.join("service.d"), adb.join("modules/reader/scripts")).unwrap();
+
+        let found = adbd_files(&adb);
+        let root = format!("{}/", adb.display());
+        let found: Vec<&str> = found
+            .iter()
+            .map(|p| p.strip_prefix(&root).unwrap())
+            .collect();
+        assert_eq!(
+            found,
+            vec![
+                "modules/deep/a/b/hide.sh",
+                "modules/hide/service.sh",
+                "modules/off/common/hide.sh",
+                "modules/props/system.prop",
+                "service.d/adb.sh",
+            ]
+        );
+        assert_eq!(
+            module_ids(adbd_files(&adb).iter().map(String::as_str)),
+            vec!["deep", "hide", "off", "props"]
+        );
     }
 
     #[test]

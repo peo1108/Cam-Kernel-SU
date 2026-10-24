@@ -651,7 +651,7 @@
     <string name="hiding_advice_files">Xoá hoặc đổi tên các file này ở tab Tệp, sau khi xem mỗi file là của gì</string>
     <string name="hiding_advice_selinux">Có thứ đã đặt SELinux về permissive (ROM hoặc module): tìm ra nó và đặt lại enforcing</string>
     <string name="hiding_advice_adb">Tắt Gỡ lỗi USB và Gỡ lỗi không dây trong Tuỳ chọn nhà phát triển khi dùng app</string>
-    <string name="hiding_advice_adb_stopped">Có module hoặc script đã sửa hoặc xoá init.svc.adbd, nhưng app vẫn thấy socket của adbd: gỡ nó đi (file trong danh sách trên là file có nhắc tới prop này), rồi tắt Gỡ lỗi USB và Gỡ lỗi không dây thay vào đó</string>
+    <string name="hiding_advice_adb_stopped">Có module hoặc script đã sửa hoặc xoá init.svc.adbd, nhưng app vẫn thấy socket của adbd: gỡ nó đi (file trong danh sách trên là file có sửa prop này), rồi tắt Gỡ lỗi USB và Gỡ lỗi không dây thay vào đó</string>
     <string name="hiding_advice_app_su">Bật kernel umount và umount module cho app này; cũng có thể một module đưa su vào PATH</string>
     <string name="hiding_fix_hooked">Tắt module hook libc: app có thể phát hiện chính cái hook</string>
     <string name="hiding_fix_avc_lookups">Hook ẩn SELinux kiểm quyền thêm một lần trên đường này. Duck Detector chỉ hiện là thông tin, nhưng kernel gốc chỉ tra một lần: báo lại kèm phiên bản LKM</string>

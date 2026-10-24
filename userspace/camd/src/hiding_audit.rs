@@ -118,6 +118,9 @@ pub struct Snapshot {
     pub selinux_enforcing: Option<bool>,
     /// Duck Detector's AVC lookup probe ([`crate::avc_lookup`]); None when it did not answer
     pub avc_lookup: Option<crate::avc_lookup::Reading>,
+    /// /dev/socket/adbd exists: init creates it when adbd starts and unlinks it when adbd is
+    /// reaped, before it publishes `init.svc.adbd=stopped`
+    pub adbd_socket: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -517,11 +520,27 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
         );
     }
 
+    // Duck Detector's ADB Runtime warns on a running adbd too: wireless debugging runs it
+    // without the USB function
+    let adbd = prop(&s.props, "init.svc.adbd");
     let adb = ["sys.usb.config", "persist.sys.usb.config"]
         .iter()
-        .any(|name| prop(&s.props, name).is_some_and(|v| v.split(',').any(|f| f == "adb")));
+        .any(|name| prop(&s.props, name).is_some_and(|v| v.split(',').any(|f| f == "adb")))
+        || adbd == Some("running")
+        || s.adbd_socket;
     if adb {
         push(&mut out, "adb", Level::Warn, Vec::new(), None);
+    }
+    // init never leaves the socket behind a stopped adbd, so something rewrote the property
+    // (Duck Detector a5b72479 reports it as Danger)
+    if adbd == Some("stopped") && s.adbd_socket {
+        push(
+            &mut out,
+            "adbStopped",
+            Level::Leak,
+            vec!["init.svc.adbd=stopped".to_owned()],
+            None,
+        );
     }
 
     out
@@ -724,6 +743,7 @@ mod device {
                 .map(|v| v.trim() != "0"),
             avc_lookup: crate::avc_lookup::device::collect()
                 .and_then(|report| crate::avc_lookup::Reading::from_json(&report)),
+            adbd_socket: Path::new("/dev/socket/adbd").exists(),
         }
     }
 
@@ -1102,6 +1122,35 @@ mod tests {
         let findings = audit(&s);
         assert_eq!(findings.len(), 2);
         assert!(findings.iter().all(|f| f.fix.is_none()));
+    }
+
+    #[test]
+    fn running_adbd_is_adb_without_the_usb_function() {
+        let s = Snapshot {
+            props: props(&[("sys.usb.config", "mtp"), ("init.svc.adbd", "running")]),
+            adbd_socket: true,
+            ..snapshot()
+        };
+        let ids: Vec<&str> = audit(&s).iter().map(|f| f.id).collect();
+        assert_eq!(ids, vec!["adb"]);
+    }
+
+    #[test]
+    fn adbd_socket_behind_a_stopped_prop_is_a_leak() {
+        let s = Snapshot {
+            props: props(&[("init.svc.adbd", "stopped")]),
+            adbd_socket: true,
+            ..snapshot()
+        };
+        let findings = audit(&s);
+        let ids: Vec<&str> = findings.iter().map(|f| f.id).collect();
+        assert_eq!(ids, vec!["adb", "adbStopped"]);
+        assert_eq!(findings[1].level, Level::Leak);
+        let gone = Snapshot {
+            adbd_socket: false,
+            ..s
+        };
+        assert!(audit(&gone).is_empty());
     }
 
     #[test]

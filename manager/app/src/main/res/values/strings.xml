@@ -572,7 +572,8 @@
     <string name="audit_custom_rom">Custom ROM properties</string>
     <string name="audit_files">Root files and recovery folders</string>
     <string name="audit_selinux">SELinux is permissive</string>
-    <string name="audit_adb">USB debugging is on (some apps refuse to run)</string>
+    <string name="audit_adb">ADB is on, over USB or wireless (some apps refuse to run)</string>
+    <string name="audit_adb_stopped">ADB is reported as stopped while it still runs</string>
     <string name="audit_fix_kernel_umount">Turn on kernel umount</string>
     <string name="audit_fix_selinux_hide">Turn on SELinux hide (after a reboot)</string>
     <string name="audit_fix_hide_bootloader">Turn on hide bootloader</string>
@@ -664,7 +665,8 @@
     <string name="hiding_advice_custom_rom">The ROM sets its own props: a module that rewrites them (resetprop) hides them from apps that block custom ROMs</string>
     <string name="hiding_advice_files">Delete or rename these from the Files tab, after checking what each one belongs to</string>
     <string name="hiding_advice_selinux">Something set SELinux to permissive (the ROM or a module): find it and set SELinux back to enforcing</string>
-    <string name="hiding_advice_adb">Turn USB debugging off in developer options while using the app</string>
+    <string name="hiding_advice_adb">Turn USB and wireless debugging off in developer options while using the app</string>
+    <string name="hiding_advice_adb_stopped">A module or tool rewrote init.svc.adbd, and apps see adbd\'s socket anyway: remove that module and turn USB debugging off instead</string>
     <string name="hiding_advice_app_su">Turn on kernel umount and module umount for this app; a module may also put su on PATH</string>
     <string name="hiding_fix_hooked">Turn off the module hooking libc: apps can notice the hook itself</string>
     <string name="hiding_fix_avc_lookups">The SELinux hide hook checks permissions again on this path. Duck Detector only shows it as information, but a stock kernel looks up once: report it with the LKM version</string>

@@ -25,6 +25,7 @@ fun findingTitleRes(id: String): Int? = when (id) {
     "files" -> R.string.audit_files
     "selinux" -> R.string.audit_selinux
     "adb" -> R.string.audit_adb
+    "adbStopped" -> R.string.audit_adb_stopped
     "appMounts" -> R.string.audit_app_mounts
     "appMaps" -> R.string.audit_app_maps
     "appSu" -> R.string.audit_app_su
@@ -61,6 +62,7 @@ internal fun adviceRes(finding: HidingAudit.Finding): Int? = when (finding.id) {
     "files" -> R.string.hiding_advice_files
     "selinux", "appSelinux" -> R.string.hiding_advice_selinux
     "adb" -> R.string.hiding_advice_adb
+    "adbStopped" -> R.string.hiding_advice_adb_stopped
     "appSu" -> R.string.hiding_advice_app_su
     else -> null
 }

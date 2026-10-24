@@ -501,7 +501,7 @@ private fun FindingCard(checked: CheckedFinding, fixOn: Boolean, state: HidingCh
                     .padding(horizontal = 16.dp, vertical = 4.dp),
             )
         }
-        if (finding.id == "adb") {
+        if (finding.id == "adb" || finding.id == "adbStopped") {
             TextButton(
                 text = stringResource(R.string.hiding_open_developer_options),
                 onClick = actions.onOpenDeveloperOptions,

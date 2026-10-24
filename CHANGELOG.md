@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.2.1 - 2026-10-24
+## 1.2.1 - 2026-10-25
 - Rule ẩn root v18 theo Duck Detector mới nhất; trang Kiểm tra ẩn root bắt thêm Gỡ lỗi không dây và module giấu ADB mà vẫn bị lộ
 ### Thay đổi
 - Rule ẩn root v18: theo Duck Detector tới bản nightly 23/10 (a5b72479). Duck Detector giờ xem cả socket của ADB: ADB đang chạy là cảnh báo như trước, còn ADB bị báo là đã dừng mà socket vẫn còn thì là nguy hiểm (chỉ có khi có thứ sửa giá trị đó để giấu ADB). SU Kernel không sửa giá trị này nên tự nó không bị báo

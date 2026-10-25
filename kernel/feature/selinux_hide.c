@@ -458,10 +458,7 @@ static int my_sel_open_handle_status(struct inode *inode, struct file *filp)
     // running, not enabled: a switch-on waiting for the next boot has no
     // context/access/attr hooks yet, so the fake page alone would not match them
     if (likely(current_uid().val >= 10000 && READ_ONCE(ksu_selinux_hide_running))) {
-        void *data;
-        mutex_lock(&selinux_state.status_lock);
-        data = fake_status;
-        mutex_unlock(&selinux_state.status_lock);
+        void *data = fake_status;
         if (data) {
             filp->private_data = data;
             return 0;

@@ -7,6 +7,9 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ### Thay đổi
 - Rule ẩn root v19: theo Duck Detector tới bản nightly 25/10 (b4083aee). Duck Detector giờ hỏi quyền SELinux thêm một đường nữa, ghi đọc thẳng vào selinuxfs thay vì qua thư viện của Android, và xét thêm vài quy tắc mà các bản root hay thêm vào. Phần ẩn SELinux của SU Kernel trả lời đường này giống hai đường cũ, theo chính sách gốc của máy, nên không cần sửa gì thêm
 - Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ KernelSU). Có hiệu lực khi cài lại LKM
+- Thanh tiến trình cho các việc phải chờ: cài APK và chép tệp để mở/chia sẻ trong tab Tệp, sao lưu APK, tải bản cập nhật. Hiện phần trăm, dung lượng, tốc độ và thời gian còn lại; sao chép/di chuyển/giải nén cũng có thêm tốc độ và thời gian còn lại. Cài APK giờ chạy nền như sao chép (có thông báo và nút Huỷ khi đang chép vào trình cài đặt)
+### Sửa lỗi
+- Tab Tệp: thư mục Download/SU Kernel báo "Không có quyền (đã cấp root chưa?)". Sao lưu APK bản cũ tạo thư mục này thẳng bằng root mà không cho bộ nhớ chung quyền đọc, nên không ai mở được, kể cả root. Sao lưu APK giờ ghi qua bộ nhớ chung như mọi tệp tải về và tự sửa thư mục cũ; tab Tệp có nút Sửa quyền cho mọi thư mục bị như vậy
 ### Lưu ý
 - Bản này có thay đổi nhỏ ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có phần sửa ẩn SELinux. Không cài lại thì mọi thứ vẫn chạy như 1.2.1
 

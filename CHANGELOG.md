@@ -2,6 +2,14 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.2.2 - 2026-10-25
+- Rule ẩn root v19 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút khi app mở trạng thái SELinux
+### Thay đổi
+- Rule ẩn root v19: theo Duck Detector tới bản nightly 25/10 (b4083aee). Duck Detector giờ hỏi quyền SELinux thêm một đường nữa, ghi đọc thẳng vào selinuxfs thay vì qua thư viện của Android, và xét thêm vài quy tắc mà các bản root hay thêm vào. Phần ẩn SELinux của SU Kernel trả lời đường này giống hai đường cũ, theo chính sách gốc của máy, nên không cần sửa gì thêm
+- Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ KernelSU). Có hiệu lực khi cài lại LKM
+### Lưu ý
+- Bản này có thay đổi nhỏ ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có phần sửa ẩn SELinux. Không cài lại thì mọi thứ vẫn chạy như 1.2.1
+
 ## 1.2.1 - 2026-10-25
 - Rule ẩn root v18 theo Duck Detector mới nhất; trang Kiểm tra ẩn root bắt thêm Gỡ lỗi không dây và module giấu ADB mà vẫn bị lộ
 ### Thay đổi

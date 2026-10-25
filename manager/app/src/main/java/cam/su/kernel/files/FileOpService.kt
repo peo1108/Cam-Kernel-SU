@@ -132,6 +132,7 @@ class FileOpService : Service() {
         OpKind.TRASH -> R.string.files_op_trash
         OpKind.RESTORE -> R.string.files_op_restore
         OpKind.PURGE -> R.string.files_op_delete
+        OpKind.INSTALL -> R.string.files_op_install
         null -> R.string.files
     }
 

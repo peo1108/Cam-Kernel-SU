@@ -274,6 +274,30 @@ object Systemless {
         "$MODULE/system" + if (path.startsWith("/system/")) path.removePrefix("/system") else path
 }
 
+/**
+ * Shared storage is served by the media provider (FUSE) from a disk folder: /storage/emulated/<user>/x
+ * is /data/media/<user>/x there.
+ */
+object SharedStorage {
+    private val EMULATED = Regex("""^/storage/emulated/(\d+)(/.+)$""")
+
+    /**
+     * The disk path of [path], for a folder or file inside a user's shared storage; null for the
+     * user's root, for Android/ (app folders, owned by each app and counted in its quota) and for
+     * anywhere else.
+     */
+    fun lower(path: String): String? {
+        var p = FsPath.normalize(path)
+        for (alias in listOf("/sdcard", "/storage/self/primary")) {
+            if (p == alias || p.startsWith("$alias/")) p = "/storage/emulated/0" + p.removePrefix(alias)
+        }
+        val m = EMULATED.find(p) ?: return null
+        val inner = m.groupValues[2]
+        if (inner == "/Android" || inner.startsWith("/Android/")) return null
+        return "/data/media/${m.groupValues[1]}$inner"
+    }
+}
+
 /** "Browse as an app": its mount namespace seen through /proc/<pid>/root. */
 object AppView {
     private val PREFIX = Regex("""^/proc/(\d+)/root(/.*)?$""")

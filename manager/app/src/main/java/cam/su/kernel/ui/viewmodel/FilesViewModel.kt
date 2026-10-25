@@ -38,6 +38,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+/** Copies root files ([copies]: each with where it goes) into app storage; the busy dialog's bar follows the bytes. */
+internal suspend fun MutableStateFlow<FilesUiState>.copyToLocalShowing(copies: List<Pair<FileEntry, File>>) {
+    val total = copies.sumOf { it.first.contentSize }
+    var before = 0L
+    var last = 0L
+    for ((entry, file) in copies) {
+        CamFileClient.copyToLocal(entry.path, file) { done ->
+            val now = System.nanoTime()
+            if (now - last >= 100_000_000L) {
+                last = now
+                update { it.copy(busyProgress = BusyProgress(before + done, total, entry.name)) }
+            }
+        }
+        before += file.length()
+    }
+}
+
 /** What the view model lends the helpers that run some of its dialogs ([FilesInspector], [FilesSystemTools]). */
 internal interface FilesHost {
     val state: MutableStateFlow<FilesUiState>
@@ -343,6 +360,12 @@ class FilesViewModel : ViewModel() {
         inspector.reloadProperties(path)
     }
 
+    /** A shared storage folder FUSE refuses even to root: its disk copy is opened up, then listed again. */
+    fun repairShared(panel: Int) = simple(refreshActive = true) {
+        CamFileClient.repairShared(_uiState.value.panels[panel].nav.path)
+        _uiState.update { it.copy(message = FilesMessage.Done) }
+    }
+
     fun edit(entry: FileEntry) {
         viewModelScope.launch { events.send(FilesEvent.Edit(entry.path)) }
     }
@@ -408,14 +431,13 @@ class FilesViewModel : ViewModel() {
                     deleteRecursively()
                     mkdirs()
                 }
-                val files = entries.map { e ->
-                    File(dir, e.name).also { if (copyAll || !cam.su.kernel.files.RootFileProvider.canStream(e)) CamFileClient.copyToLocal(e.path, it) }
-                }
+                val files = entries.map { File(dir, it.name) }
+                _uiState.copyToLocalShowing(entries.zip(files).filter { (e, _) -> copyAll || !cam.su.kernel.files.RootFileProvider.canStream(e) })
                 events.send(event(files))
             } catch (e: FsException) {
                 _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
             } finally {
-                _uiState.update { it.copy(busy = false) }
+                _uiState.update { it.copy(busy = false, busyProgress = null) }
             }
         }
     }
@@ -451,18 +473,8 @@ class FilesViewModel : ViewModel() {
         runOp(FileOp(OpKind.COMPRESS, sources, FsPath.child(FsPath.parent(sources.first()), zipName)))
     }
 
-    /** Installs an APK or split bundle as root (pm install session). */
-    fun install(entry: FileEntry) {
-        _uiState.update { it.copy(busy = true) }
-        viewModelScope.launch {
-            val message = try {
-                FilesMessage.Text(CamFileClient.installPackage(entry.path))
-            } catch (e: FsException) {
-                FilesMessage.Failed(e.errno, e.message)
-            }
-            _uiState.update { it.copy(busy = false, message = message) }
-        }
-    }
+    /** Installs an APK or split bundle as root (pm install session), as a job with progress. */
+    fun install(entry: FileEntry) = runOp(FileOp(OpKind.INSTALL, listOf(entry.path)))
 
     /** "Install as module": the Flash screen installs it like one picked in the Module tab. */
     fun flashModule(entry: FileEntry) = cached(listOf(entry)) { FilesEvent.Flash(it.single()) }
@@ -567,6 +579,8 @@ class FilesViewModel : ViewModel() {
                         val message = when {
                             event.ok -> FilesMessage.Finished(op.kind, event.items, event.skipped)
                             event.cancelled -> FilesMessage.Cancelled
+                            // pm's own answer says it best: "Failure [INSTALL_FAILED_VERSION_DOWNGRADE]"
+                            op.kind == OpKind.INSTALL && event.error?.startsWith("Failure") == true -> FilesMessage.Text(event.error)
                             else -> FilesMessage.Failed(event.errno, event.error)
                         }
                         _uiState.update { state ->
@@ -634,11 +648,14 @@ class FilesViewModel : ViewModel() {
             updateWatch()
             val entries = if (_uiState.value.sort == sort) sorted else FileSort.apply(list, _uiState.value.sort)
             val paths = entries.mapTo(HashSet()) { it.path }
+            val errno = (result.exceptionOrNull() as? FsException)?.errno
             updatePanel(panel) { p ->
                 p.copy(
                     entries = entries,
                     loading = false,
-                    errorErrno = (result.exceptionOrNull() as? FsException)?.errno,
+                    errorErrno = errno,
+                    // without root every call fails with EACCES too: only with root it is FUSE's doing
+                    sharedDenied = errno == Errno.EACCES && CamFileClient.connected && cam.su.kernel.files.SharedStorage.lower(path) != null,
                     selection = p.selection.filterTo(HashSet()) { it in paths },
                     disk = disk,
                     loadedPath = path,

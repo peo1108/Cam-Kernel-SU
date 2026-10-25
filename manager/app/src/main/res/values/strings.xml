@@ -222,6 +222,11 @@
     <string name="settings_mode_disable_until_reboot">Disable until Reboot</string>
     <string name="settings_mode_disable_always">Always disable</string>
     <string name="processing">Processing…</string>
+    <string name="progress_speed">%1$s/s</string>
+    <string name="progress_estimating">Estimating time left…</string>
+    <string name="progress_left_seconds">About %1$d s left</string>
+    <string name="progress_left_minutes">About %1$d min %2$d s left</string>
+    <string name="progress_left_hours">About %1$d h %2$d min left</string>
     <string name="refresh_pulling">Pull down to refresh</string>
     <string name="refresh_release">Release to refresh</string>
     <string name="refresh_refresh">Refreshing…</string>
@@ -412,6 +417,7 @@
     <string name="app_backup_summary">Saved to Download/SU Kernel/APK</string>
     <string name="app_backup_done">Saved to %1$s</string>
     <string name="app_backup_failed">Backup failed</string>
+    <string name="app_backup_running">Backing up the APK…</string>
     <string name="app_share">Share</string>
     <string name="app_clear_cache">Clear cache</string>
     <string name="app_cache_cleared">Freed %1$s</string>
@@ -837,6 +843,8 @@
     <string name="files_cancelled">Cancelled</string>
     <string name="files_error_noent">Not found</string>
     <string name="files_error_access">Access denied (is root granted?)</string>
+    <string name="files_shared_denied">Shared storage refuses this folder, root included: its permissions on the disk underneath (/data/media) are wrong, as when a root command creates it there directly.</string>
+    <string name="files_repair_shared">Fix permissions</string>
     <string name="files_error_perm">Not allowed</string>
     <string name="files_error_exist">Already exists</string>
     <string name="files_error_notdir">Not a folder</string>
@@ -952,6 +960,11 @@
     <string name="files_op_flash">Flashing</string>
     <string name="files_op_trash">Moving to the trash</string>
     <string name="files_op_restore">Restoring</string>
+    <string name="files_op_install">Installing APK</string>
+    <string name="files_preparing">Copying the file…</string>
+    <string name="files_install_committing">Android is checking and optimizing the app; big apps can take a minute…</string>
+    <string name="files_install_done">Installed</string>
+    <string name="files_install_done_obb">Installed, but %1$d OBB files failed to copy</string>
     <string name="files_trash">Trash</string>
     <string name="files_trash_summary">Deleted files are kept 7 days</string>
     <string name="files_trash_empty">The trash is empty</string>

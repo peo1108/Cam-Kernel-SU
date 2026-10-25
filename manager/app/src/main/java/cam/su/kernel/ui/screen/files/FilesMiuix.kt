@@ -136,6 +136,7 @@ import cam.su.kernel.ui.util.shouldShowTwoFilePanels
 import cam.su.kernel.ui.viewmodel.FilesUiState
 import cam.su.kernel.ui.viewmodel.FilesViewModel
 import cam.su.kernel.ui.viewmodel.PanelUi
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -143,6 +144,7 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -445,13 +447,26 @@ private fun Panel(
             val errno = panel.errorErrno
             if (!panel.loading && panel.entries.isEmpty() && errno != null) {
                 item(key = "error") {
-                    Text(
-                        text = errnoText(LocalContext.current, errno),
-                        color = colorScheme.error,
+                    // FUSE refuses root as well when the folder on its disk has no group access
+                    val sharedDenied = panel.sharedDenied
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(24.dp),
-                    )
+                    ) {
+                        Text(
+                            text = if (sharedDenied) stringResource(R.string.files_shared_denied) else errnoText(LocalContext.current, errno),
+                            color = colorScheme.error,
+                        )
+                        if (sharedDenied) {
+                            TextButton(
+                                text = stringResource(R.string.files_repair_shared),
+                                onClick = { vm.repairShared(index) },
+                                colors = ButtonDefaults.textButtonColorsPrimary(),
+                                modifier = Modifier.padding(top = 12.dp),
+                            )
+                        }
+                    }
                 }
             }
         }

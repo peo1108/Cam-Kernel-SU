@@ -171,6 +171,11 @@
     <string name="settings_selinux_hide_reboot_required">Khởi động lại để có hiệu lực!</string>
     <string name="settings_selinux_hide_failed">Lỗi: %d</string>
     <string name="processing">Đang xử lý…</string>
+    <string name="progress_speed">%1$s/s</string>
+    <string name="progress_estimating">Đang ước tính thời gian còn lại…</string>
+    <string name="progress_left_seconds">Còn khoảng %1$d giây</string>
+    <string name="progress_left_minutes">Còn khoảng %1$d phút %2$d giây</string>
+    <string name="progress_left_hours">Còn khoảng %1$d giờ %2$d phút</string>
     <string name="refresh_pulling">Kéo xuống để làm mới</string>
     <string name="refresh_release">Thả để làm mới</string>
     <string name="refresh_refresh">Đang làm mới…</string>
@@ -400,6 +405,7 @@
     <string name="app_backup_summary">Lưu vào Download/SU Kernel/APK</string>
     <string name="app_backup_done">Đã lưu vào %1$s</string>
     <string name="app_backup_failed">Sao lưu thất bại</string>
+    <string name="app_backup_running">Đang sao lưu APK…</string>
     <string name="app_share">Chia sẻ</string>
     <string name="app_clear_cache">Xoá cache</string>
     <string name="app_cache_cleared">Đã giải phóng %1$s</string>
@@ -822,6 +828,8 @@
     <string name="files_cancelled">Đã huỷ</string>
     <string name="files_error_noent">Không tồn tại</string>
     <string name="files_error_access">Không có quyền (đã cấp root chưa?)</string>
+    <string name="files_shared_denied">Bộ nhớ chung từ chối mở thư mục này, kể cả với root: quyền của nó trên ổ đĩa bên dưới (/data/media) bị sai, thường do một lệnh root tạo thẳng thư mục ở đó.</string>
+    <string name="files_repair_shared">Sửa quyền</string>
     <string name="files_error_perm">Không được phép</string>
     <string name="files_error_exist">Đã tồn tại</string>
     <string name="files_error_notdir">Không phải thư mục</string>
@@ -937,6 +945,11 @@
     <string name="files_op_flash">Đang flash</string>
     <string name="files_op_trash">Đang chuyển vào thùng rác</string>
     <string name="files_op_restore">Đang khôi phục</string>
+    <string name="files_op_install">Đang cài APK</string>
+    <string name="files_preparing">Đang chép tệp…</string>
+    <string name="files_install_committing">Android đang kiểm tra và tối ưu ứng dụng, app lớn có thể mất cả phút…</string>
+    <string name="files_install_done">Đã cài đặt</string>
+    <string name="files_install_done_obb">Đã cài đặt, nhưng %1$d tệp OBB chép lỗi</string>
     <string name="files_trash">Thùng rác</string>
     <string name="files_trash_summary">File đã xoá được giữ 7 ngày</string>
     <string name="files_trash_empty">Thùng rác trống</string>

@@ -13,6 +13,8 @@ data class PanelUi(
     val loading: Boolean = false,
     /** errno of the last failed listing; the list then stays empty. */
     val errorErrno: Int? = null,
+    /** That failure was shared storage (FUSE) refusing root itself: [SharedStorage] can fix it. */
+    val sharedDenied: Boolean = false,
     val selection: Set<String> = emptySet(),
     /** [total, available] bytes of the file system the folder is on. */
     val disk: LongArray? = null,
@@ -31,6 +33,9 @@ data class OpUi(
     val current: String = "",
     val conflict: CamFileClient.OpEvent.Conflict? = null,
 )
+
+/** Bytes copied of [total], [name] being the file now. */
+data class BusyProgress(val done: Long, val total: Long, val name: String)
 
 /** MD5, SHA-1, SHA-256 of [entry]; null while computing. [token] tells one opening from the next. */
 data class ChecksumUi(val entry: FileEntry, val token: Int, val values: List<String>? = null)
@@ -107,6 +112,8 @@ data class FilesUiState(
     val properties: PropertiesUi? = null,
     val bookmarks: List<String> = emptyList(),
     val busy: Boolean = false,
+    /** While [busy] copies files into app storage: how far it got. */
+    val busyProgress: BusyProgress? = null,
     val checksum: ChecksumUi? = null,
     val apkInfo: ApkInfoUi? = null,
     val search: SearchUi? = null,

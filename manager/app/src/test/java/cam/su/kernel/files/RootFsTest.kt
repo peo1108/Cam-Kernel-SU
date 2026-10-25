@@ -241,6 +241,65 @@ class RootFsTest {
     }
 
     @Test
+    fun sharedStorageMapsToTheDiskUnderFuse() {
+        assertEquals("/data/media/0/Download/SU Kernel", SharedStorage.lower("/storage/emulated/0/Download/SU Kernel"))
+        assertEquals("/data/media/10/DCIM", SharedStorage.lower("/storage/emulated/10/DCIM"))
+        assertEquals("/data/media/0/Download", SharedStorage.lower("/sdcard/Download"))
+        assertEquals("/data/media/0/Download", SharedStorage.lower("/storage/self/primary/Download"))
+        // the user's root, app folders (owned by each app, counted in its quota) and other places: no
+        assertNull(SharedStorage.lower("/storage/emulated/0"))
+        assertNull(SharedStorage.lower("/sdcard"))
+        assertNull(SharedStorage.lower("/storage/emulated/0/Android"))
+        assertNull(SharedStorage.lower("/storage/emulated/0/Android/data/com.example"))
+        assertNull(SharedStorage.lower("/data/adb"))
+        assertNull(SharedStorage.lower("/storage/1234-ABCD/DCIM"))
+    }
+
+    @Test
+    fun repairSharedGivesTheTreeItsParentsOwnerModeAndLabel() {
+        // what root's `mkdir -p` (umask 077) and `chown media_rw` used to leave in Download
+        fake.dir("/data/media")
+        fake.dir("/data/media/0")
+        fake.dir("/data/media/0/Download").apply {
+            perm = 0x5F8 // 02770
+            uid = 10150
+            gid = 1023
+            context = "u:object_r:media_rw_data_file:s0"
+        }
+        fake.newFileContext = "u:object_r:media_rw_data_file:s0:c512,c768"
+        fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
+        fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
+        fake.createFile("/data/media/0/Download/SU Kernel/APK/a.apk", 0x1B4) // 0664
+        fake.link("/data/media/0/Download/SU Kernel/out", "/data/adb")
+        for (p in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK", "/data/media/0/Download/SU Kernel/APK/a.apk")) {
+            fake.lchown(p, 1023, 1023)
+        }
+
+        fs.repairShared("/storage/emulated/0/Download/SU Kernel")
+
+        for (dir in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK")) {
+            val node = fake.node(dir)
+            assertEquals(0x5F8, node.perm)
+            assertEquals(10150, node.uid)
+            assertEquals(1023, node.gid)
+            assertEquals("u:object_r:media_rw_data_file:s0", node.context)
+        }
+        val file = fake.node("/data/media/0/Download/SU Kernel/APK/a.apk")
+        assertEquals(0x1B0, file.perm) // 0660: read and write, no execute or setgid
+        assertEquals(10150, file.uid)
+        assertEquals("u:object_r:media_rw_data_file:s0", file.context)
+        // a link is not followed
+        assertEquals(0, fake.node("/data/adb").uid)
+        assertEquals(0x1ED, fake.node("/data/adb").perm)
+    }
+
+    @Test
+    fun repairSharedRefusesOtherPlaces() {
+        assertErrno(Errno.EINVAL) { fs.repairShared("/data/adb") }
+        assertErrno(Errno.EINVAL) { fs.repairShared("/storage/emulated/0/Android/data/com.example") }
+    }
+
+    @Test
     fun nonRecursiveChmodLeavesChildren() {
         fake.file("/data/adb/f")
         fs.chmod("/data/adb", 0x1C0, recursive = false)

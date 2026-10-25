@@ -58,8 +58,17 @@ interface DialogHandle {
 
 interface LoadingDialogHandle : DialogHandle {
     suspend fun <R> withLoading(block: suspend () -> R): R
+
+    /**
+     * [withLoading] with a bar under [title]: [block] reports bytes done of a known total
+     * (from any thread), and the dialog shows the percentage, the speed and the time left.
+     */
+    suspend fun <R> withProgress(title: String? = null, block: suspend (report: (done: Long, total: Long) -> Unit) -> R): R
     fun showLoading()
 }
+
+/** What a [LoadingDialogHandle.withProgress] dialog shows. */
+data class LoadingProgress(val title: String?, val done: Long, val total: Long)
 
 sealed interface ConfirmResult {
     object Confirmed : ConfirmResult
@@ -114,6 +123,7 @@ private abstract class DialogHandleBase(
 
 private class LoadingDialogHandleImpl(
     visible: MutableState<Boolean>,
+    private val progress: MutableState<LoadingProgress?>,
     coroutineScope: CoroutineScope
 ) : LoadingDialogHandle, DialogHandleBase(visible, coroutineScope) {
     override suspend fun <R> withLoading(block: suspend () -> R): R {
@@ -125,6 +135,25 @@ private class LoadingDialogHandleImpl(
                 visible.value = false
             }
         }.await()
+    }
+
+    override suspend fun <R> withProgress(title: String?, block: suspend (report: (done: Long, total: Long) -> Unit) -> R): R {
+        var last = 0L
+        progress.value = LoadingProgress(title, 0, 0)
+        return try {
+            withLoading {
+                block { done, total ->
+                    // a copy loop reports every buffer: a few updates a second are plenty
+                    val now = System.nanoTime()
+                    if (done >= total || now - last >= PROGRESS_INTERVAL_NANOS) {
+                        last = now
+                        progress.value = LoadingProgress(title, done, total)
+                    }
+                }
+            }
+        } finally {
+            progress.value = null
+        }
     }
 
     override fun showLoading() {
@@ -296,14 +325,17 @@ private class ConfirmDialogHandleImpl(
 @Composable
 fun rememberLoadingDialog(): LoadingDialogHandle {
     val visible = remember { mutableStateOf(false) }
+    val progress = remember { mutableStateOf<LoadingProgress?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
-    LoadingDialogMiuix(visible)
+    LoadingDialogMiuix(visible, progress)
 
     return remember {
-        LoadingDialogHandleImpl(visible, coroutineScope)
+        LoadingDialogHandleImpl(visible, progress, coroutineScope)
     }
 }
+
+private const val PROGRESS_INTERVAL_NANOS = 100_000_000L
 
 @Composable
 private fun rememberConfirmDialog(visuals: ConfirmDialogVisuals, callback: ConfirmCallback): ConfirmDialogHandle {

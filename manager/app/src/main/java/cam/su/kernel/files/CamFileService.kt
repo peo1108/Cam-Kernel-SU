@@ -143,8 +143,6 @@ class CamFileService : RootService() {
             }
         }
 
-        override fun installPackage(path: String): String = call { ApkInstaller.install(FsPath.normalize(path), OsBackend) }
-
         override fun measure(path: String): LongArray = call {
             val generation = readGeneration.get()
             fs.measure(path) { readGeneration.get() != generation }
@@ -253,6 +251,8 @@ class CamFileService : RootService() {
 
         override fun setContext(path: String, context: String, recursive: Boolean) =
             call { fs.setContext(path, context, recursive) }
+
+        override fun repairShared(path: String) = call { fs.repairShared(path) }
 
         override fun openRead(path: String): ParcelFileDescriptor = call {
             // Opened here so a missing file or a directory fails the call itself.
@@ -393,6 +393,8 @@ class CamFileService : RootService() {
 
                 OpKind.COMPRESS -> ArchiveOps(OsBackend, listener, cancelled)
                     .compress(op.sources, op.destDir ?: throw FsException(Errno.EINVAL))
+
+                OpKind.INSTALL -> ApkInstaller.install(FsPath.normalize(op.sources.single()), OsBackend, listener, cancelled)
 
                 // deleting inside a zip: rewrite it without those entries
                 OpKind.DELETE if Archives.isInside(op.sources.first()) -> {

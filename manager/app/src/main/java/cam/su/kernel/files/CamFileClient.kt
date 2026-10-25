@@ -42,6 +42,9 @@ object CamFileClient {
     private val service: ICamFileService?
         get() = bound?.takeIf { it.asBinder().isBinderAlive }
 
+    /** The root process is there: an EACCES now came from the file system, not from missing root. */
+    val connected: Boolean get() = service != null
+
     /** A folder, or a folder inside an archive (`/a.zip!/dir`). */
     suspend fun listDir(path: String): List<FileEntry> = call {
         if (Archives.isInside(path)) {
@@ -82,9 +85,6 @@ object CamFileClient {
         }
     }
 
-    /** pm's answer: "Success", or why it failed. */
-    suspend fun installPackage(path: String): String = call { it.installPackage(path) }
-
     suspend fun stat(path: String): FileEntry? = call { it.stat(path) }
 
     suspend fun statFs(path: String): LongArray = call { it.statFs(path) }
@@ -124,6 +124,9 @@ object CamFileClient {
 
     suspend fun setContext(path: String, context: String, recursive: Boolean = false) =
         call { it.setContext(path, context, recursive) }
+
+    /** Opens up a shared storage folder that FUSE refuses even to root ([RootFs.repairShared]). */
+    suspend fun repairShared(path: String) = call { it.repairShared(path) }
 
     /**
      * Whole file, for the editor. Fails with EFBIG past [maxBytes]: a size that stat cannot
@@ -193,8 +196,11 @@ object CamFileClient {
     /** Stops the measure and checksum calls running now. */
     suspend fun cancelReads() = call { it.cancelReads() }
 
-    /** Copies the root-only file at [path] to [target] (app storage), for viewers and sharing. */
-    suspend fun copyToLocal(path: String, target: java.io.File) = call { s ->
+    /**
+     * Copies the root-only file at [path] to [target] (app storage), for viewers and sharing.
+     * [onProgress] gets the bytes copied so far, after every buffer.
+     */
+    suspend fun copyToLocal(path: String, target: java.io.File, onProgress: ((Long) -> Unit)? = null) = call { s ->
         val pipe = if (Archives.isInside(path)) {
             Archives.split(path).let { (archive, inner) -> s.openArchiveEntry(archive, inner) }
         } else {
@@ -202,7 +208,18 @@ object CamFileClient {
         }
         pipe.use { pfd ->
             // the pfd owns the descriptor; checkError() needs it still open
-            target.outputStream().use { FileInputStream(pfd.fileDescriptor).copyTo(it) }
+            target.outputStream().use { out ->
+                val input = FileInputStream(pfd.fileDescriptor)
+                val buffer = ByteArray(256 * 1024)
+                var done = 0L
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    out.write(buffer, 0, n)
+                    done += n
+                    onProgress?.invoke(done)
+                }
+            }
             pfd.checkError()
         }
     }

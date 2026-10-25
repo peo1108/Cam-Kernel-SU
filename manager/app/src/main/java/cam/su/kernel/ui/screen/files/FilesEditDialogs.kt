@@ -37,11 +37,11 @@ import cam.su.kernel.files.FileMode
 import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.OpKind
 import cam.su.kernel.files.SortBy
+import cam.su.kernel.ui.component.ProgressDetails
 import cam.su.kernel.ui.viewmodel.FilesUiState
 import cam.su.kernel.ui.viewmodel.FilesViewModel
 import cam.su.kernel.ui.viewmodel.OpUi
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -258,15 +258,18 @@ internal fun OpDialog(show: Boolean, vm: FilesViewModel) {
     FilesDialog(show = show, title = opTitle(context, kind), onDismiss = null) {
         val live by vm.uiState.collectAsState()
         val op: OpUi = live.op ?: return@FilesDialog
-        LinearProgressIndicator(
-            modifier = Modifier.fillMaxWidth(),
-            progress = if (op.total > 0) (op.done.toFloat() / op.total).coerceIn(0f, 1f) else null,
+        // every byte is with pm, which now checks and optimizes the app: no progress, no way back
+        val committing = op.kind == OpKind.INSTALL && op.total <= 0 && op.done > 0
+        ProgressDetails(
+            done = op.done,
+            total = op.total,
+            // delete and purge count entries
+            bytes = op.kind != OpKind.DELETE && op.kind != OpKind.PURGE,
+            label = if (committing) stringResource(R.string.files_install_committing) else op.current,
         )
-        Spacer(Modifier.height(10.dp))
-        val amount = if (op.kind == OpKind.DELETE) "${op.done} / ${op.total}" else "${FileFormat.size(op.done)} / ${FileFormat.size(op.total)}"
-        Text(amount, fontSize = 13.sp)
-        Text(op.current, fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary, maxLines = 2, overflow = TextOverflow.MiddleEllipsis)
-        TextButton(text = stringResource(android.R.string.cancel), onClick = vm::cancelOp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+        if (!committing) {
+            TextButton(text = stringResource(android.R.string.cancel), onClick = vm::cancelOp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+        }
     }
 }
 

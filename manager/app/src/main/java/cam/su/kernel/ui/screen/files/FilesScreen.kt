@@ -107,6 +107,13 @@ private fun startChooser(context: Context, intent: Intent) {
 }
 
 private fun messageText(context: Context, message: FilesMessage): String = when (message) {
+    // skipped: OBB files of an .xapk that failed to copy
+    is FilesMessage.Finished if message.kind == OpKind.INSTALL -> if (message.skipped > 0) {
+        context.getString(R.string.files_install_done_obb, message.skipped)
+    } else {
+        context.getString(R.string.files_install_done)
+    }
+
     is FilesMessage.Finished -> if (message.skipped > 0) {
         context.getString(R.string.files_done_skipped, message.items, message.skipped)
     } else {
@@ -152,5 +159,6 @@ fun opTitle(context: Context, kind: OpKind): String = context.getString(
         OpKind.TRASH -> R.string.files_op_trash
         OpKind.RESTORE -> R.string.files_op_restore
         OpKind.PURGE -> R.string.files_op_delete
+        OpKind.INSTALL -> R.string.files_op_install
     },
 )

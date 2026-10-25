@@ -32,6 +32,8 @@ import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,6 +51,7 @@ import cam.su.kernel.files.FileKind
 import cam.su.kernel.files.FileKinds
 import cam.su.kernel.files.FsPath
 import cam.su.kernel.files.Systemless
+import cam.su.kernel.ui.component.ProgressDetails
 import cam.su.kernel.ui.viewmodel.FilesUiState
 import cam.su.kernel.ui.viewmodel.FilesViewModel
 import top.yukonga.miuix.kmp.basic.Icon
@@ -225,9 +228,16 @@ fun FilesDialogs(state: FilesUiState, vm: FilesViewModel, dialog: FilesDialogSta
     if (state.trash != null) TrashDialog(vm)
 
     FilesDialog(show = state.busy, title = null, onDismiss = null) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            InfiniteProgressIndicator()
-            Text(stringResource(R.string.processing), modifier = Modifier.padding(start = 12.dp))
+        val live by vm.uiState.collectAsState()
+        val progress = live.busyProgress
+        if (progress != null) {
+            Text(stringResource(R.string.files_preparing), modifier = Modifier.padding(bottom = 14.dp))
+            ProgressDetails(done = progress.done, total = progress.total, label = progress.name)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                InfiniteProgressIndicator()
+                Text(stringResource(R.string.processing), modifier = Modifier.padding(start = 12.dp))
+            }
         }
     }
 

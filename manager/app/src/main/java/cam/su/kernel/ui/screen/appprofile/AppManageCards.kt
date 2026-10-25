@@ -71,9 +71,10 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.launch
 import cam.su.kernel.R
+import cam.su.kernel.files.FileEntry
+import cam.su.kernel.files.RootFileProvider
 import cam.su.kernel.ui.component.dialog.ConfirmResult
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
 import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
@@ -102,7 +103,6 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import java.io.File
 import java.text.DateFormat
 import java.util.Date
 
@@ -251,7 +251,7 @@ private fun ManageCard(
     val confirm = rememberConfirmDialog()
     var expanded by rememberSaveable { mutableStateOf(false) }
     val protected = remember(d.packageName) { isProtectedApp(context, d.packageName) }
-    var backup by remember { mutableStateOf<Pair<File, String>?>(null) }
+    var backup by remember { mutableStateOf<FileEntry?>(null) }
     var askUninstall by remember { mutableStateOf(false) }
     val failed = stringResource(R.string.app_action_failed)
 
@@ -263,9 +263,10 @@ private fun ManageCard(
         onToggle = { expanded = !expanded },
     ) {
         val backupFailed = stringResource(R.string.app_backup_failed)
+        val backingUp = stringResource(R.string.app_backup_running)
         ActionRow(Icons.Rounded.SaveAlt, stringResource(R.string.app_backup), stringResource(R.string.app_backup_summary)) {
             scope.launch {
-                val r = loading.withLoading { backupApk(context, d) }
+                val r = loading.withProgress(backingUp) { report -> backupApk(d, report) }
                 if (r == null) toast(context, backupFailed) else backup = r
             }
         }
@@ -319,11 +320,11 @@ private fun ManageCard(
         ) { askUninstall = true }
     }
 
-    backup?.let { (file, path) ->
+    backup?.let { saved ->
         GlassDialog(
             show = true,
             title = stringResource(R.string.app_backup),
-            summary = stringResource(R.string.app_backup_done, path),
+            summary = stringResource(R.string.app_backup_done, saved.path.substringAfter("/storage/emulated/").substringAfter('/')),
             onDismissRequest = { backup = null },
         ) {
             DialogButtons(
@@ -331,7 +332,7 @@ private fun ManageCard(
                 confirm = stringResource(R.string.app_share),
                 onDismiss = { backup = null },
                 onConfirm = {
-                    share(context, file)
+                    share(context, saved)
                     backup = null
                 },
             )
@@ -600,8 +601,9 @@ private fun toast(context: Context, text: String) {
     CamToast.show(context, text)
 }
 
-private fun share(context: Context, file: File) {
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+/** The saved copy is in shared storage: handed over as the descriptor root opens, nothing copied. */
+private fun share(context: Context, saved: FileEntry) {
+    val uri = RootFileProvider.uriFor(saved)
     val send = Intent(Intent.ACTION_SEND)
         .setType("application/vnd.android.package-archive")
         .putExtra(Intent.EXTRA_STREAM, uri)

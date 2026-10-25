@@ -7,6 +7,8 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.provider.Settings
 import android.util.Log
+import cam.su.kernel.files.CamFileClient
+import cam.su.kernel.files.FileEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -232,46 +234,61 @@ suspend fun removeSystemAppSystemless(context: Context, d: AppDetails): Boolean 
 }
 
 /**
- * Copies the APK (and its splits, zipped into an .apks) to Download/SU Kernel/APK. Returns the
- * copy left in the cache for sharing, and the public path, or null on failure.
+ * Saves the APK (and its splits, zipped into an .apks) to Download/SU Kernel/APK. The root file
+ * service writes it through /storage, so the media provider makes the folders and indexes the
+ * file like any download. [report] gets the bytes read so far of the total. Returns the saved
+ * file, or null on failure.
  */
-suspend fun backupApk(context: Context, d: AppDetails): Pair<File, String>? = withContext(Dispatchers.IO) {
+suspend fun backupApk(d: AppDetails, report: (done: Long, total: Long) -> Unit): FileEntry? = withContext(Dispatchers.IO) {
     val safe = "${d.label}_${d.versionName}".replace(Regex("[\\\\/:*?\"<>|\\s]+"), "_")
-    val dir = File(context.cacheDir, "apk_backup").apply {
-        deleteRecursively()
-        mkdirs()
-    }
-    val out = runCatching {
-        if (d.splitPaths.isEmpty()) {
-            File(dir, "$safe.apk").also { File(d.apkPath).copyTo(it, overwrite = true) }
-        } else {
-            File(dir, "$safe.apks").also { f ->
-                ZipOutputStream(f.outputStream()).use { z ->
-                    for (path in listOf(d.apkPath) + d.splitPaths) {
-                        z.putNextEntry(ZipEntry(File(path).name))
-                        File(path).inputStream().use { it.copyTo(z) }
-                        z.closeEntry()
+    val sources = listOf(d.apkPath) + d.splitPaths
+    val total = sources.sumOf { File(it).length() }
+    val me = android.os.Process.myUid() / 100000
+    val download = "/storage/emulated/$me/Download"
+    val target = "$download/$BACKUP_DIR/${if (d.splitPaths.isEmpty()) "$safe.apk" else "$safe.apks"}"
+    try {
+        // Older versions made these folders as root straight in /data/media, closed to the
+        // media provider: nothing could open them through /storage any more.
+        if (CamFileClient.stat("$download/SU Kernel")?.isDir == true) CamFileClient.repairShared("$download/SU Kernel")
+        var dir = download
+        for (name in BACKUP_DIR.split('/')) {
+            dir = "$dir/$name"
+            if (CamFileClient.stat(dir) == null) CamFileClient.mkdir(dir)
+        }
+        var done = 0L
+        CamFileClient.write(target) { out ->
+            fun copy(path: String, to: java.io.OutputStream) = File(path).inputStream().use { input ->
+                val buffer = ByteArray(256 * 1024)
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    to.write(buffer, 0, n)
+                    done += n
+                    report(done, total)
+                }
+            }
+            if (d.splitPaths.isEmpty()) {
+                copy(d.apkPath, out)
+            } else {
+                // finish(), not close(): the pipe's descriptor belongs to CamFileClient.write
+                ZipOutputStream(out).apply {
+                    for (path in sources) {
+                        putNextEntry(ZipEntry(File(path).name))
+                        copy(path, this)
+                        closeEntry()
                     }
+                    finish()
                 }
             }
         }
-    }.getOrElse {
-        Log.e(TAG, "backup failed", it)
-        return@withContext null
+        CamFileClient.stat(target)
+    } catch (e: Exception) {
+        Log.e(TAG, "backup failed", e)
+        null
     }
-    // Into the user's Download folder as root, owned by the media provider like any download.
-    val me = android.os.Process.myUid() / 100000
-    val publicDir = "/data/media/$me/Download/SU Kernel/APK"
-    val target = "$publicDir/${out.name}"
-    val ok = su(
-        "mkdir -p ${q(publicDir)}",
-        "cp -f ${q(out.absolutePath)} ${q(target)}",
-        "chown -R media_rw:media_rw ${q("/data/media/$me/Download/SU Kernel")}",
-        "chmod 664 ${q(target)}",
-        "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d ${q("file:///storage/emulated/$me/Download/SU Kernel/APK/${out.name}")} >/dev/null 2>&1; true",
-    ).first
-    if (ok) out to "Download/SU Kernel/APK/${out.name}" else null
 }
+
+private const val BACKUP_DIR = "SU Kernel/APK"
 
 /** Opens Android's own App info page for the app, as the right user. */
 fun openSystemAppInfo(packageName: String, userId: Int) {

@@ -74,19 +74,19 @@ class FilesInspector internal constructor(private val host: FilesHost) {
             try {
                 val source = if (Archives.isApkBundle(entry.name)) {
                     val inside = CamFileClient.listDir(Archives.join(entry.path, "")).filter { it.name.endsWith(".apk", true) }
-                    (inside.firstOrNull { it.name.equals("base.apk", true) } ?: inside.firstOrNull())?.path
+                    inside.firstOrNull { it.name.equals("base.apk", true) } ?: inside.firstOrNull()
                         ?: throw FsException(cam.su.kernel.files.Errno.ENOENT, entry.path)
                 } else {
-                    entry.path
+                    entry
                 }
                 val file = File(camApp.cacheDir, "apk_info.apk")
-                CamFileClient.copyToLocal(source, file)
+                state.copyToLocalShowing(listOf(source to file))
                 val info = readApk(file) ?: throw FsException(cam.su.kernel.files.Errno.EINVAL, entry.name, "not a valid APK")
                 state.update { it.copy(apkInfo = info) }
             } catch (e: FsException) {
                 state.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
             } finally {
-                state.update { it.copy(busy = false) }
+                state.update { it.copy(busy = false, busyProgress = null) }
             }
         }
     }

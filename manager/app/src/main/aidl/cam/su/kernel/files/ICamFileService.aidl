@@ -26,9 +26,6 @@ interface ICamFileService {
     // replaces (or adds) the file at inner with what source carries, read to EOF
     void archiveWrite(String archive, String inner, in ParcelFileDescriptor source);
 
-    // pm install of an .apk or a split bundle; returns pm's answer ("Success" or the failure)
-    String installPackage(String path);
-
     // MD5, SHA-1, SHA-256 (lowercase hex)
     String[] checksums(String path);
     // up to length bytes from offset (hex viewer)
@@ -54,6 +51,8 @@ interface ICamFileService {
     void chmod(String path, int mode, boolean recursive);
     void chown(String path, int uid, int gid, boolean recursive);
     void setContext(String path, String context, boolean recursive);
+    // a shared storage folder FUSE refuses: its disk copy gets its parent's owner, mode and label (RootFs.repairShared)
+    void repairShared(String path);
 
     // read end of a reliable pipe; checkError() after EOF reports a failed read
     ParcelFileDescriptor openRead(String path);
@@ -62,7 +61,7 @@ interface ICamFileService {
     // keeping its mode, owner and SELinux label
     void writeFile(String path, in ParcelFileDescriptor source);
 
-    // kind: OpKind ordinal (COPY, MOVE, DELETE, EXTRACT, COMPRESS); destDir null for DELETE.
+    // kind: OpKind ordinal (COPY, MOVE, DELETE, EXTRACT, COMPRESS, ..., INSTALL); destDir null for DELETE and INSTALL.
     // Runs in the background; returns the id that callback events carry.
     int startOp(int kind, in String[] sources, String destDir, boolean preserve, IFileOpCallback callback);
     void cancelOp(int id);

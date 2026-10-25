@@ -69,6 +69,29 @@ class RootFs(private val fs: FsBackend) {
         }
     }
 
+    /**
+     * The media provider opens shared storage on its disk ([SharedStorage]) through the group
+     * bits. A folder root made there directly (umask 077, then chowned) has none, so nobody can
+     * open it through /storage, root included. Gives the disk copy of [path] and everything under
+     * it the owner, group, mode and SELinux label of the folder it sits in; files get only that
+     * mode's read and write bits. Symlinks are left alone.
+     */
+    fun repairShared(path: String) {
+        val lower = SharedStorage.lower(path) ?: throw FsException(Errno.EINVAL, path, "not in shared storage: $path")
+        val parent = FsPath.parent(lower)
+        val ref = fs.lstat(parent)
+        val context = fs.getContext(parent)
+        val dirMode = ref.mode and FileMode.PERM_MASK
+        val fileMode = dirMode and 0x1B6 // rw-rw-rw- at most
+        walk(lower, recursive = true) { p, st ->
+            if (FileMode.isLink(st.mode)) return@walk
+            if (st.uid != ref.uid || st.gid != ref.gid) fs.lchown(p, ref.uid, ref.gid)
+            val mode = if (FileMode.isDir(st.mode)) dirMode else fileMode
+            if (st.mode and FileMode.PERM_MASK != mode) fs.chmod(p, mode)
+            if (context != null && context != fs.getContext(p)) fs.setContext(p, context)
+        }
+    }
+
     fun statFs(path: String): LongArray = fs.statFs(FsPath.normalize(path))
 
     /**

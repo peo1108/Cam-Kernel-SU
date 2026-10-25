@@ -4,6 +4,7 @@ import cam.su.kernel.ui.component.glass.LocalGlassOverlayBackdrop
 import cam.su.kernel.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
@@ -26,6 +28,7 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import cam.su.kernel.R
+import cam.su.kernel.ui.component.ProgressDetails
 import cam.su.kernel.ui.component.markdown.MarkdownContent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -38,6 +41,7 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 @Composable
 fun LoadingDialogMiuix(
     showDialog: MutableState<Boolean>,
+    progress: State<LoadingProgress?>,
 ) {
     val content: @Composable () -> Unit = {
             // Consume the back gesture before the dialog's own handler
@@ -47,7 +51,18 @@ fun LoadingDialogMiuix(
                 isBackEnabled = true,
                 onBackCompleted = { },
             )
-            Box(
+            // read inside: overlay dialogs keep the content lambda they were shown with
+            val live = progress.value
+            if (live != null) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = live.title ?: stringResource(R.string.processing),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 14.dp),
+                    )
+                    ProgressDetails(done = live.done, total = live.total)
+                }
+            } else Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.CenterStart
             ) {

@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.R
+import cam.su.kernel.ui.component.ProgressDetails
 import cam.su.kernel.update.UpdateFailure
 import cam.su.kernel.update.UpdateState
 import cam.su.kernel.update.UpdateStep
@@ -48,20 +49,25 @@ fun UpdateProgressDialog(
             Column(modifier = Modifier.fillMaxWidth()) {
                 StepRow(current = state.step, failed = state is UpdateState.Failed)
                 Spacer(Modifier.padding(top = 16.dp))
-                if (state !is UpdateState.Failed) {
-                    LinearProgressIndicator(
+                if (state is UpdateState.Downloading && state.total > 0) {
+                    // the percentage, the megabytes, the speed and the time left
+                    ProgressDetails(done = state.downloaded, total = state.total)
+                } else {
+                    if (state !is UpdateState.Failed) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth(),
+                            // pm install reports no percentage, so verify/install run indeterminate
+                            progress = (state as? UpdateState.Downloading)?.let { it.percent / 100f },
+                        )
+                        Spacer(Modifier.padding(top = 12.dp))
+                    }
+                    Text(
+                        text = statusText(state),
+                        color = if (state is UpdateState.Failed) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
-                        // pm install reports no percentage, so verify/install run indeterminate
-                        progress = (state as? UpdateState.Downloading)?.let { it.percent / 100f },
                     )
-                    Spacer(Modifier.padding(top = 12.dp))
                 }
-                Text(
-                    text = statusText(state),
-                    color = if (state is UpdateState.Failed) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
                 if (state is UpdateState.Installing) {
                     Text(
                         text = stringResource(R.string.update_installing_hint),

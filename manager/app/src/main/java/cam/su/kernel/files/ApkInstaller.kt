@@ -2,6 +2,7 @@ package cam.su.kernel.files
 
 import java.io.File
 import java.io.InputStream
+import java.io.OutputStream
 
 /**
  * Installs an APK, or a split bundle (.apks / .xapk / .apkm), as root through `pm` install
@@ -9,6 +10,7 @@ import java.io.InputStream
  */
 object ApkInstaller {
     private val SESSION = Regex("""\[(\d+)]""")
+    private const val PROGRESS_INTERVAL_NANOS = 100_000_000L
 
     /** The session id in `pm install-create` output ("Success: created install session [123]"). */
     fun parseSession(output: String): Int? = SESSION.find(output)?.groupValues?.get(1)?.toIntOrNull()
@@ -22,55 +24,102 @@ object ApkInstaller {
     fun bundleObbs(entries: List<ArchiveEntry>): List<ArchiveEntry> =
         entries.filter { !it.isDir && it.name.startsWith("Android/obb/") }
 
-    /** Returns pm's last line ("Success" or the failure) for the caller to show. */
-    fun install(path: String, fs: FsBackend): String {
+    /**
+     * Installs [path]; pm's failure ("Failure [INSTALL_FAILED_...]") is thrown as [FsException]
+     * carrying that text. [listener] gets the bytes handed to pm, then total 0 while it commits;
+     * [cancelled] is checked while streaming (a commit cannot be stopped). The result's skipped
+     * count is the OBB files of an .xapk that failed to copy (the app is in all the same).
+     */
+    fun install(
+        path: String,
+        fs: FsBackend,
+        listener: OpListener? = null,
+        cancelled: () -> Boolean = { false },
+    ): OpResult {
         val file = File(path)
+        val progress = Progress(listener, cancelled)
         if (!Archives.isApkBundle(file.name)) {
             val size = fs.stat(path).size
-            return session(listOf(Triple("base.apk", size) { fs.openRead(path) }))
+            progress.total = size
+            session(listOf(Triple("base.apk", size) { fs.openRead(path) }), progress)
+            return OpResult(1, 0)
         }
         Archives.open(file).use { reader ->
             val apks = bundleApks(reader.entries)
-            if (apks.isEmpty()) return "Failure: no APK inside ${file.name}"
-            val result = session(apks.map { e -> Triple(e.name, e.size) { reader.open(e.name) } })
-            if (!result.startsWith("Success")) return result
+            if (apks.isEmpty()) throw FsException(Errno.EINVAL, path, "Failure: no APK inside ${file.name}")
+            val obbs = bundleObbs(reader.entries)
+            progress.total = apks.sumOf { it.size } + obbs.sumOf { it.size }
+            session(apks.map { e -> Triple(e.name, e.size) { reader.open(e.name) } }, progress)
             // The app is in; OBB data failing to copy leaves it installed, so it is only reported.
-            val failed = bundleObbs(reader.entries).count { obb ->
+            val failed = obbs.count { obb ->
                 runCatching {
                     val target = File("/storage/emulated/0/${obb.name}")
                     target.parentFile?.mkdirs()
-                    reader.open(obb.name).use { input -> target.outputStream().use { input.copyTo(it) } }
+                    reader.open(obb.name).use { input -> target.outputStream().use { progress.copy(input, it, obb.name) } }
                 }.isFailure
             }
-            return if (failed == 0) result else "$result (OBB: $failed failed)"
+            return OpResult(1, failed)
         }
     }
 
-    private fun session(parts: List<Triple<String, Long, () -> InputStream>>): String {
-        val total = parts.sumOf { it.second }
-        val created = pm("install-create", "-r", "-S", total.toString())
-        val id = parseSession(created) ?: return created.ifBlank { "Failure: install-create" }
+    /** Bytes streamed so far, told to the listener a few times a second. */
+    private class Progress(val listener: OpListener?, val cancelled: () -> Boolean) {
+        var total = 0L
+        var done = 0L
+        private var lastEmit = 0L
+
+        fun copy(input: InputStream, out: OutputStream, name: String) {
+            val buffer = ByteArray(256 * 1024)
+            while (true) {
+                if (cancelled()) throw OpCancelledException()
+                val n = input.read(buffer)
+                if (n < 0) break
+                out.write(buffer, 0, n)
+                done += n
+                val now = System.nanoTime()
+                if (now - lastEmit >= PROGRESS_INTERVAL_NANOS) {
+                    lastEmit = now
+                    listener?.onProgress(done, total, name)
+                }
+            }
+            listener?.onProgress(done, total, name)
+        }
+    }
+
+    private fun session(parts: List<Triple<String, Long, () -> InputStream>>, progress: Progress) {
+        val created = pm("install-create", "-r", "-S", parts.sumOf { it.second }.toString())
+        val id = parseSession(created) ?: throw failure(created.ifBlank { "Failure: install-create" })
         try {
             parts.forEachIndexed { i, (name, size, open) ->
-                val out = pm("install-write", "-S", size.toString(), id.toString(), "${i}_$name", "-", stdin = open)
-                if (!out.startsWith("Success")) {
-                    pm("install-abandon", id.toString())
-                    return out.ifBlank { "Failure: install-write $name" }
+                val out = pm("install-write", "-S", size.toString(), id.toString(), "${i}_$name", "-") { stdin ->
+                    open().use { progress.copy(it, stdin, name) }
                 }
+                if (!out.startsWith("Success")) throw failure(out.ifBlank { "Failure: install-write $name" })
             }
         } catch (e: Exception) {
             pm("install-abandon", id.toString())
-            return "Failure: ${e.message}"
+            throw if (e is FsException || e is OpCancelledException) e else failure("Failure: ${e.message}")
         }
-        return pm("install-commit", id.toString()).ifBlank { "Failure: install-commit" }
+        // pm checks and optimizes the app now, with nothing to report on the way
+        progress.listener?.onProgress(progress.done, 0, "")
+        val result = pm("install-commit", id.toString())
+        if (!result.startsWith("Success")) throw failure(result.ifBlank { "Failure: install-commit" })
     }
 
-    private fun pm(vararg args: String, stdin: (() -> InputStream)? = null): String {
+    private fun failure(pmOutput: String) = FsException(Errno.EINVAL, detail = pmOutput)
+
+    private fun pm(vararg args: String, stdin: ((OutputStream) -> Unit)? = null): String {
         val process = ProcessBuilder(listOf("pm") + args).redirectErrorStream(true).start()
-        if (stdin != null) {
-            process.outputStream.use { out -> stdin().use { it.copyTo(out) } }
-        } else {
-            process.outputStream.close()
+        try {
+            if (stdin != null) {
+                process.outputStream.use(stdin)
+            } else {
+                process.outputStream.close()
+            }
+        } catch (e: Exception) {
+            // cancelled, or the source failed to read: pm must not sit waiting for the rest
+            process.destroy()
+            throw e
         }
         val text = process.inputStream.bufferedReader().readText()
         process.waitFor()

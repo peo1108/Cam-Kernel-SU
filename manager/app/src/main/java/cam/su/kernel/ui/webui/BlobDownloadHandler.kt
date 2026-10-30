@@ -2,24 +2,17 @@ package cam.su.kernel.ui.webui
 
 import android.util.Base64
 import android.util.Log
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.FileInputStream
-import java.io.FilterInputStream
-import java.io.InputStream
 import java.io.OutputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
- * Handles blob downloads by spooling chunks to a temporary file before WebView
- * requests the generated internal URL.
+ * Handles big blob downloads by spooling base64 chunks to a temporary file, which
+ * [WebUIDownloadInterface] then saves to Downloads.
  */
 object BlobDownloadHandler {
-    private const val BLOB_DOWNLOAD_HOST = "blob-download.kernelsu.internal"
     private const val STALE_THRESHOLD_MS = 5 * 60 * 1000L
 
     private val pendingDownloads = ConcurrentHashMap<String, PendingDownload>()
@@ -35,7 +28,9 @@ object BlobDownloadHandler {
         @Volatile var completed: Boolean = false,
     )
 
-    /** Register a new blob download session and return its internal URL. */
+    class CompletedBlob(val fileName: String, val mimeType: String?, val file: File)
+
+    /** Register a new blob download session and return its id. */
     fun registerBlobDownload(fileName: String, mimeType: String?, cacheDir: File): String {
         val downloadId = UUID.randomUUID().toString()
         val tempFile = File.createTempFile("ksu-blob-", ".download", cacheDir)
@@ -52,7 +47,7 @@ object BlobDownloadHandler {
             cleanupStaleDownloads()
         }
 
-        return "https://$BLOB_DOWNLOAD_HOST/$downloadId"
+        return downloadId
     }
 
     /** Write one base64 encoded chunk to the session. */
@@ -71,53 +66,25 @@ object BlobDownloadHandler {
         }
     }
 
-    /** Mark the download complete and make the spooled file available to WebView. */
-    fun completeDownload(downloadId: String): Boolean {
-        val download = pendingDownloads[downloadId] ?: return false
+    /** Close the spooled file. The session stays until [cancelDownload] deletes the file. */
+    fun completeDownload(downloadId: String): CompletedBlob? {
+        val download = pendingDownloads[downloadId] ?: return null
         return try {
             synchronized(download) {
-                if (download.completed) return false
+                if (download.completed) return null
                 download.outputStream.flush()
                 download.outputStream.close()
                 download.completed = true
             }
-            true
+            CompletedBlob(download.fileName, download.mimeType, download.tempFile)
         } catch (e: Exception) {
             Log.e("BlobDownloadHandler", "Failed to complete download $downloadId", e)
             closeDownload(downloadId)
-            false
+            null
         }
     }
 
     fun cancelDownload(downloadId: String) = closeDownload(downloadId)
-
-    /** Intercept requests to the internal blob URL and serve the completed file. */
-    fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
-        val url = request.url
-        if (url.scheme != "https" || url.host != BLOB_DOWNLOAD_HOST) return null
-
-        val downloadId = url.path?.substring(1)?.takeIf { it.isNotEmpty() }
-            ?: return createErrorResponse("Invalid download ID")
-        val download = pendingDownloads[downloadId]
-            ?: return createErrorResponse("Download not found")
-
-        if (!download.completed) return createErrorResponse("Download is not ready")
-        val input = runCatching { FileInputStream(download.tempFile) }.getOrElse {
-            closeDownload(downloadId)
-            return createErrorResponse("Download not found")
-        }
-
-        return WebResourceResponse(
-            download.mimeType ?: "application/octet-stream",
-            null,
-            CleanupInputStream(input) { closeDownload(downloadId) },
-        ).apply {
-            responseHeaders = mapOf(
-                "Content-Disposition" to "attachment; filename=\"${download.fileName}\"",
-                "Access-Control-Allow-Origin" to "*",
-            )
-        }
-    }
 
     private fun closeDownload(downloadId: String) {
         pendingDownloads.remove(downloadId)?.let { download ->
@@ -125,15 +92,6 @@ object BlobDownloadHandler {
             runCatching { download.tempFile.delete() }
         }
     }
-
-    private fun createErrorResponse(message: String) = WebResourceResponse(
-        "text/plain",
-        "utf-8",
-        404,
-        "Not Found",
-        emptyMap(),
-        ByteArrayInputStream(message.toByteArray(Charsets.UTF_8)),
-    )
 
     private fun cleanupStaleDownloads() {
         val now = System.currentTimeMillis()
@@ -147,14 +105,4 @@ object BlobDownloadHandler {
     }
 
     fun cleanup() = pendingDownloads.keys.toList().forEach(::closeDownload)
-
-    private class CleanupInputStream(
-        input: InputStream,
-        private val onClose: () -> Unit,
-    ) : FilterInputStream(input) {
-        override fun close() {
-            runCatching { super.close() }
-            onClose()
-        }
-    }
 }

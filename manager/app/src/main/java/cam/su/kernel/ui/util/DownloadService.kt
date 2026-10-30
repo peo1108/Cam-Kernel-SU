@@ -156,6 +156,7 @@ class DownloadService : Service() {
                         val total = body.contentLength()
 
                         ensureActive()
+                        contentResolver.dropStaleDownloadRows()
                         val values = ContentValues().apply {
                             put(MediaStore.Downloads.DISPLAY_NAME, fileName)
                             put(MediaStore.Downloads.MIME_TYPE, resolveDownloadMimeType(fileName, mimeType))

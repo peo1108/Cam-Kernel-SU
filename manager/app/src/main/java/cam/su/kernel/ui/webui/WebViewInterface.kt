@@ -35,6 +35,7 @@ import cam.su.kernel.R
 import cam.su.kernel.ui.util.DownloadManager
 import cam.su.kernel.ui.util.DownloadService
 import cam.su.kernel.ui.util.createRootShell
+import cam.su.kernel.ui.util.dropStaleDownloadRows
 import cam.su.kernel.ui.util.listModules
 import cam.su.kernel.ui.util.resolveDownloadMimeType
 import cam.su.kernel.ui.util.withNewRootShell
@@ -44,6 +45,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
 import java.util.concurrent.CompletableFuture
 
 class WebViewInterface(private val state: WebUIState) {
@@ -316,10 +319,21 @@ class WebUIDownloadInterface(private val state: WebUIState) {
 
     @JavascriptInterface
     fun save(base64: String, fileName: String?) {
-        val currentWebView = webView ?: return
-        val context = currentWebView.context
         val displayName = sanitizeWebUIDownloadFileName(fileName)
-        val mimeType = resolveDownloadMimeType(displayName, null)
+        saveToDownloads(displayName, resolveDownloadMimeType(displayName, null)) {
+            val decoded = Base64.decode(base64, Base64.DEFAULT)
+            ByteArrayInputStream(decoded) to decoded.size.toLong()
+        }
+    }
+
+    private fun saveToDownloads(
+        displayName: String,
+        mimeType: String,
+        onFinished: () -> Unit = {},
+        open: () -> Pair<InputStream, Long>,
+    ) {
+        val currentWebView = webView ?: return onFinished()
+        val context = currentWebView.context
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         val downloadId = DownloadManager.registerLocalSave(
             fileName = displayName,
@@ -332,7 +346,8 @@ class WebUIDownloadInterface(private val state: WebUIState) {
         scope.launch {
             var pendingUri: Uri? = null
             val savedUri = try {
-                val decoded = Base64.decode(base64, Base64.DEFAULT)
+                val (source, size) = open()
+                context.contentResolver.dropStaleDownloadRows()
                 val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
                 val values = android.content.ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
@@ -344,15 +359,15 @@ class WebUIDownloadInterface(private val state: WebUIState) {
                     ?: error("Failed to create download")
                 pendingUri = uri
                 var lastProgress = -1
-                ByteArrayInputStream(decoded).use { input ->
+                source.use { input ->
                     val output = context.contentResolver.openOutputStream(uri)
                         ?: error("Failed to open download")
                     output.use { stream ->
                         writeWebUIDownload(input, stream) { written ->
-                            val progress = if (decoded.isEmpty()) {
+                            val progress = if (size == 0L) {
                                 100
                             } else {
-                                ((written * 100L) / decoded.size.toLong()).toInt().coerceIn(0, 100)
+                                ((written * 100L) / size).toInt().coerceIn(0, 100)
                             }
                             DownloadManager.updateProgress(downloadId, progress)
                             if (progress - lastProgress >= 2 || progress == 100) {
@@ -379,6 +394,8 @@ class WebUIDownloadInterface(private val state: WebUIState) {
                 notificationManager.notify(WEBUI_NOTIFICATION_ID_BASE + downloadId, buildFailureNotification(context, displayName))
                 postToast(currentWebView.context.getString(R.string.download_failed_content, displayName))
                 null
+            } finally {
+                onFinished()
             }
 
             if (savedUri != null) {
@@ -415,7 +432,15 @@ class WebUIDownloadInterface(private val state: WebUIState) {
 
     @JavascriptInterface
     fun completeChunkedDownload(downloadId: String): Boolean {
-        return BlobDownloadHandler.completeDownload(downloadId)
+        val blob = BlobDownloadHandler.completeDownload(downloadId) ?: return false
+        saveToDownloads(
+            blob.fileName,
+            resolveDownloadMimeType(blob.fileName, blob.mimeType),
+            onFinished = { BlobDownloadHandler.cancelDownload(downloadId) },
+        ) {
+            FileInputStream(blob.file) to blob.file.length()
+        }
+        return true
     }
 
     @JavascriptInterface

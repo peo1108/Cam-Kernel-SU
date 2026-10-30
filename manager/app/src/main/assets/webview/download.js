@@ -4,7 +4,6 @@
 
     const CHUNK_SIZE = 512 * 1024;
     const SIZE_THRESHOLD = 10 * 1024 * 1024;
-    const INTERNAL_BLOB_HOST = 'blob-download.kernelsu.internal';
 
     const blobMap = new Map();
     const originalCreateObjectURL = URL.createObjectURL;
@@ -56,14 +55,6 @@
             if (!ksu_download.completeChunkedDownload(downloadId)) {
                 throw new Error('Failed to complete download');
             }
-
-            const a = document.createElement('a');
-            a.href = downloadId;
-            a.download = fileName;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
         } catch (error) {
             ksu_download.cancelChunkedDownload(downloadId);
             throw error;
@@ -85,10 +76,6 @@
         const fileName = anchor.download || url.pathname.split("/").pop().split("?")[0] || "download.bin";
         const isInternal = url.hostname === 'mui.kernelsu.org';
 
-        if (url.hostname === INTERNAL_BLOB_HOST) {
-            return originalClick.call(anchor);
-        }
-
         if (url.protocol === 'blob:' || url.protocol === 'data:' || isInternal) {
             const blob = (url.protocol === 'blob:' && blobMap.has(url.href))
                 ? blobMap.get(url.href)
@@ -108,7 +95,6 @@
     document.addEventListener('click', (event) => {
         const anchor = event.target.closest('a[download]');
         if (!anchor || !anchor.href) return;
-        if (new URL(anchor.href, location.href).hostname === INTERNAL_BLOB_HOST) return;
         event.preventDefault();
         handleDownload(anchor).catch((error) => console.error('KernelSU download failed', error));
     }, true);
@@ -116,9 +102,6 @@
     const originalClick = HTMLAnchorElement.prototype.click;
     HTMLAnchorElement.prototype.click = function() {
         if (this.hasAttribute('download') && this.href) {
-            if (new URL(this.href, location.href).hostname === INTERNAL_BLOB_HOST) {
-                return originalClick.apply(this, arguments);
-            }
             handleDownload(this).catch((error) => console.error('KernelSU download failed', error));
             return;
         }

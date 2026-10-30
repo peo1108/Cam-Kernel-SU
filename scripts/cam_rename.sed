@@ -23,6 +23,8 @@ s/\bKsuCli\b/CamCli/g
 s/\bKsuIsValid\b/CamIsValid/g
 s/\bKsuValidCheck\b/CamValidCheck/g
 s/\bKsuDeepLink\b/CamDeepLink/g
+s/\bKsuIO\b/CamIO/g
+s/\bKsuPm\b/CamPm/g
 s/\bKsu\b/Cam/g
 s/_Natives_/_CamNative_/g
 s/\bNatives\b/CamNative/g

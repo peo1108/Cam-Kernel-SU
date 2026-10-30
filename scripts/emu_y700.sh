@@ -2,7 +2,8 @@
 # Android emulator shaped like a Lenovo Y700 Gen5 for Cam Kernel SU: Android 16, KMI
 # android16-6.12, 1904x3040 at the 374 dpi the tablet runs at (440 physical). Same KMI, but
 # x86_64 and no ZUI, so it cannot replace the tablet for the arm64 hooks, flashing init_boot,
-# boot guard or hiding timing.
+# boot guard or hiding timing. A soft reboot with an app on screen takes the whole emulator down
+# (null read in libgfxstream_backend.dll as surfaceflinger is killed): reboot it instead.
 #
 #   scripts/emu_y700.sh create        # (re)create the AVD, wipes its data
 #   scripts/emu_y700.sh start [APK]   # boot, install APK if given, load the LKM
@@ -66,7 +67,9 @@ start)
     # mapper.ranchu every 5 s and system_server goes with it, even with a software GPU.
     # Without GLESDynamicVersion it reports GLES 2.0: the Filament slime material has no
     # package for that level, so the Manager aborts in Material::Builder::build on launch.
-    nohup "$SDK/emulator/emulator.exe" -avd "$AVD" -no-snapshot-load -no-boot-anim -gpu host \
+    # -screen: emulator 37.2 starts this AVD with hw.screen=touch whatever config.ini says, and
+    # then the guest has no touch device at all, so the mouse does nothing in the window.
+    nohup "$SDK/emulator/emulator.exe" -avd "$AVD" -no-snapshot-load -no-boot-anim -gpu host -screen multi-touch \
         -feature GLDMA,GLDirectMem,HasSharedSlotsHostMemoryAllocator,GLESDynamicVersion </dev/null >/dev/null 2>&1 &
     wait_boot
     if [ -n "${2:-}" ]; then

@@ -3,12 +3,15 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.2.2 - 2026-10-25
-- Rule ẩn root v19 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút khi app mở trạng thái SELinux
+- Rule ẩn root v21 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút khi app mở trạng thái SELinux và không còn báo lỗi khi chính sách SELinux được nạp lại
 ### Thay đổi
+- Rule ẩn root v21: theo Duck Detector tới bản nightly 29/10 (824591e6). Duck Detector không còn lấy nhầm kết quả của lượt quét trước khi đo thời gian ghi context SELinux từ App Zygote, nên số đo đáng tin hơn; không có cách đo mới nào nhắm vào SU Kernel. Đã thử trên máy với kernel của bản này, kể cả khi cố ý chuyển Duck Detector qua lại giữa các nhân CPU: thẻ SELinux vẫn sạch
+- Rule ẩn root v20: theo Duck Detector tới bản nightly 25/10 (4c2e29e2). Duck Detector thêm phép đo thời gian lời gọi `prctl` nhắm vào KernelSU bản cũ; SU Kernel không có gì trên đường đó, đo trên máy không thấy mẫu nào trên cả 8 nhân CPU
 - Rule ẩn root v19: theo Duck Detector tới bản nightly 25/10 (b4083aee). Duck Detector giờ hỏi quyền SELinux thêm một đường nữa, ghi đọc thẳng vào selinuxfs thay vì qua thư viện của Android, và xét thêm vài quy tắc mà các bản root hay thêm vào. Phần ẩn SELinux của SU Kernel trả lời đường này giống hai đường cũ, theo chính sách gốc của máy, nên không cần sửa gì thêm
 - Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Thanh tiến trình cho các việc phải chờ: cài APK và chép tệp để mở/chia sẻ trong tab Tệp, sao lưu APK, tải bản cập nhật. Hiện phần trăm, dung lượng, tốc độ và thời gian còn lại; sao chép/di chuyển/giải nén cũng có thêm tốc độ và thời gian còn lại. Cài APK giờ chạy nền như sao chép (có thông báo và nút Huỷ khi đang chép vào trình cài đặt)
 ### Sửa lỗi
+- Ẩn SELinux: nếu chính sách SELinux được nạp lại đúng lúc một app đổi context SELinux, app có thể nhận lỗi trong khi máy gốc vẫn chạy bình thường. Giờ kernel thử lại trên chính sách mới như máy gốc (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Tab Tệp: thư mục Download/SU Kernel báo "Không có quyền (đã cấp root chưa?)". Sao lưu APK bản cũ tạo thư mục này thẳng bằng root mà không cho bộ nhớ chung quyền đọc, nên không ai mở được, kể cả root. Sao lưu APK giờ ghi qua bộ nhớ chung như mọi tệp tải về và tự sửa thư mục cũ; tab Tệp có nút Sửa quyền cho mọi thư mục bị như vậy
 ### Lưu ý
 - Bản này có thay đổi nhỏ ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có phần sửa ẩn SELinux. Không cài lại thì mọi thứ vẫn chạy như 1.2.1

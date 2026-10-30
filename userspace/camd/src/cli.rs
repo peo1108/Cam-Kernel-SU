@@ -895,25 +895,22 @@ pub fn run() -> Result<()> {
             }
             Debug::Info => {
                 let info = ksucalls::get_info();
-                println!("version: {}", info.version);
-                println!("flags: 0x{:x}", info.flags);
-                println!("uapi_version: {}", info.uapi_version);
-                println!("features: 0x{:x}", info.features);
-                println!("lkm: {}", ksucalls::is_lkm());
-                println!(
-                    "bundled: {}",
-                    (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_BUNDLED) != 0
+                let text = format!(
+                    "version: {}\nflags: 0x{:x}\nuapi_version: {}\nfeatures: 0x{:x}\nlkm: {}\n\
+                     bundled: {}\nlate_load: {}\nruntime_mode: {}\npr_build: {}\nsource_id: {}\n",
+                    info.version,
+                    info.flags,
+                    info.uapi_version,
+                    info.features,
+                    ksucalls::is_lkm(),
+                    (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_BUNDLED) != 0,
+                    ksucalls::is_late_load(),
+                    ksucalls::runtime_mode(),
+                    (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_PR_BUILD) != 0,
+                    ksucalls::get_source_id().unwrap_or_default(),
                 );
-                println!("late_load: {}", ksucalls::is_late_load());
-                println!("runtime_mode: {}", ksucalls::runtime_mode());
-                println!(
-                    "pr_build: {}",
-                    (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_PR_BUILD) != 0
-                );
-                println!(
-                    "source_id: {}",
-                    ksucalls::get_source_id().unwrap_or_default()
-                );
+                // `camd debug info | head -n 1` closes the pipe; println! would abort on that
+                let _ = std::io::Write::write_all(&mut std::io::stdout(), text.as_bytes());
                 Ok(())
             }
             Debug::Package => {

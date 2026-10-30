@@ -410,7 +410,7 @@ install_module() {
     set_permissions
   else
     print_title "$MODNAME" "by $MODAUTH"
-    print_title "Powered by KernelSU"
+    print_title "Powered by Cam Ksu"
 
     unzip -o "$ZIPFILE" customize.sh -d $MODPATH >&2
 

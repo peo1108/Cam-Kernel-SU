@@ -46,7 +46,7 @@ Cam Kernel SU is a fork of KernelSU: a kernel-based root solution for Android wi
 
 - Kernel changes are C-only; keep interfaces aligned with supercall and allowlist expectations in userspace/Manager.
 - If you alter IOCTLs or profiles, update the corresponding wrappers in camd (`ksucalls.rs`) and Manager JNI (`manager/app/src/main/cpp/ksu.cc`).
-- Host tests for Cam's own kernel logic (`policy/pkg_tracker.c`: seed, Manager pin and its signature and appid check; `policy/pkg_xml.c`): `make -C kernel/tests` on Linux/WSL (ASan + UBSan; 32 on 2026-10-16). `make check-format` covers `kernel/tests` too.
+- Host tests for Cam's own kernel logic (`policy/pkg_tracker.c`: seed, Manager pin and its signature and appid check; `policy/pkg_xml.c`; the context parsing of `feature/selinux_hide.c`, built from the module source by `tests/extract_fn.awk`): `make -C kernel/tests` on Linux/WSL (ASan + UBSan; 32 + 14 on 2026-10-30). `make check-format` covers `kernel/tests` too.
 - `feature/selinux_hide.c` hooks must refuse before doing extra work (permission check first): apps time these paths (Duck Detector's `attr/current` probe; section 12 of `docs/CAM_CHANGES.md`).
 
 ### Userspace Rust (`userspace/camd`, `userspace/caminit`)

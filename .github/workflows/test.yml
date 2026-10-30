@@ -1,7 +1,7 @@
 name: Test
 
-# Unit tests the build workflows do not run: the kernel's seed and Manager pin logic
-# (kernel/tests, on the host under ASan/UBSan), camd and caminit on the Linux host, and the Manager's JVM
+# Unit tests the build workflows do not run: the kernel's seed and Manager pin logic and the
+# SELinux hide context parsing (kernel/tests, on the host under ASan/UBSan), camd and caminit on the Linux host, and the Manager's JVM
 # tests (among them HidingRulesRepositoryTest, which fails when hiding-rules.json was edited
 # without re-signing it), the CHANGELOG.md extractor the Release workflow relies on, and the
 # caesarvn.xyz API that sells memberships and serves the OTA feed (site/api).
@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/test.yml'
       - 'kernel/policy/**'
+      - 'kernel/feature/selinux_hide.c'
       - 'kernel/tests/**'
       - 'userspace/**'
       - 'uapi/**'
@@ -27,6 +28,7 @@ on:
     paths:
       - '.github/workflows/test.yml'
       - 'kernel/policy/**'
+      - 'kernel/feature/selinux_hide.c'
       - 'kernel/tests/**'
       - 'userspace/**'
       - 'uapi/**'

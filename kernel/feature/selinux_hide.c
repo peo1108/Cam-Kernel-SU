@@ -858,6 +858,7 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
         *orig_sid_p = SECSID_NULL;
 
     // removed: if (force)
+retry:
     rcu_read_lock();
     orig_policy = rcu_dereference(selinux_state.policy);
     orig_policydb = &orig_policy->policydb;
@@ -870,6 +871,8 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
         // rc should not be frozen
         context_destroy(&context);
         // removed: if (rc == -ESTALE)
+    }
+    if (!rc) {
         // The live policy only counts once the backup took the context, so a
         // rejected one costs what it costs stock: one copy, one parse. Apps time
         // that path (Duck's App Zygote attr/current timing). A context the backup
@@ -879,14 +882,22 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
         // ss/sidtab_hash_stats, so skipping it on the context/access writes was a
         // tell of its own. setprocattr additionally takes the live SID/rc for the
         // transition (orig_sid_p/orig_rc_p); the other callers discard them.
+        // Kept over upstream #3936, which looks both policies up in one pass:
+        // that brings back extra lookups on the rejected path.
         memcpy(scontext2, scontext, scontext_len);
         orig_rc = string_to_context_struct(orig_policydb, orig_sidtab, scontext2, &orig_context, def_sid);
         if (!orig_rc) {
             // sync to global sidtab
             orig_rc = sidtab_context_to_sid(orig_sidtab, &orig_context, &orig_sid);
-            if (orig_sid_p)
+            if (!orig_rc && orig_sid_p)
                 *orig_sid_p = orig_sid;
             context_destroy(&orig_context);
+        }
+        if (orig_rc == -ESTALE) {
+            // the live policy was reloaded under us: start over on the new one
+            rcu_read_unlock();
+            memcpy(scontext2, scontext, scontext_len);
+            goto retry;
         }
     }
     rcu_read_unlock();

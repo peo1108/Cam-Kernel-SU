@@ -428,6 +428,40 @@ class SuperUserViewModel(
         }
     }
 
+    /**
+     * Reads one uid's profiles again and swaps in its rebuilt group, the list order kept. A profile
+     * open beside the list calls it on every edit, so the row's tags follow at once: two binder
+     * calls, where [refreshAppList] makes two per app.
+     */
+    fun refreshUid(uid: Int): Job = viewModelScope.launch {
+        refreshMutex.withLock {
+            val currentApps = synchronized(appsLock) { cachedApps }
+            if (currentApps.none { it.uid == uid }) return@withLock
+            val (updatedApps, cachedGroup, visibleGroup) = withContext(Dispatchers.IO) {
+                val updated = currentApps.map {
+                    if (it.uid == uid) it.copy(profile = Cam.getAppProfile(it.profileKey, it.uid)) else it
+                }
+                val umount = Cam.uidShouldUmount(uid)
+                val own = updated.filter { it.uid == uid }
+                Triple(
+                    updated,
+                    buildGroups(own.filter { it.packageName != camApp.packageName }) { umount }.firstOrNull(),
+                    buildGroups(filterApps(own)) { umount }.firstOrNull(),
+                )
+            }
+            synchronized(appsLock) { cachedApps = updatedApps }
+            if (cachedGroup != null) {
+                synchronized(groupedAppsLock) {
+                    cachedGroupedApps = cachedGroupedApps.map { if (it.uid == uid) cachedGroup else it }
+                }
+            }
+            // a row the filters now hide stays until the next full refresh, as with resort = false
+            if (visibleGroup != null) {
+                updateVisibleApps(_uiState.value.groupedApps.map { if (it.uid == uid) visibleGroup else it }, resort = false)
+            }
+        }
+    }
+
     fun loadAppList(force: Boolean = false, resort: Boolean = true): Job {
         return viewModelScope.launch {
             if (force || _uiState.value.groupedApps.isEmpty()) {

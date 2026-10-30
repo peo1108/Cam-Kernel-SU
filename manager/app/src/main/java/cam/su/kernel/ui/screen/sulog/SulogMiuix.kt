@@ -1,5 +1,37 @@
 package cam.su.kernel.ui.screen.sulog
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
+import cam.su.kernel.ui.component.AppIconImage
+import cam.su.kernel.ui.component.CamToast
+import cam.su.kernel.ui.component.listdetail.DetailPaneScaffold
+import cam.su.kernel.ui.component.listdetail.FlightPart
+import cam.su.kernel.ui.component.listdetail.ListDetailLayout
+import cam.su.kernel.ui.component.listdetail.OverviewCard
+import cam.su.kernel.ui.component.listdetail.OverviewLine
+import cam.su.kernel.ui.component.listdetail.PaneDetail
+import cam.su.kernel.ui.component.listdetail.PaneDropOverlay
+import cam.su.kernel.ui.component.listdetail.PaneHint
+import cam.su.kernel.ui.component.listdetail.PaneMotion
+import cam.su.kernel.ui.component.listdetail.PaneMotionFollows
+import cam.su.kernel.ui.component.listdetail.SulogListPaneWidth
+import cam.su.kernel.ui.component.listdetail.flightSource
+import cam.su.kernel.ui.component.listdetail.flightTarget
+import cam.su.kernel.ui.component.listdetail.pageHorizontalInsets
+import cam.su.kernel.ui.component.listdetail.paneReveal
+import cam.su.kernel.ui.component.listdetail.paneRow
+import cam.su.kernel.ui.component.listdetail.rememberPaneMotion
+import cam.su.kernel.ui.component.listdetail.showListDetail
+import cam.su.kernel.ui.component.listdetail.windowWidthDp
+import cam.su.kernel.ui.util.ownerNameForUid
+import cam.su.kernel.ui.viewmodel.SuperUserSignal
+import cam.su.kernel.ui.viewmodel.SuperUserViewModel
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
@@ -116,6 +148,69 @@ fun SulogScreenMiuix(
     state: SulogScreenState,
     actions: SulogActions,
 ) {
+    // a wide window shows the picked event's fields beside the list instead of in a dialog
+    val split = showListDetail(windowWidthDp())
+    var selectedEntry by remember { mutableStateOf<SulogEntry?>(null) }
+    val motion = rememberPaneMotion()
+    PaneMotionFollows(motion.takeIf { split }, selectedEntry?.rawLine)
+    BackHandler(enabled = split && selectedEntry != null) { selectedEntry = null }
+
+    SulogDetailDialog(
+        // turned to portrait: the picked event's dialog opens once the rotation is over
+        show = !split && selectedEntry != null && motion.inlineOpen(split),
+        entry = selectedEntry,
+        onDismiss = { selectedEntry = null },
+    )
+
+    ListDetailLayout(
+        split = split,
+        listWidth = SulogListPaneWidth,
+        motion = motion,
+        flightParts = { key ->
+            selectedEntry?.takeIf { it.rawLine == key }?.let { entry ->
+                mapOf<FlightPart, @Composable () -> Unit>(FlightPart.Label to { SulogTitle(entry) })
+            }.orEmpty()
+        },
+        list = {
+            SulogList(
+                state = state,
+                actions = actions,
+                motion = motion.takeIf { split },
+                onEntryClick = { entry ->
+                    if (split && entry.rawLine != selectedEntry?.rawLine) {
+                        motion.pick(entry.rawLine, mapOf(FlightPart.Label to { SulogTitle(entry) }))
+                    }
+                    selectedEntry = entry
+                },
+            )
+        },
+        detail = {
+            // keyed by the line, as the rows are; the detail leaving still finds its entry
+            PaneDetail(motion, selectedEntry?.rawLine) { line ->
+                SulogDetailPane(
+                    entry = line?.let { picked ->
+                        selectedEntry?.takeIf { it.rawLine == picked } ?: state.entries.find { it.rawLine == picked }
+                    },
+                    state = state,
+                    motion = motion,
+                    onClose = { selectedEntry = null },
+                    onOpenProfile = { uid ->
+                        SuperUserSignal.openProfile(uid)
+                        actions.onBack()
+                    },
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun SulogList(
+    state: SulogScreenState,
+    actions: SulogActions,
+    motion: PaneMotion?,
+    onEntryClick: (SulogEntry) -> Unit,
+) {
     val enableBlur = LocalEnableBlur.current
     val density = LocalDensity.current
     val scrollBehavior = MiuixScrollBehavior()
@@ -130,7 +225,6 @@ fun SulogScreenMiuix(
     val listState = rememberLazyListState()
     val fileSelector = buildSulogFileSelector(state.files, state.selectedFilePath)
     var searchStatus by remember { mutableStateOf(SearchStatus("")) }
-    var selectedEntry by remember { mutableStateOf<SulogEntry?>(null) }
 
     LaunchedEffect(state.searchText, state.visibleEntries) {
         searchStatus = searchStatus.copy(
@@ -145,12 +239,6 @@ fun SulogScreenMiuix(
         )
         actions.onSearchTextChange(nextStatus.searchText)
     }
-
-    SulogDetailDialog(
-        show = selectedEntry != null,
-        entry = selectedEntry,
-        onDismiss = { selectedEntry = null },
-    )
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -274,7 +362,7 @@ fun SulogScreenMiuix(
                     sulogEntriesSection(
                         entries = state.visibleEntries,
                         errorMessage = state.errorMessage,
-                        onEntryClick = { selectedEntry = it },
+                        onEntryClick = onEntryClick,
                     )
                     item {
                         Spacer(Modifier.height(imeBottomPadding))
@@ -282,7 +370,7 @@ fun SulogScreenMiuix(
                 }
             }
         },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal),
+        contentWindowInsets = pageHorizontalInsets(),
     ) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current
         searchStatus.SearchBox {
@@ -350,7 +438,8 @@ fun SulogScreenMiuix(
                         sulogEntriesSection(
                             entries = state.visibleEntries,
                             errorMessage = state.errorMessage,
-                            onEntryClick = { selectedEntry = it },
+                            onEntryClick = onEntryClick,
+                            motion = motion,
                         )
 
                         item {
@@ -362,6 +451,7 @@ fun SulogScreenMiuix(
                             )
                         }
                     }
+                    PaneDropOverlay(motion, Modifier.matchParentSize())
                 }
             }
         }
@@ -434,6 +524,7 @@ private fun LazyListScope.sulogEntriesSection(
     entries: List<SulogEntry>,
     errorMessage: String?,
     onEntryClick: (SulogEntry) -> Unit,
+    motion: PaneMotion? = null,
 ) {
     when {
         errorMessage != null -> item {
@@ -448,6 +539,7 @@ private fun LazyListScope.sulogEntriesSection(
             SulogEntryCard(
                 entry = entry,
                 onClick = { onEntryClick(entry) },
+                motion = motion,
             )
         }
     }
@@ -457,12 +549,14 @@ private fun LazyListScope.sulogEntriesSection(
 private fun SulogEntryCard(
     entry: SulogEntry,
     onClick: () -> Unit,
+    motion: PaneMotion?,
 ) {
     GlassListCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .paneRow(motion, entry.rawLine),
         onClick = onClick,
         showIndication = true,
         insideMargin = PaddingValues(16.dp),
@@ -475,13 +569,11 @@ private fun SulogEntryCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(
-                    text = sulogEntryTitle(entry),
-                    modifier = Modifier.basicMarquee(),
-                    fontWeight = FontWeight(550),
-                    color = colorScheme.onSurface,
-                    maxLines = 1,
-                    softWrap = false,
+                SulogTitle(
+                    entry = entry,
+                    modifier = Modifier
+                        .flightSource(motion, entry.rawLine, FlightPart.Label)
+                        .basicMarquee(),
                 )
                 sulogEntryDescription(entry)?.let {
                     Text(
@@ -567,6 +659,168 @@ private fun SulogMessageCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+        }
+    }
+}
+
+/** An event's title as its row shows it; also what flies into the detail's header. */
+@Composable
+private fun SulogTitle(entry: SulogEntry, modifier: Modifier = Modifier) {
+    Text(
+        text = sulogEntryTitle(entry),
+        modifier = modifier,
+        fontWeight = FontWeight(550),
+        color = colorScheme.onSurface,
+        maxLines = 1,
+        softWrap = false,
+    )
+}
+
+/**
+ * The picked event beside the list: its title and outcome pinned on top, the app it came from
+ * (its profile one tap away) and every field, selectable. Counts per event type while nothing is
+ * picked.
+ */
+@Composable
+private fun SulogDetailPane(
+    entry: SulogEntry?,
+    state: SulogScreenState,
+    motion: PaneMotion,
+    onClose: () -> Unit,
+    onOpenProfile: (Int) -> Unit,
+) {
+    val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+            WindowInsets.captionBar.asPaddingValues().calculateBottomPadding()
+    if (entry == null) {
+        SulogOverview(state, bottom)
+        return
+    }
+    run {
+        val context = LocalContext.current
+        val copied = stringResource(R.string.sulog_copied)
+        val detailText = sulogEntryDetailText(entry)
+        val uid = entry.fields["uid"]?.toIntOrNull()
+        val group = remember(uid) { uid?.let { SuperUserViewModel.getGroupedApp(it) } }
+        DetailPaneScaffold(
+            title = stringResource(R.string.sulog_detail_title),
+            onClose = onClose,
+            bottomPadding = bottom,
+            actions = {
+                GlassIconButton(
+                    onClick = {
+                        context.getSystemService(ClipboardManager::class.java)
+                            ?.setPrimaryClip(ClipData.newPlainText("su log", detailText.text))
+                        CamToast.show(context, copied)
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.ContentCopy,
+                        contentDescription = stringResource(R.string.sulog_copy),
+                        tint = colorScheme.onSurface,
+                    )
+                }
+            },
+            header = { SulogDetailHeader(entry, motion) },
+        ) {
+            if (group != null) {
+                item(key = "app") {
+                    GlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 12.dp),
+                    ) {
+                        ArrowPreference(
+                            title = if (group.apps.size > 1) ownerNameForUid(group.uid) else group.primary.label,
+                            summary = stringResource(R.string.sulog_open_profile),
+                            startAction = {
+                                AppIconImage(
+                                    packageInfo = group.primary.packageInfo,
+                                    label = group.primary.label,
+                                    modifier = Modifier
+                                        .padding(end = 12.dp)
+                                        .size(40.dp),
+                                )
+                            },
+                            onClick = { onOpenProfile(group.uid) },
+                        )
+                    }
+                }
+            }
+            item(key = "fields") {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 12.dp),
+                    insideMargin = PaddingValues(16.dp),
+                ) {
+                    SelectionContainer {
+                        Text(
+                            text = detailText,
+                            fontSize = 14.sp,
+                            lineHeight = 22.sp,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SulogDetailHeader(entry: SulogEntry, motion: PaneMotion) {
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+        insideMargin = PaddingValues(16.dp),
+    ) {
+        SulogTitle(
+            entry = entry,
+            modifier = Modifier
+                .flightTarget(motion, entry.rawLine, FlightPart.Label)
+                .basicMarquee(),
+        )
+        val line = listOfNotNull(entry.timestampText, sulogEntryStatus(entry)).joinToString(" · ")
+        if (line.isNotEmpty()) {
+            Text(
+                text = line,
+                modifier = Modifier.paneReveal().padding(top = 2.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight(550),
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+        sulogEntryDescription(entry)?.let {
+            Text(
+                text = it,
+                modifier = Modifier.paneReveal().padding(top = 2.dp),
+                fontSize = 13.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SulogOverview(state: SulogScreenState, bottomPadding: Dp) {
+    DetailPaneScaffold(
+        title = stringResource(R.string.list_detail_overview),
+        onClose = null,
+        bottomPadding = bottomPadding,
+    ) {
+        item {
+            OverviewCard(
+                lines = SulogEventFilter.entries.map { filter ->
+                    OverviewLine(sulogFilterLabel(filter), state.entries.count { it.eventType == filter.eventType }.toString())
+                },
+            )
+            PaneHint(stringResource(R.string.sulog_overview_hint))
         }
     }
 }

@@ -46,6 +46,8 @@ data class SuperUserActions(
     val onUpdateSortConfig: (AppSortConfig) -> Unit,
     val onOpenProfile: (GroupedApps) -> Unit,
     val onProfileEdited: () -> Unit,
+    /** a profile open beside the list was edited: refresh that uid's row only */
+    val onProfileEditedUid: (Int) -> Unit,
 )
 
 @Immutable

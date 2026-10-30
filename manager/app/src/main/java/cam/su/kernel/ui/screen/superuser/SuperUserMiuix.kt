@@ -1,5 +1,28 @@
 package cam.su.kernel.ui.screen.superuser
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.MutableState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cam.su.kernel.ui.component.listdetail.DetailPaneScaffold
+import cam.su.kernel.ui.component.listdetail.FlightPart
+import cam.su.kernel.ui.component.listdetail.ListDetailLayout
+import cam.su.kernel.ui.component.listdetail.ListPaneWidth
+import cam.su.kernel.ui.component.listdetail.LocalListDetail
+import cam.su.kernel.ui.component.listdetail.OverviewCard
+import cam.su.kernel.ui.component.listdetail.OverviewLine
+import cam.su.kernel.ui.component.listdetail.PaneDetail
+import cam.su.kernel.ui.component.listdetail.PaneDropOverlay
+import cam.su.kernel.ui.component.listdetail.PaneHint
+import cam.su.kernel.ui.component.listdetail.PaneMotion
+import cam.su.kernel.ui.component.listdetail.PaneMotionFollows
+import cam.su.kernel.ui.component.listdetail.flightSource
+import cam.su.kernel.ui.component.listdetail.pageHorizontalInsets
+import cam.su.kernel.ui.component.listdetail.paneRow
+import cam.su.kernel.ui.component.listdetail.rememberPaneMotion
+import cam.su.kernel.ui.component.search.LocalMainSearch
+import cam.su.kernel.ui.screen.appprofile.AppProfilePane
+import cam.su.kernel.ui.viewmodel.SuperUserSignal
+import cam.su.kernel.ui.viewmodel.SuperUserViewModel
 import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
@@ -143,6 +166,110 @@ fun SuperUserPagerMiuix(
     uiState: SuperUserUiState,
     actions: SuperUserActions,
     bottomInnerPadding: Dp,
+    isCurrentPage: Boolean = true,
+) {
+    val split = LocalListDetail.current
+    // the app whose profile is open: inside its card, or beside the list on a wide page
+    val openProfileUid = rememberSaveable { mutableStateOf<Int?>(null) }
+    val motion = rememberPaneMotion()
+    PaneMotionFollows(motion.takeIf { split }, openProfileUid.value)
+    val search = LocalMainSearch.current
+    BackHandler(enabled = split && isCurrentPage && openProfileUid.value != null && !search.active) {
+        openProfileUid.value = null
+    }
+
+    ListDetailLayout(
+        split = split,
+        listWidth = ListPaneWidth,
+        motion = motion,
+        flightParts = { key ->
+            uiState.groupedApps.find { it.uid == key }?.let { group ->
+                appFlightParts(group, if (group.apps.size > 1) ownerNameForUid(group.uid) else group.primary.label)
+            }.orEmpty()
+        },
+        list = {
+            SuperUserList(
+                uiState = uiState,
+                actions = actions,
+                bottomInnerPadding = bottomInnerPadding,
+                openProfileUid = openProfileUid,
+                split = split,
+                // turning the tablet: the open card stays open until the panes split, and opens
+                // in place only once the rotation is over
+                inline = motion.inlineOpen(split),
+                motion = motion.takeIf { split },
+            )
+        },
+        detail = {
+            PaneDetail(motion, openProfileUid.value) { uid ->
+                val group = uid?.let { picked -> uiState.groupedApps.find { it.uid == picked } ?: SuperUserViewModel.getGroupedApp(picked) }
+                if (group == null) {
+                    SuperUserOverview(uiState, bottomInnerPadding)
+                } else {
+                    AppProfilePane(
+                        appGroup = group,
+                        motion = motion,
+                        bottomPadding = bottomInnerPadding,
+                        onClose = { openProfileUid.value = null },
+                        onEdited = { actions.onProfileEditedUid(group.uid) },
+                        onAppChanged = actions.onRefresh,
+                    )
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun SuperUserOverview(uiState: SuperUserUiState, bottomPadding: Dp) {
+    DetailPaneScaffold(
+        title = stringResource(R.string.list_detail_overview),
+        onClose = null,
+        bottomPadding = bottomPadding,
+    ) {
+        item {
+            val groups = uiState.groupedApps
+            OverviewCard(
+                lines = listOf(
+                    OverviewLine(stringResource(R.string.superuser_overview_root), groups.count { it.anyAllowSu }.toString()),
+                    OverviewLine(stringResource(R.string.superuser_overview_custom), groups.count { it.anyCustom }.toString()),
+                    OverviewLine(stringResource(R.string.superuser_overview_listed), groups.size.toString()),
+                ),
+            )
+            PaneHint(stringResource(R.string.superuser_overview_hint))
+        }
+    }
+}
+
+/** What flies from an app's row into its profile: the icon and the name, drawn as the header has them. */
+private fun appFlightParts(group: GroupedApps, label: String): Map<FlightPart, @Composable () -> Unit> = mapOf(
+    FlightPart.Icon to {
+        AppIconImage(
+            packageInfo = group.primary.packageInfo,
+            label = group.primary.label,
+            modifier = Modifier.fillMaxSize(),
+        )
+    },
+    FlightPart.Label to {
+        Text(
+            text = label,
+            fontWeight = FontWeight(550),
+            color = colorScheme.onSurface,
+            maxLines = 1,
+            softWrap = false,
+        )
+    },
+)
+
+@Composable
+private fun SuperUserList(
+    uiState: SuperUserUiState,
+    actions: SuperUserActions,
+    bottomInnerPadding: Dp,
+    openProfileUid: MutableState<Int?>,
+    split: Boolean,
+    inline: Boolean,
+    motion: PaneMotion?,
 ) {
     val searchStatus = uiState.searchStatus
     val enableBlur = LocalEnableBlur.current
@@ -310,10 +437,20 @@ fun SuperUserPagerMiuix(
             }
         },
         popupHost = { },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current)
+        contentWindowInsets = pageHorizontalInsets()
     ) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current
         val lazyListState = rememberLazyListState()
+        // "Open its profile" on an su log event: pick the app and bring its row into view
+        val profileRequest by SuperUserSignal.profileRequest.collectAsStateWithLifecycle()
+        val latestGroups = rememberUpdatedState(uiState.groupedApps)
+        LaunchedEffect(profileRequest) {
+            val uid = profileRequest ?: return@LaunchedEffect
+            SuperUserSignal.consume()
+            openProfileUid.value = uid
+            val index = latestGroups.value.indexOfFirst { it.uid == uid }
+            if (index >= 0) lazyListState.animateScrollToItem(index)
+        }
         run {
             val refreshTick = remember { mutableIntStateOf(0) }
             val latestGroupedApps = rememberUpdatedState(uiState.groupedApps)
@@ -330,7 +467,6 @@ fun SuperUserPagerMiuix(
             ReportPullToBunker(pullToRefreshState)
 
             val expandedUids = remember { mutableStateOf(setOf<Int>()) }
-            val openProfileUid = rememberSaveable { mutableStateOf<Int?>(null) }
             PullToRefresh(
                 isRefreshing = uiState.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
@@ -368,6 +504,7 @@ fun SuperUserPagerMiuix(
                             // while searching, groups open up so the matching app shows
                             val expanded = expandedUids.value.contains(group.uid) || (searching && group.apps.size > 1)
                             Column(modifier = Modifier.cardEntrance(lazyListState, index)) {
+                                val label = if (group.apps.size > 1) ownerNameForUid(group.uid) else group.primary.label
                                 GroupItem(
                                     group = group,
                                     onToggleExpand = {
@@ -376,16 +513,24 @@ fun SuperUserPagerMiuix(
                                                 if (expanded) expandedUids.value - group.uid else expandedUids.value + group.uid
                                         }
                                     },
-                                    profileExpanded = openProfileUid.value == group.uid,
-                                    profileContent = {
-                                        InlineAppProfile(
-                                            group = group,
-                                            onOpenFullProfile = expandClick(appSourceKey(group.uid)) { actions.onOpenProfile(group) },
-                                            onEdited = actions.onProfileEdited,
-                                        )
+                                    profileExpanded = inline && openProfileUid.value == group.uid,
+                                    profileContent = if (split && !inline) null else {
+                                        {
+                                            InlineAppProfile(
+                                                group = group,
+                                                onOpenFullProfile = expandClick(appSourceKey(group.uid)) { actions.onOpenProfile(group) },
+                                                onEdited = actions.onProfileEdited,
+                                            )
+                                        }
                                     },
+                                    motion = motion,
                                 ) {
-                                    openProfileUid.value = if (openProfileUid.value == group.uid) null else group.uid
+                                    if (!split) {
+                                        openProfileUid.value = if (openProfileUid.value == group.uid) null else group.uid
+                                    } else if (openProfileUid.value != group.uid) {
+                                        motion?.pick(group.uid, appFlightParts(group, label))
+                                        openProfileUid.value = group.uid
+                                    }
                                 }
                                 AnimatedVisibility(
                                     visible = expanded && group.apps.size > 1,
@@ -408,6 +553,7 @@ fun SuperUserPagerMiuix(
                             Spacer(Modifier.height(bottomInnerPadding))
                         }
                     }
+                    PaneDropOverlay(motion, Modifier.matchParentSize())
                     SkeletonOverlay(
                         visible = rememberSkeletonShown(loading = !uiState.hasLoaded && uiState.groupedApps.isEmpty()),
                         kind = SkeletonKind.App,
@@ -466,6 +612,7 @@ private fun GroupItem(
     onToggleExpand: () -> Unit,
     profileExpanded: Boolean = false,
     profileContent: (@Composable () -> Unit)? = null,
+    motion: PaneMotion? = null,
     onClickPrimary: () -> Unit,
 ) {
     val isInDarkTheme = isInDarkTheme()
@@ -495,7 +642,8 @@ private fun GroupItem(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp)
-            .expandSource(appSourceKey(group.uid)),
+            .expandSource(appSourceKey(group.uid))
+            .paneRow(motion, group.uid),
         insideMargin = PaddingValues(0.dp)
     ) {
         Row(
@@ -525,6 +673,7 @@ private fun GroupItem(
                     .padding(end = 10.dp)
                     .size(48.dp)
                     .heroSource(group.uid, HeroPart.Icon)
+                    .flightSource(motion, group.uid, FlightPart.Icon)
             )
             Column(
                 modifier = Modifier
@@ -532,7 +681,10 @@ private fun GroupItem(
             ) {
                 Text(
                     text = if (group.apps.size > 1) ownerNameForUid(group.uid) else group.primary.label,
-                    modifier = Modifier.heroSource(group.uid, HeroPart.Label).basicMarquee(),
+                    modifier = Modifier
+                        .heroSource(group.uid, HeroPart.Label)
+                        .flightSource(motion, group.uid, FlightPart.Label)
+                        .basicMarquee(),
                     fontWeight = FontWeight(550),
                     color = colorScheme.onSurface,
                     maxLines = 1,

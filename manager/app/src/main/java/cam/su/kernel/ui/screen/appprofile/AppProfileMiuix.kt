@@ -1,5 +1,13 @@
 package cam.su.kernel.ui.screen.appprofile
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import cam.su.kernel.ui.component.listdetail.DetailPaneScaffold
+import cam.su.kernel.ui.component.listdetail.DetailTwoColumnWidth
+import cam.su.kernel.ui.component.listdetail.FlightPart
+import cam.su.kernel.ui.component.listdetail.PaneMotion
+import cam.su.kernel.ui.component.listdetail.flightTarget
+import cam.su.kernel.ui.component.listdetail.panePiece
+import cam.su.kernel.ui.component.listdetail.paneReveal
 import cam.su.kernel.ui.component.glass.GlassSwitchPreference
 import cam.su.kernel.ui.component.glass.GlassDropdownPreference
 import cam.su.kernel.ui.component.glass.MorphIcon
@@ -220,12 +228,55 @@ private fun AppProfileInner(
     onManageTemplate: () -> Unit = {},
     onProfileChange: (CamNative.Profile) -> Unit,
 ) {
-    val userId = appUid / 100000
-    val appId = appUid % 100000
-
     Column(
         modifier = modifier
     ) {
+        AppProfileHeader(
+            packageName = packageName,
+            appLabel = appLabel,
+            appIcon = appIcon,
+            appUid = appUid,
+            sharedUserId = sharedUserId,
+            appVersionName = appVersionName,
+            appVersionCode = appVersionCode,
+            isUidGroup = isUidGroup,
+            isSpecialApp = isSpecialApp,
+            affectedCount = affectedApps.size,
+            labelModifier = Modifier.heroTarget(appUid, HeroPart.Label),
+        )
+
+        AppProfileEditorBody(
+            profile = profile,
+            isSpecialApp = isSpecialApp,
+            carded = true,
+            onViewTemplate = onViewTemplate,
+            onManageTemplate = onManageTemplate,
+            onProfileChange = onProfileChange,
+        )
+
+        if (isUidGroup) AffectedApps(affectedApps)
+    }
+}
+
+/** The app's icon and name, its version and package (or shared uid), and its uid: a profile's top. */
+@Composable
+private fun AppProfileHeader(
+    packageName: String,
+    appLabel: String,
+    appIcon: @Composable (() -> Unit),
+    appUid: Int,
+    sharedUserId: String,
+    appVersionName: String,
+    appVersionCode: Long,
+    isUidGroup: Boolean,
+    isSpecialApp: Boolean,
+    affectedCount: Int,
+    labelModifier: Modifier,
+) {
+    val userId = appUid / 100000
+    val appId = appUid % 100000
+
+    Column {
         GlassCard(
             modifier = Modifier
                 .fillMaxWidth()
@@ -240,15 +291,14 @@ private fun AppProfileInner(
                 Column(
                     modifier = Modifier
                         .padding(start = 12.dp, end = 8.dp)
-                        .weight(1f),
+                        .weight(1f)
+                        .paneReveal(),
                 ) {
                     Text(
                         text = appLabel,
                         color = colorScheme.onSurface,
                         fontWeight = FontWeight(550),
-                        modifier = Modifier
-                            .heroTarget(appUid, HeroPart.Label)
-                            .basicMarquee(),
+                        modifier = labelModifier.basicMarquee(),
                         maxLines = 1,
                         softWrap = false
                     )
@@ -297,7 +347,7 @@ private fun AppProfileInner(
                             )
                         }
                         Text(
-                            text = stringResource(R.string.group_contains_apps, affectedApps.size),
+                            text = stringResource(R.string.group_contains_apps, affectedCount),
                             fontSize = 12.sp,
                             color = colorScheme.onSurfaceVariantSummary,
                             fontWeight = FontWeight.Medium,
@@ -309,7 +359,7 @@ private fun AppProfileInner(
                     }
                 }
                 Column(
-                    modifier = Modifier,
+                    modifier = Modifier.paneReveal(),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -334,47 +384,40 @@ private fun AppProfileInner(
                 }
             }
         }
+    }
+}
 
-        AppProfileEditorBody(
-            profile = profile,
-            isSpecialApp = isSpecialApp,
-            carded = true,
-            onViewTemplate = onViewTemplate,
-            onManageTemplate = onManageTemplate,
-            onProfileChange = onProfileChange,
-        )
-
-        if (isUidGroup) {
-            SmallTitle(
-                text = stringResource(R.string.app_profile_affects_following_apps),
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            GlassCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = 12.dp),
-            ) {
-                Spacer(Modifier.height(3.dp))
-                affectedApps.forEach { app ->
-                    BasicComponent(
-                        startAction = {
-                            AppIconImage(
-                                packageInfo = app.packageInfo,
-                                label = app.label,
-                                modifier = Modifier
-                                    .padding(end = 1.dp)
-                                    .size(48.dp)
-                            )
-                        },
-                        title = app.label,
-                        summary = app.displayIdentifier,
-                        insideMargin = PaddingValues(start = 11.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+/** The apps sharing the uid: the profile applies to all of them. */
+@Composable
+private fun AffectedApps(affectedApps: List<SuperUserViewModel.AppInfo>) {
+    SmallTitle(
+        text = stringResource(R.string.app_profile_affects_following_apps),
+        modifier = Modifier.panePiece().padding(top = 4.dp)
+    )
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+    ) {
+        Spacer(Modifier.height(3.dp))
+        affectedApps.forEach { app ->
+            BasicComponent(
+                startAction = {
+                    AppIconImage(
+                        packageInfo = app.packageInfo,
+                        label = app.label,
+                        modifier = Modifier
+                            .padding(end = 1.dp)
+                            .size(48.dp)
                     )
-                }
-                Spacer(Modifier.height(3.dp))
-            }
+                },
+                title = app.label,
+                summary = app.displayIdentifier,
+                insideMargin = PaddingValues(start = 11.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+            )
         }
+        Spacer(Modifier.height(3.dp))
     }
 }
 
@@ -443,59 +486,168 @@ private fun TopBar(
             actions = {
                 GlassButtonGroup {
                     if (showActions) {
-                        val showTopPopup = remember { mutableStateOf(false) }
-                        val moreMorph = rememberMorphPopupState()
-                        GlassIconButton(
-                            onClick = { showTopPopup.value = true },
-                            modifier = Modifier.morphAnchor(moreMorph),
-                        ) {
-                            MorphIcon(moreMorph) { Icon(
-                                imageVector = MiuixIcons.MoreCircle,
-                                tint = colorScheme.onSurface,
-                                contentDescription = stringResource(id = R.string.settings)
-                            ) }
-                        }
-                        GlassListPopup(
-                            show = showTopPopup.value,
-                            popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                            alignment = PopupPositionProvider.Align.TopEnd,
-                            morph = moreMorph,
-                            onDismissRequest = { showTopPopup.value = false },
-                            content = {
-                                GlassMenuColumn {
-                                    val items = listOf(
-                                        Triple(R.string.launch_app, Icons.Rounded.PlayArrow) { onLaunchApp(packageName, userId) },
-                                        Triple(R.string.restart_app, Icons.Rounded.RestartAlt) { onRestartApp(packageName, userId) },
-                                        Triple(R.string.app_system_info, Icons.Rounded.Info) { onOpenSystemInfo(packageName, userId) },
-                                    )
-                                    items.forEach { (label, icon, action) ->
-                                        GlassMenuItem(
-                                            text = stringResource(label),
-                                            icon = icon,
-                                            onClick = {
-                                                action()
-                                                showTopPopup.value = false
-                                            },
-                                        )
-                                    }
-                                    GlassMenuDivider()
-                                    GlassMenuItem(
-                                        text = stringResource(R.string.force_stop_app),
-                                        icon = Icons.Rounded.Stop,
-                                        destructive = true,
-                                        onClick = {
-                                            onForceStopApp(packageName, userId)
-                                            showTopPopup.value = false
-                                        },
-                                    )
-                                }
-                            }
-                        )
+                        AppMenu(packageName, userId, onLaunchApp, onForceStopApp, onRestartApp, onOpenSystemInfo)
                     }
                 }
             },
             scrollBehavior = scrollBehavior
         )
+    }
+}
+
+/** The app's menu: launch, restart, system info, force stop. */
+@Composable
+private fun AppMenu(
+    packageName: String,
+    userId: Int,
+    onLaunchApp: (String, Int) -> Unit,
+    onForceStopApp: (String, Int) -> Unit,
+    onRestartApp: (String, Int) -> Unit,
+    onOpenSystemInfo: (String, Int) -> Unit,
+) {
+    val showTopPopup = remember { mutableStateOf(false) }
+    val moreMorph = rememberMorphPopupState()
+    GlassIconButton(
+        onClick = { showTopPopup.value = true },
+        modifier = Modifier.morphAnchor(moreMorph),
+    ) {
+        MorphIcon(moreMorph) { Icon(
+            imageVector = MiuixIcons.MoreCircle,
+            tint = colorScheme.onSurface,
+            contentDescription = stringResource(id = R.string.settings)
+        ) }
+    }
+    GlassListPopup(
+        show = showTopPopup.value,
+        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+        alignment = PopupPositionProvider.Align.TopEnd,
+        morph = moreMorph,
+        onDismissRequest = { showTopPopup.value = false },
+        content = {
+            GlassMenuColumn {
+                val items = listOf(
+                    Triple(R.string.launch_app, Icons.Rounded.PlayArrow) { onLaunchApp(packageName, userId) },
+                    Triple(R.string.restart_app, Icons.Rounded.RestartAlt) { onRestartApp(packageName, userId) },
+                    Triple(R.string.app_system_info, Icons.Rounded.Info) { onOpenSystemInfo(packageName, userId) },
+                )
+                items.forEach { (label, icon, action) ->
+                    GlassMenuItem(
+                        text = stringResource(label),
+                        icon = icon,
+                        onClick = {
+                            action()
+                            showTopPopup.value = false
+                        },
+                    )
+                }
+                GlassMenuDivider()
+                GlassMenuItem(
+                    text = stringResource(R.string.force_stop_app),
+                    icon = Icons.Rounded.Stop,
+                    destructive = true,
+                    onClick = {
+                        onForceStopApp(packageName, userId)
+                        showTopPopup.value = false
+                    },
+                )
+            }
+        }
+    )
+}
+
+/**
+ * The profile beside the Superuser list: the header pinned under a small bar, then the profile
+ * editor and, when the pane is wide enough, the app's checks and management in a second column.
+ * The picked row's icon and name fly into the header and the cards come out of the row ([motion]).
+ */
+@Composable
+fun AppProfilePaneMiuix(
+    state: AppProfileUiState,
+    actions: AppProfileActions,
+    motion: PaneMotion?,
+    bottomPadding: Dp,
+) {
+    val primary = state.appGroup.primary
+    DetailPaneScaffold(
+        title = stringResource(R.string.profile),
+        onClose = actions.onBack,
+        bottomPadding = bottomPadding,
+        actions = {
+            if (!state.isUidGroup && !primary.isWebViewZygote) {
+                AppMenu(
+                    state.packageName,
+                    state.uid / 100000,
+                    actions.onLaunchApp,
+                    actions.onForceStopApp,
+                    actions.onRestartApp,
+                    actions.onOpenSystemInfo,
+                )
+            }
+        },
+        header = {
+            AppProfileHeader(
+                packageName = if (state.isUidGroup) "" else primary.displayIdentifier,
+                appLabel = if (state.isUidGroup) ownerNameForUid(primary.uid) else primary.label,
+                appIcon = {
+                    AppIconImage(
+                        packageInfo = primary.packageInfo,
+                        label = primary.label,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .flightTarget(motion, state.uid, FlightPart.Icon)
+                    )
+                },
+                appUid = state.uid,
+                sharedUserId = if (state.isUidGroup) state.sharedUserId else "",
+                appVersionName = if (state.isUidGroup) "" else (primary.packageInfo.versionName ?: ""),
+                appVersionCode = if (state.isUidGroup) 0L else primary.packageInfo.longVersionCode,
+                isUidGroup = state.isUidGroup,
+                isSpecialApp = primary.special,
+                affectedCount = state.appGroup.apps.size,
+                labelModifier = Modifier.flightTarget(motion, state.uid, FlightPart.Label),
+            )
+        },
+    ) {
+        item {
+            val editor = @Composable {
+                AppProfileEditorBody(
+                    profile = state.profile,
+                    isSpecialApp = primary.special,
+                    carded = true,
+                    onViewTemplate = actions.onViewTemplate,
+                    onManageTemplate = actions.onManageTemplate,
+                    onProfileChange = actions.onProfileChange,
+                )
+                if (state.isUidGroup) AffectedApps(state.appGroup.apps)
+            }
+            val app = @Composable {
+                if (!primary.special) {
+                    HidingCheckEntry(allowSu = state.appGroup.anyAllowSu, onClick = actions.onCheckHiding)
+                }
+                if (!state.isUidGroup && !primary.special) {
+                    AppManageCards(
+                        packageInfo = primary.packageInfo,
+                        userId = state.uid / 100000,
+                        onChanged = actions.onAppChanged,
+                        onRemoved = actions.onAppRemoved,
+                    )
+                }
+            }
+            // each glass card comes out of the picked row on its own (PaneDetail)
+            BoxWithConstraints {
+                if (maxWidth >= DetailTwoColumnWidth) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Column(Modifier.weight(1f)) { editor() }
+                        Column(Modifier.weight(1f)) { app() }
+                    }
+                } else {
+                    Column {
+                        editor()
+                        app()
+                    }
+                }
+            }
+        }
     }
 }
 

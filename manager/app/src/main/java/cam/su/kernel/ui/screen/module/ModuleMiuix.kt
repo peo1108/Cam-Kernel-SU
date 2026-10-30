@@ -1,5 +1,20 @@
 package cam.su.kernel.ui.screen.module
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.basicMarquee
+import cam.su.kernel.ui.component.listdetail.FlightPart
+import cam.su.kernel.ui.component.listdetail.ListDetailLayout
+import cam.su.kernel.ui.component.listdetail.ListPaneWidth
+import cam.su.kernel.ui.component.listdetail.LocalListDetail
+import cam.su.kernel.ui.component.listdetail.PaneDetail
+import cam.su.kernel.ui.component.listdetail.PaneDropOverlay
+import cam.su.kernel.ui.component.listdetail.PaneMotion
+import cam.su.kernel.ui.component.listdetail.PaneMotionFollows
+import cam.su.kernel.ui.component.listdetail.flightSource
+import cam.su.kernel.ui.component.listdetail.pageHorizontalInsets
+import cam.su.kernel.ui.component.listdetail.paneRow
+import cam.su.kernel.ui.component.listdetail.rememberPaneMotion
+import cam.su.kernel.ui.component.search.LocalMainSearch
 import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.bunker.ReportPullToBunker
 import cam.su.kernel.ui.component.glass.GlassTextField
@@ -175,7 +190,6 @@ import cam.su.kernel.ui.component.glass.GlassDefaults
 // the button the module library grows out of (expandSource key)
 private const val SOURCE_REPO = "module/repo"
 
-@SuppressLint("StringFormatInvalid", "LocalContextGetResourceValueCall")
 @Composable
 fun ModulePagerMiuix(
     uiState: ModuleUiState,
@@ -183,6 +197,109 @@ fun ModulePagerMiuix(
     moduleEvent: Flow<ModuleEffect>,
     actions: ModuleActions,
     bottomInnerPadding: Dp,
+    isCurrentPage: Boolean = true,
+) {
+    val context = LocalContext.current
+    val split = LocalListDetail.current
+    // the module shown beside the list on a wide page
+    val selectedId = rememberSaveable { mutableStateOf<String?>(null) }
+    val motion = rememberPaneMotion()
+    PaneMotionFollows(motion.takeIf { split }, selectedId.value)
+    val search = LocalMainSearch.current
+    BackHandler(enabled = split && isCurrentPage && selectedId.value != null && !search.active) {
+        selectedId.value = null
+    }
+
+    val shortcutState = rememberModuleShortcutState(context)
+    val showShortcutDialog = remember { mutableStateOf(false) }
+
+    val pickShortcutIconLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        shortcutState.updateIconUri(uri?.toString())
+    }
+
+    val onModuleAddShortcut = { module: Module, type: ShortcutType ->
+        shortcutState.bindModule(module)
+        shortcutState.selectType(type)
+        showShortcutDialog.value = true
+    }
+
+    ListDetailLayout(
+        split = split,
+        listWidth = ListPaneWidth,
+        motion = motion,
+        flightParts = { key ->
+            uiState.modules.find { it.id == key }?.let { module ->
+                mapOf<FlightPart, @Composable () -> Unit>(FlightPart.Label to { ModuleName(module, compact = true) })
+            }.orEmpty()
+        },
+        list = {
+            ModuleListPane(
+                uiState = uiState,
+                confirmDialogState = confirmDialogState,
+                moduleEvent = moduleEvent,
+                actions = actions,
+                bottomInnerPadding = bottomInnerPadding,
+                onModuleAddShortcut = onModuleAddShortcut,
+                split = split,
+                onSelect = { module ->
+                    if (selectedId.value != module.id) {
+                        motion.pick(module.id, mapOf(FlightPart.Label to { ModuleName(module, compact = true) }))
+                        selectedId.value = module.id
+                    }
+                },
+                motion = motion.takeIf { split },
+            )
+        },
+        detail = {
+            PaneDetail(motion, selectedId.value) { id ->
+                val module = id?.let { picked -> uiState.modules.find { it.id == picked } }
+                if (module == null) {
+                    ModuleOverview(uiState, bottomInnerPadding)
+                } else {
+                    ModuleDetailPane(
+                        module = module,
+                        updateInfo = uiState.updateInfo[module.id] ?: ModuleUpdateInfo.Empty,
+                        actions = actions,
+                        motion = motion,
+                        bottomPadding = bottomInnerPadding,
+                        onClose = { selectedId.value = null },
+                        onAddShortcut = { type -> onModuleAddShortcut(module, type) },
+                    )
+                }
+            }
+        },
+    )
+
+    ModuleShortcutDialog(
+        show = showShortcutDialog.value,
+        onDismissRequest = { showShortcutDialog.value = false },
+        shortcutState = shortcutState,
+        onPickShortcutIcon = { pickShortcutIconLauncher.launch("image/*") },
+        onDeleteShortcut = {
+            shortcutState.deleteShortcut(context)
+            showShortcutDialog.value = false
+        },
+        onConfirmShortcut = {
+            shortcutState.createShortcut(context)
+            showShortcutDialog.value = false
+        },
+    )
+}
+
+@SuppressLint("StringFormatInvalid", "LocalContextGetResourceValueCall")
+@Composable
+private fun ModuleListPane(
+    uiState: ModuleUiState,
+    confirmDialogState: ModuleConfirmDialogState?,
+    moduleEvent: Flow<ModuleEffect>,
+    actions: ModuleActions,
+    bottomInnerPadding: Dp,
+    onModuleAddShortcut: (Module, ShortcutType) -> Unit,
+    split: Boolean,
+    onSelect: (Module) -> Unit,
+    motion: PaneMotion?,
 ) {
     val searchStatus = uiState.searchStatus
     // the bottom bar's search filters this very list: matches stay in place, top to bottom
@@ -214,15 +331,6 @@ fun ModulePagerMiuix(
     val scrollBehavior = MiuixScrollBehavior()
     val dynamicTopPadding by remember {
         derivedStateOf { 12.dp * (1f - scrollBehavior.state.collapsedFraction) }
-    }
-
-    val shortcutState = rememberModuleShortcutState(context)
-    val showShortcutDialog = remember { mutableStateOf(false) }
-
-    val pickShortcutIconLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        shortcutState.updateIconUri(uri?.toString())
     }
 
     LaunchedEffect(confirmDialogState) {
@@ -264,12 +372,6 @@ fun ModulePagerMiuix(
                 }
             }
         }
-    }
-
-    fun onModuleAddShortcut(module: Module, type: ShortcutType) {
-        shortcutState.bindModule(module)
-        shortcutState.selectType(type)
-        showShortcutDialog.value = true
     }
 
     val listState = rememberLazyListState()
@@ -430,7 +532,7 @@ fun ModulePagerMiuix(
                 },
             )
         },
-        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current)
+        contentWindowInsets = pageHorizontalInsets()
     ) { innerPadding ->
         if (uiState.magiskInstalled) {
             Box(
@@ -510,12 +612,14 @@ fun ModulePagerMiuix(
                                 modules = modules,
                                 updateInfoMap = uiState.updateInfo,
                                 actions = actions,
-                                onModuleAddShortcut = { module, type ->
-                                    onModuleAddShortcut(module, type)
-                                },
+                                onModuleAddShortcut = onModuleAddShortcut,
                                 contentPadding = contentPadding,
                                 listState = listState,
+                                compact = split,
+                                onSelect = onSelect,
+                                motion = motion,
                             )
+                            PaneDropOverlay(motion, Modifier.matchParentSize())
                         }
                     }
                     SkeletonOverlay(
@@ -527,20 +631,6 @@ fun ModulePagerMiuix(
             }
         }
     }
-    ModuleShortcutDialog(
-        show = showShortcutDialog.value,
-        onDismissRequest = { showShortcutDialog.value = false },
-        shortcutState = shortcutState,
-        onPickShortcutIcon = { pickShortcutIconLauncher.launch("image/*") },
-        onDeleteShortcut = {
-            shortcutState.deleteShortcut(context)
-            showShortcutDialog.value = false
-        },
-        onConfirmShortcut = {
-            shortcutState.createShortcut(context)
-            showShortcutDialog.value = false
-        },
-    )
 }
 
 @Composable
@@ -674,6 +764,9 @@ private fun ModuleList(
     onModuleAddShortcut: (Module, ShortcutType) -> Unit,
     contentPadding: PaddingValues,
     listState: LazyListState = rememberLazyListState(),
+    compact: Boolean = false,
+    onSelect: (Module) -> Unit = {},
+    motion: PaneMotion? = null,
 ) {
     val loadingDialog = rememberLoadingDialog()
     val scope = rememberCoroutineScope()
@@ -732,6 +825,10 @@ private fun ModuleList(
                     onDisableModule = { id ->
                         scope.launch { loadingDialog.withLoading { actions.onDisableModule(id) } }
                     },
+                    compact = compact,
+                    onSelect = { onSelect(currentModuleState.value) },
+                    modifier = Modifier.paneRow(motion, module.id),
+                    nameModifier = Modifier.flightSource(motion, module.id, FlightPart.Label),
                 )
             }
 
@@ -757,6 +854,11 @@ fun ModuleItem(
     onOpenWebUi: () -> Unit,
     onRestoreBackup: () -> Unit = {},
     onDisableModule: (String) -> Unit = {},
+    /** beside a detail: the name, version, chips and switch only; a tap picks the module */
+    compact: Boolean = false,
+    onSelect: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    nameModifier: Modifier = Modifier,
 ) {
     val secondaryContainer = colorScheme.secondaryContainer.copy(alpha = 0.8f)
     val actionIconTint = colorScheme.onSurface.copy(alpha = if (isInDarkTheme()) 0.7f else 0.9f)
@@ -771,11 +873,16 @@ fun ModuleItem(
     GlassListCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .then(modifier),
         insideMargin = PaddingValues(16.dp),
-        onClick = if (hasDescription) {
-            { expanded = !expanded }
-        } else null
+        onClick = when {
+            compact -> onSelect
+            hasDescription -> {
+                { expanded = !expanded }
+            }
+            else -> null
+        }
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -812,13 +919,11 @@ fun ModuleItem(
                     val reserved = (metaPlaceable?.width ?: 0) + if (metaPlaceable != null) spacingPx else 0
                     val nameMax = (constraints.maxWidth - reserved).coerceAtLeast(0)
                     val namePlaceable = subcompose("name") {
-                        Text(
-                            text = module.name,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight(550),
-                            color = colorScheme.onSurface,
-                            textDecoration = textDecoration,
-                            onTextLayout = { nameTextLayout = it }
+                        ModuleName(
+                            module = module,
+                            compact = compact,
+                            modifier = if (compact) nameModifier.basicMarquee() else nameModifier,
+                            onTextLayout = { nameTextLayout = it },
                         )
                     }.first().measure(Constraints(constraints.minWidth, nameMax, constraints.minHeight, constraints.maxHeight))
 
@@ -827,10 +932,11 @@ fun ModuleItem(
 
                     layout(width, height) {
                         namePlaceable.placeRelative(0, 0)
-                        val endX = nameTextLayout?.let { layoutRes ->
+                        // a one-line name that scrolls is wider than it shows
+                        val endX = (nameTextLayout?.let { layoutRes ->
                             val last = (layoutRes.lineCount - 1).coerceAtLeast(0)
                             layoutRes.getLineRight(last).toInt()
-                        } ?: namePlaceable.width
+                        } ?: namePlaceable.width).coerceAtMost(namePlaceable.width)
                         metaPlaceable?.placeRelative(endX + spacingPx, (height - (metaPlaceable.height)) / 2)
                     }
                 }
@@ -875,6 +981,9 @@ fun ModuleItem(
                 },
             )
         }
+
+        // beside a detail the description and the buttons are in the detail
+        if (compact) return@GlassListCard
 
         if (hasDescription) {
             ExpandableDescriptionText(

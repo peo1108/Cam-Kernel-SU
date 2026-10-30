@@ -87,11 +87,13 @@ fun SuperUserPager(
         onUpdateSortConfig = { viewModel.updateSortConfig(it) },
         onOpenProfile = onOpenProfile,
         onProfileEdited = { viewModel.loadAppList(resort = false) },
+        onProfileEditedUid = { viewModel.refreshUid(it) },
     )
 
     SuperUserPagerMiuix(
         uiState = uiState,
         actions = actions,
         bottomInnerPadding = bottomInnerPadding,
+        isCurrentPage = isCurrentPage,
     )
 }

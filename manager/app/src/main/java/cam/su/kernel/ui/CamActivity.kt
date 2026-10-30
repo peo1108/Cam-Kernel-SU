@@ -102,6 +102,13 @@ import cam.su.kernel.CamRootClient
 import cam.su.kernel.ui.component.bottombar.BottomBar
 import cam.su.kernel.ui.component.search.LocalMainSearch
 import cam.su.kernel.ui.component.search.MainSearchState
+import cam.su.kernel.ui.component.search.SearchablePages
+import cam.su.kernel.ui.component.listdetail.ListPaneWidth
+import cam.su.kernel.ui.component.listdetail.LocalListDetail
+import cam.su.kernel.ui.component.listdetail.showListDetail
+import cam.su.kernel.ui.component.listdetail.windowWidthDp
+import androidx.compose.foundation.layout.add
+import androidx.compose.foundation.layout.width
 import cam.su.kernel.ui.component.bottombar.MainPagerState
 import cam.su.kernel.ui.component.bottombar.NavigationBadgeState
 import cam.su.kernel.ui.component.bottombar.SideRail
@@ -575,8 +582,17 @@ fun MainScreen(
     val settledPage = mainPagerState.pagerState.settledPage
     var filesVisited by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(settledPage) { if (settledPage == BottomBarDestination.Files.ordinal) filesVisited = true }
-    // The Files tab uses sideways swipes to switch its panels; leave it through the bar.
-    val pagerSwipe = userScrollEnabled && settledPage != BottomBarDestination.Files.ordinal
+    // Superuser and Module put list and detail side by side when the page is wide enough. Turning
+    // the tablet also moves the pager (pagerHost, below); splitting or joining the panes in that
+    // same frame crashed Compose (miuix Scaffold's consumed insets node updated before it was
+    // attached again, "visitSubtreeIf called on an unattached node"), so it follows a frame later.
+    val wideEnough = showListDetail(windowWidthDp() - if (navSide != NavSide.Bottom) SideBarColumnWidth.value else 0f)
+    var listDetail by remember { mutableStateOf(wideEnough) }
+    LaunchedEffect(wideEnough) { listDetail = wideEnough }
+    // The Files tab uses sideways swipes to switch its panels; leave it through the bar. So with
+    // a detail beside a list: a sideways drag there must not throw the page to the next tab.
+    val pagerSwipe = userScrollEnabled && settledPage != BottomBarDestination.Files.ordinal &&
+        !(listDetail && SearchablePages.contains(settledPage))
     LaunchedEffect(settledPage) {
         onPageChanged(settledPage)
     }
@@ -609,6 +625,7 @@ fun MainScreen(
     CompositionLocalProvider(
         LocalMainPagerState provides mainPagerState,
         LocalMainSearch provides mainSearch,
+        LocalListDetail provides listDetail,
     ) {
         val contentReady = rememberContentReady()
         val pagerContent = @Composable { bottomInnerPadding: Dp ->
@@ -651,6 +668,14 @@ fun MainScreen(
                 }
             }
         }
+        // The activity handles rotation itself (manifest), and rotating a tablet moves the bar
+        // between the bottom and a side, so the pager changes branch below. Moved, not rebuilt:
+        // rebuilt, every page lost its state and the status card and the roaming slimes made their
+        // 3D engines again, which crashed in Filament (see AndroidManifest). The pager lambda runs
+        // at the same spot inside this group, so its state comes along.
+        val pagerHost = remember {
+            movableContentOf { bottomInnerPadding: Dp, content: @Composable (Dp) -> Unit -> content(bottomInnerPadding) }
+        }
 
         if (navSide != NavSide.Bottom) {
             // The bar down a side: the pages get the whole height and give the bar its column,
@@ -668,14 +693,6 @@ fun MainScreen(
                             .fillMaxHeight()
                             .windowInsetsPadding(sideInsets),
                     )
-        // The activity handles rotation itself (manifest), and rotating a tablet moves the bar
-        // between the bottom and a side, so the pager changes branch below. Moved, not rebuilt:
-        // rebuilt, every page lost its state and the status card and the roaming slimes made their
-        // 3D engines again, which crashed in Filament (see AndroidManifest). The pager lambda runs
-        // at the same spot inside this group, so its state comes along.
-        val pagerHost = remember {
-            movableContentOf { bottomInnerPadding: Dp, content: @Composable (Dp) -> Unit -> content(bottomInnerPadding) }
-        }
                 } else {
                     SideRail(navigationBadge)
                 }
@@ -697,9 +714,20 @@ fun MainScreen(
                         Box(Modifier.align(if (left) Alignment.CenterStart else Alignment.CenterEnd)) { bar() }
                         SideSearchDock(
                             barBackdrop,
-                            Modifier
-                                .align(Alignment.BottomCenter)
-                                .windowInsetsPadding(column),
+                            if (listDetail) {
+                                // under the list it filters, not across the detail
+                                Modifier
+                                    .align(Alignment.BottomStart)
+                                    .windowInsetsPadding(
+                                        WindowInsets.systemBars.add(WindowInsets.displayCutout).add(column)
+                                            .only(WindowInsetsSides.Start)
+                                    )
+                                    .width(ListPaneWidth)
+                            } else {
+                                Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .windowInsetsPadding(column)
+                            },
                         )
                     }
                 } else {

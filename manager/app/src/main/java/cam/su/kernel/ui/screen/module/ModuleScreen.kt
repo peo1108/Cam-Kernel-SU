@@ -193,5 +193,6 @@ fun ModulePager(
         moduleEvent = viewModel.moduleEvent,
         actions = actions,
         bottomInnerPadding = bottomInnerPadding,
+        isCurrentPage = isCurrentPage,
     )
 }

@@ -1095,4 +1095,24 @@
     <string name="module_backup_restore_note">Mỗi module được chọn sẽ thay bản đang cài ở lần khởi động sau, như một lần cập nhật, và bật hay tắt như lúc sao lưu. Trình cài của module không chạy lại.</string>
     <string name="module_backup_restore">Khôi phục %d</string>
     <string name="module_backup_restored">Đã khôi phục %d module.</string>
+    <!-- Danh sách và chi tiết cạnh nhau (tablet xoay ngang) -->
+    <string name="list_detail_overview">Tổng quan</string>
+    <string name="superuser_overview_root">App có quyền root</string>
+    <string name="superuser_overview_custom">Hồ sơ tuỳ chỉnh</string>
+    <string name="superuser_overview_listed">App trong danh sách</string>
+    <string name="superuser_overview_hint">Chọn một app trong danh sách để sửa hồ sơ.</string>
+    <string name="module_overview_enabled">Đang bật</string>
+    <string name="module_overview_attention">Cần xem lại</string>
+    <string name="module_overview_hint">Chọn một module trong danh sách để xem chi tiết và thao tác.</string>
+    <string name="module_detail_title">Chi tiết module</string>
+    <string name="module_detail_description">Mô tả</string>
+    <string name="module_detail_no_description">Không có mô tả</string>
+    <string name="module_detail_id">ID</string>
+    <string name="module_detail_version_code">Mã phiên bản</string>
+    <string name="module_detail_update_source">Nguồn cập nhật</string>
+    <string name="sulog_detail_title">Chi tiết sự kiện</string>
+    <string name="sulog_overview_hint">Chọn một sự kiện trong danh sách để xem đủ các trường.</string>
+    <string name="sulog_open_profile">Mở hồ sơ của app</string>
+    <string name="sulog_copy">Chép sự kiện</string>
+    <string name="sulog_copied">Đã chép sự kiện</string>
 </resources>

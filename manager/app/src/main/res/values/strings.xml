@@ -1111,4 +1111,24 @@
     <string name="module_backup_restore_note">Each chosen module replaces the installed one on the next boot, the way an update does, and comes back on or off as it was. Its installer does not run again.</string>
     <string name="module_backup_restore">Restore %d</string>
     <string name="module_backup_restored">%d modules restored.</string>
+    <!-- List and detail side by side (landscape tablet) -->
+    <string name="list_detail_overview">Overview</string>
+    <string name="superuser_overview_root">Apps with root</string>
+    <string name="superuser_overview_custom">Custom profiles</string>
+    <string name="superuser_overview_listed">Apps in the list</string>
+    <string name="superuser_overview_hint">Pick an app in the list to edit its profile.</string>
+    <string name="module_overview_enabled">Enabled</string>
+    <string name="module_overview_attention">Need a look</string>
+    <string name="module_overview_hint">Pick a module in the list to see its details and actions.</string>
+    <string name="module_detail_title">Module details</string>
+    <string name="module_detail_description">Description</string>
+    <string name="module_detail_no_description">No description</string>
+    <string name="module_detail_id">ID</string>
+    <string name="module_detail_version_code">Version code</string>
+    <string name="module_detail_update_source">Updates from</string>
+    <string name="sulog_detail_title">Event details</string>
+    <string name="sulog_overview_hint">Pick an event in the list to see all its fields.</string>
+    <string name="sulog_open_profile">Open its profile</string>
+    <string name="sulog_copy">Copy event</string>
+    <string name="sulog_copied">Event copied</string>
 </resources>

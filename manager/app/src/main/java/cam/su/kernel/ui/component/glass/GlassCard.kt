@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import cam.su.kernel.ui.component.expand.expandPiece
+import cam.su.kernel.ui.component.listdetail.panePiece
 import cam.su.kernel.ui.component.liquid.lens
 import cam.su.kernel.ui.component.liquid.vibrancy
 import cam.su.kernel.ui.slime.slimeSurface
@@ -48,8 +49,9 @@ fun GlassCard(
         color = Color.Transparent,
         contentColor = colors?.contentColor ?: CardDefaults.defaultColors().contentColor,
     )
-    // cards fly out of the tapped element while their page grows (moves only: glass must not scale)
-    val glassModifier = modifier.expandPiece().slimeSurface().glassMaterial(RoundedCornerShape(cornerRadius), tint)
+    // cards fly out of the tapped element while their page grows, and out of the picked row in a
+    // detail beside a list (moves only: glass must not scale)
+    val glassModifier = modifier.expandPiece().panePiece().slimeSurface().glassMaterial(RoundedCornerShape(cornerRadius), tint)
     val haptic = LocalHapticFeedback.current
     if (onClick == null && onLongPress == null) {
         Card(

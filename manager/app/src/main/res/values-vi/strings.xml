@@ -574,6 +574,10 @@
     <string name="hiding_status_clean">Không phát hiện điểm lộ</string>
     <string name="hiding_status_leaks">Phát hiện %1$d điểm lộ</string>
     <string name="hiding_status_review">%1$d mục cần xem</string>
+    <string name="home_hiding_title">Tình trạng ẩn root</string>
+    <string name="home_hiding_selinux">Ẩn SELinux</string>
+    <string name="home_hiding_bootloader">Ẩn bootloader</string>
+    <string name="home_hiding_rules">Rule v%1$d</string>
     <string name="hiding_scanned_at">Kiểm tra lúc %1$s</string>
     <string name="hiding_compared_with">So với lần %1$s</string>
     <string name="hiding_first_scan">Lần kiểm tra đầu, chưa có gì để so</string>

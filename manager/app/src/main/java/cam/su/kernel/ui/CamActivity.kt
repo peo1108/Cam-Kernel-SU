@@ -69,6 +69,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -667,6 +668,14 @@ fun MainScreen(
                             .fillMaxHeight()
                             .windowInsetsPadding(sideInsets),
                     )
+        // The activity handles rotation itself (manifest), and rotating a tablet moves the bar
+        // between the bottom and a side, so the pager changes branch below. Moved, not rebuilt:
+        // rebuilt, every page lost its state and the status card and the roaming slimes made their
+        // 3D engines again, which crashed in Filament (see AndroidManifest). The pager lambda runs
+        // at the same spot inside this group, so its state comes along.
+        val pagerHost = remember {
+            movableContentOf { bottomInnerPadding: Dp, content: @Composable (Dp) -> Unit -> content(bottomInnerPadding) }
+        }
                 } else {
                     SideRail(navigationBadge)
                 }
@@ -683,7 +692,7 @@ fun MainScreen(
                     }
                     Box(Modifier.fillMaxSize()) {
                         CompositionLocalProvider(LocalNavSideInsets provides column) {
-                            pagerContent(navBarBottomPadding)
+                            pagerHost(navBarBottomPadding, pagerContent)
                         }
                         Box(Modifier.align(if (left) Alignment.CenterStart else Alignment.CenterEnd)) { bar() }
                         SideSearchDock(
@@ -701,7 +710,7 @@ fun MainScreen(
                                 .weight(1f)
                                 .consumeWindowInsets(sideInsets)
                         ) {
-                            pagerContent(navBarBottomPadding)
+                            pagerHost(navBarBottomPadding, pagerContent)
                         }
                         if (!left) bar()
                     }
@@ -722,7 +731,7 @@ fun MainScreen(
             }
 
             Scaffold(bottomBar = bottomBar, containerColor = Color.Transparent) { innerPadding ->
-                pagerContent(innerPadding.calculateBottomPadding())
+                pagerHost(innerPadding.calculateBottomPadding(), pagerContent)
             }
         }
     }

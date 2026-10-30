@@ -20,6 +20,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,6 +53,8 @@ import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -102,6 +106,8 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import cam.su.kernel.ui.component.expand.expandClick
 import cam.su.kernel.ui.component.expand.expandSource
+import java.text.DateFormat
+import java.util.Date
 
 // the status arena the install page grows out of (expandSource key)
 private const val SOURCE_INSTALL = "home/install"
@@ -192,6 +198,9 @@ fun HomePagerMiuix(
                             actions = actions,
                             active = isCurrentPage,
                         )
+                        state.hiding?.let { hiding ->
+                            HidingCard(hiding = hiding, onClick = actions.onOpenHidingCheck)
+                        }
                         InfoCard(
                             systemInfo = state.systemInfo,
                             modifier = Modifier.fillMaxWidth(),
@@ -464,6 +473,101 @@ private fun StatusCard(
             }
         }
     }
+}
+
+// the card the hiding check page grows out of (expandSource key)
+private const val SOURCE_HIDING = "home/hiding"
+
+/**
+ * Root hiding at a glance: what the last check on the hiding check page found, and which of the
+ * switches that hide root are on. Nothing is checked from here; a tap opens that page.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HidingCard(
+    hiding: HidingSummary,
+    onClick: () -> Unit,
+) {
+    val dates = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
+    val time = hiding.scanTime
+    val alarming = hiding.leaks > 0
+    val status = when {
+        time == null -> stringResource(R.string.hiding_never_scanned)
+        alarming -> stringResource(R.string.hiding_status_leaks, hiding.leaks)
+        hiding.findings > 0 -> stringResource(R.string.hiding_status_review, hiding.findings)
+        else -> stringResource(R.string.hiding_status_clean)
+    }
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .expandSource(SOURCE_HIDING),
+        onClick = expandClick(SOURCE_HIDING, onClick),
+        showIndication = true,
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // as the hiding check page shows it
+            Icon(
+                imageVector = if (alarming) Icons.Rounded.Warning else Icons.Rounded.Shield,
+                contentDescription = null,
+                tint = if (alarming) colorScheme.error else colorScheme.primary,
+                modifier = Modifier.size(32.dp),
+            )
+            Column(
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .weight(1f),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_hiding_title),
+                    fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurface,
+                )
+                Text(
+                    text = status,
+                    fontSize = MiuixTheme.textStyles.body2.fontSize,
+                    color = if (alarming) colorScheme.error else colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                if (time != null) {
+                    Text(
+                        text = stringResource(R.string.hiding_scanned_at, dates.format(Date(time))),
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                FlowRow(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    SwitchTag(stringResource(R.string.settings_kernel_umount), hiding.kernelUmount)
+                    SwitchTag(stringResource(R.string.home_hiding_selinux), hiding.selinuxHide)
+                    if (hiding.bootloaderAvailable) {
+                        SwitchTag(stringResource(R.string.home_hiding_bootloader), hiding.hideBootloader)
+                    }
+                    StatusTag(
+                        label = stringResource(R.string.home_hiding_rules, hiding.rulesVersion),
+                        backgroundColor = colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f),
+                        contentColor = colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** One of the hiding switches: filled and ticked while on, faint and crossed while off. */
+@Composable
+private fun SwitchTag(label: String, on: Boolean) {
+    StatusTag(
+        label = "${if (on) "✓" else "✕"} $label",
+        backgroundColor = if (on) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f),
+        contentColor = if (on) colorScheme.onPrimary else colorScheme.onSurfaceVariantSummary,
+    )
 }
 
 private const val DONATE_URL = "https://t.me/MDM_Cam"

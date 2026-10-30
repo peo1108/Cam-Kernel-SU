@@ -14,12 +14,15 @@ import kotlinx.coroutines.withContext
 import cam.su.kernel.BuildConfig
 import cam.su.kernel.Cam
 import cam.su.kernel.CamNative
+import cam.su.kernel.data.repository.HidingHistoryRepository
+import cam.su.kernel.data.repository.HidingRulesRepository
 import cam.su.kernel.data.repository.SettingsRepository
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.data.repository.UpdateRepository
 import cam.su.kernel.data.repository.UpdateRepositoryImpl
 import cam.su.kernel.getKernelVersion
 import cam.su.kernel.camApp
+import cam.su.kernel.ui.screen.home.HidingSummary
 import cam.su.kernel.ui.screen.home.HomeUiState
 import cam.su.kernel.ui.screen.home.SystemInfo
 import cam.su.kernel.ui.screen.home.getManagerVersion
@@ -27,6 +30,7 @@ import cam.su.kernel.ui.util.clearBootGuard
 import cam.su.kernel.ui.util.enableBootGuardInitrc
 import cam.su.kernel.ui.util.reenableBootGuardOthers
 import cam.su.kernel.ui.util.getBootGuardStatus
+import cam.su.kernel.ui.util.getHideBootloaderStatus
 import cam.su.kernel.ui.util.getSELinuxStatusRaw
 import cam.su.kernel.ui.util.resolveDeviceName
 import cam.su.kernel.ui.util.rootAvailable
@@ -90,7 +94,10 @@ class HomeViewModel(
                 val state = buildState()
                 if (state.isManager && state.isRootAvailable) state.copy(bootGuard = getBootGuardStatus()) else state
             }
-            _uiState.update { baseState.copy(update = it.update, offer = it.offer, installState = it.installState, whatsNew = it.whatsNew) }
+            _uiState.update {
+                baseState.copy(update = it.update, offer = it.offer, installState = it.installState, whatsNew = it.whatsNew, hiding = it.hiding)
+            }
+            refreshHiding()
             withContext(Dispatchers.IO) { checkWhatsNew() }
             if (baseState.checkUpdateEnabled) {
                 val result = updateRepo.fetchLatest()
@@ -99,6 +106,34 @@ class HomeViewModel(
                 _uiState.update { it.copy(offer = offer.getOrElse { _ -> it.offer }) }
             }
         }
+    }
+
+    /** The root hiding card alone, as the hiding check page left it (it signals when it changes). */
+    fun refreshHiding() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val hiding = if (state.isManager && state.isRootAvailable) withContext(Dispatchers.IO) { hidingSummary() } else null
+            _uiState.update { it.copy(hiding = hiding) }
+        }
+    }
+
+    private fun hidingSummary(): HidingSummary {
+        val history = HidingHistoryRepository()
+        val scan = history.load().first
+        val ignored = history.ignored
+        val findings = scan?.audit?.findings.orEmpty().filter { it.id !in ignored }
+        val bootloader = getHideBootloaderStatus()
+        return HidingSummary(
+            scanTime = scan?.time,
+            findings = findings.size,
+            leaks = findings.count { it.leak },
+            kernelUmount = settingsRepo.isKernelUmountEnabled(),
+            selinuxHide = settingsRepo.isSelinuxHideEnabled(),
+            hideBootloader = bootloader.enabled,
+            // as the hiding check page offers the switch: camd answers for itself, empty without it
+            bootloaderAvailable = bootloader.props.isNotEmpty() || bootloader.enabled,
+            rulesVersion = HidingRulesRepository().current().version,
+        )
     }
 
     fun reenableModule(id: String) {

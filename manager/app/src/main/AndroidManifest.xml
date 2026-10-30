@@ -40,8 +40,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Cam"
         android:zygotePreloadName="cam.su.kernel.jailbreak.CamZygotePreload">
+        <!-- Rotation and window resizes stay in Compose. Recreating the activity tore down the
+             status card's and the roaming slimes' Filament engines and made them again in the same
+             process, and that crashed in native code (SIGSEGV in IBLPrefilterContext or
+             Camera.lookAt, live components freed under the app): about every rotation on the
+             emulator, 1 in 3 on a TB323FU. Only with both engines (roaming slimes on). Likely
+             Filament 1.77's entity reclamation (EBR) with more than one Engine; see row 73 of
+             docs/CAM_CHANGES.md. -->
         <activity
             android:name=".ui.CamActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true"
             android:theme="@style/Theme.Cam.Starting"
             android:windowSoftInputMode="adjustResize">

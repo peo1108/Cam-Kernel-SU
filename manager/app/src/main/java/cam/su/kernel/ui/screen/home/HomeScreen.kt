@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -32,6 +33,7 @@ import cam.su.kernel.jailbreak.CamJailbreakService
 import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
 import cam.su.kernel.ui.navigation3.Navigator
 import cam.su.kernel.ui.navigation3.Route
+import cam.su.kernel.ui.viewmodel.HidingCheckSignal
 import cam.su.kernel.ui.viewmodel.HomeViewModel
 import cam.su.kernel.update.UpdateSignal
 import kotlin.time.Duration.Companion.milliseconds
@@ -76,6 +78,12 @@ fun HomePager(
         if (updateRequested && hasActivated) viewModel.refresh()
     }
 
+    // back from the hiding check page after a scan or a switch: only the hiding card is read again
+    val hidingSignal by HidingCheckSignal.version.collectAsStateWithLifecycle()
+    LaunchedEffect(hidingSignal) {
+        if (hasActivated) viewModel.refreshHiding()
+    }
+
     LifecycleResumeEffect(Unit) {
         if (initialResumeHandled.value && latestIsCurrentPage) {
             viewModel.refresh()
@@ -107,6 +115,7 @@ fun HomePager(
         onReenableInitrc = viewModel::reenableInitrc,
         onReenableOtherModules = viewModel::reenableOtherModules,
         onDismissBootGuard = viewModel::dismissBootGuard,
+        onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck()) },
     )
 
     HomePagerMiuix(

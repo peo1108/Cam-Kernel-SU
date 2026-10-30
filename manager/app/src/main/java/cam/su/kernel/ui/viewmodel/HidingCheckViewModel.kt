@@ -369,6 +369,7 @@ class HidingCheckViewModel(
                 passed = HidingCheckUiState.passed(scan.audit, ignoredIds),
             )
         }
+        HidingCheckSignal.invalidate()
     }
 
     private suspend fun refreshFixes() {
@@ -381,6 +382,7 @@ class HidingCheckViewModel(
             )
         }
         _uiState.update { it.copy(kernelUmount = umount, selinuxHide = selinux, hideBootloader = bootloader) }
+        HidingCheckSignal.invalidate()
     }
 
     private companion object {

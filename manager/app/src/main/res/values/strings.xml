@@ -588,6 +588,10 @@
     <string name="hiding_status_clean">No leaks found</string>
     <string name="hiding_status_leaks">%1$d leaks found</string>
     <string name="hiding_status_review">%1$d things to review</string>
+    <string name="home_hiding_title">Root hiding status</string>
+    <string name="home_hiding_selinux">Hide SELinux</string>
+    <string name="home_hiding_bootloader">Hide bootloader</string>
+    <string name="home_hiding_rules">Rules v%1$d</string>
     <string name="hiding_scanned_at">Checked %1$s</string>
     <string name="hiding_compared_with">Compared with %1$s</string>
     <string name="hiding_first_scan">First check, nothing to compare with yet</string>

@@ -36,6 +36,8 @@ data class HomeUiState(
     val bundledLkmSourceId: String = "",
     val systemInfo: SystemInfo,
     val bootGuard: BootGuardStatus = BootGuardStatus.Empty,
+    /** null without root: the card is not shown */
+    val hiding: HidingSummary? = null,
 ) {
     val showBootGuardNotice: Boolean
         get() = bootGuard.hasNotice
@@ -84,6 +86,25 @@ data class HomeUiState(
         get() = update != null
 }
 
+/**
+ * The root hiding card: the last device check the hiding check page saved (read, never run from
+ * here) and the switches that hide root.
+ */
+@Immutable
+data class HidingSummary(
+    /** null when the device was never checked */
+    val scanTime: Long?,
+    /** findings of that check, ignored ones left out, and how many of them are leaks */
+    val findings: Int,
+    val leaks: Int,
+    val kernelUmount: Boolean,
+    val selinuxHide: Boolean,
+    val hideBootloader: Boolean,
+    /** false when the ROM has no bootloader property to hide (the switch is not offered) */
+    val bootloaderAvailable: Boolean,
+    val rulesVersion: Int,
+)
+
 @Immutable
 data class HomeActions(
     val onInstallClick: () -> Unit,
@@ -97,4 +118,5 @@ data class HomeActions(
     /** every module the boot guard turned off but the likely causes */
     val onReenableOtherModules: () -> Unit = {},
     val onDismissBootGuard: () -> Unit = {},
+    val onOpenHidingCheck: () -> Unit = {},
 )

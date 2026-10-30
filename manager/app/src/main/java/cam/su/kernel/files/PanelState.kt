@@ -94,6 +94,11 @@ data class PanelNav(
 }
 
 object FileFormat {
+    private val shortDate = java.text.SimpleDateFormat("yy-MM-dd HH:mm", Locale.ROOT)
+
+    /** A row's date. Main thread only. */
+    fun date(time: Long): String = shortDate.format(java.util.Date(time))
+
     /** "/data/adb" → [("/", "/"), ("data", "/data"), ("adb", "/data/adb")] */
     fun breadcrumb(path: String): List<Pair<String, String>> {
         val crumbs = mutableListOf("/" to "/")

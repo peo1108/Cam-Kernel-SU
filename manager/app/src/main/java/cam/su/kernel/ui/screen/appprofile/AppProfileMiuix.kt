@@ -556,8 +556,8 @@ private fun AppMenu(
 }
 
 /**
- * The profile beside the Superuser list: the header pinned under a small bar, then the profile
- * editor and, when the pane is wide enough, the app's checks and management in a second column.
+ * The profile beside the Superuser list: the header under the bar, then the profile editor
+ * and, when the pane is wide enough, the app's checks and management in a second column.
  * The picked row's icon and name fly into the header and the cards come out of the row ([motion]).
  */
 @Composable

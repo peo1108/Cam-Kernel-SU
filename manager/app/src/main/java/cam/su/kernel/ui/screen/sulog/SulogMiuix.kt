@@ -27,6 +27,7 @@ import cam.su.kernel.ui.component.listdetail.paneReveal
 import cam.su.kernel.ui.component.listdetail.paneRow
 import cam.su.kernel.ui.component.listdetail.rememberPaneMotion
 import cam.su.kernel.ui.component.listdetail.showListDetail
+import cam.su.kernel.ui.component.listdetail.windowHeightDp
 import cam.su.kernel.ui.component.listdetail.windowWidthDp
 import cam.su.kernel.ui.util.ownerNameForUid
 import cam.su.kernel.ui.viewmodel.SuperUserSignal
@@ -98,6 +99,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -149,11 +151,12 @@ fun SulogScreenMiuix(
     actions: SulogActions,
 ) {
     // a wide window shows the picked event's fields beside the list instead of in a dialog
-    val split = showListDetail(windowWidthDp())
+    val split = showListDetail(windowWidthDp(), windowHeightDp())
     var selectedEntry by remember { mutableStateOf<SulogEntry?>(null) }
     val motion = rememberPaneMotion()
     PaneMotionFollows(motion.takeIf { split }, selectedEntry?.rawLine)
     BackHandler(enabled = split && selectedEntry != null) { selectedEntry = null }
+    var searchHeight by remember { mutableStateOf(0.dp) }
 
     SulogDetailDialog(
         // turned to portrait: the picked event's dialog opens once the rotation is over
@@ -171,11 +174,13 @@ fun SulogScreenMiuix(
                 mapOf<FlightPart, @Composable () -> Unit>(FlightPart.Label to { SulogTitle(entry) })
             }.orEmpty()
         },
+        detailTopExtra = searchHeight,
         list = {
             SulogList(
                 state = state,
                 actions = actions,
                 motion = motion.takeIf { split },
+                onSearchHeight = { searchHeight = it },
                 onEntryClick = { entry ->
                     if (split && entry.rawLine != selectedEntry?.rawLine) {
                         motion.pick(entry.rawLine, mapOf(FlightPart.Label to { SulogTitle(entry) }))
@@ -209,6 +214,7 @@ private fun SulogList(
     state: SulogScreenState,
     actions: SulogActions,
     motion: PaneMotion?,
+    onSearchHeight: (Dp) -> Unit,
     onEntryClick: (SulogEntry) -> Unit,
 ) {
     val enableBlur = LocalEnableBlur.current
@@ -245,80 +251,97 @@ private fun SulogList(
         topBar = {
             BlurredBar(backdrop, scrollBehavior = scrollBehavior) {
                 searchStatus.TopAppBarAnim(backgroundColor = barColor) {
+                    val tools = @Composable {
+                        GlassIconButton(
+                            onClick = actions.onCleanFile,
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Delete,
+                                tint = colorScheme.onSurface,
+                                contentDescription = stringResource(R.string.sulog_clean_title),
+                            )
+                        }
+
+                        Box {
+                            val showFilterPopup = remember { mutableStateOf(false) }
+                            val filterMorph = rememberMorphPopupState()
+                            GlassListPopup(
+                                show = showFilterPopup.value,
+                                popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+                                alignment = PopupPositionProvider.Align.TopEnd,
+                                morph = filterMorph,
+                                onDismissRequest = {
+                                    showFilterPopup.value = false
+                                },
+                                content = {
+                                    GlassMenuColumn {
+                                        SulogEventFilter.entries.forEachIndexed { index, filter ->
+                                            GlassMenuItem(
+                                                text = sulogFilterLabel(filter),
+                                                checked = filter in state.selectedFilters,
+                                                onClick = {
+                                                    actions.onToggleFilter(filter)
+                                                },
+                                            )
+                                        }
+                                    }
+                                },
+                            )
+                            GlassIconButton(
+                                onClick = { showFilterPopup.value = true },
+                                modifier = Modifier.morphAnchor(filterMorph),
+                            ) {
+                                MorphIcon(filterMorph) { Icon(
+                                    imageVector = MiuixIcons.Filter,
+                                    tint = colorScheme.onSurface,
+                                    contentDescription = stringResource(R.string.sulog_filter_title),
+                                ) }
+                            }
+                        }
+                    }
                     TopAppBar(
                         color = barColor,
                         title = stringResource(R.string.settings_sulog),
                         navigationIcon = {
-                            GlassIconButton(
-                                onClick = actions.onBack,
-                            ) {
-                                val layoutDirection = LocalLayoutDirection.current
-                                Icon(
-                                    modifier = Modifier.graphicsLayer {
-                                        if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
-                                    },
-                                    imageVector = MiuixIcons.Back,
-                                    contentDescription = null,
-                                    tint = colorScheme.onSurface,
-                                )
+                            val back = @Composable {
+                                GlassIconButton(
+                                    onClick = actions.onBack,
+                                ) {
+                                    val layoutDirection = LocalLayoutDirection.current
+                                    Icon(
+                                        modifier = Modifier.graphicsLayer {
+                                            if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                                        },
+                                        imageVector = MiuixIcons.Back,
+                                        contentDescription = null,
+                                        tint = colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                            // beside a detail the column's buttons share one bar in its corner
+                            if (motion != null) {
+                                GlassButtonGroup {
+                                    back()
+                                    tools()
+                                }
+                            } else {
+                                back()
                             }
                         },
                         actions = {
-                            GlassButtonGroup {
-                                GlassIconButton(
-                                    modifier = Modifier.padding(end = 8.dp),
-                                    onClick = actions.onCleanFile,
-                                ) {
-                                    Icon(
-                                        imageVector = MiuixIcons.Delete,
-                                        tint = colorScheme.onSurface,
-                                        contentDescription = stringResource(R.string.sulog_clean_title),
-                                    )
-                                }
-
-                                Box {
-                                    val showFilterPopup = remember { mutableStateOf(false) }
-                                    val filterMorph = rememberMorphPopupState()
-                                    GlassListPopup(
-                                        show = showFilterPopup.value,
-                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                        alignment = PopupPositionProvider.Align.TopEnd,
-                                        morph = filterMorph,
-                                        onDismissRequest = {
-                                            showFilterPopup.value = false
-                                        },
-                                        content = {
-                                            GlassMenuColumn {
-                                                SulogEventFilter.entries.forEachIndexed { index, filter ->
-                                                    GlassMenuItem(
-                                                        text = sulogFilterLabel(filter),
-                                                        checked = filter in state.selectedFilters,
-                                                        onClick = {
-                                                            actions.onToggleFilter(filter)
-                                                        },
-                                                    )
-                                                }
-                                            }
-                                        },
-                                    )
-                                    GlassIconButton(
-                                        onClick = { showFilterPopup.value = true },
-                                        modifier = Modifier.morphAnchor(filterMorph),
-                                    ) {
-                                        MorphIcon(filterMorph) { Icon(
-                                            imageVector = MiuixIcons.Filter,
-                                            tint = colorScheme.onSurface,
-                                            contentDescription = stringResource(R.string.sulog_filter_title),
-                                        ) }
-                                    }
-                                }
-                            }
+                            if (motion == null) GlassButtonGroup { tools() }
                         },
                         scrollBehavior = scrollBehavior,
                         bottomContent = {
                             Box(
                                 modifier = Modifier
                                     .alpha(if (searchStatus.isCollapsed()) 1f else 0f)
+                                    .onSizeChanged {
+                                        // its height at rest: the padding above it goes as the bar collapses
+                                        if (scrollBehavior.state.collapsedFraction == 0f) {
+                                            onSearchHeight(with(density) { it.height.toDp() })
+                                        }
+                                    }
                                     .onGloballyPositioned { coordinates ->
                                         with(density) {
                                             val newOffsetY = coordinates.positionInWindow().y.toDp()
@@ -677,7 +700,7 @@ private fun SulogTitle(entry: SulogEntry, modifier: Modifier = Modifier) {
 }
 
 /**
- * The picked event beside the list: its title and outcome pinned on top, the app it came from
+ * The picked event beside the list: its title and outcome on top, the app it came from
  * (its profile one tap away) and every field, selectable. Counts per event type while nothing is
  * picked.
  */

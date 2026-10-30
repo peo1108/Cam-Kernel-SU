@@ -2,6 +2,8 @@ package cam.su.kernel.ui.component.glass
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
 import android.os.Build
@@ -152,6 +154,22 @@ fun GlassButtonGroup(
     Row(
         modifier = modifier.liquidControl(RoundedCornerShape(percent = 50)),
         verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CompositionLocalProvider(LocalGlassButtonGrouped provides true) {
+            content()
+        }
+    }
+}
+
+/** [GlassButtonGroup] standing up: a bar down the edge of the screen. */
+@Composable
+fun GlassButtonColumn(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier.liquidControl(RoundedCornerShape(percent = 50)),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CompositionLocalProvider(LocalGlassButtonGrouped provides true) {
             content()

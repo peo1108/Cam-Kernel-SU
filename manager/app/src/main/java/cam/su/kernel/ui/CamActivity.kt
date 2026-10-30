@@ -106,7 +106,10 @@ import cam.su.kernel.ui.component.search.SearchablePages
 import cam.su.kernel.ui.component.listdetail.ListPaneWidth
 import cam.su.kernel.ui.component.listdetail.LocalListDetail
 import cam.su.kernel.ui.component.listdetail.showListDetail
+import cam.su.kernel.ui.component.listdetail.windowHeightDp
 import cam.su.kernel.ui.component.listdetail.windowWidthDp
+import cam.su.kernel.ui.component.pagerise.PageRiseBox
+import cam.su.kernel.ui.component.pagerise.rememberPageSwitch
 import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.width
 import cam.su.kernel.ui.component.bottombar.MainPagerState
@@ -500,7 +503,7 @@ fun MainScreen(
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { MainPagerConfig.PAGE_COUNT })
     val mainPagerState = rememberMainPagerState(
         pagerState = pagerState,
-        animatePageChanges = navSide == NavSide.Bottom,
+        pageSwitch = rememberPageSwitch(MainPagerConfig.PAGE_COUNT),
     )
     val isFullFeatured = Cam.isFullFeatured()
     val pagerMode = PagerInterceptionMode.entries.getOrElse(pagerInterceptionMode) {
@@ -586,7 +589,10 @@ fun MainScreen(
     // the tablet also moves the pager (pagerHost, below); splitting or joining the panes in that
     // same frame crashed Compose (miuix Scaffold's consumed insets node updated before it was
     // attached again, "visitSubtreeIf called on an unattached node"), so it follows a frame later.
-    val wideEnough = showListDetail(windowWidthDp() - if (navSide != NavSide.Bottom) SideBarColumnWidth.value else 0f)
+    val wideEnough = showListDetail(
+        pageWidthDp = windowWidthDp() - if (navSide != NavSide.Bottom) SideBarColumnWidth.value else 0f,
+        windowHeightDp = windowHeightDp(),
+    )
     var listDetail by remember { mutableStateOf(wideEnough) }
     LaunchedEffect(wideEnough) { listDetail = wideEnough }
     // The Files tab uses sideways swipes to switch its panels; leave it through the bar. So with
@@ -656,14 +662,16 @@ fun MainScreen(
                     ),
                 ) { page ->
                     val isCurrentPage = page == settledPage
-                    when (page) {
-                        0 -> if (contentReady || isCurrentPage) HomePager(navController, bottomInnerPadding, isCurrentPage)
-                        1 -> if (contentReady || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
-                        2 -> if (contentReady || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
-                        3 -> if (contentReady || isCurrentPage) FeaturesPager(bottomInnerPadding, isCurrentPage)
-                        // Files is heavy (two lists, dialogs) and rarely the first page: build it on first visit
-                        4 -> if (filesVisited || isCurrentPage) FilesPager(bottomInnerPadding, isCurrentPage)
-                        5 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
+                    PageRiseBox(mainPagerState.pageSwitch.page(page)) {
+                        when (page) {
+                            0 -> if (contentReady || isCurrentPage) HomePager(navController, bottomInnerPadding, isCurrentPage)
+                            1 -> if (contentReady || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
+                            2 -> if (contentReady || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
+                            3 -> if (contentReady || isCurrentPage) FeaturesPager(bottomInnerPadding, isCurrentPage)
+                            // Files is heavy (two lists, dialogs) and rarely the first page: build it on first visit
+                            4 -> if (filesVisited || isCurrentPage) FilesPager(bottomInnerPadding, isCurrentPage)
+                            5 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
+                        }
                     }
                 }
             }

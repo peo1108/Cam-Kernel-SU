@@ -1115,4 +1115,20 @@
     <string name="sulog_open_profile">Mở hồ sơ của app</string>
     <string name="sulog_copy">Chép sự kiện</string>
     <string name="sulog_copied">Đã chép sự kiện</string>
+    <string name="module_install_title">Cài module</string>
+    <string name="module_install_picker">Trình chọn file của hệ thống</string>
+    <string name="module_install_up">Lên một cấp</string>
+    <string name="module_install_downloads">Thư mục Download</string>
+    <string name="module_install_storage">Bộ nhớ trong</string>
+    <string name="module_install_empty">Ở đây không có thư mục hay file .zip nào</string>
+    <string name="module_install_hint">Chọn một file .zip để xem đó là module gì, rồi cài ngay tại đây.</string>
+    <string name="module_install_reading">Đang đọc…</string>
+    <string name="module_install_not_module">Không phải module: zip này không có module.prop</string>
+    <string name="module_install_read_failed">Không đọc được file này</string>
+    <string name="module_install_new">Module mới</string>
+    <string name="module_install_update">Cập nhật từ phiên bản %1$s</string>
+    <string name="module_install_same">Đã cài đúng phiên bản này</string>
+    <string name="module_install_count">Cài %1$d module</string>
+    <string name="module_install_remove">Bỏ khỏi danh sách</string>
+    <string name="module_install_done">Xong</string>
 </resources>

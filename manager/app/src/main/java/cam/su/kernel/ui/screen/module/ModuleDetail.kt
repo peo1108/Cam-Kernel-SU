@@ -1,10 +1,8 @@
 package cam.su.kernel.ui.screen.module
 
 import android.net.Uri
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -12,10 +10,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Code
@@ -26,8 +22,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +36,7 @@ import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
 import cam.su.kernel.ui.component.glass.GlassCard
 import cam.su.kernel.ui.component.glass.GlassSwitch
 import cam.su.kernel.ui.component.listdetail.PaneMotion
+import cam.su.kernel.ui.component.listdetail.DetailButton
 import cam.su.kernel.ui.component.listdetail.DetailPaneScaffold
 import cam.su.kernel.ui.component.listdetail.DetailTwoColumnWidth
 import cam.su.kernel.ui.component.listdetail.FlightPart
@@ -54,7 +49,6 @@ import cam.su.kernel.ui.theme.isInDarkTheme
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -84,9 +78,9 @@ internal fun ModuleName(
 }
 
 /**
- * The picked module beside the list. Its card is pinned on top as in the list (name, version,
- * chips, switch) with every button labelled; below, the whole description and what the module
- * says about itself. Holding Action or WebUI makes a shortcut, as on the list's buttons.
+ * The picked module beside the list. Its card comes first as in the list (name, version, chips,
+ * switch) with every button labelled; below, the whole description and what the module says about
+ * itself. Holding Action or WebUI makes a shortcut, as on the list's buttons.
  */
 @Composable
 internal fun ModuleDetailPane(
@@ -289,31 +283,6 @@ private fun ModuleDetailButtons(
             tint = tint,
             onClick = if (module.remove) onUndoUninstall else onUninstall,
         )
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun DetailButton(
-    icon: ImageVector,
-    label: String,
-    background: Color,
-    tint: Color,
-    onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
-) {
-    Row(
-        modifier = Modifier
-            .heightIn(min = 40.dp)
-            .clip(CircleShape)
-            .background(background)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
-        Text(text = label, color = tint, fontWeight = FontWeight.Medium, fontSize = 15.sp)
     }
 }
 

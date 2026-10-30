@@ -5,6 +5,8 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 data class FlashUiState(
+    /** the card's title; null: how the flash stands */
+    val title: String? = null,
     val text: String,
     val showRebootAction: Boolean,
     val flashingStatus: FlashingStatus,

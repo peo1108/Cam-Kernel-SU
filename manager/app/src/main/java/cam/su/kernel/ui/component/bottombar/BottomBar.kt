@@ -14,15 +14,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import cam.su.kernel.ui.component.pagerise.PageSwitch
 import cam.su.kernel.ui.util.shouldShowSplitPane
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
 class MainPagerState(
     val pagerState: PagerState,
     private val coroutineScope: CoroutineScope,
-    private val animatePageChanges: Boolean,
+    val pageSwitch: PageSwitch,
 ) {
     var selectedPage by mutableIntStateOf(pagerState.currentPage)
         private set
@@ -39,15 +39,13 @@ class MainPagerState(
 
         selectedPage = targetIndex
         isNavigating = true
+        val from = pagerState.currentPage
+        pageSwitch.prepare(from, targetIndex)
 
         navJob = coroutineScope.launch {
             val myJob = coroutineContext.job
             try {
-                if (animatePageChanges) {
-                    pagerState.springAnimateToPage(targetIndex)
-                } else {
-                    pagerState.scrollToPage(targetIndex)
-                }
+                pageSwitch.switch(from, targetIndex) { pagerState.scrollToPage(targetIndex) }
             } finally {
                 if (navJob == myJob) {
                     isNavigating = false
@@ -69,11 +67,11 @@ class MainPagerState(
 @Composable
 fun rememberMainPagerState(
     pagerState: PagerState,
+    pageSwitch: PageSwitch,
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
-    animatePageChanges: Boolean = true,
 ): MainPagerState {
-    return remember(pagerState, coroutineScope, animatePageChanges) {
-        MainPagerState(pagerState, coroutineScope, animatePageChanges)
+    return remember(pagerState, coroutineScope, pageSwitch) {
+        MainPagerState(pagerState, coroutineScope, pageSwitch)
     }
 }
 

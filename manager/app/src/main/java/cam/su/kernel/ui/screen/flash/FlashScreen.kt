@@ -23,6 +23,7 @@ import cam.su.kernel.Cam
 import cam.su.kernel.R
 import cam.su.kernel.data.repository.isSoftRebootPreferred
 import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.su.kernel.ui.util.getFileName
 import cam.su.kernel.ui.util.reboot
 
 @Composable
@@ -67,7 +68,13 @@ fun FlashScreen(flashIt: FlashIt, onBackEnabledChange: (Boolean) -> Unit) {
         enabled = flashingEnabled,
     )
 
+    val modules = remember(flashIt) {
+        (flashIt as? FlashIt.FlashModules)?.uris?.joinToString(", ") { uri ->
+            runCatching { uri.getFileName(context) }.getOrNull() ?: uri.lastPathSegment.orEmpty()
+        }
+    }
     val state = FlashUiState(
+        title = modules,
         text = text,
         showRebootAction = showRebootAction,
         flashingStatus = flashingStatus,

@@ -19,14 +19,21 @@ class ListDetailMathTest {
     @Test
     fun splitsOnALandscapeTabletOnly() {
         // TB323FU landscape at 374 dpi: 1301 dp, 80 of it the side bar's column
-        assertTrue(showListDetail(1301f - 80f))
+        assertTrue(showListDetail(1301f - 80f, 815f))
         // the largest page scale (110%)
-        assertTrue(showListDetail(1301f / 1.1f - 80f))
+        assertTrue(showListDetail(1301f / 1.1f - 80f, 815f / 1.1f))
         // the same tablet upright, and a phone
-        assertFalse(showListDetail(815f))
-        assertFalse(showListDetail(411f))
-        assertTrue(showListDetail(900f))
-        assertFalse(showListDetail(899.9f))
+        assertFalse(showListDetail(815f, 1301f))
+        assertFalse(showListDetail(411f, 914f))
+        assertTrue(showListDetail(900f, 600f))
+        assertFalse(showListDetail(899.9f, 600f))
+    }
+
+    @Test
+    fun anUprightTabletNeverSplitsHoweverSmallItsDisplaySize() {
+        // TB323FU at 320 dpi: wide enough standing up, and it stays one column
+        assertFalse(showListDetail(952f, 1520f))
+        assertTrue(showListDetail(1520f - 80f, 952f))
     }
 
     @Test

@@ -1131,4 +1131,20 @@
     <string name="sulog_open_profile">Open its profile</string>
     <string name="sulog_copy">Copy event</string>
     <string name="sulog_copied">Event copied</string>
+    <string name="module_install_title">Install modules</string>
+    <string name="module_install_picker">System file picker</string>
+    <string name="module_install_up">Up</string>
+    <string name="module_install_downloads">Downloads</string>
+    <string name="module_install_storage">Internal storage</string>
+    <string name="module_install_empty">No folders or .zip files here</string>
+    <string name="module_install_hint">Pick a .zip to see what module it is, then install it right here.</string>
+    <string name="module_install_reading">Reading…</string>
+    <string name="module_install_not_module">Not a module: this zip has no module.prop</string>
+    <string name="module_install_read_failed">This file could not be read</string>
+    <string name="module_install_new">New module</string>
+    <string name="module_install_update">Updates version %1$s</string>
+    <string name="module_install_same">This version is already installed</string>
+    <string name="module_install_count">Install %1$d modules</string>
+    <string name="module_install_remove">Remove from the list</string>
+    <string name="module_install_done">Done</string>
 </resources>

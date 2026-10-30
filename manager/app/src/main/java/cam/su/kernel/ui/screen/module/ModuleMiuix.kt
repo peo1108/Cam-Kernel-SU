@@ -21,7 +21,6 @@ import cam.su.kernel.ui.component.glass.GlassTextField
 import cam.su.kernel.ui.component.glass.IosRefreshTexts
 import cam.su.kernel.ui.component.CamToast
 import cam.su.kernel.ui.component.glass.GlassSwitch
-import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
 import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.MorphIcon
 import cam.su.kernel.ui.component.glass.morphAnchor
@@ -44,7 +43,10 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -57,29 +59,21 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.add
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -99,6 +93,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -113,10 +108,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -131,7 +125,6 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import cam.su.kernel.R
@@ -141,15 +134,11 @@ import cam.su.kernel.data.repository.isSoftRebootPreferred
 import cam.su.kernel.ui.component.ListPopupDefaults
 import cam.su.kernel.ui.component.ObserveAsEvents
 import cam.su.kernel.ui.component.ScrollToTopOnChange
-import cam.su.kernel.ui.component.SearchStatus
 import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
 import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
 import cam.su.kernel.ui.component.skeleton.SkeletonKind
 import cam.su.kernel.ui.component.skeleton.SkeletonOverlay
 import cam.su.kernel.ui.component.skeleton.rememberSkeletonShown
-import cam.su.kernel.ui.component.miuix.SearchBarFake
-import cam.su.kernel.ui.component.miuix.SearchBox
-import cam.su.kernel.ui.component.miuix.SearchPager
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.theme.LocalModuleDescriptionMaxLines
 import cam.su.kernel.ui.theme.isInDarkTheme
@@ -158,6 +147,19 @@ import cam.su.kernel.ui.util.getFileName
 import cam.su.kernel.ui.util.reboot
 import cam.su.kernel.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.FabPosition
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import cam.su.kernel.ui.viewmodel.ModuleInstallStage
+import kotlinx.coroutines.Dispatchers
+import cam.su.kernel.ui.util.module.pickedUris
+import cam.su.kernel.ui.screen.flash.FlashingStatus
+import cam.su.kernel.ui.screen.flash.FlashStatusCard
+import cam.su.kernel.ui.component.listdetail.LocalDetailNotice
+import cam.su.kernel.ui.component.listdetail.DetailNotice
+import cam.su.kernel.ui.component.bottombar.BottomBarDestination
+import cam.su.kernel.ui.LocalMainPagerState
+import cam.su.kernel.ui.viewmodel.ModuleInstallViewModel
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -165,10 +167,6 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SnackbarDuration
-import top.yukonga.miuix.kmp.basic.SnackbarHost
-import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import top.yukonga.miuix.kmp.basic.SnackbarResult
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -190,6 +188,36 @@ import cam.su.kernel.ui.component.glass.GlassDefaults
 // the button the module library grows out of (expandSource key)
 private const val SOURCE_REPO = "module/repo"
 
+/** What the detail pane shows while modules are being installed, in place of a module's id. */
+private object InstallPaneKey
+
+/**
+ * A module changed and a restart applies it: the look of a flash's result, above the detail or the
+ * one list, and not a snackbar over the list's floating button.
+ */
+@Composable
+private fun ModuleNotice(message: String?, onDismiss: () -> Unit) {
+    // still shown while it folds away
+    var shown by remember { mutableStateOf(message) }
+    if (message != null) shown = message
+    val scope = rememberCoroutineScope()
+    val softReboot = isSoftRebootPreferred()
+    AnimatedVisibility(
+        visible = message != null,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        FlashStatusCard(
+            status = FlashingStatus.SUCCESS,
+            title = shown.orEmpty(),
+            // Soft reboot keeps the jailbreak and still applies module changes
+            rebootLabel = stringResource(if (softReboot) R.string.reboot_soft else R.string.reboot),
+            onReboot = { scope.launch(Dispatchers.IO) { reboot(if (softReboot) "soft_reboot" else "") } },
+            onDone = onDismiss,
+        )
+    }
+}
+
 @Composable
 fun ModulePagerMiuix(
     uiState: ModuleUiState,
@@ -204,11 +232,38 @@ fun ModulePagerMiuix(
     // the module shown beside the list on a wide page
     val selectedId = rememberSaveable { mutableStateOf<String?>(null) }
     val motion = rememberPaneMotion()
-    PaneMotionFollows(motion.takeIf { split }, selectedId.value)
+    val install = viewModel<ModuleInstallViewModel>()
+    val installState by install.uiState.collectAsStateWithLifecycle()
+    val closeInstall = {
+        // what just went in opens beside the list
+        install.close().firstOrNull()?.let { selectedId.value = it }
+        Unit
+    }
+    // the flash outlives the pane: upright it takes the list's place
+    val showFlashOnly = !split && installState.open && installState.stage != ModuleInstallStage.Picking
+    val paneKey: Any? = if (installState.open) InstallPaneKey else selectedId.value
+    PaneMotionFollows(motion.takeIf { split }, paneKey)
     val search = LocalMainSearch.current
-    BackHandler(enabled = split && isCurrentPage && selectedId.value != null && !search.active) {
+    BackHandler(enabled = split && isCurrentPage && selectedId.value != null && !installState.open && !search.active) {
         selectedId.value = null
     }
+    BackHandler(enabled = isCurrentPage && installState.open && (split || showFlashOnly) && !search.active) {
+        // not while it flashes: the flash page refuses to go back as well
+        if (!installState.flashing) closeInstall()
+    }
+    // a flash that runs on: Back from another tab comes here first, it does not leave the app
+    val mainPager = LocalMainPagerState.current
+    BackHandler(enabled = !isCurrentPage && installState.flashing) {
+        mainPager.animateToPage(BottomBarDestination.Module.ordinal)
+    }
+    val listAlpha by animateFloatAsState(if (split && installState.flashing) 0.45f else 1f, label = "installList")
+    // what went in may have been waiting as an update
+    LaunchedEffect(installState.stage) {
+        if (installState.stage == ModuleInstallStage.Finished) actions.onRefresh()
+    }
+    // stays until it is dismissed: a restart it offers is still what applies the change
+    var notice by remember { mutableStateOf<String?>(null) }
+    val noticeSlot: @Composable () -> Unit = { ModuleNotice(notice) { notice = null } }
 
     val shortcutState = rememberModuleShortcutState(context)
     val showShortcutDialog = remember { mutableStateOf(false) }
@@ -235,26 +290,63 @@ fun ModulePagerMiuix(
             }.orEmpty()
         },
         list = {
-            ModuleListPane(
-                uiState = uiState,
-                confirmDialogState = confirmDialogState,
-                moduleEvent = moduleEvent,
-                actions = actions,
-                bottomInnerPadding = bottomInnerPadding,
-                onModuleAddShortcut = onModuleAddShortcut,
-                split = split,
-                onSelect = { module ->
-                    if (selectedId.value != module.id) {
-                        motion.pick(module.id, mapOf(FlightPart.Label to { ModuleName(module, compact = true) }))
-                        selectedId.value = module.id
+            if (showFlashOnly) {
+                ModuleInstallPane(installState, install, uiState.modules, bottomInnerPadding, closeInstall)
+            } else {
+                Box(Modifier.fillMaxSize().graphicsLayer { alpha = listAlpha }) {
+                    ModuleListPane(
+                        uiState = uiState,
+                        confirmDialogState = confirmDialogState,
+                        moduleEvent = moduleEvent,
+                        actions = actions,
+                        bottomInnerPadding = bottomInnerPadding,
+                        onModuleAddShortcut = onModuleAddShortcut,
+                        split = split,
+                        installOpen = installState.open,
+                        onOpenInstall = {
+                            selectedId.value = null
+                            notice = null
+                            search.close()
+                            install.open()
+                        },
+                        notice = notice,
+                        noticeSlot = noticeSlot,
+                        onNotice = { notice = it },
+                        onSelect = { module ->
+                            if (installState.open) closeInstall()
+                            if (selectedId.value != module.id) {
+                                motion.pick(module.id, mapOf(FlightPart.Label to { ModuleName(module, compact = true) }))
+                                selectedId.value = module.id
+                            }
+                        },
+                        motion = motion.takeIf { split },
+                    )
+                    // nothing in the list may change a module while one is being installed
+                    if (split && installState.flashing) {
+                        Box(
+                            Modifier
+                                .matchParentSize()
+                                .pointerInput(Unit) {
+                                    awaitPointerEventScope {
+                                        while (true) awaitPointerEvent().changes.forEach { it.consume() }
+                                    }
+                                },
+                        )
                     }
-                },
-                motion = motion.takeIf { split },
-            )
+                }
+            }
         },
         detail = {
-            PaneDetail(motion, selectedId.value) { id ->
-                val module = id?.let { picked -> uiState.modules.find { it.id == picked } }
+            PaneDetail(motion, paneKey) { key ->
+                if (key == InstallPaneKey) {
+                    // closing resets the state while this pane fades out: it keeps what it showed
+                    var shown by remember { mutableStateOf(installState) }
+                    if (installState.open) shown = installState
+                    ModuleInstallPane(shown, install, uiState.modules, bottomInnerPadding, closeInstall)
+                    return@PaneDetail
+                }
+                val module = (key as? String)?.let { picked -> uiState.modules.find { it.id == picked } }
+                CompositionLocalProvider(LocalDetailNotice provides DetailNotice(notice != null, noticeSlot)) {
                 if (module == null) {
                     ModuleOverview(uiState, bottomInnerPadding)
                 } else {
@@ -267,6 +359,7 @@ fun ModulePagerMiuix(
                         onClose = { selectedId.value = null },
                         onAddShortcut = { type -> onModuleAddShortcut(module, type) },
                     )
+                }
                 }
             }
         },
@@ -288,6 +381,55 @@ fun ModulePagerMiuix(
     )
 }
 
+@Composable
+private fun ModuleSortButton(uiState: ModuleUiState, actions: ModuleActions) {
+    Box {
+        val showTopPopup = remember { mutableStateOf(false) }
+        val sortMorph = rememberMorphPopupState()
+        GlassIconButton(
+            onClick = { showTopPopup.value = true },
+            modifier = Modifier.morphAnchor(sortMorph),
+        ) {
+            MorphIcon(sortMorph) { Icon(
+                imageVector = MiuixIcons.Sort,
+                tint = colorScheme.onSurface,
+                contentDescription = null
+            ) }
+        }
+        GlassListPopup(
+            show = showTopPopup.value,
+            popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+            alignment = PopupPositionProvider.Align.TopEnd,
+            morph = sortMorph,
+            onDismissRequest = {
+                showTopPopup.value = false
+            },
+            content = {
+                GlassMenuColumn {
+                    GlassMenuItem(
+                        text = stringResource(R.string.module_sort_action_first),
+                        icon = Icons.Rounded.PlayArrow,
+                        checked = uiState.sortActionFirst,
+                        onClick = {
+                            actions.onToggleSortActionFirst()
+                            showTopPopup.value = false
+                        },
+                    )
+                    GlassMenuItem(
+                        text = stringResource(R.string.module_sort_enabled_first),
+                        icon = Icons.Rounded.ToggleOn,
+                        checked = uiState.sortEnabledFirst,
+                        onClick = {
+                            actions.onToggleSortEnabledFirst()
+                            showTopPopup.value = false
+                        },
+                    )
+                }
+            }
+        )
+    }
+}
+
 @SuppressLint("StringFormatInvalid", "LocalContextGetResourceValueCall")
 @Composable
 private fun ModuleListPane(
@@ -298,6 +440,11 @@ private fun ModuleListPane(
     bottomInnerPadding: Dp,
     onModuleAddShortcut: (Module, ShortcutType) -> Unit,
     split: Boolean,
+    installOpen: Boolean,
+    onOpenInstall: () -> Unit,
+    notice: String?,
+    noticeSlot: @Composable () -> Unit,
+    onNotice: (String) -> Unit,
     onSelect: (Module) -> Unit,
     motion: PaneMotion?,
 ) {
@@ -306,7 +453,6 @@ private fun ModuleListPane(
     val modules = if (searchStatus.searchText.isNotBlank()) uiState.searchResults else uiState.moduleList
 
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
     val density = LocalDensity.current
     val enableBlur = LocalEnableBlur.current
 
@@ -346,35 +492,21 @@ private fun ModuleListPane(
         }
     }
 
-    val scope = rememberCoroutineScope()
-    val snackbarJob = remember { mutableStateOf<Job?>(null) }
     ObserveAsEvents(moduleEvent) { event ->
         when (event) {
             is ModuleEffect.Toast -> {
                 CamToast.show(context, event.message)
             }
 
-            is ModuleEffect.SnackBar -> {
-                // Cancel the previous reboot snackbar so a new one replaces it instead of queueing
-                snackbarJob.value?.cancel()
-                snackbarHostState.newestSnackbarData()?.dismiss()
-                // Soft reboot keeps the jailbreak and still applies module changes
-                val softReboot = isSoftRebootPreferred()
-                snackbarJob.value = scope.launch {
-                    val result = snackbarHostState.showSnackbar(
-                        message = event.message,
-                        actionLabel = context.getString(if (softReboot) R.string.reboot_soft else R.string.reboot),
-                        duration = SnackbarDuration.Long,
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        reboot(if (softReboot) "soft_reboot" else "")
-                    }
-                }
-            }
+            is ModuleEffect.SnackBar -> onNotice(event.message)
         }
     }
 
     val listState = rememberLazyListState()
+    // one list only: the notice is on top of it, in sight
+    LaunchedEffect(notice) {
+        if (!split && notice != null) listState.animateScrollToItem(0)
+    }
     val refreshTick = remember { mutableIntStateOf(0) }
 
     val backdrop = rememberBlurBackdrop(enableBlur)
@@ -390,64 +522,29 @@ private fun ModuleListPane(
                         color = barColor,
                         title = stringResource(R.string.module),
                         actions = {
-                            GlassButtonGroup {
-                                Box {
-                                    val showTopPopup = remember { mutableStateOf(false) }
-                                    val sortMorph = rememberMorphPopupState()
-                                    GlassIconButton(
-                                        onClick = { showTopPopup.value = true },
-                                        modifier = Modifier.morphAnchor(sortMorph),
-                                    ) {
-                                        MorphIcon(sortMorph) { Icon(
-                                            imageVector = MiuixIcons.Sort,
-                                            tint = colorScheme.onSurface,
-                                            contentDescription = null
-                                        ) }
-                                    }
-                                    GlassListPopup(
-                                        show = showTopPopup.value,
-                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                        alignment = PopupPositionProvider.Align.TopEnd,
-                                        morph = sortMorph,
-                                        onDismissRequest = {
-                                            showTopPopup.value = false
-                                        },
-                                        content = {
-                                            GlassMenuColumn {
-                                                GlassMenuItem(
-                                                    text = stringResource(R.string.module_sort_action_first),
-                                                    icon = Icons.Rounded.PlayArrow,
-                                                    checked = uiState.sortActionFirst,
-                                                    onClick = {
-                                                        actions.onToggleSortActionFirst()
-                                                        showTopPopup.value = false
-                                                    },
-                                                )
-                                                GlassMenuItem(
-                                                    text = stringResource(R.string.module_sort_enabled_first),
-                                                    icon = Icons.Rounded.ToggleOn,
-                                                    checked = uiState.sortEnabledFirst,
-                                                    onClick = {
-                                                        actions.onToggleSortEnabledFirst()
-                                                        showTopPopup.value = false
-                                                    },
-                                                )
-                                            }
-                                        }
+                            if (!split) GlassButtonGroup { ModuleSortButton(uiState, actions) }
+                        },
+                        navigationIcon = {
+                            val repoButton = @Composable {
+                                GlassIconButton(
+                                    onClick = expandClick(SOURCE_REPO, actions.onOpenRepo),
+                                    modifier = Modifier.expandSource(SOURCE_REPO, corner = GlassDefaults.dropletSize / 2),
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Download,
+                                        tint = colorScheme.onSurface,
+                                        contentDescription = null
                                     )
                                 }
                             }
-                        },
-                        navigationIcon = {
-                            GlassIconButton(
-                                onClick = expandClick(SOURCE_REPO, actions.onOpenRepo),
-                                modifier = Modifier.expandSource(SOURCE_REPO, corner = GlassDefaults.dropletSize / 2),
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Download,
-                                    tint = colorScheme.onSurface,
-                                    contentDescription = null
-                                )
+                            // beside a detail the column's buttons share one bar in its corner
+                            if (split) {
+                                GlassButtonGroup {
+                                    repoButton()
+                                    ModuleSortButton(uiState, actions)
+                                }
+                            } else {
+                                repoButton()
                             }
                         },
                         scrollBehavior = scrollBehavior,
@@ -468,20 +565,10 @@ private fun ModuleListPane(
                 val selectZipLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { activityResult ->
-                    val uris = mutableListOf<Uri>()
                     if (activityResult.resultCode != RESULT_OK) {
                         return@rememberLauncherForActivityResult
                     }
-                    val data = activityResult.data ?: return@rememberLauncherForActivityResult
-                    val clipData = data.clipData
-
-                    if (clipData != null) {
-                        for (i in 0 until clipData.itemCount) {
-                            clipData.getItemAt(i)?.uri?.let { uris.add(it) }
-                        }
-                    } else {
-                        data.data?.let { uris.add(it) }
-                    }
+                    val uris = activityResult.data?.pickedUris().orEmpty()
 
                     if (uris.size == 1) {
                         actions.onOpenFlash(listOf(uris.first()))
@@ -496,12 +583,17 @@ private fun ModuleListPane(
                         )
                     }
                 }
+                AnimatedVisibility(visible = !(split && installOpen), enter = fadeIn(), exit = fadeOut()) {
                 GlassFab(
                     modifier = Modifier
-                        .padding(bottom = bottomInnerPadding + 20.dp, end = 20.dp)
+                        .padding(bottom = bottomInnerPadding + 20.dp, start = if (split) 20.dp else 0.dp, end = if (split) 0.dp else 20.dp)
                         .border(0.05.dp, colorScheme.outline.copy(alpha = 0.5f), CircleShape),
                     shadowElevation = 0.dp,
                     onClick = {
+                        if (split) {
+                            onOpenInstall()
+                            return@GlassFab
+                        }
                         // Select the zip files to install
                         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                             type = "application/zip"
@@ -518,20 +610,12 @@ private fun ModuleListPane(
                         )
                     },
                 )
+                }
             }
         },
+        // beside a detail: the screen's corner, not against the divider
+        floatingActionButtonPosition = if (split) FabPosition.Start else FabPosition.End,
         popupHost = { },
-        snackbarHost = {
-            SnackbarHost(
-                state = snackbarHostState,
-                modifier = if (uiState.installButtonVisible) {
-                    Modifier
-                } else {
-                    // No FAB slot to stack above: keep the snackbar clear of the main bottom bar.
-                    Modifier.padding(bottom = bottomInnerPadding + 20.dp)
-                },
-            )
-        },
         contentWindowInsets = pageHorizontalInsets()
     ) { innerPadding ->
         if (uiState.magiskInstalled) {
@@ -616,6 +700,8 @@ private fun ModuleListPane(
                                 contentPadding = contentPadding,
                                 listState = listState,
                                 compact = split,
+                                // beside a detail it goes above the detail
+                                notice = noticeSlot.takeIf { !split },
                                 onSelect = onSelect,
                                 motion = motion,
                             )
@@ -765,6 +851,7 @@ private fun ModuleList(
     contentPadding: PaddingValues,
     listState: LazyListState = rememberLazyListState(),
     compact: Boolean = false,
+    notice: (@Composable () -> Unit)? = null,
     onSelect: (Module) -> Unit = {},
     motion: PaneMotion? = null,
 ) {
@@ -776,6 +863,7 @@ private fun ModuleList(
         contentPadding = contentPadding,
         overscrollEffect = null,
     ) {
+        if (notice != null) item(key = "notice") { notice() }
         itemsIndexed(
             items = modules,
             key = { _, it -> it.id },

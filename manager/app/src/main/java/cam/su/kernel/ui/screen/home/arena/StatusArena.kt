@@ -77,6 +77,7 @@ import kotlin.math.sin
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.glass.GlassDefaults
 import cam.su.kernel.ui.component.glass.glassMaterial
+import cam.su.kernel.ui.component.pagerise.pageRiseCard
 import cam.su.kernel.ui.intro.IntroGate
 import cam.su.kernel.ui.screen.home.arena.three.Arena3D
 import cam.su.kernel.ui.screen.home.arena.three.PanoramaMap
@@ -167,6 +168,7 @@ fun StatusArena(
     val shape = RoundedCornerShape(GlassDefaults.cardCorner)
     Box(
         modifier = modifier
+            .pageRiseCard()
             .fillMaxWidth()
             .height(260.dp)
             .slimeSurface()

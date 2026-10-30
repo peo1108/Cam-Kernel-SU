@@ -148,9 +148,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.math.abs
 
 /** Which dialog is up; at most one besides the operation dialogs. */
@@ -515,15 +512,13 @@ private fun UpRow(onClick: () -> Unit) {
     }
 }
 
-private val dateFormat = SimpleDateFormat("yy-MM-dd HH:mm", Locale.ROOT)
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileRow(entry: FileEntry, selected: Boolean, onOpen: () -> Unit, onMenu: () -> Unit, onSwipe: () -> Unit) {
     val swipeThreshold = with(LocalDensity.current) { 48.dp.toPx() }
     val details = buildString {
         // folders only implied by paths inside an archive have no date
-        if (entry.mtime > 0) append(dateFormat.format(Date(entry.mtime))).append("  ")
+        if (entry.mtime > 0) append(FileFormat.date(entry.mtime)).append("  ")
         // a link to a file shows the file's size, not the length of the link
         if (!entry.isDir) append(FileFormat.size(entry.contentSize))
         if (entry.isLink) append("  → ").append(entry.linkTarget ?: "?")

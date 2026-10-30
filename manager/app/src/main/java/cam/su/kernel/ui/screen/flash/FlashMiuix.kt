@@ -1,9 +1,7 @@
 package cam.su.kernel.ui.screen.flash
 
-import cam.su.kernel.ui.component.glass.GlassFab
 import cam.su.kernel.ui.component.glass.GlassButtonGroup
 import cam.su.kernel.ui.component.glass.GlassIconButton
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,15 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -36,10 +27,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cam.su.kernel.R
 import cam.su.kernel.ui.component.KeyEventBlocker
 import cam.su.kernel.ui.theme.LocalEnableBlur
@@ -48,12 +37,11 @@ import cam.su.kernel.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Share
+import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -70,7 +58,6 @@ fun FlashScreenMiuix(
     actions: FlashScreenActions,
 ) {
     val enableBlur = LocalEnableBlur.current
-    val scrollState = rememberScrollState()
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
     val barColor = if (blurActive) Color.Transparent else colorScheme.surface
@@ -93,30 +80,6 @@ fun FlashScreenMiuix(
                 barColor = barColor,
             )
         },
-        floatingActionButton = {
-            if (state.showRebootAction) {
-                val reboot = stringResource(id = state.rebootLabelRes)
-                GlassFab(
-                    modifier = Modifier
-                        .padding(
-                            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
-                                    WindowInsets.captionBar.asPaddingValues().calculateBottomPadding() + 20.dp,
-                            end = 20.dp
-                        )
-                        .border(0.05.dp, colorScheme.outline.copy(alpha = 0.5f), CircleShape),
-                    onClick = actions.onReboot,
-                    shadowElevation = 0.dp,
-                    content = {
-                        Icon(
-                            Icons.Rounded.Refresh,
-                            reboot,
-                            Modifier.size(40.dp),
-                            tint = colorScheme.onPrimary
-                        )
-                    },
-                )
-            }
-        },
         popupHost = { },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     ) { innerPadding ->
@@ -129,23 +92,20 @@ fun FlashScreenMiuix(
             Column(
                 modifier = Modifier
                     .fillMaxSize(1f)
-                    .scrollEndHaptic()
                     .padding(
                         start = innerPadding.calculateStartPadding(layoutDirection),
                         end = innerPadding.calculateEndPadding(layoutDirection),
-                    )
-                    .verticalScroll(scrollState),
+                    ),
             ) {
-                LaunchedEffect(state.text) {
-                    scrollState.animateScrollTo(scrollState.maxValue)
-                }
                 Spacer(Modifier.height(innerPadding.calculateTopPadding()))
-                Text(
-                    modifier = Modifier.padding(8.dp),
-                    text = state.text,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.Monospace,
+                FlashStatusCard(
+                    status = state.flashingStatus,
+                    title = state.title ?: stringResource(flashStatusTitle(state.flashingStatus)),
+                    rebootLabel = if (state.showRebootAction) stringResource(state.rebootLabelRes) else null,
+                    onReboot = actions.onReboot,
+                    onDone = actions.onBack,
                 )
+                FlashLogCard(state.text, Modifier.scrollEndHaptic())
                 Spacer(
                     Modifier.height(
                         12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
@@ -158,6 +118,12 @@ fun FlashScreenMiuix(
 }
 
 
+internal fun flashStatusTitle(status: FlashingStatus): Int = when (status) {
+    FlashingStatus.FLASHING -> R.string.flashing
+    FlashingStatus.SUCCESS -> R.string.flash_success
+    FlashingStatus.FAILED -> R.string.flash_failed
+}
+
 @Composable
 private fun TopBar(
     status: FlashingStatus,
@@ -168,13 +134,7 @@ private fun TopBar(
 ) {
     BlurredBar(backdrop) {
         SmallTopAppBar(
-            title = stringResource(
-                when (status) {
-                    FlashingStatus.FLASHING -> R.string.flashing
-                    FlashingStatus.SUCCESS -> R.string.flash_success
-                    FlashingStatus.FAILED -> R.string.flash_failed
-                }
-            ),
+            title = stringResource(flashStatusTitle(status)),
             color = barColor,
             navigationIcon = {
                 GlassIconButton(
@@ -197,7 +157,7 @@ private fun TopBar(
                         onClick = onSave
                     ) {
                         Icon(
-                            imageVector = MiuixIcons.Share,
+                            imageVector = MiuixIcons.Download,
                             contentDescription = stringResource(id = R.string.save_log),
                             tint = colorScheme.onBackground
                         )

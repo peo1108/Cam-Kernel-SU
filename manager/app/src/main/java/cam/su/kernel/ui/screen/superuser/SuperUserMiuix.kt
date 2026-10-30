@@ -262,6 +262,136 @@ private fun appFlightParts(group: GroupedApps, label: String): Map<FlightPart, @
 )
 
 @Composable
+private fun SuperUserSortButton(uiState: SuperUserUiState, actions: SuperUserActions) {
+    Box {
+        val showSortPopup = remember { mutableStateOf(false) }
+        val sortMorph = rememberMorphPopupState()
+        GlassListPopup(
+            show = showSortPopup.value,
+            popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+            alignment = PopupPositionProvider.Align.TopEnd,
+            morph = sortMorph,
+            onDismissRequest = { showSortPopup.value = false },
+            content = {
+                GlassMenuColumn {
+                    val sortEntries = listOf(
+                        AppSortType.NAME to R.string.sort_by_name,
+                        AppSortType.PACKAGE_NAME to R.string.sort_by_package_name,
+                        AppSortType.INSTALL_TIME to R.string.sort_by_install_time,
+                        AppSortType.UPDATE_TIME to R.string.sort_by_update_time,
+                    )
+                    val sortConfig = uiState.sortConfig
+                    val sortGroupSize = sortEntries.size + 1
+
+                    sortEntries.forEachIndexed { index, (type, resId) ->
+                        GlassMenuItem(
+                            text = stringResource(resId),
+                            checked = sortConfig.sortType == type,
+                            onClick = {
+                                actions.onUpdateSortConfig(sortConfig.withType(type))
+                                showSortPopup.value = false
+                            },
+                        )
+                    }
+
+                    GlassMenuDivider()
+
+                    GlassMenuItem(
+                        text = stringResource(R.string.sort_reverse),
+                        icon = Icons.Rounded.SwapVert,
+                        checked = sortConfig.reversed,
+                        onClick = {
+                            actions.onUpdateSortConfig(sortConfig.toggleReversed())
+                            showSortPopup.value = false
+                        },
+                    )
+                }
+            }
+        )
+
+        GlassIconButton(
+            onClick = { showSortPopup.value = true },
+            modifier = Modifier.morphAnchor(sortMorph),
+        ) {
+            MorphIcon(sortMorph) { Icon(
+                imageVector = MiuixIcons.Sort,
+                tint = colorScheme.onSurface,
+                contentDescription = stringResource(R.string.menu_sort)
+            ) }
+        }
+    }
+}
+
+@Composable
+private fun SuperUserMoreButton(uiState: SuperUserUiState, actions: SuperUserActions) {
+    Box {
+        val showTopPopup = remember { mutableStateOf(false) }
+        val moreMorph = rememberMorphPopupState()
+        val showRestore = remember { mutableStateOf(false) }
+        RestoreSystemAppsDialog(
+            show = showRestore.value,
+            onDismiss = { showRestore.value = false },
+            onRestored = actions.onRefresh,
+        )
+        GlassListPopup(
+            show = showTopPopup.value,
+            popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
+            alignment = PopupPositionProvider.Align.TopEnd,
+            morph = moreMorph,
+            onDismissRequest = {
+                showTopPopup.value = false
+            },
+            content = {
+                val isMultiUser = uiState.userIds.size > 1
+                val size = if (isMultiUser) 3 else 2
+                GlassMenuColumn {
+                    GlassMenuItem(
+                        text = stringResource(R.string.show_system_apps),
+                        icon = Icons.Rounded.Android,
+                        checked = uiState.showSystemApps,
+                        onClick = {
+                            actions.onToggleShowSystemApps()
+                            showTopPopup.value = false
+                        },
+                    )
+                    if (isMultiUser) {
+                        GlassMenuItem(
+                            text = stringResource(R.string.show_only_primary_user_apps),
+                            icon = Icons.Rounded.Person,
+                            checked = uiState.showOnlyPrimaryUserApps,
+                            onClick = {
+                                actions.onToggleShowOnlyPrimaryUserApps()
+                                showTopPopup.value = false
+                            },
+                        )
+                    }
+                    GlassMenuItem(
+                        text = stringResource(R.string.app_restore_system),
+                        icon = Icons.Rounded.SettingsBackupRestore,
+                        onClick = {
+                            showRestore.value = true
+                            showTopPopup.value = false
+                        },
+                    )
+                }
+            }
+        )
+        GlassIconButton(
+            onClick = {
+                showTopPopup.value = true
+            },
+            modifier = Modifier.morphAnchor(moreMorph),
+        ) {
+            MorphIcon(moreMorph) { Icon(
+                imageVector = MiuixIcons.MoreCircle,
+                tint = colorScheme.onSurface,
+                contentDescription = null
+            ) }
+        }
+    }
+}
+
+@Composable
 private fun SuperUserList(
     uiState: SuperUserUiState,
     actions: SuperUserActions,
@@ -293,141 +423,34 @@ private fun SuperUserList(
                         color = barColor,
                         title = stringResource(R.string.superuser),
                         navigationIcon = {
-                            GlassIconButton(
-                                onClick = expandClick(SOURCE_SULOG, actions.onOpenSulog),
-                                modifier = Modifier.expandSource(SOURCE_SULOG, corner = GlassDefaults.dropletSize / 2),
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Notes,
-                                    tint = colorScheme.onSurface,
-                                    contentDescription = stringResource(R.string.settings_sulog)
-                                )
+                            val logButton = @Composable {
+                                GlassIconButton(
+                                    onClick = expandClick(SOURCE_SULOG, actions.onOpenSulog),
+                                    modifier = Modifier.expandSource(SOURCE_SULOG, corner = GlassDefaults.dropletSize / 2),
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Notes,
+                                        tint = colorScheme.onSurface,
+                                        contentDescription = stringResource(R.string.settings_sulog)
+                                    )
+                                }
+                            }
+                            // beside a detail the column's buttons share one bar in its corner
+                            if (split) {
+                                GlassButtonGroup {
+                                    logButton()
+                                    SuperUserSortButton(uiState, actions)
+                                    SuperUserMoreButton(uiState, actions)
+                                }
+                            } else {
+                                logButton()
                             }
                         },
                         actions = {
-                            GlassButtonGroup {
-                                Box {
-                                    val showSortPopup = remember { mutableStateOf(false) }
-                                    val sortMorph = rememberMorphPopupState()
-                                    GlassListPopup(
-                                        show = showSortPopup.value,
-                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                        alignment = PopupPositionProvider.Align.TopEnd,
-                                        morph = sortMorph,
-                                        onDismissRequest = { showSortPopup.value = false },
-                                        content = {
-                                            GlassMenuColumn {
-                                                val sortEntries = listOf(
-                                                    AppSortType.NAME to R.string.sort_by_name,
-                                                    AppSortType.PACKAGE_NAME to R.string.sort_by_package_name,
-                                                    AppSortType.INSTALL_TIME to R.string.sort_by_install_time,
-                                                    AppSortType.UPDATE_TIME to R.string.sort_by_update_time,
-                                                )
-                                                val sortConfig = uiState.sortConfig
-                                                val sortGroupSize = sortEntries.size + 1
-
-                                                sortEntries.forEachIndexed { index, (type, resId) ->
-                                                    GlassMenuItem(
-                                                        text = stringResource(resId),
-                                                        checked = sortConfig.sortType == type,
-                                                        onClick = {
-                                                            actions.onUpdateSortConfig(sortConfig.withType(type))
-                                                            showSortPopup.value = false
-                                                        },
-                                                    )
-                                                }
-
-                                                GlassMenuDivider()
-
-                                                GlassMenuItem(
-                                                    text = stringResource(R.string.sort_reverse),
-                                                    icon = Icons.Rounded.SwapVert,
-                                                    checked = sortConfig.reversed,
-                                                    onClick = {
-                                                        actions.onUpdateSortConfig(sortConfig.toggleReversed())
-                                                        showSortPopup.value = false
-                                                    },
-                                                )
-                                            }
-                                        }
-                                    )
-
-                                    GlassIconButton(
-                                        onClick = { showSortPopup.value = true },
-                                        modifier = Modifier.morphAnchor(sortMorph),
-                                    ) {
-                                        MorphIcon(sortMorph) { Icon(
-                                            imageVector = MiuixIcons.Sort,
-                                            tint = colorScheme.onSurface,
-                                            contentDescription = stringResource(R.string.menu_sort)
-                                        ) }
-                                    }
-                                }
-
-                                Box {
-                                    val showTopPopup = remember { mutableStateOf(false) }
-                                    val moreMorph = rememberMorphPopupState()
-                                    val showRestore = remember { mutableStateOf(false) }
-                                    RestoreSystemAppsDialog(
-                                        show = showRestore.value,
-                                        onDismiss = { showRestore.value = false },
-                                        onRestored = actions.onRefresh,
-                                    )
-                                    GlassListPopup(
-                                        show = showTopPopup.value,
-                                        popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
-                                        alignment = PopupPositionProvider.Align.TopEnd,
-                                        morph = moreMorph,
-                                        onDismissRequest = {
-                                            showTopPopup.value = false
-                                        },
-                                        content = {
-                                            val isMultiUser = uiState.userIds.size > 1
-                                            val size = if (isMultiUser) 3 else 2
-                                            GlassMenuColumn {
-                                                GlassMenuItem(
-                                                    text = stringResource(R.string.show_system_apps),
-                                                    icon = Icons.Rounded.Android,
-                                                    checked = uiState.showSystemApps,
-                                                    onClick = {
-                                                        actions.onToggleShowSystemApps()
-                                                        showTopPopup.value = false
-                                                    },
-                                                )
-                                                if (isMultiUser) {
-                                                    GlassMenuItem(
-                                                        text = stringResource(R.string.show_only_primary_user_apps),
-                                                        icon = Icons.Rounded.Person,
-                                                        checked = uiState.showOnlyPrimaryUserApps,
-                                                        onClick = {
-                                                            actions.onToggleShowOnlyPrimaryUserApps()
-                                                            showTopPopup.value = false
-                                                        },
-                                                    )
-                                                }
-                                                GlassMenuItem(
-                                                    text = stringResource(R.string.app_restore_system),
-                                                    icon = Icons.Rounded.SettingsBackupRestore,
-                                                    onClick = {
-                                                        showRestore.value = true
-                                                        showTopPopup.value = false
-                                                    },
-                                                )
-                                            }
-                                        }
-                                    )
-                                    GlassIconButton(
-                                        onClick = {
-                                            showTopPopup.value = true
-                                        },
-                                        modifier = Modifier.morphAnchor(moreMorph),
-                                    ) {
-                                        MorphIcon(moreMorph) { Icon(
-                                            imageVector = MiuixIcons.MoreCircle,
-                                            tint = colorScheme.onSurface,
-                                            contentDescription = null
-                                        ) }
-                                    }
+                            if (!split) {
+                                GlassButtonGroup {
+                                    SuperUserSortButton(uiState, actions)
+                                    SuperUserMoreButton(uiState, actions)
                                 }
                             }
                         },

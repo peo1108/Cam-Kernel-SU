@@ -40,7 +40,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 /**
  * Superuser, Module and the su log put their list and the picked item's detail side by side once
  * the page is this wide (a landscape tablet: 1221 dp beside the side bar on the TB323FU, 1103 dp at
- * the largest page scale). Narrower, items open in place or on their own page as before.
+ * the largest page scale). Narrower or upright, items open in place or on their own page as before.
  */
 const val LIST_DETAIL_MIN_WIDTH_DP = 900f
 
@@ -53,17 +53,26 @@ val SulogListPaneWidth = 560.dp
 /** From this width a detail lays its cards out in two columns. */
 val DetailTwoColumnWidth = 640.dp
 
-fun showListDetail(pageWidthDp: Float): Boolean = pageWidthDp >= LIST_DETAIL_MIN_WIDTH_DP
+// upright counts too: a smaller display size setting makes the same tablet 952 dp wide standing up
+fun showListDetail(pageWidthDp: Float, windowHeightDp: Float): Boolean =
+    pageWidthDp >= LIST_DETAIL_MIN_WIDTH_DP && pageWidthDp > windowHeightDp
 
 /** The window's width in the app's dp, so the page scale setting counts. */
 @Composable
 fun windowWidthDp(): Float = LocalWindowInfo.current.containerSize.width / LocalDensity.current.density
+
+/** The window's height in the app's dp. */
+@Composable
+fun windowHeightDp(): Float = LocalWindowInfo.current.containerSize.height / LocalDensity.current.density
 
 /** Whether the main pages show list and detail side by side; MainScreen sets it from its width. */
 val LocalListDetail = compositionLocalOf { false }
 
 /** The window edges whose insets the current pane keeps clear of: both, or only the one it touches. */
 val LocalPaneSides = staticCompositionLocalOf { WindowInsetsSides.Horizontal }
+
+/** How much lower the list's first row starts than a detail's first card would: the detail makes up for it. */
+internal val LocalDetailTopExtra = staticCompositionLocalOf { 0.dp }
 
 /**
  * Horizontal insets for a page's content: system bars, the cutout and the side bar's column, on the
@@ -78,7 +87,8 @@ fun pageHorizontalInsets(): WindowInsets =
  * detail filling the rest, a hairline between them; each pane keeps clear of its own edge only
  * ([LocalPaneSides]). Without, the list alone: it stays at the same spot either way, so turning
  * the tablet keeps its scroll position and search. [motion] draws a picked row's icon and name
- * flying into the detail, over both panes.
+ * flying into the detail, over both panes. [detailTopExtra]: what the list's bar has beyond the
+ * detail's (the su log's search field), so the first cards of both panes start level.
  */
 @Composable
 fun ListDetailLayout(
@@ -86,6 +96,7 @@ fun ListDetailLayout(
     listWidth: Dp,
     motion: PaneMotion?,
     flightParts: (Any) -> Map<FlightPart, @Composable () -> Unit> = { emptyMap() },
+    detailTopExtra: Dp = 0.dp,
     list: @Composable () -> Unit,
     detail: @Composable () -> Unit,
 ) {
@@ -148,7 +159,11 @@ fun ListDetailLayout(
                     }
                     .graphicsLayer { alpha = motion?.detailAlpha() ?: 1f }
             ) {
-                CompositionLocalProvider(LocalPaneSides provides WindowInsetsSides.End, content = detail)
+                CompositionLocalProvider(
+                    LocalPaneSides provides WindowInsetsSides.End,
+                    LocalDetailTopExtra provides detailTopExtra,
+                    content = detail,
+                )
             }
         }
         if (split && motion != null) motion.flight.Overlay()

@@ -274,16 +274,19 @@ static void patch_abs_jump(const char *sym, void **patch_addr, void *target, cha
             pr_info("%s: skip endbr64\n", sym);
             *patch_addr = (void *)((char *)(*patch_addr) + 4);
         }
-        // clang-format off
-        char buf[] = {
-            // jmp *(%rip) = addr
-            0xff, 0x25, 0x00, 0x00, 0x00, 0x00,
-            // addr: .quad 0
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        };
-        // clang-format on
-        *((void **)(buf + 6)) = target;
-        memcpy(backup, *patch_addr, sizeof(buf));
+        // jmp rel32, not an indirect jump: under FineIBT a C function has no ENDBR at its entry
+        // (indirect calls land in its CFI preamble), so `jmp *(%rip)` would fault with #CP on a
+        // CPU that has IBT. Modules always sit within 2 GB of the kernel image on x86_64.
+        char buf[5] = { 0xe9 };
+        s64 disp = (char *)target - ((char *)*patch_addr + sizeof(buf));
+        s32 rel = disp;
+        if (rel != disp) {
+            pr_err("patch %s: target out of range\n", sym);
+            *patch_addr = NULL;
+            return;
+        }
+        memcpy(buf + 1, &rel, sizeof(rel));
+        memcpy(backup, *patch_addr, 14);
         int ret = ksu_patch_text(*patch_addr, buf, sizeof(buf), KSU_PATCH_TEXT_FLUSH_ICACHE);
         if (ret) {
             pr_err("patch %s err: %d\n", sym, ret);

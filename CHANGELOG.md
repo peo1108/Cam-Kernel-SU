@@ -3,8 +3,10 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.2.2 - 2026-10-25
-- Rule ẩn root v21 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy
+- Rule ẩn root v21 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau
 ### Thay đổi
+- Tablet xoay ngang: Superuser, Module và Nhật ký SU để danh sách bên trái, mục đang chọn bên phải, đổi app hay module không phải mở rồi đóng trang. Module có phần chi tiết mới (mô tả đầy đủ, các nút, ID, mã phiên bản, nguồn cập nhật); một sự kiện trong Nhật ký SU mở thẳng hồ sơ của app đó. Xoay dọc hoặc dùng điện thoại thì vẫn như cũ
+- Trang chủ có thẻ Tình trạng ẩn root: kết quả lần kiểm tra gần nhất, các công tắc ẩn và phiên bản rule; chạm để mở trang Kiểm tra ẩn root
 - WebUI của module: thêm `ksu.io()` để đọc ghi file bằng root, `ksu.pm()` để xem thông tin app, và tải file về thư mục Download, kể cả file lớn (từ KernelSU). File lớn hơn 10 MB ở bản gốc không tải được, đã sửa trong SU Kernel. `ksu.io()` vẫn có root khi tắt tương thích su
 - Rule ẩn root v21: theo Duck Detector tới bản nightly 29/10 (824591e6). Duck Detector không còn lấy nhầm kết quả của lượt quét trước khi đo thời gian ghi context SELinux từ App Zygote, nên số đo đáng tin hơn; không có cách đo mới nào nhắm vào SU Kernel. Đã thử trên máy với kernel của bản này, kể cả khi cố ý chuyển Duck Detector qua lại giữa các nhân CPU: thẻ SELinux vẫn sạch
 - Rule ẩn root v20: theo Duck Detector tới bản nightly 25/10 (4c2e29e2). Duck Detector thêm phép đo thời gian lời gọi `prctl` nhắm vào KernelSU bản cũ; SU Kernel không có gì trên đường đó, đo trên máy không thấy mẫu nào trên cả 8 nhân CPU
@@ -12,6 +14,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Thanh tiến trình cho các việc phải chờ: cài APK và chép tệp để mở/chia sẻ trong tab Tệp, sao lưu APK, tải bản cập nhật. Hiện phần trăm, dung lượng, tốc độ và thời gian còn lại; sao chép/di chuyển/giải nén cũng có thêm tốc độ và thời gian còn lại. Cài APK giờ chạy nền như sao chép (có thông báo và nút Huỷ khi đang chép vào trình cài đặt)
 ### Sửa lỗi
+- Xoay máy đôi khi làm Manager văng, nhất là trong vài giây đầu sau khi mở app. Xoay giờ không dựng lại trang nữa, nên các tab cũng giữ nguyên chỗ đang xem
 - Tải lại một file đã xoá bằng tab Tệp (hoặc bằng root) báo thất bại, kể cả khi tải module trong thư viện module. Nguyên nhân là Android vẫn nhớ file cũ; giờ tải lại bình thường
 - Khi tắt tương thích su: trang Nhật ký SU và việc vá ảnh boot từ gói ROM tải về không còn mất quyền root
 - Manager không còn văng lúc mở trên máy mà GPU chỉ có OpenGL ES 2.0 (chủ yếu là máy ảo): thẻ trạng thái chỉ hiện phông nền, không có slime. Máy Y700 không dính lỗi này
@@ -20,7 +23,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Tab Tệp: thư mục Download/SU Kernel báo "Không có quyền (đã cấp root chưa?)". Sao lưu APK bản cũ tạo thư mục này thẳng bằng root mà không cho bộ nhớ chung quyền đọc, nên không ai mở được, kể cả root. Sao lưu APK giờ ghi qua bộ nhớ chung như mọi tệp tải về và tự sửa thư mục cũ; tab Tệp có nút Sửa quyền cho mọi thư mục bị như vậy
 ### Lưu ý
 - Bản này có thay đổi nhỏ ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có phần sửa ẩn SELinux. Không cài lại thì mọi thứ vẫn chạy như 1.2.1
-- Máy đã cài LKM của 1.2.2-beta.3: kernel từ đó tới nay chỉ đổi phần cho máy x86_64, nên máy Y700 không cần cài lại dù thẻ trên trang chủ vẫn gợi ý
+- Máy đã cài LKM của 1.2.2-beta.3: kernel từ đó tới nay chỉ đổi phần cho máy x86_64, nên máy Y700 không cần cài lại dù thẻ trên trang chủ vẫn gợi ý. Bản beta.5 không đổi kernel
 
 ## 1.2.1 - 2026-10-25
 - Rule ẩn root v18 theo Duck Detector mới nhất; trang Kiểm tra ẩn root bắt thêm Gỡ lỗi không dây và module giấu ADB mà vẫn bị lộ

@@ -3,8 +3,14 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.2.2 - 2026-10-25
-- Rule ẩn root v21 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau
+- Rule ẩn root v21 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau; tablet xoay ngang cài được module ngay cạnh danh sách; bấm tab có hiệu ứng thẻ bay lên
 ### Thay đổi
+- Tablet xoay ngang: nút + ở Module mở trình duyệt file ngay cột bên phải, chỉ hiện thư mục và file zip, vào được cả chỗ cần root. Chọn zip nào là thấy đó là module gì, bản mới hay bản cập nhật, có nằm trong danh sách nguy hiểm không, rồi cài ngay tại đó, chọn được nhiều zip cài một lượt. Xoay dọc giữa chừng vẫn cài tiếp. Vẫn có nút mở trình chọn file của hệ thống cho Drive hay USB
+- Bấm tab: trang cũ mờ đi, các thẻ của trang mới bay từ dưới lên lần lượt. Áp dụng cho mọi tab; vuốt vẫn kéo trang theo tay như cũ
+- Tablet xoay ngang: nút của cột trái gộp thành một thanh ở góc trái, nút đóng và các nút của cột phải thành thanh dọc ở góc phải, cùng chỗ với nút menu của tab Tệp; nút cài module về góc trái màn hình
+- Sau khi bật, tắt hay gỡ module, thông báo kèm nút khởi động lại nằm ở phía trên thay cho thanh đen dưới đáy, và ở lại tới khi bấm Xong
+- Trang flash, trang Action của module và khung cài module dùng chung một giao diện: thẻ trạng thái với các nút có nhãn, log cuộn trong thẻ riêng. Trang Action giờ báo đúng là thành công hay lỗi
+- Logo lúc cài module đổi thành Cam Ksu
 - Tablet xoay ngang: Superuser, Module và Nhật ký SU để danh sách bên trái, mục đang chọn bên phải, đổi app hay module không phải mở rồi đóng trang. Module có phần chi tiết mới (mô tả đầy đủ, các nút, ID, mã phiên bản, nguồn cập nhật); một sự kiện trong Nhật ký SU mở thẳng hồ sơ của app đó. Xoay dọc hoặc dùng điện thoại thì vẫn như cũ
 - Trang chủ có thẻ Tình trạng ẩn root: kết quả lần kiểm tra gần nhất, các công tắc ẩn và phiên bản rule; chạm để mở trang Kiểm tra ẩn root
 - WebUI của module: thêm `ksu.io()` để đọc ghi file bằng root, `ksu.pm()` để xem thông tin app, và tải file về thư mục Download, kể cả file lớn (từ KernelSU). File lớn hơn 10 MB ở bản gốc không tải được, đã sửa trong SU Kernel. `ksu.io()` vẫn có root khi tắt tương thích su
@@ -14,6 +20,9 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Thanh tiến trình cho các việc phải chờ: cài APK và chép tệp để mở/chia sẻ trong tab Tệp, sao lưu APK, tải bản cập nhật. Hiện phần trăm, dung lượng, tốc độ và thời gian còn lại; sao chép/di chuyển/giải nén cũng có thêm tốc độ và thời gian còn lại. Cài APK giờ chạy nền như sao chép (có thông báo và nút Huỷ khi đang chép vào trình cài đặt)
 ### Sửa lỗi
+- Tablet dựng dọc với cỡ hiển thị nhỏ vẫn bị chia hai cột. Giờ chỉ chia khi nằm ngang
+- Cột chi tiết bên cạnh danh sách: nội dung bị cắt cứng ở thanh trên khi cuộn và thẻ đầu lệch với cột trái. Giờ mờ dần như cột danh sách, thẻ đầu hai cột bằng nhau, kể cả ở Nhật ký SU
+- Chế độ jailbreak: sau khi khởi động lại mềm, kernel báo lỗi trong log và theo dõi danh sách app thành hai lần. Có hiệu lực khi nạp lại LKM; máy cài LKM vào init_boot như Y700 không dính lỗi này
 - Xoay máy đôi khi làm Manager văng, nhất là trong vài giây đầu sau khi mở app. Xoay giờ không dựng lại trang nữa, nên các tab cũng giữ nguyên chỗ đang xem
 - Tải lại một file đã xoá bằng tab Tệp (hoặc bằng root) báo thất bại, kể cả khi tải module trong thư viện module. Nguyên nhân là Android vẫn nhớ file cũ; giờ tải lại bình thường
 - Khi tắt tương thích su: trang Nhật ký SU và việc vá ảnh boot từ gói ROM tải về không còn mất quyền root

@@ -62,7 +62,7 @@ import kotlin.math.sqrt
  * maps 1:1 onto the 2D stage the overlay effects are drawn in.
  */
 internal class Arena3D private constructor() {
-    private val engine: Engine = Engine.create()
+    private val engine: Engine = createSlimeEngine()
     private val renderer: Renderer = engine.createRenderer()
     private val scene: Scene = engine.createScene()
     private val view: View = engine.createView()

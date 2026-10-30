@@ -42,7 +42,7 @@ import kotlin.math.max
  * so that the z = 0 plane maps 1:1 onto the screen.
  */
 internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
-    private val engine: Engine = Engine.create()
+    private val engine: Engine = createSlimeEngine()
     private val renderer: Renderer = engine.createRenderer()
     private val scene: Scene = engine.createScene()
     private val view: View = engine.createView()

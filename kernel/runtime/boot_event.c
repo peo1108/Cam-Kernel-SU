@@ -7,6 +7,7 @@
 #include "policy/allowlist.h"
 #include "policy/feature.h"
 #include "klog.h" // IWYU pragma: keep
+#include "ksu.h"
 #include "runtime/camd_boot.h"
 #include "runtime/camd.h"
 #include "policy/pkg_observer.h"
@@ -18,6 +19,13 @@ bool ksu_boot_completed __read_mostly = false;
 void on_post_fs_data(void)
 {
     static bool done = false;
+
+    // Loaded late, all this ran at load. A soft reboot still gets here through the zygote's exec:
+    // a second run would watch packages.list twice and queue a work that was never initialized.
+    if (ksu_late_loaded) {
+        pr_info("post-fs-data skipped (late load)\n");
+        return;
+    }
 
     if (done) {
         pr_info("on_post_fs_data already done\n");

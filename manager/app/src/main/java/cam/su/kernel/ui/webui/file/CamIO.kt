@@ -1,10 +1,16 @@
 package cam.su.kernel.ui.webui.file
 
 import android.webkit.JavascriptInterface
+import cam.su.kernel.ui.util.getRootShell
+import com.topjohnwu.superuser.io.SuFile
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
 
 const val TAG = "CamIO"
+
+// The same camd-backed shell as ksu.exec; libsu's default shell would run plain `su`, which
+// fails when su compatibility is turned off.
+internal fun rootFile(path: String) = SuFile(path).apply { shell = getRootShell(true) }
 
 object CamIO {
     private const val KSU_IO_VERSION = 1

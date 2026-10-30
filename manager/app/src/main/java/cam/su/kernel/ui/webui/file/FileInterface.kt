@@ -7,7 +7,7 @@ import org.json.JSONArray
 import java.io.BufferedOutputStream
 
 class FileInterface(private val path: String) {
-    private val suFile: SuFile = SuFile(path)
+    private val suFile: SuFile = rootFile(path)
 
     @JavascriptInterface
     fun exists(): Boolean = runCatching { suFile.exists() }.getOrDefault(false)
@@ -44,7 +44,7 @@ class FileInterface(private val path: String) {
 
     @JavascriptInterface
     fun renameTo(destPath: String): Boolean = runCatching {
-        suFile.renameTo(SuFile(destPath))
+        suFile.renameTo(rootFile(destPath))
     }.getOrDefault(false)
 
     @JavascriptInterface

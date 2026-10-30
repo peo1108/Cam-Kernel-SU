@@ -94,8 +94,11 @@ internal fun resolveSulogFileCleanAction(
     }
 }
 
+// libsu's default shell would run plain `su`, which fails when su compatibility is turned off.
+private fun rootFile(path: String) = SuFile(path).apply { shell = getRootShell() }
+
 fun listSulogFiles(): List<SulogFile> {
-    val directory = SuFile(SULOG_DIR)
+    val directory = rootFile(SULOG_DIR)
     val fileNames = directory.list().orEmpty().toList()
     return parseSulogFileNames(fileNames).map { name ->
         SulogFile(name = name, path = "$SULOG_DIR/$name")
@@ -103,7 +106,7 @@ fun listSulogFiles(): List<SulogFile> {
 }
 
 fun readSulogFile(path: String): List<String> {
-    val suFile = SuFile(path)
+    val suFile = rootFile(path)
     if (!suFile.isFile) {
         return emptyList()
     }
@@ -326,11 +329,11 @@ internal fun String.toSulogDisplayName(): String {
 }
 
 fun cleanSulogFile(path: String): Boolean {
-    val suFile = SuFile(path)
+    val suFile = rootFile(path)
     return suFile.clear()
 }
 
 fun deleteSulogFile(path: String): Boolean {
-    val suFile = SuFile(path)
+    val suFile = rootFile(path)
     return suFile.delete()
 }

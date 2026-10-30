@@ -14,7 +14,7 @@ class FileInputStreamInterface {
             Log.w(TAG, "FileInputStream open rejected: too many open streams")
             return ""
         }
-        val stream = ManagedInputStream(SuFileInputStream.open(path))
+        val stream = ManagedInputStream(SuFileInputStream.open(rootFile(path)))
         val id = java.util.UUID.randomUUID().toString()
         CamIO.openInputStreams[id] = stream
         id

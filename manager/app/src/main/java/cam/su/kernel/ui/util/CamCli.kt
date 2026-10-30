@@ -542,7 +542,9 @@ fun downloadBoot(
         }
     }
 
-    val result = Shell.getShell().newJob().add(cmd).to(stdoutCallback, stderrCallback).exec()
+    val result = withNewRootShell {
+        newJob().add(cmd).to(stdoutCallback, stderrCallback).exec()
+    }
     lkmFile?.delete()
     bootFile.delete()
     return FlashResult(result, false)

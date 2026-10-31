@@ -3,8 +3,10 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.2.2 - 2026-10-25
-- Rule ẩn root v21 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau; tablet xoay ngang cài được module ngay cạnh danh sách; bấm tab có hiệu ứng thẻ bay lên
+- Rule ẩn root v22 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau; tablet xoay ngang cài được module ngay cạnh danh sách; bấm tab có hiệu ứng thẻ bay lên; kernel không còn giữ file thừa và bớt hẳn log khi cấp root
 ### Thay đổi
+- Rule ẩn root v22: theo Duck Detector tới bản nightly 31/10 (8acd43e6). Duck Detector thêm phép đo nhắm vào lỗi giữ file thừa của KernelSU khi mở lại terminal của su (SU Kernel sửa trong bản này, xem Sửa lỗi). App thường không giữ terminal đó nên phép đo không chạy được với SU Kernel; đã thử trên Y700: không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi như trước
+- Kernel không còn ghi một dòng log cho từng tiến trình mỗi lần cấp hay thu root (trên Y700 khoảng 3.500 dòng mỗi lần, đẩy trôi các log khác), cùng các log lặp lại mỗi lần mở app (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Tablet xoay ngang: nút + ở Module mở trình duyệt file ngay cột bên phải, chỉ hiện thư mục và file zip, vào được cả chỗ cần root. Chọn zip nào là thấy đó là module gì, bản mới hay bản cập nhật, có nằm trong danh sách nguy hiểm không, rồi cài ngay tại đó, chọn được nhiều zip cài một lượt. Xoay dọc giữa chừng vẫn cài tiếp. Vẫn có nút mở trình chọn file của hệ thống cho Drive hay USB
 - Bấm tab: trang cũ mờ đi, các thẻ của trang mới bay từ dưới lên lần lượt. Áp dụng cho mọi tab; vuốt vẫn kéo trang theo tay như cũ
 - Tablet xoay ngang: nút của cột trái gộp thành một thanh ở góc trái, nút đóng và các nút của cột phải thành thanh dọc ở góc phải, cùng chỗ với nút menu của tab Tệp; nút cài module về góc trái màn hình
@@ -20,6 +22,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Thanh tiến trình cho các việc phải chờ: cài APK và chép tệp để mở/chia sẻ trong tab Tệp, sao lưu APK, tải bản cập nhật. Hiện phần trăm, dung lượng, tốc độ và thời gian còn lại; sao chép/di chuyển/giải nén cũng có thêm tốc độ và thời gian còn lại. Cài APK giờ chạy nền như sao chép (có thông báo và nút Huỷ khi đang chép vào trình cài đặt)
 ### Sửa lỗi
+- Mỗi lần một lệnh chạy bằng su trong terminal mở lại terminal của chính nó, kernel giữ thừa một file tới lần khởi động sau (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Tablet dựng dọc với cỡ hiển thị nhỏ vẫn bị chia hai cột. Giờ chỉ chia khi nằm ngang
 - Cột chi tiết bên cạnh danh sách: nội dung bị cắt cứng ở thanh trên khi cuộn và thẻ đầu lệch với cột trái. Giờ mờ dần như cột danh sách, thẻ đầu hai cột bằng nhau, kể cả ở Nhật ký SU
 - Chế độ jailbreak: sau khi khởi động lại mềm, kernel báo lỗi trong log và theo dõi danh sách app thành hai lần. Có hiệu lực khi nạp lại LKM; máy cài LKM vào init_boot như Y700 không dính lỗi này
@@ -31,8 +34,8 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Ẩn SELinux: nếu chính sách SELinux được nạp lại đúng lúc một app đổi context SELinux, app có thể nhận lỗi trong khi máy gốc vẫn chạy bình thường. Giờ kernel thử lại trên chính sách mới như máy gốc (từ KernelSU). Có hiệu lực khi cài lại LKM
 - Tab Tệp: thư mục Download/SU Kernel báo "Không có quyền (đã cấp root chưa?)". Sao lưu APK bản cũ tạo thư mục này thẳng bằng root mà không cho bộ nhớ chung quyền đọc, nên không ai mở được, kể cả root. Sao lưu APK giờ ghi qua bộ nhớ chung như mọi tệp tải về và tự sửa thư mục cũ; tab Tệp có nút Sửa quyền cho mọi thư mục bị như vậy
 ### Lưu ý
-- Bản này có thay đổi nhỏ ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có phần sửa ẩn SELinux. Không cài lại thì mọi thứ vẫn chạy như 1.2.1
-- Máy đã cài LKM của 1.2.2-beta.3: kernel từ đó tới nay chỉ đổi phần cho máy x86_64, nên máy Y700 không cần cài lại dù thẻ trên trang chủ vẫn gợi ý. Bản beta.5 không đổi kernel
+- Bản này có thay đổi nhỏ ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có phần sửa ẩn SELinux, sửa lỗi giữ file thừa và bớt log. Không cài lại thì mọi thứ vẫn chạy như 1.2.1
+- Bản beta.7 có thay đổi kernel cho mọi máy, kể cả Y700: nên cài lại LKM một lần. Đã thử cài LKM của bản này trên Y700: root, module, ẩn root và Widevine vẫn bình thường
 
 ## 1.2.1 - 2026-10-25
 - Rule ẩn root v18 theo Duck Detector mới nhất; trang Kiểm tra ẩn root bắt thêm Gỡ lỗi không dây và module giấu ADB mà vẫn bị lộ

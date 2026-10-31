@@ -12,22 +12,24 @@ const val TAG = "CamIO"
 // fails when su compatibility is turned off.
 internal fun rootFile(path: String) = SuFile(path).apply { shell = getRootShell(true) }
 
-object CamIO {
-    private const val KSU_IO_VERSION = 1
-    private const val MAX_OPEN_STREAMS = 50
-
+/**
+ * `ksu.io()` of one module WebUI. One each, not one for the process (upstream's KsuIO): module
+ * WebUIs run side by side in this process (WebUIActivity is documentLaunchMode=intoExisting), and
+ * closing one must not close the streams another has open, nor count them against its limit.
+ */
+class CamIO {
     internal val openInputStreams = ConcurrentHashMap<String, ManagedInputStream>()
     internal val openOutputStreams = ConcurrentHashMap<String, OutputStream>()
 
-    private val fileOutputStream = FileOutputStreamInterface()
-    private val fileInputStream = FileInputStreamInterface()
+    private val fileOutputStream = FileOutputStreamInterface(this)
+    private val fileInputStream = FileInputStreamInterface(this)
     private val randomAccessFile = RandomAccessFileInterface()
 
     @JavascriptInterface
     fun version(): Int = KSU_IO_VERSION
 
     @JavascriptInterface
-    fun File(path: String): FileInterface = FileInterface(path)
+    fun File(path: String): FileInterface = FileInterface(path, this)
 
     @JavascriptInterface
     fun FileInputStream(): FileInputStreamInterface = fileInputStream
@@ -50,5 +52,10 @@ object CamIO {
         fileInputStream.closeAll()
         fileOutputStream.closeAll()
         randomAccessFile.closeAll()
+    }
+
+    companion object {
+        private const val KSU_IO_VERSION = 1
+        private const val MAX_OPEN_STREAMS = 50
     }
 }

@@ -52,6 +52,7 @@ import java.util.concurrent.CompletableFuture
 class WebViewInterface(private val state: WebUIState) {
     private val webView get() = state.webView
     private val modDir get() = state.modDir
+    private val io = CamIO()
 
     @JavascriptInterface
     fun exec(cmd: String): String {
@@ -285,19 +286,22 @@ class WebViewInterface(private val state: WebUIState) {
     }
 
     @JavascriptInterface
-    fun io() = CamIO
+    fun io() = io
 
     @JavascriptInterface
     fun pm() = CamPm
 
     fun destroy() {
-        CamIO.destroy()
+        io.destroy()
     }
 }
 
 class WebUIDownloadInterface(private val state: WebUIState) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val webView get() = state.webView
+
+    // this WebUI's own: closing it must not delete another module's download half way
+    private val blobs = BlobDownloadHandler()
 
     companion object {
         // Use a different notification ID range to avoid collision with DownloadService
@@ -414,7 +418,7 @@ class WebUIDownloadInterface(private val state: WebUIState) {
         val currentWebView = webView ?: return ""
         val sanitizedFileName = sanitizeWebUIDownloadFileName(fileName)
         return runCatching {
-            BlobDownloadHandler.registerBlobDownload(
+            blobs.registerBlobDownload(
                 sanitizedFileName,
                 mimeType,
                 currentWebView.context.cacheDir,
@@ -427,16 +431,16 @@ class WebUIDownloadInterface(private val state: WebUIState) {
 
     @JavascriptInterface
     fun writeDownloadChunk(downloadId: String, base64Chunk: String): Boolean {
-        return BlobDownloadHandler.writeChunk(downloadId, base64Chunk)
+        return blobs.writeChunk(downloadId, base64Chunk)
     }
 
     @JavascriptInterface
     fun completeChunkedDownload(downloadId: String): Boolean {
-        val blob = BlobDownloadHandler.completeDownload(downloadId) ?: return false
+        val blob = blobs.completeDownload(downloadId) ?: return false
         saveToDownloads(
             blob.fileName,
             resolveDownloadMimeType(blob.fileName, blob.mimeType),
-            onFinished = { BlobDownloadHandler.cancelDownload(downloadId) },
+            onFinished = { blobs.cancelDownload(downloadId) },
         ) {
             FileInputStream(blob.file) to blob.file.length()
         }
@@ -445,12 +449,12 @@ class WebUIDownloadInterface(private val state: WebUIState) {
 
     @JavascriptInterface
     fun cancelChunkedDownload(downloadId: String) {
-        BlobDownloadHandler.cancelDownload(downloadId)
+        blobs.cancelDownload(downloadId)
     }
 
     fun destroy() {
         scope.cancel()
-        BlobDownloadHandler.cleanup()
+        blobs.cleanup()
     }
 
     private fun postToast(message: String) {

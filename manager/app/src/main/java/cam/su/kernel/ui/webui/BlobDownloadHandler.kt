@@ -10,11 +10,10 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Handles big blob downloads by spooling base64 chunks to a temporary file, which
- * [WebUIDownloadInterface] then saves to Downloads.
+ * [WebUIDownloadInterface] then saves to Downloads. One per WebUI: closing one cleans up its own
+ * sessions only, while other module WebUIs in this process may be in the middle of theirs.
  */
-object BlobDownloadHandler {
-    private const val STALE_THRESHOLD_MS = 5 * 60 * 1000L
-
+class BlobDownloadHandler {
     private val pendingDownloads = ConcurrentHashMap<String, PendingDownload>()
     @Volatile
     private var lastCleanupTime = System.currentTimeMillis()
@@ -105,4 +104,8 @@ object BlobDownloadHandler {
     }
 
     fun cleanup() = pendingDownloads.keys.toList().forEach(::closeDownload)
+
+    private companion object {
+        const val STALE_THRESHOLD_MS = 5 * 60 * 1000L
+    }
 }

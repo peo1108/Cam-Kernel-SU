@@ -3,6 +3,7 @@ package cam.su.kernel.ui.screen.appprofile
 import cam.su.kernel.ui.bunker.BunkerSignals
 import cam.su.kernel.ui.component.CamToast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +13,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import cam.su.kernel.Cam
 import cam.su.kernel.CamNative
 import cam.su.kernel.R
@@ -54,14 +57,18 @@ fun rememberAppProfileEditor(appGroup: GroupedApps, onSaved: () -> Unit = {}): A
     val initialProfile = remember(uid, packageName, primaryAppInfo.special) {
         Cam.getAppProfile(packageName, uid).let {
             if (primaryAppInfo.special) it.copy(allowSu = false) else it
-        }.also {
-            if (it.allowSu && !primaryAppInfo.special) {
-                it.rules = getSepolicy(packageName)
-            }
         }
     }
     var profile by rememberSaveable(uid, packageName) {
         mutableStateOf(initialProfile)
+    }
+    // The custom SELinux rules are a camd run: off the main thread, which a tap on a row beside the
+    // Superuser list would otherwise hold while the pick animates. An edit that came first keeps
+    // its rules; one that left them empty saved nothing over the rules on disk (see below).
+    LaunchedEffect(uid, packageName) {
+        if (!profile.allowSu || primaryAppInfo.special || profile.rules.isNotEmpty()) return@LaunchedEffect
+        val rules = withContext(Dispatchers.IO) { getSepolicy(packageName) }
+        if (rules.isNotEmpty() && profile.rules.isEmpty()) profile = profile.copy(rules = rules)
     }
 
     val failToUpdateAppProfile = stringResource(R.string.failed_to_update_app_profile).format(primaryAppInfo.label)

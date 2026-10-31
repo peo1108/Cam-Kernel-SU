@@ -968,7 +968,7 @@
     <string name="files_preparing">Copying the file…</string>
     <string name="files_install_committing">Android is checking and optimizing the app; big apps can take a minute…</string>
     <string name="files_install_done">Installed</string>
-    <string name="files_install_done_obb">Installed, but %1$d OBB files failed to copy</string>
+    <string name="files_install_done_obb">Installed, but %1$d OBB files were not copied</string>
     <string name="files_trash">Trash</string>
     <string name="files_trash_summary">Deleted files are kept 7 days</string>
     <string name="files_trash_empty">The trash is empty</string>

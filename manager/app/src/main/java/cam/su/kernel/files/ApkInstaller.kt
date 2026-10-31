@@ -11,6 +11,7 @@ import java.io.OutputStream
 object ApkInstaller {
     private val SESSION = Regex("""\[(\d+)]""")
     private const val PROGRESS_INTERVAL_NANOS = 100_000_000L
+    private const val STORAGE = "/storage/emulated/0"
 
     /** The session id in `pm install-create` output ("Success: created install session [123]"). */
     fun parseSession(output: String): Int? = SESSION.find(output)?.groupValues?.get(1)?.toIntOrNull()
@@ -22,13 +23,25 @@ object ApkInstaller {
 
     /** OBB files an .xapk carries under Android/obb/<package>/. */
     fun bundleObbs(entries: List<ArchiveEntry>): List<ArchiveEntry> =
-        entries.filter { !it.isDir && it.name.startsWith("Android/obb/") }
+        entries.filter { !it.isDir && obbTarget(it.name) != null }
+
+    /**
+     * Where the bundle's [name] is copied, or null unless it is a file inside Android/obb/<package>/.
+     * The copy runs as root: a name that climbs out with ".." would write anywhere (/data/adb).
+     */
+    fun obbTarget(name: String): String? {
+        val parts = name.split('/')
+        if (parts.size < 4 || parts[0] != "Android" || parts[1] != "obb" || '\u0000' in name) return null
+        if (parts.any { it.isEmpty() || it == "." || it == ".." }) return null
+        return "$STORAGE/$name"
+    }
 
     /**
      * Installs [path]; pm's failure ("Failure [INSTALL_FAILED_...]") is thrown as [FsException]
      * carrying that text. [listener] gets the bytes handed to pm, then total 0 while it commits;
      * [cancelled] is checked while streaming (a commit cannot be stopped). The result's skipped
-     * count is the OBB files of an .xapk that failed to copy (the app is in all the same).
+     * count is the OBB files of an .xapk that were not copied, because one failed or because the
+     * copy was cancelled after the commit (the app is in all the same).
      */
     fun install(
         path: String,
@@ -51,14 +64,22 @@ object ApkInstaller {
             progress.total = apks.sumOf { it.size } + obbs.sumOf { it.size }
             session(apks.map { e -> Triple(e.name, e.size) { reader.open(e.name) } }, progress)
             // The app is in; OBB data failing to copy leaves it installed, so it is only reported.
-            val failed = obbs.count { obb ->
-                runCatching {
-                    val target = File("/storage/emulated/0/${obb.name}")
+            // A cancel now stops the copying but cannot take the app back: it is reported the
+            // same way, as the OBB files that are not there.
+            var skipped = 0
+            for ((i, obb) in obbs.withIndex()) {
+                val target = File(obbTarget(obb.name) ?: continue)
+                try {
                     target.parentFile?.mkdirs()
                     reader.open(obb.name).use { input -> target.outputStream().use { progress.copy(input, it, obb.name) } }
-                }.isFailure
+                } catch (e: Exception) {
+                    // a cut-off OBB is worse than none: the game would read it as its data
+                    target.delete()
+                    if (e is OpCancelledException) return OpResult(1, skipped + obbs.size - i)
+                    skipped++
+                }
             }
-            return OpResult(1, failed)
+            return OpResult(1, skipped)
         }
     }
 

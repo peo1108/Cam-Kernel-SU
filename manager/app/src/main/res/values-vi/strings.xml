@@ -953,7 +953,7 @@
     <string name="files_preparing">Đang chép tệp…</string>
     <string name="files_install_committing">Android đang kiểm tra và tối ưu ứng dụng, app lớn có thể mất cả phút…</string>
     <string name="files_install_done">Đã cài đặt</string>
-    <string name="files_install_done_obb">Đã cài đặt, nhưng %1$d tệp OBB chép lỗi</string>
+    <string name="files_install_done_obb">Đã cài đặt, nhưng %1$d tệp OBB chưa được chép</string>
     <string name="files_trash">Thùng rác</string>
     <string name="files_trash_summary">File đã xoá được giữ 7 ngày</string>
     <string name="files_trash_empty">Thùng rác trống</string>

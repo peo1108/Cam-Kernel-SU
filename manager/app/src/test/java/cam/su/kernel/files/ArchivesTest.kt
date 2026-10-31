@@ -148,5 +148,22 @@ class ArchivesTest {
         )
         assertEquals(listOf("base.apk", "config.arm64_v8a.apk"), ApkInstaller.bundleApks(entries).map { it.name })
         assertEquals(listOf("Android/obb/com.x/main.1.com.x.obb"), ApkInstaller.bundleObbs(entries).map { it.name })
+        assertEquals("/storage/emulated/0/Android/obb/com.x/main.1.com.x.obb", ApkInstaller.obbTarget("Android/obb/com.x/main.1.com.x.obb"))
+    }
+
+    @Test
+    fun obbNamesThatLeaveTheObbFolderAreNotCopied() {
+        // the OBB copy runs as root: "../" in a bundle's entry name must not reach /data/adb
+        val names = listOf(
+            "Android/obb/../../../../../data/adb/service.d/x.sh",
+            "Android/obb/com.x/../../../../../../data/adb/x",
+            "Android/obb/com.x/./main.obb",
+            "Android/obb/com.x//main.obb",
+            "Android/obb/main.obb",
+            "Android/data/com.x/main.obb",
+            "Android/obb/com.x/main\u0000.obb",
+        )
+        for (name in names) assertNull(name, ApkInstaller.obbTarget(name))
+        assertEquals(emptyList<String>(), ApkInstaller.bundleObbs(names.map { ArchiveEntry(it, false, 1, 0) }).map { it.name })
     }
 }

@@ -21,6 +21,7 @@ camsu-objs += hook/riscv64/patch_memory.o
 camsu-objs += hook/riscv64/syscall_hook.o
 endif
 
+camsu-objs += infra/btf_parser.o
 camsu-objs += infra/file_wrapper.o
 camsu-objs += infra/event_queue.o
 camsu-objs += infra/seccomp_cache.o
@@ -37,6 +38,7 @@ camsu-objs += policy/pkg_xml.o
 camsu-objs += runtime/boot_event.o
 camsu-objs += runtime/camd_integration.o
 
+camsu-objs += selinux/inode.o
 camsu-objs += selinux/selinux.o
 camsu-objs += selinux/rules.o
 camsu-objs += selinux/sepolicy.o

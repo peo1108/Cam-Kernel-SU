@@ -93,6 +93,11 @@ module_param_named(bundled, ksu_bundled, bool, 0);
 
 int __init kernelsu_init(void)
 {
+    // Cam dropped upstream's "welcome ... package name KSU_PACKAGE_NAME" log (6b5f55bd pins a
+    // manager package Cam has no concept of, section 1); only the ret ksu_selinux_inode_init
+    // needs is kept from upstream here.
+    int ret;
+
 #if defined(__x86_64__) && !defined(CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER)
     // If the kernel has the hardening patch, X86_FEATURE_INDIRECT_SAFE must be set
     if (!boot_cpu_has(X86_FEATURE_INDIRECT_SAFE)) {
@@ -134,7 +139,16 @@ int __init kernelsu_init(void)
         return -ENOSYS;
     }
 
+    pr_info("initializing symbol resolver\n");
     ksu_init_symbol_resolver();
+
+    ret = ksu_selinux_inode_init();
+    if (ret) {
+        put_cred(ksu_cred);
+        ksu_cred = NULL;
+        return ret;
+    }
+
     ksu_syscall_hook_init();
 
     // Block modules early, before vendor modules are loaded in second stage.

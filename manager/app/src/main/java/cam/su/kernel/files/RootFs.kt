@@ -74,16 +74,26 @@ class RootFs(private val fs: FsBackend) {
      * bits. A folder root made there directly (umask 077, then chowned) has none, so nobody can
      * open it through /storage, root included. Gives the disk copy of [path] and everything under
      * it the owner, group, mode and SELinux label of the folder it sits in; files get only that
-     * mode's read and write bits. Symlinks are left alone.
+     * mode's read and write bits. Symlinks are left alone. When the folders above [path] are
+     * locked too (an old Manager made both Download/SU Kernel and its APK folder that way), the
+     * repair starts from the topmost of them, under a folder that works.
      */
     fun repairShared(path: String) {
         val lower = SharedStorage.lower(path) ?: throw FsException(Errno.EINVAL, path, "not in shared storage: $path")
-        val parent = FsPath.parent(lower)
+        // the user's root (/data/media/0) is never repaired, only taken as the reference
+        val userRoot = lower.split('/').take(4).joinToString("/")
+        var top = lower
+        while (true) {
+            val up = FsPath.parent(top)
+            if (up == userRoot || fs.lstat(up).mode and GROUP_BITS != 0) break
+            top = up
+        }
+        val parent = FsPath.parent(top)
         val ref = fs.lstat(parent)
         val context = fs.getContext(parent)
         val dirMode = ref.mode and FileMode.PERM_MASK
         val fileMode = dirMode and 0x1B6 // rw-rw-rw- at most
-        walk(lower, recursive = true) { p, st ->
+        walk(top, recursive = true) { p, st ->
             if (FileMode.isLink(st.mode)) return@walk
             if (st.uid != ref.uid || st.gid != ref.gid) fs.lchown(p, ref.uid, ref.gid)
             val mode = if (FileMode.isDir(st.mode)) dirMode else fileMode
@@ -362,6 +372,9 @@ class RootFs(private val fs: FsBackend) {
     companion object {
         const val TMP_SUFFIX = ".camtmp"
         private const val DEFAULT_FILE_MODE = 0x1A4 // 0644
+
+        // rwx for the group: what the media provider opens shared storage through
+        private const val GROUP_BITS = 0x38 // 0070
 
         /** Kernel views, not disk: walks below another folder do not go in. */
         private val PSEUDO = setOf("/proc", "/sys", "/dev")

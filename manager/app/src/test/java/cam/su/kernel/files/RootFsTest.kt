@@ -294,6 +294,56 @@ class RootFsTest {
     }
 
     @Test
+    fun repairSharedBelowALockedFolderStartsFromTheTopmostLockedOne() {
+        fake.dir("/data/media")
+        fake.dir("/data/media/0")
+        fake.dir("/data/media/0/Download").apply {
+            perm = 0x5F8 // 02770
+            uid = 10150
+            gid = 1023
+            context = "u:object_r:media_rw_data_file:s0"
+        }
+        fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
+        fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
+        fake.mkdir("/data/media/0/Download/SU Kernel/Logs", 0x1C0)
+        fake.createFile("/data/media/0/Download/SU Kernel/APK/a.apk", 0x180) // 0600
+        for (p in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK", "/data/media/0/Download/SU Kernel/Logs")) {
+            fake.lchown(p, 1023, 1023)
+        }
+
+        // opened straight at APK (a bookmark): its own parent is locked as well, so it is no reference
+        fs.repairShared("/storage/emulated/0/Download/SU Kernel/APK")
+
+        for (dir in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK", "/data/media/0/Download/SU Kernel/Logs")) {
+            val node = fake.node(dir)
+            assertEquals(dir, 0x5F8, node.perm)
+            assertEquals(dir, 10150, node.uid)
+            assertEquals(dir, "u:object_r:media_rw_data_file:s0", node.context)
+        }
+        assertEquals(0x1B0, fake.node("/data/media/0/Download/SU Kernel/APK/a.apk").perm)
+        // the reference itself is left as it was
+        assertEquals(0x5F8, fake.node("/data/media/0/Download").perm)
+    }
+
+    @Test
+    fun repairSharedNeverClimbsToTheUsersRoot() {
+        fake.dir("/data/media")
+        fake.dir("/data/media/0").apply {
+            perm = 0x5F8
+            uid = 1023
+            gid = 1023
+        }
+        fake.mkdir("/data/media/0/Locked", 0x1C0)
+        fake.mkdir("/data/media/0/Locked/inner", 0x1C0)
+
+        fs.repairShared("/storage/emulated/0/Locked/inner")
+
+        assertEquals(0x5F8, fake.node("/data/media/0/Locked").perm)
+        assertEquals(0x5F8, fake.node("/data/media/0/Locked/inner").perm)
+        assertEquals(0x5F8, fake.node("/data/media/0").perm)
+    }
+
+    @Test
     fun repairSharedRefusesOtherPlaces() {
         assertErrno(Errno.EINVAL) { fs.repairShared("/data/adb") }
         assertErrno(Errno.EINVAL) { fs.repairShared("/storage/emulated/0/Android/data/com.example") }

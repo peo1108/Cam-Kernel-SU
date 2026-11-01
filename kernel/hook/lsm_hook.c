@@ -254,6 +254,12 @@ int ksu_lsm_hook(struct ksu_lsm_hook *hook)
         goto out_unlock;
     }
 
+    // Cam: the replacement calls hook->original, and callers reach it as soon as the slot is
+    // patched: publish it first. Upstream sets it after the patch; a setprocattr in between
+    // called NULL (panic while camd turned selinux_hide on at boot, emulator 2026-11-01).
+    WRITE_ONCE(hook->original, selected_origin);
+    smp_wmb();
+
     if (ksu_lsm_hook_patch_slot(selected_slot, hook->replacement)) {
         pr_err("lsm_hook: failed to patch %s\n", hook->head_name ?: "unknown");
         ret = -EFAULT;
@@ -273,7 +279,6 @@ int ksu_lsm_hook(struct ksu_lsm_hook *hook)
 
     hook->entry = selected_entry;
     hook->scall = selected_scall;
-    hook->original = selected_origin;
     pr_info("lsm_hook: patched %s hook slot %px from %px to %px\n", hook->head_name ?: "unknown", selected_slot,
             selected_origin, hook->replacement);
 #else
@@ -365,6 +370,10 @@ int ksu_lsm_hook(struct ksu_lsm_hook *hook)
         goto out_unlock;
     }
 
+    // Cam: published before the patch, as above
+    WRITE_ONCE(hook->original, selected_origin);
+    smp_wmb();
+
     if (selected_origin) {
         pr_info("patch func addr\n");
         ret = ksu_lsm_hook_patch_slot(selected_slot, hook->replacement);
@@ -380,7 +389,6 @@ int ksu_lsm_hook(struct ksu_lsm_hook *hook)
     }
 
     hook->entry = selected_entry;
-    hook->original = selected_origin;
     pr_info("lsm_hook: patched %s hook slot %px from %px to %px\n", hook->head_name ?: "unknown", selected_slot,
             selected_origin, hook->replacement);
 #endif

@@ -38,6 +38,9 @@ class FakeFs : FsBackend {
     /** Reading these fails halfway through. */
     var failRead = setOf<String>()
 
+    /** Bytes [statFs] says are free. */
+    var free = 400L
+
     private fun mountOf(path: String) = mounts.filter { FsPath.isSameOrInside(path, it) }.maxByOrNull { it.length } ?: "/"
 
     // --- test setup helpers ---
@@ -158,7 +161,7 @@ class FakeFs : FsBackend {
 
     override fun statFs(path: String): LongArray {
         resolve(path, follow = true)
-        return longArrayOf(1000, 400)
+        return longArrayOf(1000, free)
     }
 
     // --- internals ---

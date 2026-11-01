@@ -1,6 +1,8 @@
 package cam.su.kernel.files
 
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 
 /**
  * Debug builds only: runs the Files tab's root code on a real device, outside the app, so
@@ -221,6 +223,49 @@ object DeviceCheck {
                 java.text.Normalizer.normalize(TextDoc.decode(saved, "windows-1258").text, java.text.Normalizer.Form.NFC) == vi &&
                 TextDoc.decode(han.toByteArray(charset("GBK")), "GBK").text == han
         }
+
+        // An .xapk's OBB, through the FUSE view of Android/obb as an install writes it: the folder
+        // is made, and a file already there is only replaced by a whole new one.
+        val obbRoot = "/sdcard/Android/obb/cam.su.kernel"
+        val hadObbRoot = File(obbRoot).exists()
+        check("OBB copy makes its folder on FUSE and replaces only with a whole file") {
+            val name = "Android/obb/cam.su.kernel/camfm_check/main.1.cam.su.kernel.obb"
+            val obb = "$obbRoot/camfm_check/main.1.cam.su.kernel.obb"
+            var data = "old data"
+            val reader = object : ArchiveReader {
+                override val entries = listOf(ArchiveEntry(name, false, 8, 0))
+                override fun open(name: String): InputStream = data.byteInputStream()
+                override fun close() = Unit
+            }
+            val obbs = listOf(reader.entries.single() to obb)
+            val plain: (InputStream, OutputStream, String) -> Unit = { input, out, _ -> input.copyTo(out) }
+            val made = ApkInstaller.copyObbs(reader, obbs, OsBackend, plain) == 0 && File(obb).readText() == "old data"
+            data = "new data"
+            val cancelled = ApkInstaller.copyObbs(reader, obbs, OsBackend) { input, out, _ ->
+                out.write(input.read())
+                throw OpCancelledException()
+            } == 1
+            val kept = File(obb).readText() == "old data"
+            val replaced = ApkInstaller.copyObbs(reader, obbs, OsBackend, plain) == 0 && File(obb).readText() == "new data"
+            println("     " + sh("ls -lnZ $obbRoot/camfm_check").trim().replace("\n", " | "))
+            made && cancelled && kept && replaced && File(obb).parentFile!!.list()!!.toList() == listOf(File(obb).name)
+        }
+        sh(if (hadObbRoot) "rm -rf $obbRoot/camfm_check" else "rm -rf $obbRoot")
+
+        // What an old Manager left in Download: folders root made (umask 077) and gave to media_rw,
+        // which nobody can open through /storage. The repair starts from the topmost of them.
+        val locked = "/data/media/0/Download/camfm_lock"
+        check("repairShared opens folders root locked in shared storage") {
+            sh("rm -rf $locked; (umask 077; mkdir -p $locked/APK/inner); echo x > $locked/APK/inner/f; chown -R 1023:1023 $locked")
+            val download = sh("stat -c '%u %g %a %C' /data/media/0/Download")
+            val before = sh("ls /storage/emulated/0/Download/camfm_lock/APK/inner 2>&1").trim()
+            fs.repairShared("/storage/emulated/0/Download/camfm_lock/APK/inner")
+            val after = sh("ls /storage/emulated/0/Download/camfm_lock/APK/inner 2>&1").trim()
+            println("     before: $before; after: $after")
+            println("     " + sh("ls -ldnZ /data/media/0/Download $locked $locked/APK $locked/APK/inner").trim().replace("\n", " | "))
+            after == "f" && sh("stat -c '%u %g %a %C' /data/media/0/Download") == download
+        }
+        sh("rm -rf $locked")
 
         sh("rm -rf $base $outside $fuse")
         println(if (failures == 0) "ALL PASS" else "$failures FAILED")

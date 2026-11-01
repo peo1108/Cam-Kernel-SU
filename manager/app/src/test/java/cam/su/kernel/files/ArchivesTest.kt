@@ -7,7 +7,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -147,8 +150,12 @@ class ArchivesTest {
             ArchiveEntry("nested/other.apk", false, 1, 0),
         )
         assertEquals(listOf("base.apk", "config.arm64_v8a.apk"), ApkInstaller.bundleApks(entries).map { it.name })
-        assertEquals(listOf("Android/obb/com.x/main.1.com.x.obb"), ApkInstaller.bundleObbs(entries).map { it.name })
-        assertEquals("/storage/emulated/0/Android/obb/com.x/main.1.com.x.obb", ApkInstaller.obbTarget("Android/obb/com.x/main.1.com.x.obb"))
+        val obbs = ApkInstaller.bundleObbs(entries, "com.x")
+        assertEquals(
+            listOf("Android/obb/com.x/main.1.com.x.obb" to "/storage/emulated/0/Android/obb/com.x/main.1.com.x.obb"),
+            obbs.copies.map { (e, target) -> e.name to target },
+        )
+        assertEquals(0, obbs.refused)
     }
 
     @Test
@@ -163,7 +170,116 @@ class ArchivesTest {
             "Android/data/com.x/main.obb",
             "Android/obb/com.x/main\u0000.obb",
         )
-        for (name in names) assertNull(name, ApkInstaller.obbTarget(name))
-        assertEquals(emptyList<String>(), ApkInstaller.bundleObbs(names.map { ArchiveEntry(it, false, 1, 0) }).map { it.name })
+        for (name in names) assertNull(name, ApkInstaller.obbTarget(name, "com.x"))
+        val obbs = ApkInstaller.bundleObbs(names.map { ArchiveEntry(it, false, 1, 0) }, "com.x")
+        assertEquals(emptyList<Pair<ArchiveEntry, String>>(), obbs.copies)
+        // reported as not copied, all but the one outside Android/obb
+        assertEquals(6, obbs.refused)
+    }
+
+    @Test
+    fun obbsGoOnlyToTheFolderOfTheAppBeingInstalled() {
+        val entries = listOf(
+            ArchiveEntry("base.apk", false, 1, 0),
+            ArchiveEntry("Android/obb/com.game/", true, 0, 0),
+            ArchiveEntry("Android/obb/com.game/main.5.com.game.obb", false, 1, 0),
+            // root would overwrite another game's data
+            ArchiveEntry("Android/obb/com.victim/main.5.com.victim.obb", false, 1, 0),
+        )
+        val own = ApkInstaller.bundleObbs(entries, "com.game")
+        assertEquals(listOf("Android/obb/com.game/main.5.com.game.obb"), own.copies.map { it.first.name })
+        assertEquals(1, own.refused)
+        // the bundle's manifest did not read: nothing is copied, everything is reported
+        val unknown = ApkInstaller.bundleObbs(entries, null)
+        assertEquals(emptyList<Pair<ArchiveEntry, String>>(), unknown.copies)
+        assertEquals(2, unknown.refused)
+    }
+
+    private class MapReader(private val files: Map<String, String>, private val broken: Set<String> = emptySet()) : ArchiveReader {
+        override val entries = files.map { (name, text) -> ArchiveEntry(name, false, text.length.toLong(), 0) }
+
+        override fun open(name: String): InputStream {
+            if (name in broken) throw FsException(Errno.EIO, name)
+            return ByteArrayInputStream(files.getValue(name).toByteArray())
+        }
+
+        override fun close() = Unit
+    }
+
+    private val plainCopy: (InputStream, OutputStream, String) -> Unit = { input, out, _ -> input.copyTo(out) }
+
+    private fun storage(vararg dirs: String) {
+        var p = ""
+        for (part in "/storage/emulated/0/Android".split('/').drop(1)) {
+            p += "/$part"
+            fake.dir(p)
+        }
+        dirs.forEach { fake.dir(it) }
+    }
+
+    @Test
+    fun obbCopyReplacesTheOldOneOnlyWithAWholeNewOne() {
+        // an update of a game whose OBB has the same name as the one it runs on now
+        val dir = "/storage/emulated/0/Android/obb/com.game"
+        storage("/storage/emulated/0/Android/obb", dir)
+        fake.file("$dir/main.5.com.game.obb", "old data")
+        val name = "Android/obb/com.game/main.5.com.game.obb"
+        val obbs = listOf(ArchiveEntry(name, false, 8, 0) to "$dir/main.5.com.game.obb")
+
+        // the entry does not open
+        assertEquals(1, ApkInstaller.copyObbs(MapReader(mapOf(name to "new data"), broken = setOf(name)), obbs, fake, plainCopy))
+        assertEquals("old data", fake.text("$dir/main.5.com.game.obb"))
+        // cancelled after the first bytes
+        val cancelled: (InputStream, OutputStream, String) -> Unit = { input, out, _ ->
+            out.write(input.read())
+            throw OpCancelledException()
+        }
+        assertEquals(1, ApkInstaller.copyObbs(MapReader(mapOf(name to "new data")), obbs, fake, cancelled))
+        assertEquals("old data", fake.text("$dir/main.5.com.game.obb"))
+        assertEquals(listOf("main.5.com.game.obb"), fake.names(dir))
+
+        assertEquals(0, ApkInstaller.copyObbs(MapReader(mapOf(name to "new data")), obbs, fake, plainCopy))
+        assertEquals("new data", fake.text("$dir/main.5.com.game.obb"))
+        assertEquals(listOf("main.5.com.game.obb"), fake.names(dir))
+    }
+
+    @Test
+    fun obbCopyOnAFullDiskReplacesInPlaceOrLeavesTheOldOne() {
+        val dir = "/storage/emulated/0/Android/obb/com.game"
+        storage("/storage/emulated/0/Android/obb", dir)
+        val name = "Android/obb/com.game/main.5.com.game.obb"
+        val obbs = listOf(ArchiveEntry(name, false, 300, 0) to "$dir/main.5.com.game.obb")
+        val reader = MapReader(mapOf(name to "n".repeat(300)))
+
+        // no room for a copy beside the old one, enough once it is gone: written over it
+        fake.file("$dir/main.5.com.game.obb", "o".repeat(300))
+        fake.free = 100
+        assertEquals(0, ApkInstaller.copyObbs(reader, obbs, fake, plainCopy))
+        assertEquals("n".repeat(300), fake.text("$dir/main.5.com.game.obb"))
+        assertEquals(listOf("main.5.com.game.obb"), fake.names(dir))
+
+        // not even that: the old one stays as it was
+        fake.file("$dir/main.5.com.game.obb", "o".repeat(100))
+        fake.free = 50
+        assertEquals(1, ApkInstaller.copyObbs(reader, obbs, fake, plainCopy))
+        assertEquals("o".repeat(100), fake.text("$dir/main.5.com.game.obb"))
+    }
+
+    @Test
+    fun obbCopyMakesTheFolderAndCountsWhatACancelLeft() {
+        storage()
+        val dir = "/storage/emulated/0/Android/obb/com.game"
+        val names = listOf("main.5.com.game.obb", "patch.5.com.game.obb", "extra.obb")
+        val reader = MapReader(names.associate { "Android/obb/com.game/$it" to it })
+        val obbs = names.map { ArchiveEntry("Android/obb/com.game/$it", false, 1, 0) to "$dir/$it" }
+        var copies = 0
+        val cancelOnTheSecond: (InputStream, OutputStream, String) -> Unit = { input, out, _ ->
+            if (++copies == 2) throw OpCancelledException()
+            input.copyTo(out)
+        }
+
+        assertEquals(2, ApkInstaller.copyObbs(reader, obbs, fake, cancelOnTheSecond))
+        assertEquals(listOf("main.5.com.game.obb"), fake.names(dir))
+        assertEquals("main.5.com.game.obb", fake.text("$dir/main.5.com.game.obb"))
     }
 }

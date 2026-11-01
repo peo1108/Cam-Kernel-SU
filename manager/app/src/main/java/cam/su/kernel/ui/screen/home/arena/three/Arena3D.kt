@@ -45,6 +45,7 @@ import cam.su.kernel.ui.screen.home.arena.SLIME_COUNT
 import cam.su.kernel.ui.screen.home.arena.SlimePose
 import cam.su.kernel.ui.screen.home.arena.Stage
 import cam.su.kernel.ui.screen.home.arena.WallSplit
+import cam.su.kernel.ui.util.EngineCarry
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
@@ -192,7 +193,8 @@ internal class Arena3D private constructor() {
     }
 
     /** Set by [destroy]; afterwards every call does nothing (a frame loop may still run once). */
-    private var destroyed = false
+    var destroyed = false
+        private set
 
     fun attach(textureView: TextureView) {
         if (destroyed) return
@@ -581,6 +583,9 @@ internal class Arena3D private constructor() {
         private const val WARM_FRAMES = 3
         /** The soft panorama moves slowly; repainting it at 30 Hz is indistinguishable. */
         private const val PAINT_INTERVAL = 1f / 30f
+
+        /** Keeps the engine for the next activity when this one is recreated. */
+        val carry = EngineCarry<Arena3D>({ !it.destroyed }, Arena3D::destroy)
 
         /** Creates the renderer, or null when Filament cannot run on this device (no native libs). */
         fun createOrNull(): Arena3D? = try {

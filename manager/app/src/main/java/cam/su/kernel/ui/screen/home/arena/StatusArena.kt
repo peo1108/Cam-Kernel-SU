@@ -3,6 +3,7 @@ package cam.su.kernel.ui.screen.home.arena
 import android.os.Build
 import android.provider.Settings
 import android.view.TextureView
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -123,12 +124,14 @@ fun StatusArena(
     var clock by remember { mutableFloatStateOf(0f) }
     val latestOnClick by rememberUpdatedState(onClick)
     val grain = remember { filmGrain() }
-    // let go of the engine while the app sits in the background, made again on return
+    // let go of the engine while the app sits in the background, made again on return; an
+    // activity being recreated hands it to the next one instead (EngineCarry)
+    val activity = LocalActivity.current
     val arena3dNow = remember { arrayOfNulls<Arena3D>(1) }
     val generation = rememberBackgroundRelease { arena3dNow[0]?.destroy() }
-    val arena3d = remember(generation) { Arena3D.createOrNull().also { arena3dNow[0] = it } }
+    val arena3d = remember(generation) { (Arena3D.carry.take() ?: Arena3D.createOrNull()).also { arena3dNow[0] = it } }
     DisposableEffect(arena3d) {
-        onDispose { arena3d?.destroy() }
+        onDispose { arena3d?.let { Arena3D.carry.letGo(it, activity) } }
     }
     // The flat fallback has nothing to load: the start intro need not wait for it.
     LaunchedEffect(arena3d) { if (arena3d == null) IntroGate.warm() }

@@ -48,11 +48,15 @@
              Filament 1.77's entity reclamation (EBR); one Engine shared by both still crashes the
              same way (tried 2026-10-31), see row 73 of docs/CAM_CHANGES.md. The same goes for
              what the system changes under a running app: dark mode (the very first switch
-             crashed on the emulator), display size, font size, language, a keyboard plugged in.
-             Compose follows all of these through LocalConfiguration. -->
+             crashed on the emulator), display size, font size, bold text, language, a SIM, a
+             keyboard plugged in. Compose follows all of these through LocalConfiguration (bold
+             text through its font resolver); the window background follows the app's own light
+             or dark mode. What cannot be declared and still recreates the activity (a wallpaper
+             colour or overlay change, recreate()) passes both engines on to the new activity
+             (ui/util/EngineCarry.kt) instead of making new ones. -->
         <activity
             android:name=".ui.CamActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection|keyboard|keyboardHidden|navigation"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|fontWeightAdjustment|locale|layoutDirection|keyboard|keyboardHidden|navigation|mcc|mnc"
             android:exported="true"
             android:theme="@style/Theme.Cam.Starting"
             android:windowSoftInputMode="adjustResize">

@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.view.TextureView
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -102,7 +103,9 @@ fun SlimeLayer(
     val world = remember { RoamWorld() }
     // The very same 3D slimes as in the status card, in a see-through layer over the whole
     // window that never takes a touch; without Filament they are drawn flat instead. Engine and
-    // view are let go while the app sits in the background and made again on return.
+    // view are let go while the app sits in the background and made again on return; an activity
+    // being recreated hands the engine to the next one instead (EngineCarry).
+    val activity = LocalActivity.current
     val roam3dNow = remember { arrayOfNulls<Roam3D>(1) }
     val surface = remember { arrayOfNulls<TextureView>(1) }
     val generation = rememberBackgroundRelease {
@@ -110,7 +113,7 @@ fun SlimeLayer(
         // the full-window view holds buffers of its own; a new one comes with the new engine
         surface[0]?.let { (it.parent as? ViewGroup)?.removeView(it) }
     }
-    val roam3d = remember(generation) { Roam3D.createOrNull(context).also { roam3dNow[0] = it } }
+    val roam3d = remember(generation) { (Roam3D.carry.take() ?: Roam3D.createOrNull(context)).also { roam3dNow[0] = it } }
     val hostView = LocalView.current
     DisposableEffect(roam3d) {
         val root = hostView.rootView.findViewById<ViewGroup>(android.R.id.content)
@@ -128,7 +131,7 @@ fun SlimeLayer(
         onDispose {
             surface[0] = null
             tv?.let { root?.removeView(it) }
-            roam3d?.destroy()
+            roam3d?.let { Roam3D.carry.letGo(it, activity) }
         }
     }
     val yaw = remember { FloatArray(SLIME_COUNT) }

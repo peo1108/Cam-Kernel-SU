@@ -31,6 +31,7 @@ import com.google.android.filament.utils.IBLPrefilterContext
 import com.google.android.filament.utils.Utils
 import cam.su.kernel.ui.screen.home.arena.SLIME_COUNT
 import cam.su.kernel.ui.screen.home.arena.SlimePose
+import cam.su.kernel.ui.util.EngineCarry
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
@@ -173,7 +174,8 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
     }
 
     /** Set by [destroy]; afterwards every call does nothing (a frame loop may still run once). */
-    private var destroyed = false
+    var destroyed = false
+        private set
 
     fun attach(textureView: TextureView) {
         if (destroyed) return
@@ -287,6 +289,9 @@ internal class Roam3D private constructor(jellyPayload: ByteBuffer?) {
 
     companion object {
         private const val MIN_FRAME_NANOS = 15_500_000L
+
+        /** Keeps the engine for the next activity when this one is recreated. */
+        val carry = EngineCarry<Roam3D>({ !it.destroyed }, Roam3D::destroy)
 
         /** Creates the renderer, or null when Filament cannot run here. */
         fun createOrNull(context: Context): Roam3D? = try {

@@ -34,6 +34,7 @@ import cam.su.kernel.ui.component.expand.LocalExpand
 import cam.su.kernel.ui.component.expand.rememberExpandState
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.SystemClock
 import android.provider.Settings
@@ -99,6 +100,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import cam.su.kernel.Cam
 import cam.su.kernel.CamRootClient
+import cam.su.kernel.R
 import cam.su.kernel.ui.component.bottombar.BottomBar
 import cam.su.kernel.ui.component.search.LocalMainSearch
 import cam.su.kernel.ui.component.search.MainSearchState
@@ -287,6 +289,10 @@ class CamActivity : ComponentActivity() {
                 window.isNavigationBarContrastEnforced = false
                 onDispose { }
             }
+            DisposableEffect(darkMode) {
+                applyWindowBackground(darkMode)
+                onDispose { }
+            }
 
             val navigator = rememberNavigator(Route.Main)
             val systemDensity = LocalDensity.current
@@ -456,6 +462,25 @@ class CamActivity : ComponentActivity() {
                 addContentView(it.view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             }
         }
+    }
+
+    /**
+     * The window background that shows under the content when the keyboard pushes it or a page
+     * transition opens a gap, as Theme.Cam has it in light or [dark] mode. The theme the activity
+     * started with follows the system, and the manifest keeps the activity through a dark mode
+     * switch, while the app can also be set light or dark on its own: Compose sets this from the
+     * mode it draws in. While the start intro runs, it is kept for when the intro hands back.
+     */
+    private fun applyWindowBackground(dark: Boolean) {
+        val config = Configuration(resources.configuration).apply {
+            uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+        }
+        val background = createConfigurationContext(config).resources.newTheme()
+            .apply { applyStyle(R.style.Theme_Cam, true) }
+            .obtainStyledAttributes(intArrayOf(android.R.attr.windowBackground))
+            .let { attrs -> attrs.getDrawable(0).also { attrs.recycle() } } ?: return
+        if (intro != null) windowBackground = background else window.setBackgroundDrawable(background)
     }
 
     private fun endIntro() {

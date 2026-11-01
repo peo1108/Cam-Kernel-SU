@@ -2,6 +2,24 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.2.3 - 2026-11-01
+- Sửa một lỗi hiếm có thể làm máy khởi động lại lúc bật ẩn SELinux; cài .xapk không còn làm mất OBB đang dùng hay ghi vào thư mục của app khác; sửa hồ sơ app không còn khựng và không còn ghi đè rule SELinux cũ
+### Thay đổi
+- Bật hoặc tắt chữ đậm của hệ thống, đổi SIM: Manager đổi theo tại chỗ, không dựng lại trang
+- Hồ sơ app: thay đổi hiện ngay và được ghi ở nền, nên không còn khựng. Ghi lỗi thì hiện lại đúng giá trị máy đang dùng
+### Sửa lỗi
+- Máy có thể khởi động lại đúng lúc kernel bật ẩn SELinux, nếu có tiến trình đổi context SELinux cùng lúc (lỗi từ KernelSU). Rất hiếm: mới thấy một lần trên máy ảo, chưa thấy trên Y700. Có hiệu lực khi cài lại LKM
+- Kernel không đọc được thông tin BTF: trước đây LKM không nạp được và máy mất root. Giờ LKM vẫn nạp, chỉ su trong terminal chạy không có lớp bọc. Y700 không dính lỗi này. Có hiệu lực khi cài lại LKM
+- Khi bật slime đi dạo: đổi màu hình nền hay giao diện hệ thống, hoặc bật tắt cử chỉ quay lại, không còn làm Manager văng
+- Tab Tệp, cài gói .xapk: cập nhật game có OBB cùng tên mà bấm Huỷ hoặc gói bị lỗi lúc chép thì OBB đang dùng vẫn còn nguyên, trước đây bị xoá. Riêng khi máy gần đầy, không đủ chỗ cho cả hai bản, OBB mới vẫn ghi đè lên bản cũ
+- Tab Tệp, cài gói .xapk: OBB chỉ được chép vào thư mục của đúng app đang cài. Tệp OBB của app khác hoặc nằm sai chỗ không được chép và được báo trong số tệp chưa chép
+- Hồ sơ app: mở ô rule SELinux khi rule chưa đọc xong, hoặc vừa bật root cho app từng có rule, không còn hiện ô trống rồi ghi đè rule cũ
+- Hồ sơ app: rule hoặc bản mẫu có dấu nháy đơn không còn có thể chạy thành lệnh bằng root. Rule bắt đầu bằng dấu gạch ngang không còn được báo hợp lệ rồi không lưu gì
+- Tab Tệp, nút Sửa quyền: không còn lấy thư mục cha bị sai nhóm hay sai nhãn làm mẫu. Nếu chính Download hay DCIM bị khoá thì chỉ sửa riêng thư mục đó, không đi qua mọi tệp bên trong
+- Khi Manager đặt sáng hoặc tối khác hệ thống: nền cửa sổ theo đúng chế độ của Manager, không còn loé màu ngược lúc bàn phím đẩy nội dung hay chuyển trang
+### Lưu ý
+- Bản này có thay đổi ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có hai phần sửa kernel ở trên. Không cài lại thì mọi thứ vẫn chạy như 1.2.2
+
 ## 1.2.2 - 2026-11-01
 - Rule ẩn root v23 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau; tablet xoay ngang cài được module ngay cạnh danh sách; bấm tab có hiệu ứng thẻ bay lên; kernel không còn giữ file thừa và bớt hẳn log khi cấp root
 ### Thay đổi

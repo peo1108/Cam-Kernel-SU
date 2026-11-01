@@ -75,30 +75,54 @@ class RootFs(private val fs: FsBackend) {
      * open it through /storage, root included. Gives the disk copy of [path] and everything under
      * it the owner, group, mode and SELinux label of the folder it sits in; files get only that
      * mode's read and write bits. Symlinks are left alone. When the folders above [path] are
-     * locked too (an old Manager made both Download/SU Kernel and its APK folder that way), the
-     * repair starts from the topmost of them, under a folder that works.
+     * wrong too (an old Manager made both Download/SU Kernel and its APK folder that way), the
+     * repair starts from the topmost of them, under a folder that works: group rwx, the group of
+     * the user's root, and the label the media provider gives what it makes, MLS categories and
+     * all. Whose folder it is does not matter (a restore can leave Download root's, and it works).
+     * A top folder (Download, DCIM) that is wrong itself is fixed alone, not walked: that would go
+     * through everything the user keeps there.
      */
     fun repairShared(path: String) {
         val lower = SharedStorage.lower(path) ?: throw FsException(Errno.EINVAL, path, "not in shared storage: $path")
-        // the user's root (/data/media/0) is never repaired, only taken as the reference
-        val userRoot = lower.split('/').take(4).joinToString("/")
+        // /data/media/<user>/<top>/...; the user's root is never repaired
+        val parts = lower.split('/')
+        val userRoot = parts.take(4).joinToString("/")
+        val topLevel = parts.take(5).joinToString("/")
+        val rootGid = fs.lstat(userRoot).gid
+        fun open(st: StatInfo) = st.mode and GROUP_BITS == GROUP_BITS && st.gid == rootGid
+        // The label of the user's top folders that are open, the one most of them share: what the
+        // media provider gives the folders it makes. Android/ belongs to the apps and is left out.
+        val tops = fs.list(userRoot).filter { it != "Android" }.map { FsPath.child(userRoot, it) }.filter { p ->
+            lstatOrNull(p)?.let { FileMode.isDir(it.mode) && open(it) } == true
+        }
+        val label = tops.mapNotNull { fs.getContext(it) }.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+        fun works(dir: String) = open(fs.lstat(dir)) && (label == null || fs.getContext(dir) == label)
         var top = lower
         while (true) {
             val up = FsPath.parent(top)
-            if (up == userRoot || fs.lstat(up).mode and GROUP_BITS != 0) break
+            if (up == userRoot || works(up)) break
             top = up
         }
+        // the model: the folder above that works, or else a top folder that does, or the root
         val parent = FsPath.parent(top)
-        val ref = fs.lstat(parent)
-        val context = fs.getContext(parent)
+        val model = if (parent != userRoot) parent else tops.firstOrNull { works(it) } ?: userRoot
+        val ref = fs.lstat(model)
+        val context = fs.getContext(model)
         val dirMode = ref.mode and FileMode.PERM_MASK
         val fileMode = dirMode and 0x1B6 // rw-rw-rw- at most
-        walk(top, recursive = true) { p, st ->
-            if (FileMode.isLink(st.mode)) return@walk
-            if (st.uid != ref.uid || st.gid != ref.gid) fs.lchown(p, ref.uid, ref.gid)
-            val mode = if (FileMode.isDir(st.mode)) dirMode else fileMode
-            if (st.mode and FileMode.PERM_MASK != mode) fs.chmod(p, mode)
-            if (context != null && context != fs.getContext(p)) fs.setContext(p, context)
+        val fix = { p: String, st: StatInfo ->
+            if (!FileMode.isLink(st.mode)) {
+                if (st.uid != ref.uid || st.gid != ref.gid) fs.lchown(p, ref.uid, ref.gid)
+                val mode = if (FileMode.isDir(st.mode)) dirMode else fileMode
+                if (st.mode and FileMode.PERM_MASK != mode) fs.chmod(p, mode)
+                if (context != null && context != fs.getContext(p)) fs.setContext(p, context)
+            }
+        }
+        if (top == topLevel && lower != topLevel) {
+            fix(top, fs.lstat(top))
+            walk(parts.take(6).joinToString("/"), recursive = true, fix)
+        } else {
+            walk(top, recursive = true, fix)
         }
     }
 

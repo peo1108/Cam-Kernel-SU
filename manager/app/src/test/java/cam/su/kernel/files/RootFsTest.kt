@@ -255,17 +255,27 @@ class RootFsTest {
         assertNull(SharedStorage.lower("/storage/1234-ABCD/DCIM"))
     }
 
-    @Test
-    fun repairSharedGivesTheTreeItsParentsOwnerModeAndLabel() {
-        // what root's `mkdir -p` (umask 077) and `chown media_rw` used to leave in Download
+    /** /data/media/0 and its Download as a device has them (media provider uid 10150). */
+    private fun sharedStorage() {
         fake.dir("/data/media")
-        fake.dir("/data/media/0")
-        fake.dir("/data/media/0/Download").apply {
+        fake.dir("/data/media/0").apply {
             perm = 0x5F8 // 02770
+            uid = 1023
+            gid = 1023
+            context = "u:object_r:media_rw_data_file:s0"
+        }
+        fake.dir("/data/media/0/Download").apply {
+            perm = 0x5F8
             uid = 10150
             gid = 1023
             context = "u:object_r:media_rw_data_file:s0"
         }
+    }
+
+    @Test
+    fun repairSharedGivesTheTreeItsParentsOwnerModeAndLabel() {
+        // what root's `mkdir -p` (umask 077) and `chown media_rw` used to leave in Download
+        sharedStorage()
         fake.newFileContext = "u:object_r:media_rw_data_file:s0:c512,c768"
         fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
         fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
@@ -295,14 +305,7 @@ class RootFsTest {
 
     @Test
     fun repairSharedBelowALockedFolderStartsFromTheTopmostLockedOne() {
-        fake.dir("/data/media")
-        fake.dir("/data/media/0")
-        fake.dir("/data/media/0/Download").apply {
-            perm = 0x5F8 // 02770
-            uid = 10150
-            gid = 1023
-            context = "u:object_r:media_rw_data_file:s0"
-        }
+        sharedStorage()
         fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
         fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
         fake.mkdir("/data/media/0/Download/SU Kernel/Logs", 0x1C0)
@@ -323,6 +326,82 @@ class RootFsTest {
         assertEquals(0x1B0, fake.node("/data/media/0/Download/SU Kernel/APK/a.apk").perm)
         // the reference itself is left as it was
         assertEquals(0x5F8, fake.node("/data/media/0/Download").perm)
+    }
+
+    @Test
+    fun repairSharedTakesARootOwnedFolderThatWorksAsItIs() {
+        // Download left root:media_rw 2770 by a restore: the media provider opens it all the same
+        sharedStorage()
+        fake.node("/data/media/0/Download").uid = 0
+        fake.file("/data/media/0/Download/movie.mp4", perm = 0x180)
+        fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
+
+        fs.repairShared("/storage/emulated/0/Download/SU Kernel")
+
+        assertEquals(0, fake.node("/data/media/0/Download").uid)
+        assertEquals(0x180, fake.node("/data/media/0/Download/movie.mp4").perm)
+        assertEquals(0x5F8, fake.node("/data/media/0/Download/SU Kernel").perm)
+    }
+
+    @Test
+    fun repairSharedFixesAWrongTopFolderAloneWithTheProvidersCategories() {
+        val provider = "u:object_r:media_rw_data_file:s0:c208,c256,c512,c768"
+        sharedStorage()
+        for (top in listOf("DCIM", "Music")) {
+            fake.dir("/data/media/0/$top").apply {
+                perm = 0x5F8
+                uid = 10208
+                gid = 1023
+                context = provider
+            }
+        }
+        // Download open but without the provider's categories, SU Kernel with the ones root's
+        // mkdir left (owner and mode already right), APK locked
+        fake.node("/data/media/0/Download").apply {
+            uid = 10208
+            context = "u:object_r:media_rw_data_file:s0"
+        }
+        fake.file("/data/media/0/Download/movie.mp4", perm = 0x180)
+        fake.mkdir("/data/media/0/Download/SU Kernel", 0x5F8)
+        fake.lchown("/data/media/0/Download/SU Kernel", 10208, 1023)
+        fake.node("/data/media/0/Download/SU Kernel").context = "u:object_r:media_rw_data_file:s0:c512,c768"
+        fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
+
+        fs.repairShared("/storage/emulated/0/Download/SU Kernel/APK")
+
+        for (dir in listOf("/data/media/0/Download", "/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK")) {
+            val node = fake.node(dir)
+            assertEquals(dir, provider, node.context)
+            assertEquals(dir, 0x5F8, node.perm)
+            assertEquals(dir, 10208, node.uid)
+        }
+        // Download itself was fixed, not walked: the user's file in it is as it was
+        assertEquals(0x180, fake.node("/data/media/0/Download/movie.mp4").perm)
+        assertEquals("u:object_r:system_file:s0", fake.node("/data/media/0/Download/movie.mp4").context)
+    }
+
+    @Test
+    fun repairSharedClimbsPastParentsWithGroupBitsButTheWrongGroupOrLabel() {
+        sharedStorage()
+        val root = "/data/media/0/Download/Root"
+        val labeled = "$root/Labeled"
+        fake.mkdir(root, 0x1F8) // 0770, but root:root
+        fake.node(root).context = "u:object_r:media_rw_data_file:s0"
+        fake.mkdir(labeled, 0x5F8)
+        fake.lchown(labeled, 10150, 1023)
+        fake.node(labeled).context = "u:object_r:system_data_file:s0"
+        fake.mkdir("$labeled/Locked", 0x1C0)
+
+        fs.repairShared("/storage/emulated/0/Download/Root/Labeled/Locked")
+
+        // Download is the reference, not either of the two that only look open
+        for (dir in listOf(root, labeled, "$labeled/Locked")) {
+            val node = fake.node(dir)
+            assertEquals(dir, 0x5F8, node.perm)
+            assertEquals(dir, 10150, node.uid)
+            assertEquals(dir, 1023, node.gid)
+            assertEquals(dir, "u:object_r:media_rw_data_file:s0", node.context)
+        }
     }
 
     @Test

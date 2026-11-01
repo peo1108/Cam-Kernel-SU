@@ -27,6 +27,7 @@ fun RootProfileConfig(
     fixedName: Boolean,
     enabled: Boolean = true,
     profile: CamNative.Profile,
+    rulesLoading: Boolean = false,
     onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     RootProfileConfigMiuix(
@@ -34,6 +35,7 @@ fun RootProfileConfig(
         fixedName = fixedName,
         enabled = enabled,
         profile = profile,
+        rulesLoading = rulesLoading,
         onProfileChange = onProfileChange
     )
 }
@@ -42,6 +44,7 @@ fun RootProfileConfig(
 fun TemplateConfig(
     modifier: Modifier = Modifier,
     profile: CamNative.Profile,
+    templates: List<String>?,
     onViewTemplate: (id: String) -> Unit = {},
     onManageTemplate: () -> Unit = {},
     onProfileChange: (CamNative.Profile) -> Unit
@@ -49,6 +52,7 @@ fun TemplateConfig(
     TemplateConfigMiuix(
         modifier = modifier,
         profile = profile,
+        templates = templates,
         onViewTemplate = onViewTemplate,
         onManageTemplate = onManageTemplate,
         onProfileChange = onProfileChange

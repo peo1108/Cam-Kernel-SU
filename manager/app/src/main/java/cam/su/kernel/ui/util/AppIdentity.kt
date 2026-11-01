@@ -13,6 +13,7 @@ import androidx.core.content.edit
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toBitmap
 import cam.su.kernel.R
+import cam.su.kernel.files.shellQuote
 import java.io.File
 
 /**
@@ -145,6 +146,4 @@ object AppIdentity {
         CUSTOM -> Icon.Custom
         else -> Preset.entries.firstOrNull { it.name == value }?.let { Icon.OfPreset(it) } ?: Icon.Default
     }
-
-    private fun shellQuote(value: String) = "'" + value.replace("'", "'\\''") + "'"
 }

@@ -40,7 +40,7 @@ object ConfigBackupStore {
         val profiles = apps.filter { it.allowSu || it.hasCustomProfile }.mapNotNull { app ->
             val profile = app.profile ?: return@mapNotNull null
             // camd keeps a custom root profile's rules; the kernel's profile does not carry them
-            val rules = if (profile.allowSu && !profile.rootUseDefault) runCatching { getSepolicy(app.profileKey).trim() }.getOrDefault("") else ""
+            val rules = if (profile.allowSu && !profile.rootUseDefault) runCatching { getSepolicy(app.profileKey)?.trim() }.getOrNull().orEmpty() else ""
             SavedProfile(app.profileKey, app.uid / PER_USER_RANGE, profile, rules)
         }
         ConfigBackup(

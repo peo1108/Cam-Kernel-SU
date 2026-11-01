@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.util.Log
 import cam.su.kernel.files.CamFileClient
 import cam.su.kernel.files.FileEntry
+import cam.su.kernel.files.shellQuote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -57,8 +58,6 @@ data class AppDetails(
 data class AppStorage(val apk: Long, val data: Long, val cache: Long, val external: Long) {
     val total get() = apk + data + cache + external
 }
-
-private fun q(s: String) = "'" + s.replace("'", "'\\''") + "'"
 
 /**
  * Runs [cmds] as root in the global mount namespace: in this app's own namespace Android hides
@@ -146,7 +145,7 @@ suspend fun measureAppStorage(d: AppDetails): AppStorage = withContext(Dispatche
     val caches = listOf(
         "${d.dataDir}/cache", "${d.dataDir}/code_cache", "${d.deDataDir}/cache", "${d.deDataDir}/code_cache",
     )
-    fun kb(vararg paths: String) = "du -skc ${paths.joinToString(" ") { q(it) }} 2>/dev/null | tail -n 1 | cut -f1"
+    fun kb(vararg paths: String) = "du -skc ${paths.joinToString(" ") { shellQuote(it) }} 2>/dev/null | tail -n 1 | cut -f1"
     val apkDirs = (listOf(d.apkPath) + d.splitPaths).map { File(it).parent ?: it }.distinct().toTypedArray()
     val (_, out) = su(
         "echo apk=$(${kb(*apkDirs)})",
@@ -172,7 +171,7 @@ suspend fun clearAppCache(d: AppDetails): Long = withContext(Dispatchers.IO) {
         "${d.dataDir}/cache", "${d.dataDir}/code_cache", "${d.deDataDir}/cache", "${d.deDataDir}/code_cache",
         "/data/media/${d.userId}/Android/data/${d.packageName}/cache",
     )
-    su(*dirs.map { "[ -d ${q(it)} ] && find ${q(it)} -mindepth 1 -delete" }.toTypedArray(), "true")
+    su(*dirs.map { "[ -d ${shellQuote(it)} ] && find ${shellQuote(it)} -mindepth 1 -delete" }.toTypedArray(), "true")
     (before - measureAppStorage(d).cache).coerceAtLeast(0L)
 }
 
@@ -227,7 +226,7 @@ suspend fun removeSystemAppSystemless(context: Context, d: AppDetails): Boolean 
         Log.e(TAG, "module zip failed", it)
         return@withContext false
     }
-    val ok = execCamd("module install ${q(zip.absolutePath)}")
+    val ok = execCamd("module install ${shellQuote(zip.absolutePath)}")
     zip.delete()
     if (ok) su("pm uninstall --user ${d.userId} ${d.packageName}")
     ok

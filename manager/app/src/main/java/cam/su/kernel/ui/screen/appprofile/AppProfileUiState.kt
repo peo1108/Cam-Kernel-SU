@@ -11,6 +11,8 @@ data class AppProfileUiState(
     val profile: CamNative.Profile,
     val appGroup: GroupedApps,
     val sharedUserId: String,
+    /** The custom SELinux rules are still being read; their editor waits for them. */
+    val rulesLoading: Boolean = false,
 ) {
     val isUidGroup get() = appGroup.apps.size > 1
 }

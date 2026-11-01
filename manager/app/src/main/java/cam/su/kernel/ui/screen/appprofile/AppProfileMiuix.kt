@@ -59,7 +59,9 @@ import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -83,14 +85,17 @@ import cam.su.kernel.ui.component.ListPopupDefaults
 import cam.su.kernel.ui.component.profile.AppProfileConfig
 import cam.su.kernel.ui.component.profile.RootProfileConfig
 import cam.su.kernel.ui.component.profile.TemplateConfig
+import cam.su.kernel.ui.component.profile.profileFromTemplate
 import cam.su.kernel.ui.component.statustag.StatusTag
 import cam.su.kernel.ui.theme.LocalEnableBlur
 import cam.su.kernel.ui.util.BlurredBar
 import cam.su.kernel.ui.util.listAppProfileTemplates
 import cam.su.kernel.ui.util.ownerNameForUid
 import cam.su.kernel.ui.util.rememberBlurBackdrop
-import cam.su.kernel.ui.util.setSepolicy
 import cam.su.kernel.ui.viewmodel.SuperUserViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -179,6 +184,7 @@ fun AppProfileScreenMiuix(
                         appVersionName = if (state.isUidGroup) "" else (state.appGroup.primary.packageInfo.versionName ?: ""),
                         appVersionCode = if (state.isUidGroup) 0L else state.appGroup.primary.packageInfo.longVersionCode,
                         profile = state.profile,
+                        rulesLoading = state.rulesLoading,
                         isUidGroup = state.isUidGroup,
                         isSpecialApp = state.appGroup.primary.special,
                         affectedApps = state.appGroup.apps,
@@ -221,6 +227,7 @@ private fun AppProfileInner(
     appVersionName: String,
     appVersionCode: Long,
     profile: CamNative.Profile,
+    rulesLoading: Boolean = false,
     isUidGroup: Boolean = false,
     isSpecialApp: Boolean = false,
     affectedApps: List<SuperUserViewModel.AppInfo> = emptyList(),
@@ -247,6 +254,7 @@ private fun AppProfileInner(
 
         AppProfileEditorBody(
             profile = profile,
+            rulesLoading = rulesLoading,
             isSpecialApp = isSpecialApp,
             carded = true,
             onViewTemplate = onViewTemplate,
@@ -612,6 +620,7 @@ fun AppProfilePaneMiuix(
             val editor = @Composable {
                 AppProfileEditorBody(
                     profile = state.profile,
+                    rulesLoading = state.rulesLoading,
                     isSpecialApp = primary.special,
                     carded = true,
                     onViewTemplate = actions.onViewTemplate,
@@ -654,7 +663,8 @@ fun AppProfilePaneMiuix(
 /**
  * Root switch, profile mode and the matching config: the editable part of an app profile.
  * [carded] puts each part on its own glass card (profile page); otherwise the parts stack flat,
- * for use inside an already-glass container such as an expanded list card.
+ * for use inside an already-glass container such as an expanded list card. [rulesLoading] keeps
+ * the SELinux rules editor shut until the rules on disk are read.
  */
 @Composable
 fun AppProfileEditorBody(
@@ -664,9 +674,15 @@ fun AppProfileEditorBody(
     onViewTemplate: (id: String) -> Unit,
     onManageTemplate: () -> Unit,
     onProfileChange: (CamNative.Profile) -> Unit,
+    rulesLoading: Boolean = false,
 ) {
     val isRootGranted = !isSpecialApp && profile.allowSu
-    val templates = remember { listAppProfileTemplates() }
+    // A camd run as well: read once, off the main thread while the pane opens, and handed to the
+    // template card; null until then. Picking Template before it is in waits for it.
+    val templates by produceState<List<String>?>(null) {
+        value = withContext(Dispatchers.IO) { listAppProfileTemplates() }
+    }
+    val scope = rememberCoroutineScope()
 
     if (!isSpecialApp) {
         EditorSection(carded, bottom = 12.dp) {
@@ -711,33 +727,22 @@ fun AppProfileEditorBody(
                     rootMode = mode
                 }
 
-                Mode.Template -> {
-                    if (templates.isNotEmpty()) {
-                        val selected = profile.rootTemplate ?: templates[0]
-                        val info = cam.su.kernel.ui.viewmodel.getTemplateInfoById(selected)
-                        if (info != null && setSepolicy(selected, info.rules.joinToString("\n"))) {
-                            onProfileChange(
-                                profile.copy(
-                                    rootUseDefault = false,
-                                    rootTemplate = selected,
-                                    uid = info.uid,
-                                    gid = info.gid,
-                                    groups = info.groups,
-                                    capabilities = info.capabilities,
-                                    context = info.context,
-                                    namespace = info.namespace,
-                                )
+                Mode.Template -> scope.launch {
+                    val list = templates ?: withContext(Dispatchers.IO) { listAppProfileTemplates() }
+                    if (list.isEmpty()) return@launch
+                    val selected = profile.rootTemplate ?: list[0]
+                    val fromTemplate = profileFromTemplate(profile, selected)
+                    if (fromTemplate != null) {
+                        onProfileChange(fromTemplate)
+                    } else if (profile.rootTemplate != selected || profile.rootUseDefault) {
+                        onProfileChange(
+                            profile.copy(
+                                rootUseDefault = false,
+                                rootTemplate = selected
                             )
-                        } else if (profile.rootTemplate != selected || profile.rootUseDefault) {
-                            onProfileChange(
-                                profile.copy(
-                                    rootUseDefault = false,
-                                    rootTemplate = selected
-                                )
-                            )
-                        }
-                        rootMode = Mode.Template
+                        )
                     }
+                    rootMode = Mode.Template
                 }
             }
         } else {
@@ -759,6 +764,7 @@ fun AppProfileEditorBody(
             ) {
                 TemplateConfig(
                     profile = profile,
+                    templates = templates,
                     onViewTemplate = onViewTemplate,
                     onManageTemplate = onManageTemplate,
                     onProfileChange = onProfileChange
@@ -773,6 +779,7 @@ fun AppProfileEditorBody(
                     fixedName = true,
                     enabled = rootMode == Mode.Custom,
                     profile = profile,
+                    rulesLoading = rulesLoading,
                     onProfileChange = onProfileChange
                 )
             }

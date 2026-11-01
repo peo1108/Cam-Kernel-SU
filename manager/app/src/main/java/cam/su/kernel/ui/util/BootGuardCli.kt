@@ -2,6 +2,7 @@ package cam.su.kernel.ui.util
 
 import android.util.Log
 import cam.su.kernel.data.model.BootGuardStatus
+import cam.su.kernel.files.shellQuote
 
 // Cam-only camd commands, kept out of CamCli.kt (upstream's KsuCli.kt) so upstream merges
 // touch less of it. Boot guard: camd turns modules off after failed boots.
@@ -33,8 +34,6 @@ fun enableBootGuardInitrc(name: String): Boolean {
     Log.i(TAG, "boot-guard initrc-enable $name result: $result")
     return result
 }
-
-private fun shellQuote(value: String) = "'" + value.replace("'", "'\''") + "'"
 
 /** Turns back on every module the boot guard switched off except the likely causes. */
 fun reenableBootGuardOthers(): Boolean {

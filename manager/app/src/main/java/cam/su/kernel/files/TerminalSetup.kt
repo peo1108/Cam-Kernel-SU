@@ -9,16 +9,13 @@ package cam.su.kernel.files
 object TerminalSetup {
     const val BUSYBOX = "/data/adb/cam/bin/busybox"
 
-    /** Single quotes for sh, a quote inside closed, escaped and reopened. */
-    fun quote(s: String) = "'" + s.replace("'", "'\\''") + "'"
-
     fun rc(cwd: String, script: String?, busybox: Boolean): String = buildString {
-        appendLine("cd ${quote(cwd)} 2>/dev/null")
+        appendLine("cd ${shellQuote(cwd)} 2>/dev/null")
         // toybox ls only colors when asked
         appendLine("alias ls='ls --color=auto'")
         if (script != null) {
             val shell = if (busybox) "ASH_STANDALONE=1 $BUSYBOX sh" else "sh"
-            appendLine("KSU=true $shell ${quote(script)}")
+            appendLine("KSU=true $shell ${shellQuote(script)}")
             // the exit code, green or red, then a prompt to look around or run it again
             appendLine("rc=\$?; if [ \$rc -eq 0 ]; then c=32; else c=31; fi")
             appendLine("printf '\\n\\033[%sm[exit %s]\\033[0m\\n' \$c \$rc; unset rc c")

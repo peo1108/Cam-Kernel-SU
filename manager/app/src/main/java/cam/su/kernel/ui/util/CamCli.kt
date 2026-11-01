@@ -27,6 +27,7 @@ import cam.su.kernel.data.model.forModule
 import cam.su.kernel.data.model.visible
 import cam.su.kernel.data.repository.SettingsRepositoryImpl
 import cam.su.kernel.camApp
+import cam.su.kernel.files.shellQuote
 import cam.su.kernel.ui.screen.install.SeedApp
 import cam.su.kernel.ui.screen.install.isValidSeedPackageName
 import cam.su.kernel.ui.util.module.readModuleIdFromZip
@@ -667,29 +668,40 @@ fun hasMagisk(): Boolean {
     return result.isSuccess
 }
 
+// Rules and template ids come from what the user typed, the clipboard and templates fetched
+// online: quoted, so the root shell never reads them as commands, and after `--`, so camd never
+// reads one that starts with '-' as an option (`--help` passed as rules and "saved" nothing).
+
 fun isSepolicyValid(rules: String?): Boolean {
     if (rules == null) {
         return true
     }
     val shell = getRootShell()
     val result =
-        shell.newJob().add("${getCamDaemonPath()} sepolicy check '$rules'").to(ArrayList(), null)
+        shell.newJob().add("${getCamDaemonPath()} sepolicy check -- ${shellQuote(rules)}").to(ArrayList(), null)
             .exec()
     return result.isSuccess
 }
 
-fun getSepolicy(pkg: String): String {
+/** The custom SELinux rules saved for [pkg]: "" when there are none, null when camd could not tell. */
+fun getSepolicy(pkg: String): String? {
     val shell = getRootShell()
+    val err = ArrayList<String>()
     val result =
-        shell.newJob().add("${getCamDaemonPath()} profile get-sepolicy $pkg").to(ArrayList(), null)
+        shell.newJob().add("${getCamDaemonPath()} profile get-sepolicy -- ${shellQuote(pkg)}").to(ArrayList(), err)
             .exec()
-    Log.i(TAG, "code: ${result.code}, out: ${result.out}, err: ${result.err}")
-    return result.out.joinToString("\n")
+    Log.i(TAG, "code: ${result.code}, out: ${result.out}, err: $err")
+    return when {
+        result.isSuccess -> result.out.joinToString("\n")
+        // no rules file for the package
+        err.any { "os error 2" in it } -> ""
+        else -> null
+    }
 }
 
 fun setSepolicy(pkg: String, rules: String): Boolean {
     val shell = getRootShell()
-    val result = shell.newJob().add("${getCamDaemonPath()} profile set-sepolicy $pkg '$rules'")
+    val result = shell.newJob().add("${getCamDaemonPath()} profile set-sepolicy -- ${shellQuote(pkg)} ${shellQuote(rules)}")
         .to(ArrayList(), null).exec()
     Log.i(TAG, "set sepolicy result: ${result.code}")
     return result.isSuccess
@@ -703,21 +715,20 @@ fun listAppProfileTemplates(): List<String> {
 
 fun getAppProfileTemplate(id: String): String {
     val shell = getRootShell()
-    return shell.newJob().add("${getCamDaemonPath()} profile get-template '${id}'")
+    return shell.newJob().add("${getCamDaemonPath()} profile get-template -- ${shellQuote(id)}")
         .to(ArrayList(), null).exec().out.joinToString("\n")
 }
 
 fun setAppProfileTemplate(id: String, template: String): Boolean {
     val shell = getRootShell()
-    val escapedTemplate = template.replace("'", "'\\''")
-    val cmd = """${getCamDaemonPath()} profile set-template "$id" '$escapedTemplate'"""
+    val cmd = "${getCamDaemonPath()} profile set-template -- ${shellQuote(id)} ${shellQuote(template)}"
     return shell.newJob().add(cmd)
         .to(ArrayList(), null).exec().isSuccess
 }
 
 fun deleteAppProfileTemplate(id: String): Boolean {
     val shell = getRootShell()
-    return shell.newJob().add("${getCamDaemonPath()} profile delete-template '${id}'")
+    return shell.newJob().add("${getCamDaemonPath()} profile delete-template -- ${shellQuote(id)}")
         .to(ArrayList(), null).exec().isSuccess
 }
 

@@ -6,31 +6,58 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Create
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.CamNative
 import cam.su.kernel.R
-import cam.su.kernel.ui.util.listAppProfileTemplates
 import cam.su.kernel.ui.util.setSepolicy
 import cam.su.kernel.ui.viewmodel.getTemplateInfoById
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
+ * [profile] switched to template [id]: the template's uid, groups, capabilities, context and
+ * namespace, with its rules stored for the id. Null when the template does not read or camd
+ * refuses its rules. Two camd runs, so off the main thread.
+ */
+suspend fun profileFromTemplate(profile: CamNative.Profile, id: String): CamNative.Profile? = withContext(Dispatchers.IO) {
+    val info = getTemplateInfoById(id) ?: return@withContext null
+    if (!setSepolicy(id, info.rules.joinToString("\n"))) return@withContext null
+    profile.copy(
+        rootTemplate = id,
+        rootUseDefault = false,
+        uid = info.uid,
+        gid = info.gid,
+        groups = info.groups,
+        capabilities = info.capabilities,
+        context = info.context,
+        namespace = info.namespace,
+    )
+}
+
+/**
  * @author weishu
  * @date 2023/10/21.
+ *
+ * [templates] is the template list, read off the main thread by the caller; null while it loads.
  */
 @Composable
 fun TemplateConfigMiuix(
     modifier: Modifier = Modifier,
     profile: CamNative.Profile,
+    templates: List<String>?,
     onViewTemplate: (id: String) -> Unit = {},
     onManageTemplate: () -> Unit = {},
     onProfileChange: (CamNative.Profile) -> Unit
 ) {
-    val profileTemplates = listAppProfileTemplates()
+    val profileTemplates = templates ?: return
+    val scope = rememberCoroutineScope()
     val noTemplates = profileTemplates.isEmpty()
 
     if (noTemplates) {
@@ -58,20 +85,8 @@ fun TemplateConfigMiuix(
                 onSelectedIndexChange = { index ->
                     if (index < 0 || index >= profileTemplates.size) return@GlassDropdownPreference
                     val selected = profileTemplates[index]
-                    val templateInfo = getTemplateInfoById(selected)
-                    if (templateInfo != null && setSepolicy(selected, templateInfo.rules.joinToString("\n"))) {
-                        onProfileChange(
-                            profile.copy(
-                                rootTemplate = selected,
-                                rootUseDefault = false,
-                                uid = templateInfo.uid,
-                                gid = templateInfo.gid,
-                                groups = templateInfo.groups,
-                                capabilities = templateInfo.capabilities,
-                                context = templateInfo.context,
-                                namespace = templateInfo.namespace,
-                            )
-                        )
+                    scope.launch {
+                        profileFromTemplate(profile, selected)?.let(onProfileChange)
                     }
                 },
                 maxHeight = 280.dp

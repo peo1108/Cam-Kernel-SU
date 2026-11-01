@@ -3,6 +3,7 @@ package cam.su.kernel.ui.util
 import cam.su.kernel.backup.ArchiveImport
 import cam.su.kernel.backup.ArchiveModule
 import cam.su.kernel.backup.ModuleArchive
+import cam.su.kernel.files.shellQuote
 import java.io.File
 
 // Cam-only camd commands, kept out of CamCli.kt (upstream's KsuCli.kt) so upstream merges
@@ -22,18 +23,16 @@ private fun camd(args: String): String {
     return result.out.lastOrNull { it.trimStart().startsWith("{") } ?: error("camd printed no result")
 }
 
-private fun quote(path: String) = "'" + path.replace("'", "'\\''") + "'"
-
 /** Writes every installed module into [file]. Blocking. */
 fun exportModules(file: File): List<ArchiveModule> =
-    ModuleArchive.parseModules(camd("module export ${quote(file.absolutePath)}"))
+    ModuleArchive.parseModules(camd("module export ${shellQuote(file.absolutePath)}"))
 
 /** The modules in the backup [file], with what is installed now. Blocking. */
 fun listModuleBackup(file: File): List<ArchiveModule> =
-    ModuleArchive.parseModules(camd("module import ${quote(file.absolutePath)} --list"), moduleRiskScanner())
+    ModuleArchive.parseModules(camd("module import ${shellQuote(file.absolutePath)} --list"), moduleRiskScanner())
 
 /** Stages [ids] from the backup [file]; they replace the installed ones on the next boot. Blocking. */
 fun importModules(file: File, ids: List<String>): ArchiveImport {
     require(ids.isNotEmpty())
-    return ModuleArchive.parseImport(camd("module import ${quote(file.absolutePath)} --only ${ids.joinToString(",")}"))
+    return ModuleArchive.parseImport(camd("module import ${shellQuote(file.absolutePath)} --only ${ids.joinToString(",")}"))
 }

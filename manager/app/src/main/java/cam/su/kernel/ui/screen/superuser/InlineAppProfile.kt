@@ -6,22 +6,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cam.su.kernel.R
 import cam.su.kernel.ui.screen.appprofile.AppProfileEditorBody
+import cam.su.kernel.ui.screen.appprofile.ProfileWrites
 import cam.su.kernel.ui.screen.appprofile.rememberAppProfileEditor
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 /**
  * The app profile editor shown inside an expanded SuperUser card. Edits are written immediately;
- * the list tags (ROOT, CUSTOM, ...) refresh once, through [onEdited], when the card closes.
+ * the list tags (ROOT, CUSTOM, ...) refresh once, through [onEdited], when the card closes and the
+ * writes made in it are done.
  */
 @Composable
 fun InlineAppProfile(
@@ -29,11 +30,16 @@ fun InlineAppProfile(
     onOpenFullProfile: () -> Unit,
     onEdited: () -> Unit,
 ) {
-    var edited by remember { mutableStateOf(false) }
+    val edited = remember { booleanArrayOf(false) }
     val latestOnEdited by rememberUpdatedState(onEdited)
-    val editor = rememberAppProfileEditor(group, onSaved = { edited = true })
+    val editor = rememberAppProfileEditor(group, onSaved = { edited[0] = true })
     DisposableEffect(Unit) {
-        onDispose { if (edited) latestOnEdited() }
+        onDispose {
+            ProfileWrites.scope.launch {
+                ProfileWrites.idle()
+                if (edited[0]) latestOnEdited()
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
@@ -45,6 +51,7 @@ fun InlineAppProfile(
             onViewTemplate = editor.onViewTemplate,
             onManageTemplate = editor.onManageTemplate,
             onProfileChange = editor.onProfileChange,
+            rulesLoading = editor.state.rulesLoading,
         )
         ArrowPreference(
             title = stringResource(R.string.app_profile_open_full),

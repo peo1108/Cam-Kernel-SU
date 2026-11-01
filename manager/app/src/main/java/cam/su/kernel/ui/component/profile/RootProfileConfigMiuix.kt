@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,9 @@ import cam.su.kernel.toRawFlags
 import cam.su.kernel.toRootProfileFlags
 import cam.su.kernel.ui.component.miuix.SuperEditArrow
 import cam.su.kernel.ui.util.isSepolicyValid
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -47,6 +51,7 @@ fun RootProfileConfigMiuix(
     fixedName: Boolean,
     enabled: Boolean = true,
     profile: CamNative.Profile,
+    rulesLoading: Boolean = false,
     onProfileChange: (CamNative.Profile) -> Unit,
 ) {
     Column(
@@ -134,7 +139,7 @@ fun RootProfileConfigMiuix(
             )
         }
 
-        SELinuxPanel(enabled = enabled, profile = profile, onSELinuxChange = { domain, rules ->
+        SELinuxPanel(enabled = enabled && !rulesLoading, profile = profile, onSELinuxChange = { domain, rules ->
             onProfileChange(
                 profile.copy(
                     context = domain,
@@ -443,14 +448,25 @@ private fun SELinuxPanel(
 ) {
     val showDialog = remember { mutableStateOf(false) }
 
-    var domain by remember(profile.context) { mutableStateOf(profile.context) }
-    var rules by remember(profile.rules) { mutableStateOf(profile.rules) }
+    // Filled when the dialog opens, so nothing that changes the profile meanwhile resets the typing.
+    var domain by remember { mutableStateOf(profile.context) }
+    var rules by remember { mutableStateOf(profile.rules) }
 
     val isDomainValid = remember(domain) {
         val regex = Regex("^[a-z_]+:[a-z0-9_]+:[a-z0-9_]+(:[a-z0-9_]+)?$")
         domain.matches(regex)
     }
-    val isRulesValid = remember(rules) { isSepolicyValid(rules) }
+    // camd checks the rules: off the main thread, once typing pauses, only while the dialog is up.
+    // Confirm waits for the check of what is in the field now.
+    var checked by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    LaunchedEffect(rules, showDialog.value) {
+        if (!showDialog.value) return@LaunchedEffect
+        delay(RULES_CHECK_DELAY_MS)
+        val ok = withContext(Dispatchers.IO) { isSepolicyValid(rules) }
+        checked = rules to ok
+    }
+    val rulesChecked = checked?.first == rules
+    val isRulesValid = rulesChecked && checked?.second == true
 
     GlassDialog(
         show = showDialog.value,
@@ -480,7 +496,7 @@ private fun SELinuxPanel(
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
                         label = stringResource(id = R.string.profile_selinux_rules),
-                        isError = !isRulesValid,
+                        isError = rulesChecked && !isRulesValid,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Ascii,
                         ),
@@ -516,6 +532,12 @@ private fun SELinuxPanel(
         enabled = enabled,
         title = stringResource(R.string.profile_selinux_context),
         summary = profile.context,
-        onClick = { showDialog.value = true }
+        onClick = {
+            domain = profile.context
+            rules = profile.rules
+            showDialog.value = true
+        }
     )
 }
+
+private const val RULES_CHECK_DELAY_MS = 250L

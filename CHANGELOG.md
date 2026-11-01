@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.2.2 - 2026-10-25
+## 1.2.2 - 2026-11-01
 - Rule ẩn root v23 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau; tablet xoay ngang cài được module ngay cạnh danh sách; bấm tab có hiệu ứng thẻ bay lên; kernel không còn giữ file thừa và bớt hẳn log khi cấp root
 ### Thay đổi
 - Rule ẩn root v23: theo Duck Detector tới bản nightly 31/10 (9dcefa06). Duck Detector bỏ một phép đo cũ nhắm vào KernelSU gốc (theo dõi ai mở thư mục cài đặt của app); SU Kernel vốn không làm việc đó nên không có gì thay đổi với máy của bạn

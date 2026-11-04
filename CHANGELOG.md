@@ -10,6 +10,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Ẩn root: file cài đặt của app (app khác đọc được) không còn tên nào của bản gốc. Những tên module vẫn dùng (biến môi trường cho script, hàm của WebUI) vẫn chạy như cũ
 - Ẩn SELinux: ghi context SELinux hợp lệ nhanh như máy gốc, nên app đo thời gian ghi context không còn thấy lần ghi hợp lệ chậm hơn bình thường. Có hiệu lực khi cài lại LKM
 - Ẩn SELinux: theo bản gốc, mỗi lần nạp lại chính sách SELinux được tính đúng là một thế hệ mới. App vẫn chỉ thấy số của máy gốc. Có hiệu lực khi cài lại LKM
+- Rule ẩn root v26: theo Duck Detector tới bản nightly 1/11 (31d82eef). Bản nightly này chỉ nâng thư viện build, không đổi phép đo nào; đã quét trên Y700 với kernel của bản này: không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi như trước
 - Bật hoặc tắt chữ đậm của hệ thống, đổi SIM: Manager đổi theo tại chỗ, không dựng lại trang
 - Hồ sơ app: thay đổi hiện ngay và được ghi ở nền, nên không còn khựng. Ghi lỗi thì hiện lại đúng giá trị máy đang dùng
 ### Sửa lỗi

@@ -22,9 +22,11 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Hồ sơ app: rule hoặc bản mẫu có dấu nháy đơn không còn có thể chạy thành lệnh bằng root. Rule bắt đầu bằng dấu gạch ngang không còn được báo hợp lệ rồi không lưu gì
 - Tab Tệp, nút Sửa quyền: không còn lấy thư mục cha bị sai nhóm hay sai nhãn làm mẫu. Nếu chính Download hay DCIM bị khoá thì chỉ sửa riêng thư mục đó, không đi qua mọi tệp bên trong
 - Khi Manager đặt sáng hoặc tối khác hệ thống: nền cửa sổ theo đúng chế độ của Manager, không còn loé màu ngược lúc bàn phím đẩy nội dung hay chuyển trang
+- Ẩn SELinux: nếu một tiến trình root nạp hẳn một chính sách SELinux khác (không qua Cam), kernel không còn dùng số của chính sách cũ khi app đổi context, trước đây có thể đổi nhầm sang domain khác. Bình thường không ai làm vậy. Có hiệu lực khi cài lại LKM
+- Kiểm tra ẩn root ở app bản cũ (trước bản này): từ chiều 4/11, rule tải về bỏ sót mount do module tạo. Đã sửa trên máy chủ (rule v25), app bản cũ tự tải lại, không cần cài gì
 ### Lưu ý
 - Chuyển sang app Cam (app cũ không tự cập nhật lên được, bấm cập nhật trong app cũ sẽ báo lỗi): (1) tải APK ở caesarvn.xyz và cài, app Cam nằm cạnh app cũ; (2) mở app cũ, tab Superuser, cấp root cho Cam; (3) mở Cam, cài lại LKM rồi khởi động lại; (4) gỡ app cũ. Cài đặt của app cũ không chuyển sang: vào Cài đặt → Tài khoản đăng nhập lại. Module, root đã cấp cho các app khác và dữ liệu trong /data/adb vẫn giữ nguyên
-- Sau bước (3), LKM mới chỉ nhận app Cam, nên app cũ hết root. Đừng cài lại LKM từ app cũ sau khi đã chuyển
+- Sau bước (3), LKM mới chỉ nhận app Cam làm app quản lý. App cũ vẫn còn root tới khi bị gỡ, và tên của nó vẫn bị app kiểm tra root nhận ra, nên nhớ làm bước (4). Đừng cài lại LKM từ app cũ sau khi đã chuyển: LKM đó không nhận app Cam
 - Bản này có thay đổi ở kernel: cài lại LKM rồi khởi động lại để có các phần sửa kernel ở trên
 
 ## 1.2.2 - 2026-11-01

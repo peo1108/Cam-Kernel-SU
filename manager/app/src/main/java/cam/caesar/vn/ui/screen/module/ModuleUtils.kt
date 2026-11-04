@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.module
+package cam.caesar.vn.ui.screen.module
 
 import android.content.Context
 import androidx.compose.animation.core.Animatable
@@ -21,7 +21,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
-import cam.su.kernel.ui.util.module.Shortcut
+import cam.caesar.vn.ui.util.module.Shortcut
 import kotlin.math.roundToInt
 
 enum class ShortcutType {

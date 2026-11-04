@@ -1,11 +1,11 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
-import cam.su.kernel.camApp
+import cam.caesar.vn.camApp
 
 /**
  * @author weishu

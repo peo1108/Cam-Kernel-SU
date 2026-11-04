@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.install
+package cam.caesar.vn.ui.screen.install
 
 import android.content.Context
 import android.net.Uri
@@ -7,7 +7,7 @@ import android.provider.OpenableColumns
 import androidx.annotation.StringRes
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
-import cam.su.kernel.R
+import cam.caesar.vn.R
 
 @Parcelize
 internal sealed class InstallMethod : Parcelable {

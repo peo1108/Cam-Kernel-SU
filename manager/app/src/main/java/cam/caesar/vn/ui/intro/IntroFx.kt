@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.intro
+package cam.caesar.vn.ui.intro
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -17,12 +17,12 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import cam.su.kernel.ui.screen.home.arena.TAU
-import cam.su.kernel.ui.screen.home.arena.drawGlow
-import cam.su.kernel.ui.screen.home.arena.easeOutCubic
-import cam.su.kernel.ui.screen.home.arena.hash
-import cam.su.kernel.ui.screen.home.arena.lerp
-import cam.su.kernel.ui.screen.home.arena.progress
+import cam.caesar.vn.ui.screen.home.arena.TAU
+import cam.caesar.vn.ui.screen.home.arena.drawGlow
+import cam.caesar.vn.ui.screen.home.arena.easeOutCubic
+import cam.caesar.vn.ui.screen.home.arena.hash
+import cam.caesar.vn.ui.screen.home.arena.lerp
+import cam.caesar.vn.ui.screen.home.arena.progress
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos

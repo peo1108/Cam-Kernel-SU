@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.util.AppIconCache
+import cam.caesar.vn.ui.util.AppIconCache
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 

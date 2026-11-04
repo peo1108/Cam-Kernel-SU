@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.hidingcheck
+package cam.caesar.vn.ui.screen.hidingcheck
 
-import cam.su.kernel.data.model.HidingAudit
-import cam.su.kernel.data.repository.SavedHidingScan
+import cam.caesar.vn.data.model.HidingAudit
+import cam.caesar.vn.data.repository.SavedHidingScan
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

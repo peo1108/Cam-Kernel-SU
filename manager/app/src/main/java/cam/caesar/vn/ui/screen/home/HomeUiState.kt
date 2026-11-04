@@ -1,12 +1,12 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.KernelVersion
-import cam.su.kernel.data.model.BootGuardStatus
-import cam.su.kernel.update.ChangelogEntry
-import cam.su.kernel.account.LockedRelease
-import cam.su.kernel.update.UpdateInfo
-import cam.su.kernel.update.UpdateState
+import cam.caesar.vn.KernelVersion
+import cam.caesar.vn.data.model.BootGuardStatus
+import cam.caesar.vn.update.ChangelogEntry
+import cam.caesar.vn.account.LockedRelease
+import cam.caesar.vn.update.UpdateInfo
+import cam.caesar.vn.update.UpdateState
 
 @Immutable
 data class HomeUiState(

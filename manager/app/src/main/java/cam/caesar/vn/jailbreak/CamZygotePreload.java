@@ -1,4 +1,4 @@
-package cam.su.kernel.jailbreak;
+package cam.caesar.vn.jailbreak;
 
 import android.app.ZygotePreload;
 import android.content.pm.ApplicationInfo;

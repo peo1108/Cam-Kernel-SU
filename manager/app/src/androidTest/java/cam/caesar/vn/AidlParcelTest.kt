@@ -1,9 +1,9 @@
-package cam.su.kernel
+package cam.caesar.vn
 
 import android.os.Bundle
 import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import cam.su.kernel.files.FileEntry
+import cam.caesar.vn.files.FileEntry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

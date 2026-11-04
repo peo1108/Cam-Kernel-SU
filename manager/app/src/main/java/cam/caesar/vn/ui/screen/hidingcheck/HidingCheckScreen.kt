@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.hidingcheck
+package cam.caesar.vn.ui.screen.hidingcheck
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -7,8 +7,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.viewmodel.HidingCheckViewModel
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.viewmodel.HidingCheckViewModel
 
 /** The root hiding check, for the whole device or, with [uid], for that app; [scanNow] checks on opening. */
 @Composable

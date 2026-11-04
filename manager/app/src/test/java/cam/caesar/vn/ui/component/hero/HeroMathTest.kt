@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.hero
+package cam.caesar.vn.ui.component.hero
 
 import androidx.compose.ui.geometry.Rect
 import org.junit.Assert.assertEquals

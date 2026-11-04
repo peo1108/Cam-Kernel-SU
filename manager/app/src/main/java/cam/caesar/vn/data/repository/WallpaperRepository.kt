@@ -1,4 +1,4 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
 import android.content.SharedPreferences
 import android.os.Process
@@ -6,7 +6,7 @@ import androidx.core.content.edit
 import com.topjohnwu.superuser.io.SuFile
 import com.topjohnwu.superuser.io.SuFileInputStream
 import kotlinx.coroutines.Dispatchers
-import cam.su.kernel.ui.util.getRootShell
+import cam.caesar.vn.ui.util.getRootShell
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext

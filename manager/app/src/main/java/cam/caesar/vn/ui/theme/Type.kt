@@ -1,10 +1,10 @@
-package cam.su.kernel.ui.theme
+package cam.caesar.vn.ui.theme
 
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import cam.su.kernel.R
+import cam.caesar.vn.R
 import top.yukonga.miuix.kmp.theme.TextStyles
 import top.yukonga.miuix.kmp.theme.defaultTextStyles
 

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.modulerepo
+package cam.caesar.vn.ui.screen.modulerepo
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -11,12 +11,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.util.module.fetchModuleDetail
-import cam.su.kernel.ui.viewmodel.ModuleRepoViewModel
-import cam.su.kernel.ui.viewmodel.ModuleViewModel
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.util.module.fetchModuleDetail
+import cam.caesar.vn.ui.viewmodel.ModuleRepoViewModel
+import cam.caesar.vn.ui.viewmodel.ModuleViewModel
 
 @Composable
 fun ModuleRepoScreen() {

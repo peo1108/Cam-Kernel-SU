@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.modulerepo
+package cam.caesar.vn.ui.screen.modulerepo
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

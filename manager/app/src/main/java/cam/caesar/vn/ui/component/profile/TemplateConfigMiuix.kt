@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.component.profile
+package cam.caesar.vn.ui.component.profile
 
-import cam.su.kernel.ui.component.glass.GlassDropdownPreference
+import cam.caesar.vn.ui.component.glass.GlassDropdownPreference
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -10,10 +10,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.CamNative
-import cam.su.kernel.R
-import cam.su.kernel.ui.util.setSepolicy
-import cam.su.kernel.ui.viewmodel.getTemplateInfoById
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.util.setSepolicy
+import cam.caesar.vn.ui.viewmodel.getTemplateInfoById
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

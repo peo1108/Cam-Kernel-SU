@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.appprofile
+package cam.caesar.vn.ui.screen.appprofile
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.CamNative
-import cam.su.kernel.ui.screen.superuser.GroupedApps
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.ui.screen.superuser.GroupedApps
 
 @Immutable
 data class AppProfileUiState(

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.listdetail
+package cam.caesar.vn.ui.component.listdetail
 
 import android.provider.Settings
 import androidx.compose.animation.AnimatedContent

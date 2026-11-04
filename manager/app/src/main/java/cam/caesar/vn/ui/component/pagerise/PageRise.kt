@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.pagerise
+package cam.caesar.vn.ui.component.pagerise
 
 import android.provider.Settings
 import androidx.compose.animation.core.LinearEasing
@@ -24,7 +24,7 @@ import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.component.listdetail.segment
+import cam.caesar.vn.ui.component.listdetail.segment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch

@@ -1,10 +1,10 @@
-package cam.su.kernel.ui.screen.module
+package cam.caesar.vn.ui.screen.module
 
 import android.net.Uri
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.data.model.Module
-import cam.su.kernel.data.model.ModuleUpdateInfo
-import cam.su.kernel.ui.component.SearchStatus
+import cam.caesar.vn.data.model.Module
+import cam.caesar.vn.data.model.ModuleUpdateInfo
+import cam.caesar.vn.ui.component.SearchStatus
 
 sealed interface ModuleConfirmRequest {
     data class Update(

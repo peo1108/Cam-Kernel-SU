@@ -1,10 +1,10 @@
-package cam.su.kernel.hiding
+package cam.caesar.vn.hiding
 
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
-import cam.su.kernel.data.model.HidingAudit
-import cam.su.kernel.ui.util.getSystemProperty
+import cam.caesar.vn.data.model.HidingAudit
+import cam.caesar.vn.ui.util.getSystemProperty
 import java.io.File
 
 /**

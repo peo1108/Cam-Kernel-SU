@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
@@ -30,10 +30,10 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.component.liquid.LiquidSpecular
-import cam.su.kernel.ui.component.liquid.rememberGravityRotatedHighlight
-import cam.su.kernel.ui.component.miuix.animation.InteractiveHighlight
-import cam.su.kernel.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.component.liquid.LiquidSpecular
+import cam.caesar.vn.ui.component.liquid.rememberGravityRotatedHighlight
+import cam.caesar.vn.ui.component.miuix.animation.InteractiveHighlight
+import cam.caesar.vn.ui.theme.isInDarkTheme
 import kotlin.math.min
 
 /**

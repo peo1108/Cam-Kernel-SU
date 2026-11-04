@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -28,14 +28,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.R
-import cam.su.kernel.jailbreak.CamJailbreakService
-import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
-import cam.su.kernel.ui.navigation3.Navigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.viewmodel.HidingCheckSignal
-import cam.su.kernel.ui.viewmodel.HomeViewModel
-import cam.su.kernel.update.UpdateSignal
+import cam.caesar.vn.R
+import cam.caesar.vn.jailbreak.CamJailbreakService
+import cam.caesar.vn.ui.component.dialog.rememberLoadingDialog
+import cam.caesar.vn.ui.navigation3.Navigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.viewmodel.HidingCheckSignal
+import cam.caesar.vn.ui.viewmodel.HomeViewModel
+import cam.caesar.vn.update.UpdateSignal
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable

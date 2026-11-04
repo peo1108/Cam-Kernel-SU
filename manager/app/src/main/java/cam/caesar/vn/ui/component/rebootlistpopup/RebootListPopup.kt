@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.rebootlistpopup
+package cam.caesar.vn.ui.component.rebootlistpopup
 
 import android.content.Context
 import android.os.PowerManager
@@ -16,10 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import cam.su.kernel.Cam
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
-import cam.su.kernel.ui.util.reboot
+import cam.caesar.vn.Cam
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.dialog.rememberConfirmDialog
+import cam.caesar.vn.ui.util.reboot
 
 data class RebootListOption(
     @param:StringRes val labelRes: Int,

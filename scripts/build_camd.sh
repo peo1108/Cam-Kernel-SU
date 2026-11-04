@@ -52,7 +52,7 @@ install_camd() {
 if [ "${1:-}" = "--from-device" ]; then
   export MSYS_NO_PATHCONV=1
   ADB="${ADB:-$(command -v adb || echo "${LOCALAPPDATA:-}/Android/Sdk/platform-tools/adb.exe")}"
-  pkg="${KSU_PACKAGE_NAME:-cam.su.kernel}"
+  pkg="${KSU_PACKAGE_NAME:-cam.caesar.vn}"
   apk="$("$ADB" shell pm path "$pkg" | tr -d '\r' | grep -m1 'base.apk' | cut -d: -f2)"
   [ -n "$apk" ] || { echo "error: $pkg is not installed on the device" >&2; exit 1; }
   tmp="$(mktemp -d)"

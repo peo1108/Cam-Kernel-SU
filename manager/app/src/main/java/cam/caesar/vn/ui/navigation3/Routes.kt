@@ -1,14 +1,14 @@
-package cam.su.kernel.ui.navigation3
+package cam.caesar.vn.ui.navigation3
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.screen.modulerepo.RepoModuleArg
-import cam.su.kernel.ui.util.FlashItSerializer
-import cam.su.kernel.ui.util.RepoModuleArgSerializer
-import cam.su.kernel.ui.util.TemplateInfoSerializer
-import cam.su.kernel.ui.viewmodel.TemplateViewModel
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.screen.modulerepo.RepoModuleArg
+import cam.caesar.vn.ui.util.FlashItSerializer
+import cam.caesar.vn.ui.util.RepoModuleArgSerializer
+import cam.caesar.vn.ui.util.TemplateInfoSerializer
+import cam.caesar.vn.ui.viewmodel.TemplateViewModel
 import top.yukonga.miuix.kmp.nav.core.NavKey
 
 /**

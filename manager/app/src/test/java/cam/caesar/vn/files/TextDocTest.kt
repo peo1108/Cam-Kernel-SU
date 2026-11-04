@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

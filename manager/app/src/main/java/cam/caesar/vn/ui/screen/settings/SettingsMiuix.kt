@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.settings
+package cam.caesar.vn.ui.screen.settings
 
-import cam.su.kernel.ui.component.glass.GlassSwitchPreference
-import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
+import cam.caesar.vn.ui.component.glass.GlassSwitchPreference
+import cam.caesar.vn.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -45,16 +45,16 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.CamIsValid
-import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.GlassDropdownPreference
-import cam.su.kernel.ui.component.miuix.SendLogDialog
-import cam.su.kernel.ui.component.uninstalldialog.UninstallDialog
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.CamIsValid
+import cam.caesar.vn.ui.component.dialog.rememberLoadingDialog
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassDropdownPreference
+import cam.caesar.vn.ui.component.miuix.SendLogDialog
+import cam.caesar.vn.ui.component.uninstalldialog.UninstallDialog
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -64,8 +64,8 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import cam.su.kernel.ui.component.expand.expandClick
-import cam.su.kernel.ui.component.expand.expandSource
+import cam.caesar.vn.ui.component.expand.expandClick
+import cam.caesar.vn.ui.component.expand.expandSource
 
 // rows pages grow out of (keys of expandSource, unique across the app)
 private const val SOURCE_ACCOUNT = "settings/account"

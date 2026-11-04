@@ -1,19 +1,19 @@
-package cam.su.kernel.ui.component.bottombar
+package cam.caesar.vn.ui.component.bottombar
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
-import cam.su.kernel.ui.component.glass.glassMaterial
-import cam.su.kernel.ui.component.glass.GlassDefaults
+import cam.caesar.vn.ui.component.glass.glassMaterial
+import cam.caesar.vn.ui.component.glass.GlassDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import cam.su.kernel.Cam
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.LocalMainPagerState
+import cam.caesar.vn.Cam
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.ui.LocalMainPagerState
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.NavigationRailValue

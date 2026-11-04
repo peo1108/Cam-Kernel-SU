@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.account
+package cam.caesar.vn.ui.screen.account
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ContentValues
@@ -48,13 +48,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.account.Account
-import cam.su.kernel.account.LockedRelease
-import cam.su.kernel.account.Order
-import cam.su.kernel.account.OrderException
-import cam.su.kernel.ui.component.glass.GlassDialog
-import cam.su.kernel.ui.component.markdown.MarkdownContent
+import cam.caesar.vn.R
+import cam.caesar.vn.account.Account
+import cam.caesar.vn.account.LockedRelease
+import cam.caesar.vn.account.Order
+import cam.caesar.vn.account.OrderException
+import cam.caesar.vn.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.markdown.MarkdownContent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -289,12 +289,12 @@ private fun copy(context: Context, label: String, text: String) {
     CamToast.show(context, R.string.early_copied)
 }
 
-/** Saves the QR to Pictures/Cam Kernel SU, so a banking app on this phone can scan it from the gallery. */
+/** Saves the QR to Pictures/Cam, so a banking app on this phone can scan it from the gallery. */
 private fun saveQr(context: Context, bitmap: Bitmap, code: String) {
     val values = ContentValues().apply {
         put(MediaStore.Images.Media.DISPLAY_NAME, "cam-$code.png")
         put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-        put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/Cam Kernel SU")
+        put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/Cam")
     }
     val ok = runCatching {
         val resolver = context.contentResolver

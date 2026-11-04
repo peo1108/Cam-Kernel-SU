@@ -182,15 +182,15 @@ static void load_release_cert(void)
     assert(f);
     release_cert_len = fread(release_cert, 1, sizeof(release_cert), f);
     fclose(f);
-    assert(release_cert_len == 1261);
+    assert(release_cert_len == 1249);
     f = fopen("manager_cert_backup.der", "rb");
     assert(f);
     backup_cert_len = fread(backup_cert, 1, sizeof(backup_cert), f);
     fclose(f);
-    assert(backup_cert_len == 1275);
+    assert(backup_cert_len == 1264);
 }
 
-// How cam.su.kernel is signed in the packages.xml fixture.
+// How cam.caesar.vn is signed in the packages.xml fixture.
 enum mgr_sig {
     SIG_RELEASE, // release key, written in full here
     SIG_RELEASE_REUSED, // release key, first written under another package: index only
@@ -217,7 +217,7 @@ static void xml_package(struct xb *x, const char *name, uint32_t uid)
     xb_attr_float(x, "scale");
 }
 
-// cam.su.kernel's userId in the packages.xml fixture; 0 leaves the attribute out
+// cam.caesar.vn's userId in the packages.xml fixture; 0 leaves the attribute out
 static uint32_t mgr_appid = 10500;
 
 static void xml_sigs(struct xb *x, int count)
@@ -261,14 +261,14 @@ static void build_packages_xml(struct xb *x, bool abx, enum mgr_sig sig)
     if (sig == SIG_ABSENT) {
         xb_start(x, "shared-user");
         xb_attr(x, "name", "android.uid.system");
-        xml_package(x, "cam.su.kernel", mgr_appid);
+        xml_package(x, "cam.caesar.vn", mgr_appid);
         xml_sigs(x, 1);
         xb_cert(x, 1, release_cert, release_cert_len);
         xb_end(x, "sigs");
         xb_end(x, "package");
         xb_end(x, "shared-user");
     } else {
-        xml_package(x, "cam.su.kernel", mgr_appid);
+        xml_package(x, "cam.caesar.vn", mgr_appid);
         switch (sig) {
         case SIG_RELEASE:
             xml_sigs(x, 1);
@@ -584,7 +584,7 @@ T(unreadable_line_skips_prune_only)
     }
 }
 
-static const char *MANAGER = "cam.su.kernel 10500 0 /data/user/0/cam.su.kernel default 3003 0 1\n";
+static const char *MANAGER = "cam.caesar.vn 10500 0 /data/user/0/cam.caesar.vn default 3003 0 1\n";
 
 T(manager_is_pinned_by_name)
 {
@@ -592,7 +592,7 @@ T(manager_is_pinned_by_name)
     snprintf(pkgs, sizeof(pkgs), "%s%s", PKGS, MANAGER);
     boot_with(NULL, pkgs, true);
     ksu_pkg_tracker_update();
-    assert(strcmp(events, "grant cam.su.kernel:10500;prune;") == 0);
+    assert(strcmp(events, "grant cam.caesar.vn:10500;prune;") == 0);
     assert(persist_calls == 1);
     // already allowed: no second grant, nothing written
     reboot_keep_fs();
@@ -606,7 +606,7 @@ T(manager_pin_runs_after_seed_before_prune)
     snprintf(pkgs, sizeof(pkgs), "%s%s", PKGS, MANAGER);
     boot_with(NONCE ",com.termux:10234", pkgs, true);
     ksu_pkg_tracker_update();
-    assert(strcmp(events, "grant com.termux:10234;grant cam.su.kernel:10500;prune;") == 0);
+    assert(strcmp(events, "grant com.termux:10234;grant cam.caesar.vn:10500;prune;") == 0);
 }
 
 T(reinstalled_manager_gets_its_new_appid)
@@ -616,10 +616,10 @@ T(reinstalled_manager_gets_its_new_appid)
     // PackageManager writes packages.xml first, then packages.list
     mgr_appid = 10600;
     write_packages_xml(true, SIG_RELEASE);
-    write_file("/data/system/packages.list", "cam.su.kernel 10600 0 /data/user/0/cam.su.kernel default 3003 0 1\n");
+    write_file("/data/system/packages.list", "cam.caesar.vn 10600 0 /data/user/0/cam.caesar.vn default 3003 0 1\n");
     reboot_keep_fs();
     ksu_pkg_tracker_update();
-    assert(strcmp(events, "grant cam.su.kernel:10600;prune;") == 0);
+    assert(strcmp(events, "grant cam.caesar.vn:10600;prune;") == 0);
 }
 
 // The release signature recorded for one appid must not vouch for another: a packages.xml
@@ -627,13 +627,13 @@ T(reinstalled_manager_gets_its_new_appid)
 // holds the name.
 T(manager_pin_needs_the_same_appid_in_both_files)
 {
-    const char *list_10600 = "cam.su.kernel 10600 0 /data/user/0/cam.su.kernel default 3003 0 1\n";
+    const char *list_10600 = "cam.caesar.vn 10600 0 /data/user/0/cam.caesar.vn default 3003 0 1\n";
     for (int abx = 0; abx < 2; abx++) {
         boot_with(NULL, list_10600, true);
         write_packages_xml(abx, SIG_RELEASE); // still 10500
         ksu_pkg_tracker_update();
         assert(strcmp(events, "prune;") == 0 && persist_calls == 0);
-        assert(strstr(logbuf, "manager pin: cam.su.kernel is appid 10500 in /data/system/packages.xml, 10600"));
+        assert(strstr(logbuf, "manager pin: cam.caesar.vn is appid 10500 in /data/system/packages.xml, 10600"));
     }
 
     // no appid in packages.xml at all: cannot tell
@@ -656,16 +656,16 @@ T(manager_pin_needs_the_same_appid_in_both_files)
     write_packages_xml(true, SIG_OTHER);
     reboot_keep_fs();
     ksu_pkg_tracker_update();
-    assert(strcmp(events, "revoke cam.su.kernel:10500;prune;") == 0);
+    assert(strcmp(events, "revoke cam.caesar.vn:10500;prune;") == 0);
 }
 
 T(manager_pin_needs_exact_name_and_app_range)
 {
     const char *cases[] = {
-        "cam.su.kernel.evil 10501 0 /data/user/0/x default 3003 0 1\n",
+        "cam.caesar.vn.evil 10501 0 /data/user/0/x default 3003 0 1\n",
         "cam.su.kerne 10502 0 /data/user/0/x default 3003 0 1\n",
-        "cam.su.kernel 1000 0 /data/system default 3003 0 1\n",
-        "cam.su.kernel 20000 0 /data/user/0/x default 3003 0 1\n",
+        "cam.caesar.vn 1000 0 /data/system default 3003 0 1\n",
+        "cam.caesar.vn 20000 0 /data/user/0/x default 3003 0 1\n",
     };
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
         boot_with(NULL, cases[i], true);
@@ -679,7 +679,7 @@ T(manager_pin_failure_is_logged)
     boot_with(NULL, MANAGER, true);
     fail_grant = 1;
     ksu_pkg_tracker_update();
-    assert(persist_calls == 0 && strstr(logbuf, "manager pin: grant cam.su.kernel(10500) failed"));
+    assert(persist_calls == 0 && strstr(logbuf, "manager pin: grant cam.caesar.vn(10500) failed"));
 }
 
 // ---- policy/pkg_xml.c ----
@@ -701,35 +701,35 @@ static bool is_release(ssize_t n)
 T(xml_finds_signer_written_in_place)
 {
     for (int abx = 0; abx < 2; abx++)
-        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.su.kernel")));
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.caesar.vn")));
 }
 
 T(xml_finds_signer_written_under_another_package)
 {
     for (int abx = 0; abx < 2; abx++)
-        assert(is_release(find_in_fixture(abx, SIG_RELEASE_REUSED, "cam.su.kernel")));
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE_REUSED, "cam.caesar.vn")));
 }
 
 T(xml_reports_the_appid)
 {
     for (int abx = 0; abx < 2; abx++) {
         xml_appid = 1;
-        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.su.kernel")) && xml_appid == 10500);
-        assert(is_release(find_in_fixture(abx, SIG_RELEASE_REUSED, "cam.su.kernel")) && xml_appid == 10500);
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.caesar.vn")) && xml_appid == 10500);
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE_REUSED, "cam.caesar.vn")) && xml_appid == 10500);
         assert(find_in_fixture(abx, SIG_RELEASE, "com.termux") > 0 && xml_appid == 10234);
         mgr_appid = 0;
-        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.su.kernel")) && xml_appid == 0);
+        assert(is_release(find_in_fixture(abx, SIG_RELEASE, "cam.caesar.vn")) && xml_appid == 0);
         mgr_appid = 10500;
     }
     // a package in a shared user carries sharedUserId instead, before or after its name
-    const char *shared = "<packages><package sharedUserId=\"10777\" name=\"cam.su.kernel\">"
+    const char *shared = "<packages><package sharedUserId=\"10777\" name=\"cam.caesar.vn\">"
                          "<sigs count=\"1\"><cert index=\"1\" key=\"3082\"/></sigs></package></packages>";
-    assert(ksu_pkg_xml_find_cert((const u8 *)shared, strlen(shared), "cam.su.kernel", certbuf, sizeof(certbuf),
+    assert(ksu_pkg_xml_find_cert((const u8 *)shared, strlen(shared), "cam.caesar.vn", certbuf, sizeof(certbuf),
                                  &xml_appid) == 2 &&
            xml_appid == 10777);
-    const char *junk = "<packages><package name=\"cam.su.kernel\" userId=\"x1\">"
+    const char *junk = "<packages><package name=\"cam.caesar.vn\" userId=\"x1\">"
                        "<sigs count=\"1\"><cert index=\"1\" key=\"3082\"/></sigs></package></packages>";
-    assert(ksu_pkg_xml_find_cert((const u8 *)junk, strlen(junk), "cam.su.kernel", certbuf, sizeof(certbuf),
+    assert(ksu_pkg_xml_find_cert((const u8 *)junk, strlen(junk), "cam.caesar.vn", certbuf, sizeof(certbuf),
                                  &xml_appid) == 2 &&
            xml_appid == 0);
 }
@@ -737,10 +737,10 @@ T(xml_reports_the_appid)
 T(xml_reports_other_signers_as_they_are)
 {
     for (int abx = 0; abx < 2; abx++) {
-        ssize_t n = find_in_fixture(abx, SIG_OTHER, "cam.su.kernel");
+        ssize_t n = find_in_fixture(abx, SIG_OTHER, "cam.caesar.vn");
         assert(n == sizeof(other_cert) && !memcmp(certbuf, other_cert, sizeof(other_cert)));
         // a release key that was rotated away from does not count
-        n = find_in_fixture(abx, SIG_ROTATED, "cam.su.kernel");
+        n = find_in_fixture(abx, SIG_ROTATED, "cam.caesar.vn");
         assert(n == sizeof(other_cert) && !memcmp(certbuf, other_cert, sizeof(other_cert)));
     }
 }
@@ -748,19 +748,19 @@ T(xml_reports_other_signers_as_they_are)
 T(xml_errors)
 {
     for (int abx = 0; abx < 2; abx++) {
-        assert(find_in_fixture(abx, SIG_TWO_SIGNERS, "cam.su.kernel") == -ENOTUNIQ);
-        assert(find_in_fixture(abx, SIG_NONE, "cam.su.kernel") == -ENODATA);
-        assert(find_in_fixture(abx, SIG_ABSENT, "cam.su.kernel") == -ENOENT);
+        assert(find_in_fixture(abx, SIG_TWO_SIGNERS, "cam.caesar.vn") == -ENOTUNIQ);
+        assert(find_in_fixture(abx, SIG_NONE, "cam.caesar.vn") == -ENODATA);
+        assert(find_in_fixture(abx, SIG_ABSENT, "cam.caesar.vn") == -ENOENT);
         assert(find_in_fixture(abx, SIG_RELEASE, "cam.su.kerne") == -ENOENT);
-        assert(find_in_fixture(abx, SIG_RELEASE, "cam.su.kernel.evil") == -ENOENT);
+        assert(find_in_fixture(abx, SIG_RELEASE, "cam.caesar.vn.evil") == -ENOENT);
         build_packages_xml(&fixture, abx, SIG_RELEASE);
-        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.su.kernel", certbuf, release_cert_len - 1,
+        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.caesar.vn", certbuf, release_cert_len - 1,
                                      &xml_appid) == -E2BIG);
-        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.su.kernel", certbuf, release_cert_len,
+        assert(ksu_pkg_xml_find_cert(fixture.buf, fixture.len, "cam.caesar.vn", certbuf, release_cert_len,
                                      &xml_appid) == (ssize_t)release_cert_len);
     }
-    assert(ksu_pkg_xml_find_cert((const u8 *)"", 0, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid) == -ENOENT);
-    assert(ksu_pkg_xml_find_cert((const u8 *)"ABX\0", 4, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid) ==
+    assert(ksu_pkg_xml_find_cert((const u8 *)"", 0, "cam.caesar.vn", certbuf, sizeof(certbuf), &xml_appid) == -ENOENT);
+    assert(ksu_pkg_xml_find_cert((const u8 *)"ABX\0", 4, "cam.caesar.vn", certbuf, sizeof(certbuf), &xml_appid) ==
            -EBADMSG);
 }
 
@@ -769,26 +769,26 @@ T(xml_text_from_older_android)
     // Signature.toCharsString wrote lower-case hex before attributeBytesHex
     const char *xml = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
                       "<!DOCTYPE packages>\n<packages>\n"
-                      "<package name='cam.su.kernel' userId=\"10500\">\n"
+                      "<package name='cam.caesar.vn' userId=\"10500\">\n"
                       "  <sigs count=\"1\">\n    <cert index = \"7\" key=\"30820a0bFF\"/>\n  </sigs>\n"
                       "</package>\n</packages>\n";
     ssize_t n =
-        ksu_pkg_xml_find_cert((const u8 *)xml, strlen(xml), "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid);
+        ksu_pkg_xml_find_cert((const u8 *)xml, strlen(xml), "cam.caesar.vn", certbuf, sizeof(certbuf), &xml_appid);
     assert(n == 5 && !memcmp(certbuf, "\x30\x82\x0a\x0b\xff", 5));
 
     const char *bad[] = {
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"1\" key=\"30F\"/></sigs></package></packages>",
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"1\" key=\"zz\"/></sigs></package></packages>",
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert key=\"3082\"/></sigs></package></packages>",
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"x\" key=\"3082\"/></sigs></package></packages>",
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"1\"/></sigs></package></packages>",
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"1\" key=\"\"/></sigs></package></packages>",
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"1\" key=\"3082\"/></sigs>",
-        "<packages><package name=\"cam.su.kernel\" <sigs>",
-        "<packages><package name=\"cam.su.kernel\"><sigs><cert index=\"1\" key=\"3082/></sigs></package></packages>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert index=\"1\" key=\"30F\"/></sigs></package></packages>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert index=\"1\" key=\"zz\"/></sigs></package></packages>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert key=\"3082\"/></sigs></package></packages>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert index=\"x\" key=\"3082\"/></sigs></package></packages>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert index=\"1\"/></sigs></package></packages>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert index=\"1\" key=\"\"/></sigs></package></packages>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert index=\"1\" key=\"3082\"/></sigs>",
+        "<packages><package name=\"cam.caesar.vn\" <sigs>",
+        "<packages><package name=\"cam.caesar.vn\"><sigs><cert index=\"1\" key=\"3082/></sigs></package></packages>",
     };
     for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
-        assert(ksu_pkg_xml_find_cert((const u8 *)bad[i], strlen(bad[i]), "cam.su.kernel", certbuf, sizeof(certbuf),
+        assert(ksu_pkg_xml_find_cert((const u8 *)bad[i], strlen(bad[i]), "cam.caesar.vn", certbuf, sizeof(certbuf),
                                      &xml_appid) == -EBADMSG);
 }
 
@@ -802,7 +802,7 @@ T(xml_truncated_or_corrupt_never_misreads)
         for (size_t len = 0; len < fixture.len; len++) {
             uint8_t *cut = malloc(len ? len : 1);
             memcpy(cut, fixture.buf, len);
-            ssize_t n = ksu_pkg_xml_find_cert(cut, len, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid);
+            ssize_t n = ksu_pkg_xml_find_cert(cut, len, "cam.caesar.vn", certbuf, sizeof(certbuf), &xml_appid);
             assert(n < 0 || is_release(n));
             free(cut);
         }
@@ -812,7 +812,7 @@ T(xml_truncated_or_corrupt_never_misreads)
             seed = seed * 1103515245 + 12345;
             size_t at = (seed >> 8) % fixture.len;
             copy.buf[at] ^= (uint8_t)(1 + (seed >> 24) % 255);
-            (void)ksu_pkg_xml_find_cert(copy.buf, copy.len, "cam.su.kernel", certbuf, sizeof(certbuf), &xml_appid);
+            (void)ksu_pkg_xml_find_cert(copy.buf, copy.len, "cam.caesar.vn", certbuf, sizeof(certbuf), &xml_appid);
         }
     }
 }
@@ -832,10 +832,10 @@ T(manager_pin_trusts_release_key_in_either_format)
     for (int abx = 0; abx < 2; abx++) {
         boot_manager(abx, SIG_RELEASE);
         ksu_pkg_tracker_update();
-        assert(strcmp(events, "grant cam.su.kernel:10500;prune;") == 0);
+        assert(strcmp(events, "grant cam.caesar.vn:10500;prune;") == 0);
         boot_manager(abx, SIG_RELEASE_REUSED);
         ksu_pkg_tracker_update();
-        assert(strcmp(events, "grant cam.su.kernel:10500;prune;") == 0);
+        assert(strcmp(events, "grant cam.caesar.vn:10500;prune;") == 0);
     }
 }
 
@@ -847,7 +847,7 @@ T(manager_pin_trusts_backup_key)
         for (size_t i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++) {
             boot_manager(abx, sigs[i]);
             ksu_pkg_tracker_update();
-            assert(strcmp(events, "grant cam.su.kernel:10500;prune;") == 0);
+            assert(strcmp(events, "grant cam.caesar.vn:10500;prune;") == 0);
         }
     }
 }
@@ -863,7 +863,7 @@ T(manager_pin_refuses_impostor)
     boot_manager(true, SIG_OTHER);
     ksu_pkg_tracker_update();
     // the log names the certificate that was refused
-    assert(strstr(logbuf, "manager pin: cam.su.kernel is signed by untrusted certificate "));
+    assert(strstr(logbuf, "manager pin: cam.caesar.vn is signed by untrusted certificate "));
     assert(!strstr(logbuf, KSU_MANAGER_CERT));
 }
 
@@ -876,9 +876,9 @@ T(manager_pin_revokes_impostor_on_reused_appid)
     write_packages_xml(true, SIG_OTHER);
     reboot_keep_fs();
     ksu_pkg_tracker_update();
-    assert(strcmp(events, "revoke cam.su.kernel:10500;prune;") == 0);
+    assert(strcmp(events, "revoke cam.caesar.vn:10500;prune;") == 0);
     assert(!__ksu_is_allow_uid(10500) && persist_calls == 1);
-    assert(strstr(logbuf, "manager pin: revoked cam.su.kernel(10500)"));
+    assert(strstr(logbuf, "manager pin: revoked cam.caesar.vn(10500)"));
     // nothing more to take away
     reboot_keep_fs();
     ksu_pkg_tracker_update();
@@ -892,7 +892,7 @@ T(manager_pin_unknown_keeps_state)
     sh("rm -f '%s/data/system/packages.xml'", root);
     ksu_pkg_tracker_update();
     assert(strcmp(events, "prune;") == 0);
-    assert(strstr(logbuf, "manager pin: cannot check cam.su.kernel(10500)"));
+    assert(strstr(logbuf, "manager pin: cannot check cam.caesar.vn(10500)"));
 
     boot_manager(true, SIG_NONE);
     ksu_pkg_tracker_update();
@@ -915,12 +915,12 @@ T(manager_seed_entry_goes_through_the_pin)
 {
     char pkgs[1024];
     snprintf(pkgs, sizeof(pkgs), "%s%s", PKGS, MANAGER);
-    boot_with(NONCE ",com.termux:10234,cam.su.kernel:10500", pkgs, true);
+    boot_with(NONCE ",com.termux:10234,cam.caesar.vn:10500", pkgs, true);
     ksu_pkg_tracker_update();
-    assert(strcmp(events, "grant com.termux:10234;grant cam.su.kernel:10500;prune;") == 0);
-    assert(strstr(logbuf, "seed: skip cam.su.kernel: the manager pin checks its signature"));
+    assert(strcmp(events, "grant com.termux:10234;grant cam.caesar.vn:10500;prune;") == 0);
+    assert(strstr(logbuf, "seed: skip cam.caesar.vn: the manager pin checks its signature"));
 
-    boot_with(NONCE ",com.termux:10234,cam.su.kernel:10500", pkgs, true);
+    boot_with(NONCE ",com.termux:10234,cam.caesar.vn:10500", pkgs, true);
     write_packages_xml(true, SIG_OTHER);
     ksu_pkg_tracker_update();
     assert(strcmp(events, "grant com.termux:10234;prune;") == 0);

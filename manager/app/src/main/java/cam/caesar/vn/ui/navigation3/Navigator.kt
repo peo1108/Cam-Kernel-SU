@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.navigation3
+package cam.caesar.vn.ui.navigation3
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf

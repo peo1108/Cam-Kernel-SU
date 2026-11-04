@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.util.Log
-import cam.su.kernel.data.model.HideBootloaderStatus
-import cam.su.kernel.data.model.HidingAudit
+import cam.caesar.vn.data.model.HideBootloaderStatus
+import cam.caesar.vn.data.model.HidingAudit
 import org.json.JSONObject
 import java.io.File
 

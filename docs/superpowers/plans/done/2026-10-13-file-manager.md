@@ -86,7 +86,7 @@ Cam chốt ngày 2026-10-13: "làm giống y như MT Manager, kiểu clone". B�
 
 ### Task 1: `ICamFileService` và `CamFileService`
 
-**Files:** Create `manager/app/src/main/aidl/cam/su/kernel/files/ICamFileService.aidl`, `FileEntry.aidl`; `manager/app/src/main/java/cam/su/kernel/files/FileEntry.kt` (Parcelable), `FsBackend.kt`, `FsPath.kt`, `AndroidIds.kt`, `RootFs.kt`, `OsBackend.kt`, `CamFileService.kt`, `CamFileClient.kt`. RootService của libsu không cần khai báo trong manifest (như `CamRootService`).
+**Files:** Create `manager/app/src/main/aidl/cam/caesar/vn/files/ICamFileService.aidl`, `FileEntry.aidl`; `manager/app/src/main/java/cam/caesar/vn/files/FileEntry.kt` (Parcelable), `FsBackend.kt`, `FsPath.kt`, `AndroidIds.kt`, `RootFs.kt`, `OsBackend.kt`, `CamFileService.kt`, `CamFileClient.kt`. RootService của libsu không cần khai báo trong manifest (như `CamRootService`).
 
 **Interfaces:**
 - `FileEntry(name, path, type: FILE|DIR|LINK|OTHER, linkTarget: String?, linkBroken, size, mtime, mode, uid, gid, ownerName, groupName, context: String?)`.

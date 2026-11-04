@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.files
+package cam.caesar.vn.ui.screen.files
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,20 +27,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.files.ConflictChoice
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.FileFormat
-import cam.su.kernel.files.FileKind
-import cam.su.kernel.files.FileKinds
-import cam.su.kernel.files.FileMode
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.files.OpKind
-import cam.su.kernel.files.SortBy
-import cam.su.kernel.ui.component.ProgressDetails
-import cam.su.kernel.ui.viewmodel.FilesUiState
-import cam.su.kernel.ui.viewmodel.FilesViewModel
-import cam.su.kernel.ui.viewmodel.OpUi
+import cam.caesar.vn.R
+import cam.caesar.vn.files.ConflictChoice
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.FileFormat
+import cam.caesar.vn.files.FileKind
+import cam.caesar.vn.files.FileKinds
+import cam.caesar.vn.files.FileMode
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.files.OpKind
+import cam.caesar.vn.files.SortBy
+import cam.caesar.vn.ui.component.ProgressDetails
+import cam.caesar.vn.ui.viewmodel.FilesUiState
+import cam.caesar.vn.ui.viewmodel.FilesViewModel
+import cam.caesar.vn.ui.viewmodel.OpUi
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -114,7 +114,7 @@ internal fun TrashDialog(vm: FilesViewModel) {
 }
 
 /** Just enough of a FileEntry for a trash row's icon. */
-private fun fileEntryOf(item: cam.su.kernel.files.TrashItem) = FileEntry(
+private fun fileEntryOf(item: cam.caesar.vn.files.TrashItem) = FileEntry(
     name = item.name, path = item.path, type = FileEntry.TYPE_FILE, size = item.size, mtime = item.deletedAt,
     mode = 0, uid = 0, gid = 0, owner = "", group = "", context = null,
 )

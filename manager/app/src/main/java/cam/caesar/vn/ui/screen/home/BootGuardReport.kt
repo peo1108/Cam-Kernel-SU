@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,10 +14,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.data.model.BootGuardCulprit
-import cam.su.kernel.data.model.BootGuardReason
-import cam.su.kernel.data.model.BootGuardStatus
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.BootGuardCulprit
+import cam.caesar.vn.data.model.BootGuardReason
+import cam.caesar.vn.data.model.BootGuardStatus
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton

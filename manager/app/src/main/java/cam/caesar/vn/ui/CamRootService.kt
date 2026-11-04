@@ -1,4 +1,4 @@
-package cam.su.kernel.ui
+package cam.caesar.vn.ui
 
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -8,9 +8,9 @@ import android.os.IBinder
 import android.os.UserManager
 import android.util.Log
 import com.topjohnwu.superuser.ipc.RootService
-import cam.su.kernel.ICamRootService
-import cam.su.kernel.CamRootClient
-import cam.su.kernel.CamNative
+import cam.caesar.vn.ICamRootService
+import cam.caesar.vn.CamRootClient
+import cam.caesar.vn.CamNative
 import rikka.parcelablelist.ParcelableListSlice
 
 /**

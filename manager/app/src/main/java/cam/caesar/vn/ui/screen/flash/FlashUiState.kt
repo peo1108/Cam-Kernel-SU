@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.flash
+package cam.caesar.vn.ui.screen.flash
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable

@@ -1,16 +1,16 @@
-package cam.su.kernel.ui.slime
+package cam.caesar.vn.ui.slime
 
 import androidx.compose.ui.geometry.Offset
-import cam.su.kernel.ui.screen.home.arena.BO
-import cam.su.kernel.ui.screen.home.arena.CHANH
-import cam.su.kernel.ui.screen.home.arena.Cast
-import cam.su.kernel.ui.screen.home.arena.MOCHI
-import cam.su.kernel.ui.screen.home.arena.Mood
-import cam.su.kernel.ui.screen.home.arena.PI_F
-import cam.su.kernel.ui.screen.home.arena.SODA
-import cam.su.kernel.ui.screen.home.arena.SlimePose
-import cam.su.kernel.ui.screen.home.arena.easeInOutCubic
-import cam.su.kernel.ui.screen.home.arena.lerp
+import cam.caesar.vn.ui.screen.home.arena.BO
+import cam.caesar.vn.ui.screen.home.arena.CHANH
+import cam.caesar.vn.ui.screen.home.arena.Cast
+import cam.caesar.vn.ui.screen.home.arena.MOCHI
+import cam.caesar.vn.ui.screen.home.arena.Mood
+import cam.caesar.vn.ui.screen.home.arena.PI_F
+import cam.caesar.vn.ui.screen.home.arena.SODA
+import cam.caesar.vn.ui.screen.home.arena.SlimePose
+import cam.caesar.vn.ui.screen.home.arena.easeInOutCubic
+import cam.caesar.vn.ui.screen.home.arena.lerp
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min

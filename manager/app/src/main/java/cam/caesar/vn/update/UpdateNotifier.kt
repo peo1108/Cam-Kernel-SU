@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,14 +7,14 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import cam.su.kernel.R
-import cam.su.kernel.account.LockedRelease
-import cam.su.kernel.ui.CamActivity
+import cam.caesar.vn.R
+import cam.caesar.vn.account.LockedRelease
+import cam.caesar.vn.ui.CamActivity
 
 /** Notifications for "an update is out" and "the update was installed". */
 object UpdateNotifier {
     const val CHANNEL_ID = "app_update"
-    const val EXTRA_SHOW_UPDATE = "cam.su.kernel.extra.SHOW_UPDATE"
+    const val EXTRA_SHOW_UPDATE = "cam.caesar.vn.extra.SHOW_UPDATE"
 
     private const val ID_AVAILABLE = 0x0A70
     private const val ID_UPDATED = 0x0A71

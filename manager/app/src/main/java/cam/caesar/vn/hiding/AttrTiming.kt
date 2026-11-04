@@ -1,4 +1,4 @@
-package cam.su.kernel.hiding
+package cam.caesar.vn.hiding
 
 /**
  * Duck Detector's SELinux hide timing probe (`attr_timing_probe.cpp`, nightly b77fef8d):

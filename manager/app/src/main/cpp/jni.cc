@@ -14,7 +14,7 @@
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cam_su_kernel_CamNative_getVersion(JNIEnv *env, jobject) {
+Java_cam_caesar_vn_CamNative_getVersion(JNIEnv *env, jobject) {
     int version = get_version();
     if (version > 0) {
         return version;
@@ -25,19 +25,19 @@ Java_cam_su_kernel_CamNative_getVersion(JNIEnv *env, jobject) {
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cam_su_kernel_CamNative_getKernelUAPIVersion(JNIEnv *env, jobject) {
+Java_cam_caesar_vn_CamNative_getKernelUAPIVersion(JNIEnv *env, jobject) {
     return get_kernel_uapi_version();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cam_su_kernel_CamNative_getManagerUAPIVersion(JNIEnv *env, jobject) {
+Java_cam_caesar_vn_CamNative_getManagerUAPIVersion(JNIEnv *env, jobject) {
     return get_manager_uapi_version();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cam_su_kernel_CamNative_getSuperuserCount(JNIEnv *env, jobject) {
+Java_cam_caesar_vn_CamNative_getSuperuserCount(JNIEnv *env, jobject) {
     struct ksu_new_get_allow_list_cmd cmd = {
         .count = 0
     };
@@ -47,37 +47,37 @@ Java_cam_su_kernel_CamNative_getSuperuserCount(JNIEnv *env, jobject) {
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isSafeMode(JNIEnv *env, jclass clazz) {
+Java_cam_caesar_vn_CamNative_isSafeMode(JNIEnv *env, jclass clazz) {
     return is_safe_mode();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isLkmMode(JNIEnv *env, jclass clazz) {
+Java_cam_caesar_vn_CamNative_isLkmMode(JNIEnv *env, jclass clazz) {
     return is_lkm_mode();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isLkmBundled(JNIEnv *env, jclass clazz) {
+Java_cam_caesar_vn_CamNative_isLkmBundled(JNIEnv *env, jclass clazz) {
     return is_lkm_bundled();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isLateLoadMode(JNIEnv *env, jclass clazz) {
+Java_cam_caesar_vn_CamNative_isLateLoadMode(JNIEnv *env, jclass clazz) {
     return is_late_load_mode();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isPrBuild(JNIEnv *env, jclass clazz) {
+Java_cam_caesar_vn_CamNative_isPrBuild(JNIEnv *env, jclass clazz) {
     return is_pr_build();
 }
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_cam_su_kernel_CamNative_getSourceId(JNIEnv *env, jclass clazz) {
+Java_cam_caesar_vn_CamNative_getSourceId(JNIEnv *env, jclass clazz) {
     struct ksu_get_source_id_cmd cmd;
     get_source_id(&cmd);
     return env->NewStringUTF(cmd.id);
@@ -142,7 +142,7 @@ static void fillArrayWithList(JNIEnv *env, jobject list, int *data, int count) {
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_cam_su_kernel_CamNative_getAppProfile(JNIEnv *env, jobject, jstring pkg, jint uid) {
+Java_cam_caesar_vn_CamNative_getAppProfile(JNIEnv *env, jobject, jstring pkg, jint uid) {
     if (env->GetStringLength(pkg) > KSU_MAX_PACKAGE_NAME) {
         return nullptr;
     }
@@ -160,7 +160,7 @@ Java_cam_su_kernel_CamNative_getAppProfile(JNIEnv *env, jobject, jstring pkg, ji
 
     bool useDefaultProfile = get_app_profile(&profile) != 0;
 
-    auto cls = env->FindClass("cam/su/kernel/CamNative$Profile");
+    auto cls = env->FindClass("cam/caesar/vn/CamNative$Profile");
     auto constructor = env->GetMethodID(cls, "<init>", "()V");
     auto obj = env->NewObject(cls, constructor);
     auto keyField = env->GetFieldID(cls, "name", "Ljava/lang/String;");
@@ -240,8 +240,8 @@ Java_cam_su_kernel_CamNative_getAppProfile(JNIEnv *env, jobject, jstring pkg, ji
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_setAppProfile(JNIEnv *env, jobject clazz, jobject profile) {
-    auto cls = env->FindClass("cam/su/kernel/CamNative$Profile");
+Java_cam_caesar_vn_CamNative_setAppProfile(JNIEnv *env, jobject clazz, jobject profile) {
+    auto cls = env->FindClass("cam/caesar/vn/CamNative$Profile");
 
     auto keyField = env->GetFieldID(cls, "name", "Ljava/lang/String;");
     auto currentUidField = env->GetFieldID(cls, "currentUid", "I");
@@ -329,47 +329,47 @@ Java_cam_su_kernel_CamNative_setAppProfile(JNIEnv *env, jobject clazz, jobject p
 }
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_uidShouldUmount(JNIEnv *env, jobject thiz, jint uid) {
+Java_cam_caesar_vn_CamNative_uidShouldUmount(JNIEnv *env, jobject thiz, jint uid) {
     return uid_should_umount(uid);
 }
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isSuEnabled(JNIEnv *env, jobject thiz) {
+Java_cam_caesar_vn_CamNative_isSuEnabled(JNIEnv *env, jobject thiz) {
     return is_su_enabled();
 }
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_setSuEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_cam_caesar_vn_CamNative_setSuEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     return set_su_enabled(enabled);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isKernelUmountEnabled(JNIEnv *env, jobject thiz) {
+Java_cam_caesar_vn_CamNative_isKernelUmountEnabled(JNIEnv *env, jobject thiz) {
     return is_kernel_umount_enabled();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_setKernelUmountEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_cam_caesar_vn_CamNative_setKernelUmountEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     return set_kernel_umount_enabled(enabled);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_cam_su_kernel_CamNative_isSelinuxHideEnabled(JNIEnv *env, jobject thiz) {
+Java_cam_caesar_vn_CamNative_isSelinuxHideEnabled(JNIEnv *env, jobject thiz) {
     return is_selinux_hide_enabled();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cam_su_kernel_CamNative_setSelinuxHideEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+Java_cam_caesar_vn_CamNative_setSelinuxHideEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
     return set_selinux_hide_enabled(enabled);
 }
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_cam_su_kernel_CamNative_getUserName(JNIEnv *env, jobject thiz, jint uid) {
+Java_cam_caesar_vn_CamNative_getUserName(JNIEnv *env, jobject thiz, jint uid) {
     struct passwd *pw = getpwuid((uid_t) uid);
     if (pw && pw->pw_name && pw->pw_name[0] != '\0') {
         return env->NewStringUTF(pw->pw_name);
@@ -414,7 +414,7 @@ int fork_dont_care_and_exec_camd(const char *path, const char *pkg) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_cam_su_kernel_jailbreak_CamZygotePreload_forkDontCareAndExecCamd(JNIEnv *env, jclass clazz,
+Java_cam_caesar_vn_jailbreak_CamZygotePreload_forkDontCareAndExecCamd(JNIEnv *env, jclass clazz,
                                                                         jstring camd_path, jstring pkg_name) {
     auto path = env->GetStringUTFChars(camd_path, nullptr);
     auto pkg = env->GetStringUTFChars(pkg_name, nullptr);

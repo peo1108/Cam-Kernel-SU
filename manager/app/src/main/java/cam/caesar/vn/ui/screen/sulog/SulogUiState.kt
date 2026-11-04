@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.sulog
+package cam.caesar.vn.ui.screen.sulog
 
-import cam.su.kernel.ui.util.SulogEntry
-import cam.su.kernel.ui.util.SulogEventFilter
-import cam.su.kernel.ui.util.SulogFile
+import cam.caesar.vn.ui.util.SulogEntry
+import cam.caesar.vn.ui.util.SulogEventFilter
+import cam.caesar.vn.ui.util.SulogFile
 
 data class SulogScreenState(
     val isLoading: Boolean = true,

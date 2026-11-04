@@ -1,6 +1,6 @@
-package cam.su.kernel.hiding
+package cam.caesar.vn.hiding
 
-import cam.su.kernel.data.model.HidingAudit
+import cam.caesar.vn.data.model.HidingAudit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

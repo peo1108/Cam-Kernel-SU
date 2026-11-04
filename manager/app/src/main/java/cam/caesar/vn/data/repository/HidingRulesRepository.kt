@@ -1,10 +1,10 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
-import cam.su.kernel.camApp
-import cam.su.kernel.hiding.HidingRules
+import cam.caesar.vn.camApp
+import cam.caesar.vn.hiding.HidingRules
 import okhttp3.CacheControl
 import okhttp3.Request
 import org.json.JSONObject
@@ -52,7 +52,7 @@ data class HidingRulesStatus(
 }
 
 /**
- * The rules [cam.su.kernel.hiding.AppViewProbe] uses: the copy in the APK, or a newer one
+ * The rules [cam.caesar.vn.hiding.AppViewProbe] uses: the copy in the APK, or a newer one
  * signed with the key of scripts/sign_hiding_rules.py and downloaded from this repo.
  * Only data comes down, never code, and nothing is fetched in the background: the hiding
  * check page asks, at most every [CHECK_INTERVAL_MS] unless the user asks again.

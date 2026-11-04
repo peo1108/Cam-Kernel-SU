@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 /**
  * Speed and time left of a job that reports how far it got: measured over the last

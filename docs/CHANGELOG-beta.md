@@ -21,10 +21,10 @@ Các bản trước khi Cam Kernel SU phát hành chính thức (đánh số l�
 ### Tính năng mới
 - Khi cài, có thể chặn một số module nhân nạp lúc khởi động (ví dụ module chống root của hãng): app tự điền sẵn các module đáng ngờ đang nạp, bạn sửa hoặc xóa tùy ý
 ### Kiểm tra ẩn root
-- Theo Duck Detector mới nhất (78aabb41, rule version 5): bản này nâng mục đo thời gian ghi context SELinux lên mức Nguy hiểm, nhưng SU Kernel đã sửa lỗi đó từ trước nên không bị phát hiện
+- Theo Duck Detector mới nhất (78aabb41, rule version 5): bản này nâng mục đo thời gian ghi context SELinux lên mức Nguy hiểm, nhưng Cam đã sửa lỗi đó từ trước nên không bị phát hiện
 - Che thêm một kênh đo thời gian khi ghi context SELinux (theo bản vá mới của nhân)
 ### Bảo mật
-- Nhân chỉ cấp root cho app SU Kernel khi app được ký bằng khóa chính thức (đọc từ chữ ký Android đã kiểm lúc cài, không quét file APK): app giả đặt trùng tên gói không còn lấy được root
+- Nhân chỉ cấp root cho app Cam khi app được ký bằng khóa chính thức (đọc từ chữ ký Android đã kiểm lúc cài, không quét file APK): app giả đặt trùng tên gói không còn lấy được root
 ### Lưu ý
 - App ngân hàng kiểm tra bằng key attestation vẫn thấy máy mở khóa: sửa prop không đổi được chứng chỉ này
 - Phần chữ ký chỉ có hiệu lực sau khi cài lại nhân (LKM) của bản này. Bản app tự build hoặc ký bằng khóa khác sẽ không còn có root
@@ -83,7 +83,7 @@ Các bản trước khi Cam Kernel SU phát hành chính thức (đánh số l�
 
 ## 3.0.1 - 2026-10-10
 ### Kiểm tra ẩn root
-- Cập nhật rule theo Duck Detector mới nhất (3aa2749c, rule version 4): đã xem hai probe SELinux mới của họ (đếm lượt tra AVC, ghi context có kiểm soát); theo mã nguồn, ẩn SELinux của SU Kernel không bị hai probe này phát hiện (chưa đo trên máy)
+- Cập nhật rule theo Duck Detector mới nhất (3aa2749c, rule version 4): đã xem hai probe SELinux mới của họ (đếm lượt tra AVC, ghi context có kiểm soát); theo mã nguồn, ẩn SELinux của Cam không bị hai probe này phát hiện (chưa đo trên máy)
 ### Lưu ý
 - Bản đầu tiên cập nhật qua OTA: nếu bạn đang ở 3.0.0, app tự báo và cài bản này.
 

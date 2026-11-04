@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import android.content.ContentProvider
 import android.content.ContentValues
@@ -8,7 +8,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
-import cam.su.kernel.BuildConfig
+import cam.caesar.vn.BuildConfig
 import kotlinx.coroutines.runBlocking
 import java.io.FileNotFoundException
 import java.util.Locale

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui
+package cam.caesar.vn.ui.webui
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -21,13 +21,13 @@ import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import cam.su.kernel.R
-import cam.su.kernel.data.model.AppInfo
-import cam.su.kernel.data.repository.ModuleRepositoryImpl
-import cam.su.kernel.ui.util.AppIconCache
-import cam.su.kernel.ui.util.createRootShell
-import cam.su.kernel.ui.util.withMainUserUid
-import cam.su.kernel.ui.viewmodel.SuperUserViewModel
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.AppInfo
+import cam.caesar.vn.data.repository.ModuleRepositoryImpl
+import cam.caesar.vn.ui.util.AppIconCache
+import cam.caesar.vn.ui.util.createRootShell
+import cam.caesar.vn.ui.util.withMainUserUid
+import cam.caesar.vn.ui.viewmodel.SuperUserViewModel
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File

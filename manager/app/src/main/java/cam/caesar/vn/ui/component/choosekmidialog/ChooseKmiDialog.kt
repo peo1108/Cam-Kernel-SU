@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.choosekmidialog
+package cam.caesar.vn.ui.component.choosekmidialog
 
 import androidx.compose.runtime.Composable
 

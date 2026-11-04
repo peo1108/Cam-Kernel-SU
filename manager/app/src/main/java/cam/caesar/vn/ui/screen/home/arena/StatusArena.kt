@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home.arena
+package cam.caesar.vn.ui.screen.home.arena
 
 import android.os.Build
 import android.provider.Settings
@@ -75,20 +75,20 @@ import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sign
 import kotlin.math.sin
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.glass.GlassDefaults
-import cam.su.kernel.ui.component.glass.glassMaterial
-import cam.su.kernel.ui.component.pagerise.pageRiseCard
-import cam.su.kernel.ui.intro.IntroGate
-import cam.su.kernel.ui.screen.home.arena.three.Arena3D
-import cam.su.kernel.ui.screen.home.arena.three.PanoramaMap
-import cam.su.kernel.ui.slime.SlimeHome
-import cam.su.kernel.ui.slime.drawHomeGlass
-import cam.su.kernel.ui.slime.roamCostume
-import cam.su.kernel.ui.slime.slimeSurface
-import cam.su.kernel.ui.theme.AppFontFamily
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.glass.GlassDefaults
+import cam.caesar.vn.ui.component.glass.glassMaterial
+import cam.caesar.vn.ui.component.pagerise.pageRiseCard
+import cam.caesar.vn.ui.intro.IntroGate
+import cam.caesar.vn.ui.screen.home.arena.three.Arena3D
+import cam.caesar.vn.ui.screen.home.arena.three.PanoramaMap
+import cam.caesar.vn.ui.slime.SlimeHome
+import cam.caesar.vn.ui.slime.drawHomeGlass
+import cam.caesar.vn.ui.slime.roamCostume
+import cam.caesar.vn.ui.slime.slimeSurface
+import cam.caesar.vn.ui.theme.AppFontFamily
 import top.yukonga.miuix.kmp.basic.Text
-import cam.su.kernel.ui.util.rememberBackgroundRelease
+import cam.caesar.vn.ui.util.rememberBackgroundRelease
 
 /**
  * The "working" status card as a small cartoon. Four jelly slimes of different sizes and tempers

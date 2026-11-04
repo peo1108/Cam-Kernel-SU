@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.templateeditor
+package cam.caesar.vn.ui.screen.templateeditor
 
-import cam.su.kernel.ui.component.glass.GlassButtonGroup
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.component.glass.GlassButtonGroup
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -32,12 +32,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.miuix.EditText
-import cam.su.kernel.ui.component.profile.RootProfileConfig
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.miuix.EditText
+import cam.caesar.vn.ui.component.profile.RootProfileConfig
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold

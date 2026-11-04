@@ -35,7 +35,7 @@
 Throwaway probe; nothing of it is committed except the findings.
 
 **Files:**
-- Modify (temporarily, reverted in Step 4): `manager/app/src/main/java/cam/su/kernel/ui/screen/appprofile/AppProfileScreen.kt`, `manager/app/src/main/java/cam/su/kernel/ui/screen/superuser/SuperUserScreen.kt`
+- Modify (temporarily, reverted in Step 4): `manager/app/src/main/java/cam/caesar/vn/ui/screen/appprofile/AppProfileScreen.kt`, `manager/app/src/main/java/cam/caesar/vn/ui/screen/superuser/SuperUserScreen.kt`
 - Modify: `docs/superpowers/specs/2026-10-16-superuser-hero-design.md` (section 3, risk 1)
 
 **Interfaces:** none.
@@ -43,19 +43,19 @@ Throwaway probe; nothing of it is committed except the findings.
 - [ ] **Step 1: Add probe logging.** In `AppProfileScreen` and in `SuperUserScreen`: `val nav = LocalNavTransitionScope.current` and `LaunchedEffect(Unit) { snapshotFlow { nav.relativeDepth to nav.isRunning }.collect { Log.i("CamHero", "<screen> depth=${it.first} running=${it.second}") } }`, plus `DisposableEffect(Unit) { Log.i("CamHero", "<screen> composed"); onDispose { Log.i("CamHero", "<screen> disposed") } }`.
 - [ ] **Step 2: Build, install, record.** `Push-Location K:\manager; & K:\manager\gradlew.bat :app:assembleDebug`, `adb install -r` the debug APK, `adb logcat -c`. On the tablet: Superuser tab → tap a card → "Mở hồ sơ đầy đủ" → wait 2 s → back button; again with a full edge swipe; again with a half swipe released (cancel). `adb logcat -d -s CamHero`.
   Expected to learn: the App Profile depth range on open/back (spec assumes -1 → 0 → -1), whether depth follows the swipe continuously, and whether "superuser disposed" appears while App Profile is on top.
-- [ ] **Step 3: Jank baseline.** Same build, Superuser tab, first card expanded: `adb shell dumpsys gfxinfo cam.su.kernel reset`, then 10 × (tap "Mở hồ sơ đầy đủ" (coordinates from `uiautomator dump`), wait 1.5 s, `input keyevent KEYCODE_BACK`, wait 1.5 s), then `adb shell dumpsys gfxinfo cam.su.kernel | grep -E "Total frames|Janky frames|90th|99th"`. Keep the numbers.
-- [ ] **Step 4: Revert the probe.** `git diff --stat` shows only the two probe files; restore them with `git restore manager/app/src/main/java/cam/su/kernel/ui/screen/appprofile/AppProfileScreen.kt manager/app/src/main/java/cam/su/kernel/ui/screen/superuser/SuperUserScreen.kt` (never a bare `git restore .`/`checkout`: the `uapi` junction).
+- [ ] **Step 3: Jank baseline.** Same build, Superuser tab, first card expanded: `adb shell dumpsys gfxinfo cam.caesar.vn reset`, then 10 × (tap "Mở hồ sơ đầy đủ" (coordinates from `uiautomator dump`), wait 1.5 s, `input keyevent KEYCODE_BACK`, wait 1.5 s), then `adb shell dumpsys gfxinfo cam.caesar.vn | grep -E "Total frames|Janky frames|90th|99th"`. Keep the numbers.
+- [ ] **Step 4: Revert the probe.** `git diff --stat` shows only the two probe files; restore them with `git restore manager/app/src/main/java/cam/caesar/vn/ui/screen/appprofile/AppProfileScreen.kt manager/app/src/main/java/cam/caesar/vn/ui/screen/superuser/SuperUserScreen.kt` (never a bare `git restore .`/`checkout`: the `uapi` junction).
 - [ ] **Step 5: Record findings.** Replace "not yet observed" in spec risk 1 with what Step 2 showed and add the Step 3 baseline line. If the depth range or sign differs from -1 → 0, update `heroProgress` in Task 2 (its test values follow the observed range) before starting it. If the Superuser page is disposed while covered, note it: the return flight then relies on re-registration (spec risk 1).
 - [ ] **Step 6: Commit.** `git add docs/superpowers/specs/2026-10-16-superuser-hero-design.md`; `git commit -m "docs: Record how miuix-nav moves App Profile for the icon flight"`.
 
 ### Task 2: Flight decisions (`HeroMath.kt`)
 
 **Files:**
-- Create: `manager/app/src/main/java/cam/su/kernel/ui/component/hero/HeroMath.kt`
-- Test: `manager/app/src/test/java/cam/su/kernel/ui/component/hero/HeroMathTest.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/ui/component/hero/HeroMath.kt`
+- Test: `manager/app/src/test/java/cam/caesar/vn/ui/component/hero/HeroMathTest.kt`
 
 **Interfaces:**
-- Produces (all `internal`, package `cam.su.kernel.ui.component.hero`):
+- Produces (all `internal`, package `cam.caesar.vn.ui.component.hero`):
   - `const val HERO_MIN_VISIBLE = 0.9f`
   - `enum class HeroPhase { Flying, Docked, FadingOut, Gone }`
   - `fun heroProgress(depth: Float): Float`
@@ -100,7 +100,7 @@ Throwaway probe; nothing of it is committed except the findings.
 }
 ```
 
-- [ ] **Step 2: Run, expect FAIL** (unresolved references): `Push-Location K:\manager; & K:\manager\gradlew.bat :app:testDebugUnitTest --tests "cam.su.kernel.ui.component.hero.*"`.
+- [ ] **Step 2: Run, expect FAIL** (unresolved references): `Push-Location K:\manager; & K:\manager\gradlew.bat :app:testDebugUnitTest --tests "cam.caesar.vn.ui.component.hero.*"`.
 - [ ] **Step 3: Implement `HeroMath.kt`.** Rules, in this order: no target → `Gone`; `depth > 0.001f` → `Docked`; `heroProgress(depth) >= 0.999f && !running` → `Docked`; no source → `FadingOut`; otherwise `Flying`. `hidesSource` = `Flying`; `hidesTarget` = `Flying` or `FadingOut`. `visibleFraction` = area of `clipped.intersect(full)` / area of `full`, 0 when `full` has no area. KDoc on each saying what the value means for the overlay.
 - [ ] **Step 4: Run, expect PASS** (same command).
 - [ ] **Step 5: Commit.** `git add` the two files; `git commit -m "manager: Add the icon flight decisions"`.
@@ -108,16 +108,16 @@ Throwaway probe; nothing of it is committed except the findings.
 ### Task 3: Overlay and wiring
 
 **Files:**
-- Create: `manager/app/src/main/java/cam/su/kernel/ui/component/hero/Hero.kt`
-- Modify: `manager/app/src/main/java/cam/su/kernel/ui/CamActivity.kt` (provide `LocalHero` around `navDisplay()`; `HeroOverlay` drawn over it in the `Scaffold` at line ~364)
-- Modify: `manager/app/src/main/java/cam/su/kernel/ui/screen/superuser/SuperUserMiuix.kt` (`GroupItem`: icon `AppIconImage` modifier `.padding(end = 10.dp).size(48.dp)` and the label `Text`'s `Modifier.basicMarquee()`)
-- Modify: `manager/app/src/main/java/cam/su/kernel/ui/screen/superuser/SuperUserScreen.kt` (`onOpenProfile`, line ~69)
-- Modify: `manager/app/src/main/java/cam/su/kernel/ui/screen/appprofile/AppProfileMiuix.kt` (`appIcon` lambda line ~157; label `Text` in `AppProfileInner` line ~236)
-- Modify: `manager/app/src/main/java/cam/su/kernel/ui/screen/appprofile/AppProfileScreen.kt` (end the flight when the page leaves; the header is item 0 of a `LazyColumn`, so the header itself may dispose while the page lives — this file is a fifth edit beyond the spec's list for that reason)
+- Create: `manager/app/src/main/java/cam/caesar/vn/ui/component/hero/Hero.kt`
+- Modify: `manager/app/src/main/java/cam/caesar/vn/ui/CamActivity.kt` (provide `LocalHero` around `navDisplay()`; `HeroOverlay` drawn over it in the `Scaffold` at line ~364)
+- Modify: `manager/app/src/main/java/cam/caesar/vn/ui/screen/superuser/SuperUserMiuix.kt` (`GroupItem`: icon `AppIconImage` modifier `.padding(end = 10.dp).size(48.dp)` and the label `Text`'s `Modifier.basicMarquee()`)
+- Modify: `manager/app/src/main/java/cam/caesar/vn/ui/screen/superuser/SuperUserScreen.kt` (`onOpenProfile`, line ~69)
+- Modify: `manager/app/src/main/java/cam/caesar/vn/ui/screen/appprofile/AppProfileMiuix.kt` (`appIcon` lambda line ~157; label `Text` in `AppProfileInner` line ~236)
+- Modify: `manager/app/src/main/java/cam/caesar/vn/ui/screen/appprofile/AppProfileScreen.kt` (end the flight when the page leaves; the header is item 0 of a `LazyColumn`, so the header itself may dispose while the page lives — this file is a fifth edit beyond the spec's list for that reason)
 
 **Interfaces:**
 - Consumes: everything Task 2 produces.
-- Produces (package `cam.su.kernel.ui.component.hero`):
+- Produces (package `cam.caesar.vn.ui.component.hero`):
   - `enum class HeroPart { Icon, Label }`
   - `@Stable class HeroState(animationsOff: Boolean)` with `fun launch(key: Any, packageInfo: PackageInfo, label: String): Boolean` (false = no flight; a flight already running for the same key is kept) and `fun end(key: Any)`.
   - `val LocalHero: ProvidableCompositionLocal<HeroState?>` (`staticCompositionLocalOf { null }`)

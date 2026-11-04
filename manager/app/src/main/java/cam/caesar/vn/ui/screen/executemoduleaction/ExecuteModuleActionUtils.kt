@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.executemoduleaction
+package cam.caesar.vn.ui.screen.executemoduleaction
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
@@ -12,9 +12,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.ModuleRepositoryImpl
-import cam.su.kernel.ui.util.runModuleAction
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.ModuleRepositoryImpl
+import cam.caesar.vn.ui.util.runModuleAction
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date

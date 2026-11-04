@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -8,13 +8,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import cam.su.kernel.CamNative
-import cam.su.kernel.data.repository.TemplateRepository
-import cam.su.kernel.data.repository.TemplateRepositoryImpl
-import cam.su.kernel.profile.Capabilities
-import cam.su.kernel.profile.Groups
-import cam.su.kernel.ui.screen.template.TemplateUiState
-import cam.su.kernel.ui.util.getAppProfileTemplate
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.data.repository.TemplateRepository
+import cam.caesar.vn.data.repository.TemplateRepositoryImpl
+import cam.caesar.vn.profile.Capabilities
+import cam.caesar.vn.profile.Groups
+import cam.caesar.vn.ui.screen.template.TemplateUiState
+import cam.caesar.vn.ui.util.getAppProfileTemplate
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.Collator
@@ -26,7 +26,7 @@ class TemplateViewModel(
     private val repo: TemplateRepository = TemplateRepositoryImpl()
 ) : ViewModel() {
 
-    typealias TemplateInfo = cam.su.kernel.data.model.TemplateInfo
+    typealias TemplateInfo = cam.caesar.vn.data.model.TemplateInfo
 
     private val _uiState = MutableStateFlow(TemplateUiState())
     val uiState: StateFlow<TemplateUiState> = _uiState.asStateFlow()
@@ -80,9 +80,9 @@ class TemplateViewModel(
     }
 }
 
-fun getTemplateInfoById(id: String): cam.su.kernel.data.model.TemplateInfo? {
+fun getTemplateInfoById(id: String): cam.caesar.vn.data.model.TemplateInfo? {
     return runCatching {
-        cam.su.kernel.data.model.TemplateInfo.fromJSON(JSONObject(getAppProfileTemplate(id)))
+        cam.caesar.vn.data.model.TemplateInfo.fromJSON(JSONObject(getAppProfileTemplate(id)))
     }.onFailure {
         Log.e(TAG, "ignore invalid template: $it", it)
     }.getOrNull()

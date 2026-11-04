@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -22,11 +22,11 @@ class UpdateInstallerTest {
         // leaves the app's cgroup first, so Android killing the app does not kill the install
         assertTrue(script.indexOf("cgroup.procs") < script.indexOf("pm install"))
         assertTrue(script.contains("cat '/data/x/ota/a.apk' | pm install -r -S 1234 > '/data/x/ota/result' 2>&1"))
-        val reopen = script.indexOf("am start -n cam.su.kernel/.ui.CamActivity")
+        val reopen = script.indexOf("am start -n cam.caesar.vn/.ui.CamActivity")
         val check = script.indexOf("grep -q Success '/data/x/ota/result' &&")
         assertTrue(check in 0 until reopen)
         // compiled before it is reopened, so the first launch is not interpreted
-        val compile = script.indexOf("cmd package compile -m speed-profile -f cam.su.kernel")
+        val compile = script.indexOf("cmd package compile -m speed-profile -f cam.caesar.vn")
         assertTrue(compile in check until reopen)
     }
 }

@@ -1,8 +1,8 @@
-package cam.su.kernel.backup
+package cam.caesar.vn.backup
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.hiding.ModuleRisk
-import cam.su.kernel.hiding.ModuleRiskScanner
+import cam.caesar.vn.hiding.ModuleRisk
+import cam.caesar.vn.hiding.ModuleRiskScanner
 import org.json.JSONObject
 
 /**

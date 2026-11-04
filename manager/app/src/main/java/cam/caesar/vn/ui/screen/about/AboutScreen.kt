@@ -1,12 +1,12 @@
-package cam.su.kernel.ui.screen.about
+package cam.caesar.vn.ui.screen.about
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.dropUnlessResumed
-import cam.su.kernel.BuildConfig
-import cam.su.kernel.R
-import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.caesar.vn.BuildConfig
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.navigation3.LocalNavigator
 
 @Composable
 fun AboutScreen() {

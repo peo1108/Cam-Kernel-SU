@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

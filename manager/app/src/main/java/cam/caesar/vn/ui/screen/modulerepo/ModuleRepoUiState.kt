@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.modulerepo
+package cam.caesar.vn.ui.screen.modulerepo
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.data.model.RepoModule
-import cam.su.kernel.ui.component.SearchStatus
+import cam.caesar.vn.data.model.RepoModule
+import cam.caesar.vn.ui.component.SearchStatus
 
 enum class RepoSort {
     UPDATED,

@@ -23,9 +23,9 @@ camd allow list                  # apps that have root
 
 **Apps to grant root** during install gives apps root on the very first boot (see [Installation](./install#first-install-patch-the-boot-image)).
 
-## Root for SU Kernel itself
+## Root for Cam itself
 
-The kernel always roots the `cam.su.kernel` package, **only if** it is signed with the project's official key. It reads the signature Android verified at install time (`/data/system/packages.xml`) and never opens the APK.
+The kernel always roots the `cam.caesar.vn` package, **only if** it is signed with the project's official key. It reads the signature Android verified at install time (`/data/system/packages.xml`) and never opens the APK.
 
 - Uninstalling and reinstalling the app keeps root.
 - A fake app with the same package name gets no root; if it takes over a UID that had root, root is revoked.

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.IntOffset

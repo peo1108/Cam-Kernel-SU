@@ -9,7 +9,7 @@
 - **已解锁**的 Bootloader。
 - 电脑上安装 [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools)（`adb`、`fastboot`）。
 - 与**当前运行的 ROM 完全一致**的原厂 **init_boot** 镜像（Android 13 及以后出厂的手机）或 **boot** 镜像（更早的手机）。
-- 从[下载](/zh/download)页获取最新的 SU Kernel。
+- 从[下载](/zh/download)页获取最新的 Cam。
 
 ### 查看 KMI
 
@@ -21,10 +21,10 @@ adb shell uname -r
 
 ## 首次安装：修补启动镜像
 
-1. 安装并打开 SU Kernel。
+1. 安装并打开 Cam。
 2. 在主页点按 **Tap to install**，再选择 **Select a file and patch**。
 3. 选择复制到手机里的 `init_boot.img`（或 `boot.img`）。
-4. 弹出 **Apps to grant root**。SU Kernel 始终包含在内；可添加其他首次开机就需要 Root 的应用。
+4. 弹出 **Apps to grant root**。Cam 始终包含在内；可添加其他首次开机就需要 Root 的应用。
 5. 可选：**Block kernel modules** 阻止某些内核模块在开机时加载（例如厂商的反 Root 模块）。应用会预填可疑的已加载模块，可自行修改或清空。
 6. 点按 **Next**。应用会把 `camsu_patched_<日期>_<时间>.img` 保存到 Download 文件夹。
 7. 复制到电脑，让手机进入 fastboot 后刷入：
@@ -35,7 +35,7 @@ fastboot flash init_boot camsu_patched_xxx.img   # 旧机型：fastboot flash bo
 fastboot reboot
 ```
 
-8. 开机后**打开一次 SU Kernel**。首次打开会安装 `/data/adb/camd`，在此之前其他应用无法调用 `su`。
+8. 开机后**打开一次 Cam**。首次打开会安装 `/data/adb/camd`，在此之前其他应用无法调用 `su`。
 
 ::: tip 在电脑上修补
 下载页提供 Windows、Linux、macOS 版 `camd`：
@@ -44,7 +44,7 @@ fastboot reboot
 camd boot-patch -b init_boot.img --kmi android14-6.1
 ```
 
-修补后的镜像位于当前目录。SU Kernel 依然会获得 Root，因为内核始终为使用官方密钥签名的 `cam.su.kernel` 授予 Root。
+修补后的镜像位于当前目录。Cam 依然会获得 Root，因为内核始终为使用官方密钥签名的 `cam.caesar.vn` 授予 Root。
 :::
 
 ## 已有 Root：直接安装
@@ -56,7 +56,7 @@ camd boot-patch -b init_boot.img --kmi android14-6.1
 
 ## OTA 更新之后
 
-OTA 会把新系统写入非活动槽位，且不带 Root。OTA 安装完成后（**重启前**），打开 SU Kernel 选择 **Install to inactive slot (After OTA)**，然后再重启。
+OTA 会把新系统写入非活动槽位，且不带 Root。OTA 安装完成后（**重启前**），打开 Cam 选择 **Install to inactive slot (After OTA)**，然后再重启。
 
 ## 更新应用与内核模块
 
@@ -72,4 +72,4 @@ OTA 会把新系统写入非活动槽位，且不带 Root。OTA 安装完成后�
 fastboot flash init_boot init_boot.img
 ```
 
-- **完全卸载：**刷回原厂镜像并卸载 SU Kernel。
+- **完全卸载：**刷回原厂镜像并卸载 Cam。

@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 /** What Home does on open: entries to show in "What's new", and the version to remember (null = keep). */
 data class WhatsNewDecision(val show: List<ChangelogEntry>, val saveLastSeen: String?)

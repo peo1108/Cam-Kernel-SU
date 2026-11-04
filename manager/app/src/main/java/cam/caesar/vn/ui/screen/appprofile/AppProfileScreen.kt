@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.appprofile
+package cam.caesar.vn.ui.screen.appprofile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -8,16 +8,16 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cam.su.kernel.ui.component.hero.LocalHero
-import cam.su.kernel.ui.component.listdetail.PaneMotion
-import cam.su.kernel.ui.screen.superuser.GroupedApps
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.util.forceStopApp
-import cam.su.kernel.ui.util.launchApp
-import cam.su.kernel.ui.util.openSystemAppInfo
-import cam.su.kernel.ui.util.restartApp
-import cam.su.kernel.ui.viewmodel.SuperUserViewModel
+import cam.caesar.vn.ui.component.hero.LocalHero
+import cam.caesar.vn.ui.component.listdetail.PaneMotion
+import cam.caesar.vn.ui.screen.superuser.GroupedApps
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.util.forceStopApp
+import cam.caesar.vn.ui.util.launchApp
+import cam.caesar.vn.ui.util.openSystemAppInfo
+import cam.caesar.vn.ui.util.restartApp
+import cam.caesar.vn.ui.viewmodel.SuperUserViewModel
 
 @Composable
 fun AppProfileScreen(uid: Int) {

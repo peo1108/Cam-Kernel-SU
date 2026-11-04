@@ -1,11 +1,11 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.content.Context
 import android.os.Build
 import android.system.Os
 import com.topjohnwu.superuser.ShellUtils
-import cam.su.kernel.Cam
-import cam.su.kernel.ui.screen.home.getManagerVersion
+import cam.caesar.vn.Cam
+import cam.caesar.vn.ui.screen.home.getManagerVersion
 import java.io.File
 import java.io.FileWriter
 import java.io.PrintWriter

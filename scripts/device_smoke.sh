@@ -15,7 +15,7 @@ if [ "${1:-}" = "-s" ] && [ -n "${2:-}" ]; then
 fi
 
 CAMD=/data/adb/camd
-PKG=cam.su.kernel
+PKG=cam.caesar.vn
 FEATURES="su_compat kernel_umount sulog adb_root selinux_hide shell_su_adb_only"
 pass=0
 fail=0

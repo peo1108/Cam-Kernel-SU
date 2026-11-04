@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.ui.util.module.parseModuleProp
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.ui.util.module.parseModuleProp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

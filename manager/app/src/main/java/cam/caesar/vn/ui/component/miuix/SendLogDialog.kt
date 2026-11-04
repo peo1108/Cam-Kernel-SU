@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.component.miuix
+package cam.caesar.vn.ui.component.miuix
 
-import cam.su.kernel.ui.component.CamToast
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.CamToast
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,10 +25,10 @@ import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.BuildConfig
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.dialog.LoadingDialogHandle
-import cam.su.kernel.ui.util.getBugreportFile
+import cam.caesar.vn.BuildConfig
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.dialog.LoadingDialogHandle
+import cam.caesar.vn.ui.util.getBugreportFile
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton

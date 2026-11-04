@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.flash
+package cam.caesar.vn.ui.screen.flash
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,9 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.listdetail.DetailButton
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.listdetail.DetailButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text

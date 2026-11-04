@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.util.Log
-import cam.su.kernel.data.model.BootGuardStatus
-import cam.su.kernel.files.shellQuote
+import cam.caesar.vn.data.model.BootGuardStatus
+import cam.caesar.vn.files.shellQuote
 
 // Cam-only camd commands, kept out of CamCli.kt (upstream's KsuCli.kt) so upstream merges
 // touch less of it. Boot guard: camd turns modules off after failed boots.

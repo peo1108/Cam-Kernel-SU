@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.os.Parcel
 import android.os.Parcelable
@@ -6,9 +6,9 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.screen.modulerepo.RepoModuleArg
-import cam.su.kernel.ui.viewmodel.TemplateViewModel
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.screen.modulerepo.RepoModuleArg
+import cam.caesar.vn.ui.viewmodel.TemplateViewModel
 
 object FlashItSerializer : BaseParcelableSerializer<FlashIt>(FlashIt::class.java)
 object RepoModuleArgSerializer : BaseParcelableSerializer<RepoModuleArg>(RepoModuleArg::class.java)

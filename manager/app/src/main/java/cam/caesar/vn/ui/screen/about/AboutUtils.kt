@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.about
+package cam.caesar.vn.ui.screen.about
 
 import android.text.Html
 import android.text.Spanned

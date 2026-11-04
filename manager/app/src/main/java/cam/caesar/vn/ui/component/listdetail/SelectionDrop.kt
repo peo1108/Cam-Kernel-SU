@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.listdetail
+package cam.caesar.vn.ui.component.listdetail
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.component.glass.GlassDefaults
+import cam.caesar.vn.ui.component.glass.GlassDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 // the drop fades in (first pick) and out (back to the overview) over this share of a pick

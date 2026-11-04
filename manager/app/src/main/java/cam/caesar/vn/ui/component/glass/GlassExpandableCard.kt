@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring

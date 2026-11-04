@@ -1,4 +1,4 @@
-package cam.su.kernel.adb
+package cam.caesar.vn.adb
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,20 +12,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import cam.su.kernel.data.repository.SettingsRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.util.SulogEntry
-import cam.su.kernel.ui.util.SulogEventFilter
-import cam.su.kernel.ui.util.SulogFile
-import cam.su.kernel.ui.util.SulogFileCleanAction
-import cam.su.kernel.ui.util.buildVisibleSulogEntries
-import cam.su.kernel.ui.util.cleanSulogFile
-import cam.su.kernel.ui.util.defaultSulogEventFilters
-import cam.su.kernel.ui.util.deleteSulogFile
-import cam.su.kernel.ui.util.listSulogFiles
-import cam.su.kernel.ui.util.parseSulogLines
-import cam.su.kernel.ui.util.readSulogFile
-import cam.su.kernel.ui.util.resolveSulogFileCleanAction
+import cam.caesar.vn.data.repository.SettingsRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.ui.util.SulogEntry
+import cam.caesar.vn.ui.util.SulogEventFilter
+import cam.caesar.vn.ui.util.SulogFile
+import cam.caesar.vn.ui.util.SulogFileCleanAction
+import cam.caesar.vn.ui.util.buildVisibleSulogEntries
+import cam.caesar.vn.ui.util.cleanSulogFile
+import cam.caesar.vn.ui.util.defaultSulogEventFilters
+import cam.caesar.vn.ui.util.deleteSulogFile
+import cam.caesar.vn.ui.util.listSulogFiles
+import cam.caesar.vn.ui.util.parseSulogLines
+import cam.caesar.vn.ui.util.readSulogFile
+import cam.caesar.vn.ui.util.resolveSulogFileCleanAction
 
 data class SulogUiState(
     val isLoading: Boolean = true,

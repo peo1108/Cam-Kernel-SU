@@ -1,7 +1,7 @@
 // FloatingBottomBar stood on its side (adapted, like it, from compose-miuix-ui's
 // IosLiquidGlassNavigationBar, Apache 2.0).
 
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
@@ -33,7 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import cam.su.kernel.ui.component.glass.morphObstacle
+import cam.caesar.vn.ui.component.glass.morphObstacle
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
@@ -58,16 +58,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.lerp
-import cam.su.kernel.ui.component.liquid.InnerShadow
-import cam.su.kernel.ui.component.liquid.LiquidSpecular
-import cam.su.kernel.ui.component.liquid.innerShadow
-import cam.su.kernel.ui.component.liquid.lens
-import cam.su.kernel.ui.component.liquid.rememberCombinedBackdrop
-import cam.su.kernel.ui.component.liquid.rememberGravityRotatedHighlight
-import cam.su.kernel.ui.component.liquid.vibrancy
-import cam.su.kernel.ui.component.miuix.animation.DampedDragAnimation
-import cam.su.kernel.ui.component.miuix.animation.InteractiveHighlight
-import cam.su.kernel.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.component.liquid.InnerShadow
+import cam.caesar.vn.ui.component.liquid.LiquidSpecular
+import cam.caesar.vn.ui.component.liquid.innerShadow
+import cam.caesar.vn.ui.component.liquid.lens
+import cam.caesar.vn.ui.component.liquid.rememberCombinedBackdrop
+import cam.caesar.vn.ui.component.liquid.rememberGravityRotatedHighlight
+import cam.caesar.vn.ui.component.liquid.vibrancy
+import cam.caesar.vn.ui.component.miuix.animation.DampedDragAnimation
+import cam.caesar.vn.ui.component.miuix.animation.InteractiveHighlight
+import cam.caesar.vn.ui.theme.isInDarkTheme
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur

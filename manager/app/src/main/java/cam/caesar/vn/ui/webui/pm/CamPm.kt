@@ -1,10 +1,10 @@
-package cam.su.kernel.ui.webui.pm
+package cam.caesar.vn.ui.webui.pm
 
 import android.content.pm.ApplicationInfo
 import android.webkit.JavascriptInterface
 import androidx.core.content.pm.PackageInfoCompat
-import cam.su.kernel.data.model.AppInfo
-import cam.su.kernel.ui.webui.webUIApps
+import cam.caesar.vn.data.model.AppInfo
+import cam.caesar.vn.ui.webui.webUIApps
 import org.json.JSONArray
 import org.json.JSONObject
 

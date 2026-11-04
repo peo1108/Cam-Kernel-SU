@@ -1,4 +1,4 @@
-package cam.su.kernel.hiding
+package cam.caesar.vn.hiding
 
 import androidx.compose.runtime.Immutable
 import org.json.JSONArray

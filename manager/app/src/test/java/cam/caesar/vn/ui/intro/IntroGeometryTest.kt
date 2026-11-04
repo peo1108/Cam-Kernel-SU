@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.intro
+package cam.caesar.vn.ui.intro
 
 import androidx.compose.ui.geometry.Offset
-import cam.su.kernel.ui.intro.IntroGeometry.SIZE
+import cam.caesar.vn.ui.intro.IntroGeometry.SIZE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

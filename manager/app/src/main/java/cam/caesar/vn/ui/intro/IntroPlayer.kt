@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.intro
+package cam.caesar.vn.ui.intro
 
 import android.content.Context
 import android.graphics.PixelFormat
@@ -19,8 +19,8 @@ import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import cam.su.kernel.ui.intro.IntroTimeline.BLAST_AT
-import cam.su.kernel.ui.intro.IntroTimeline.REVEAL_LEN
+import cam.caesar.vn.ui.intro.IntroTimeline.BLAST_AT
+import cam.caesar.vn.ui.intro.IntroTimeline.REVEAL_LEN
 
 /**
  * Plays the start intro on its own thread, into a [SurfaceView] laid over the whole window, so

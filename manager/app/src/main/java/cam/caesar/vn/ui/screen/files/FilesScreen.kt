@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.files
+package cam.caesar.vn.ui.screen.files
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
@@ -18,16 +18,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cam.su.kernel.R
-import cam.su.kernel.files.Errno
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.files.OpKind
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.viewmodel.FilesEvent
-import cam.su.kernel.ui.viewmodel.FilesMessage
-import cam.su.kernel.ui.viewmodel.FilesViewModel
+import cam.caesar.vn.R
+import cam.caesar.vn.files.Errno
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.files.OpKind
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.viewmodel.FilesEvent
+import cam.caesar.vn.ui.viewmodel.FilesMessage
+import cam.caesar.vn.ui.viewmodel.FilesViewModel
 
 @Composable
 fun FilesPager(

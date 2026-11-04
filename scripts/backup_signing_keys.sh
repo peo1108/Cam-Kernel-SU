@@ -16,12 +16,16 @@ home="$(cd "$home" && pwd)"
 out="${1:-cam-signing-keys-$(date +%Y%m%d).tar.gz.enc}"
 
 files=(
-    ".android-keys/su-kernel-release.jks"      # release key: APK + kernel KSU_MANAGER_CERT
-    ".android-keys/README-PASSWORD.txt"
-    ".android-keys/su-kernel-backup.jks"       # offline backup key: kernel KSU_MANAGER_CERT_BACKUP
-    ".android-keys/su-kernel-backup-PASSWORD.txt"
+    ".android-keys/cam-release.jks"            # release key: APK + kernel KSU_MANAGER_CERT
+    ".android-keys/cam-release-PASSWORD.txt"
+    ".android-keys/cam-backup.jks"             # offline backup key: kernel KSU_MANAGER_CERT_BACKUP
+    ".android-keys/cam-backup-PASSWORD.txt"
     ".cam/hiding-rules-key.pem"                # hiding-rules.json signature
-    "Documents/Cam-Kernel-SU-keys"             # old "Cam Kernel SU" key
+    ".android-keys/su-kernel-release.jks"      # keys before 2026-11-04 (old package), retired
+    ".android-keys/README-PASSWORD.txt"
+    ".android-keys/su-kernel-backup.jks"
+    ".android-keys/su-kernel-backup-PASSWORD.txt"
+    "Documents/Cam-Kernel-SU-keys"             # first "Cam Kernel SU" key, retired
 )
 
 stage="$(mktemp -d)"

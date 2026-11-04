@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import android.content.ComponentName
 import android.content.Intent
@@ -7,8 +7,8 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.os.RemoteException
 import android.util.Log
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.util.CamCli
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.util.CamCli
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
 import kotlinx.coroutines.Dispatchers

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.hero
+package cam.caesar.vn.ui.component.hero
 
 import android.content.pm.PackageInfo
 import android.provider.Settings
@@ -32,9 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
-import cam.su.kernel.ui.component.AppIconImage
-import cam.su.kernel.ui.component.glass.GlassPageAnchor
-import cam.su.kernel.ui.component.glass.LocalGlassPageAnchor
+import cam.caesar.vn.ui.component.AppIconImage
+import cam.caesar.vn.ui.component.glass.GlassPageAnchor
+import cam.caesar.vn.ui.component.glass.LocalGlassPageAnchor
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavTransitionScope

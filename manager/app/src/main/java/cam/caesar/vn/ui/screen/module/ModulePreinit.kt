@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.module
+package cam.caesar.vn.ui.screen.module
 
 import androidx.annotation.StringRes
-import cam.su.kernel.R
-import cam.su.kernel.data.model.Module
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.Module
 
 /** Message for a module whose preinit actions will not run on the next boot, null otherwise. */
 @StringRes

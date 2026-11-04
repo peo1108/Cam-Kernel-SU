@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import android.os.SystemClock
 import androidx.compose.runtime.derivedStateOf
@@ -11,18 +11,18 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cam.su.kernel.files.Archives
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.Errno
-import cam.su.kernel.files.FileChanges
-import cam.su.kernel.files.FsException
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.files.Highlighter
-import cam.su.kernel.files.LineBuffer
-import cam.su.kernel.files.LineEnding
-import cam.su.kernel.files.TextDoc
-import cam.su.kernel.files.TextRows
-import cam.su.kernel.files.TextSearch
+import cam.caesar.vn.files.Archives
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.Errno
+import cam.caesar.vn.files.FileChanges
+import cam.caesar.vn.files.FsException
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.files.Highlighter
+import cam.caesar.vn.files.LineBuffer
+import cam.caesar.vn.files.LineEnding
+import cam.caesar.vn.files.TextDoc
+import cam.caesar.vn.files.TextRows
+import cam.caesar.vn.files.TextSearch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

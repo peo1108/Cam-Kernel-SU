@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.expand
+package cam.caesar.vn.ui.component.expand
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect

@@ -1,4 +1,4 @@
-package cam.su.kernel.adb
+package cam.caesar.vn.adb
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -11,7 +11,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import cam.su.kernel.ui.util.getRootShell
+import cam.caesar.vn.ui.util.getRootShell
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit

@@ -6,7 +6,7 @@
 
 **Goal:** Tagging `cam-vX.Y.Z` publishes a GitHub Release whose notes come from `CHANGELOG.md`; installed Managers notice it in the background, show the notes, download, verify and install the APK (root first, system installer as fallback), then show "What's new" once.
 
-**Architecture:** CI side: a Python section extractor gates the Release workflow and feeds `body_path`; version names come from `git describe --match "cam-v*"`. App side: a new `cam.su.kernel.update` package holds pure parsers (`parseReleases`, `ChangelogParser`, `WhatsNew`) with JVM tests, plus Android glue (`UpdateRepository`, `UpdateInstaller`, `UpdateCheckWorker`, `UpdateNotifier`, `UpdatedReceiver`). Home keeps its existing `UpdateCard` and gains a "What's new" dialog.
+**Architecture:** CI side: a Python section extractor gates the Release workflow and feeds `body_path`; version names come from `git describe --match "cam-v*"`. App side: a new `cam.caesar.vn.update` package holds pure parsers (`parseReleases`, `ChangelogParser`, `WhatsNew`) with JVM tests, plus Android glue (`UpdateRepository`, `UpdateInstaller`, `UpdateCheckWorker`, `UpdateNotifier`, `UpdatedReceiver`). Home keeps its existing `UpdateCard` and gains a "What's new" dialog.
 
 **Tech Stack:** GitHub Actions, Python 3 (stdlib only), Kotlin/Compose (Miuix), okhttp, org.json, libsu, AndroidX WorkManager, Rust `build.rs` (version string only).
 
@@ -21,7 +21,7 @@
 - APK asset name pattern (already produced by `archivesName` + `repack_apk.py`): `^Cam_Kernel_SU_.+_(\d+)-release\.apk$`.
 - Releases API: `GET https://api.github.com/repos/peo1108/Cam-Kernel-SU/releases?per_page=30`, header `Accept: application/vnd.github+json`.
 - `CHANGELOG.md` at repo root; entry heading `## <major.minor.patch> - <YYYY-MM-DD>`; Vietnamese text; first `- ` line of an entry is the notification summary.
-- Package `cam.su.kernel`, activity `cam.su.kernel/.ui.CamActivity`.
+- Package `cam.caesar.vn`, activity `cam.caesar.vn/.ui.CamActivity`.
 - Background check: unique periodic work `cam-update-check`, every 12 h, `NetworkType.CONNECTED`, `ExistingPeriodicWorkPolicy.KEEP`; never retries on failure.
 - Notification channel id `app_update`, name from string `update_channel_name` ("App updates" / "Cập nhật ứng dụng").
 - Prefs (in the existing `settings` SharedPreferences via `SettingsRepository`): `notified_version_code` (Long, default 0), `last_seen_version` (String?, default null), `asked_notification_permission` (Boolean, default false).
@@ -103,13 +103,13 @@ git commit -m "ci: Release from cam-v tags with notes from CHANGELOG.md"
 ### Task 2: Release parsing (`UpdateInfo`, `parseReleases`)
 
 **Files:**
-- Create: `manager/app/src/main/java/cam/su/kernel/update/UpdateInfo.kt`
-- Test: `manager/app/src/test/java/cam/su/kernel/update/UpdateParserTest.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/UpdateInfo.kt`
+- Test: `manager/app/src/test/java/cam/caesar/vn/update/UpdateParserTest.kt`
 
 **Interfaces:**
 - Produces:
 ```kotlin
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 data class UpdateInfo(
     val versionName: String,   // tag minus "cam-v", e.g. "3.0.1"
@@ -139,7 +139,7 @@ fun parseReleases(json: String, currentVersionCode: Long): UpdateInfo?
   - `summaryIsFirstBullet`: changelog `"### Tính năng mới\r\n- Thêm OTA\n- Khác"` → `summary == "Thêm OTA"`; no bullet → `null`.
 
 - [ ] **Step 2: Run to verify they fail**
-  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.su.kernel.update.UpdateParserTest`
+  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.caesar.vn.update.UpdateParserTest`
   Expected: compilation failure (`UpdateInfo` unresolved).
 
 - [ ] **Step 3: Implement** in `UpdateInfo.kt` with `org.json`; wrap parsing in `runCatching { ... }.getOrNull()`; the APK regex from Global Constraints.
@@ -148,7 +148,7 @@ fun parseReleases(json: String, currentVersionCode: Long): UpdateInfo?
 
 - [ ] **Step 5: Commit**
 ```bash
-git add manager/app/src/main/java/cam/su/kernel/update/UpdateInfo.kt manager/app/src/test/java/cam/su/kernel/update/UpdateParserTest.kt
+git add manager/app/src/main/java/cam/caesar/vn/update/UpdateInfo.kt manager/app/src/test/java/cam/caesar/vn/update/UpdateParserTest.kt
 git commit -m "manager: Parse Cam releases from the GitHub API"
 ```
 
@@ -157,15 +157,15 @@ git commit -m "manager: Parse Cam releases from the GitHub API"
 ### Task 3: Changelog parsing + packing CHANGELOG.md into the APK
 
 **Files:**
-- Create: `manager/app/src/main/java/cam/su/kernel/update/ChangelogParser.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/ChangelogParser.kt`
 - Modify: `manager/app/build.gradle.kts` (copy task + assets source dir)
-- Test: `manager/app/src/test/java/cam/su/kernel/update/ChangelogParserTest.kt`
+- Test: `manager/app/src/test/java/cam/caesar/vn/update/ChangelogParserTest.kt`
 
 **Interfaces:**
 - Consumes: `CHANGELOG.md` (Task 1).
 - Produces:
 ```kotlin
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 data class ChangelogEntry(val version: String, val date: String, val body: String)
 
@@ -190,7 +190,7 @@ object ChangelogParser {
   - `shippedChangelogParses`: `ChangelogParser.parse(File("../../CHANGELOG.md").readText())` is non-empty, first entry version passes `parseSemver`, its body is non-blank (runs from `manager/app`, like `HidingRulesRepositoryTest`).
 
 - [ ] **Step 2: Run to verify they fail**
-  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.su.kernel.update.ChangelogParserTest`
+  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.caesar.vn.update.ChangelogParserTest`
   Expected: compilation failure.
 
 - [ ] **Step 3: Implement `ChangelogParser.kt`.** Heading regex `^## (\d+\.\d+\.\d+)\s+-\s+(\S+)`; body trimmed of blank lines at both ends.
@@ -203,7 +203,7 @@ object ChangelogParser {
 
 - [ ] **Step 7: Commit**
 ```bash
-git add manager/app/src/main/java/cam/su/kernel/update/ChangelogParser.kt manager/app/src/test/java/cam/su/kernel/update/ChangelogParserTest.kt manager/app/build.gradle.kts
+git add manager/app/src/main/java/cam/caesar/vn/update/ChangelogParser.kt manager/app/src/test/java/cam/caesar/vn/update/ChangelogParserTest.kt manager/app/build.gradle.kts
 git commit -m "manager: Parse CHANGELOG.md and pack it into the APK"
 ```
 
@@ -212,9 +212,9 @@ git commit -m "manager: Parse CHANGELOG.md and pack it into the APK"
 ### Task 4: UpdateRepository and Home update card
 
 **Files:**
-- Create: `manager/app/src/main/java/cam/su/kernel/data/repository/UpdateRepository.kt`, `UpdateRepositoryImpl.kt`
-- Modify: `manager/app/src/main/java/cam/su/kernel/ui/util/Downloader.kt` (delete `checkNewVersion`)
-- Delete: `manager/app/src/main/java/cam/su/kernel/ui/util/module/LatestVersionInfo.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/data/repository/UpdateRepository.kt`, `UpdateRepositoryImpl.kt`
+- Modify: `manager/app/src/main/java/cam/caesar/vn/ui/util/Downloader.kt` (delete `checkNewVersion`)
+- Delete: `manager/app/src/main/java/cam/caesar/vn/ui/util/module/LatestVersionInfo.kt`
 - Modify: `ui/screen/home/HomeUiState.kt` (`latestVersionInfo: LatestVersionInfo` → `update: UpdateInfo? = null`; `hasUpdate` = `update != null`), `ui/viewmodel/HomeViewModel.kt:44-51,95`, `ui/screen/home/HomeMiuix.kt:198-230,616-617` (previews too)
 
 **Interfaces:**
@@ -236,7 +236,7 @@ class UpdateRepositoryImpl : UpdateRepository  // okhttp via camApp.okhttpClient
 
 - [ ] **Step 5: Commit**
 ```bash
-git add manager/app/src/main/java/cam/su/kernel/data/repository/UpdateRepository.kt manager/app/src/main/java/cam/su/kernel/data/repository/UpdateRepositoryImpl.kt manager/app/src/main/java/cam/su/kernel/ui/util/Downloader.kt manager/app/src/main/java/cam/su/kernel/ui/util/module/LatestVersionInfo.kt manager/app/src/main/java/cam/su/kernel/ui/screen/home/HomeUiState.kt manager/app/src/main/java/cam/su/kernel/ui/screen/home/HomeMiuix.kt manager/app/src/main/java/cam/su/kernel/ui/viewmodel/HomeViewModel.kt
+git add manager/app/src/main/java/cam/caesar/vn/data/repository/UpdateRepository.kt manager/app/src/main/java/cam/caesar/vn/data/repository/UpdateRepositoryImpl.kt manager/app/src/main/java/cam/caesar/vn/ui/util/Downloader.kt manager/app/src/main/java/cam/caesar/vn/ui/util/module/LatestVersionInfo.kt manager/app/src/main/java/cam/caesar/vn/ui/screen/home/HomeUiState.kt manager/app/src/main/java/cam/caesar/vn/ui/screen/home/HomeMiuix.kt manager/app/src/main/java/cam/caesar/vn/ui/viewmodel/HomeViewModel.kt
 git commit -m "manager: Check Cam releases instead of upstream KernelSU"
 ```
 
@@ -245,14 +245,14 @@ git commit -m "manager: Check Cam releases instead of upstream KernelSU"
 ### Task 5: Download, verify and install
 
 **Files:**
-- Create: `manager/app/src/main/java/cam/su/kernel/update/UpdateInstaller.kt`
-- Create: `manager/app/src/main/java/cam/su/kernel/update/UpdatedReceiver.kt`
-- Create: `manager/app/src/main/java/cam/su/kernel/update/UpdateNotifier.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/UpdateInstaller.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/UpdatedReceiver.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/UpdateNotifier.kt`
 - Modify: `manager/app/src/main/AndroidManifest.xml` (`REQUEST_INSTALL_PACKAGES`; receiver for `android.intent.action.MY_PACKAGE_REPLACED`, `exported="false"`)
 - Modify: `CamApplication.kt` (call `UpdateInstaller.cleanup(this)` and `UpdateNotifier.createChannel(this)` after the isolated/locked early return)
 - Modify: `ui/screen/home/HomeScreen.kt` (wire `onUpdateClick`, `onSystemInstallClick`), `HomeUiState.kt` (`installState: UpdateState = UpdateState.Idle`), `HomeMiuix.kt` (`UpdateCard` shows progress / error), `HomeViewModel.kt` (collect `UpdateInstaller.state`)
 - Modify: `values/strings.xml`, `values-vi/strings.xml`
-- Test: `manager/app/src/test/java/cam/su/kernel/update/UpdateInstallerTest.kt`
+- Test: `manager/app/src/test/java/cam/caesar/vn/update/UpdateInstallerTest.kt`
 
 **Interfaces:**
 - Consumes: `UpdateInfo` (Task 2).
@@ -278,7 +278,7 @@ internal fun rootInstallScript(apk: File, size: Long, result: File): String
 
 object UpdateNotifier {
     const val CHANNEL_ID = "app_update"
-    const val EXTRA_SHOW_UPDATE = "cam.su.kernel.extra.SHOW_UPDATE"
+    const val EXTRA_SHOW_UPDATE = "cam.caesar.vn.extra.SHOW_UPDATE"
     fun createChannel(context: Context)
     fun notifyAvailable(context: Context, info: UpdateInfo)  // Task 6 uses it
     fun notifyUpdated(context: Context, versionName: String)
@@ -287,10 +287,10 @@ object UpdateNotifier {
 
 - [ ] **Step 1: Write the failing tests:**
   - `sha256OfKnownBytes`: temp file containing `abc` → `"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"`.
-  - `installScriptShape`: `rootInstallScript(File("/data/x/ota/a.apk"), 1234, File("/data/x/ota/result"))` contains `cgroup.procs`, `cat '/data/x/ota/a.apk' | pm install -r -S 1234`, writes to `'/data/x/ota/result'`, and `am start -n cam.su.kernel/.ui.CamActivity` appears only after the install succeeds (`&&` follows the `grep -q Success` check).
+  - `installScriptShape`: `rootInstallScript(File("/data/x/ota/a.apk"), 1234, File("/data/x/ota/result"))` contains `cgroup.procs`, `cat '/data/x/ota/a.apk' | pm install -r -S 1234`, writes to `'/data/x/ota/result'`, and `am start -n cam.caesar.vn/.ui.CamActivity` appears only after the install succeeds (`&&` follows the `grep -q Success` check).
 
 - [ ] **Step 2: Run to verify they fail**
-  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.su.kernel.update.UpdateInstallerTest`
+  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.caesar.vn.update.UpdateInstallerTest`
   Expected: compilation failure.
 
 - [ ] **Step 3: Implement `UpdateInstaller`.** Own `CoroutineScope(SupervisorJob() + Dispatchers.IO)`; flow:
@@ -299,7 +299,7 @@ object UpdateNotifier {
   3. `Installing`: if `Shell.isAppGrantedRoot() == true`, write `rootInstallScript(...)` to `cacheDir/ota/install.sh` (a file, so its single-quoted paths need no nested quoting) and run `setsid sh '<ota>/install.sh' >/dev/null 2>&1 &` through `getRootShell()`, then poll `result` every 500 ms for up to 120 s. Content containing `Success` → keep state `Installing` (the process is about to be killed). Other content → `Failed(INSTALL, firstLine)`. Timeout → `Failed(INSTALL, null)`. No root → `installWithSystemInstaller`.
   - `rootInstallScript` body (this is the exact shape the test pins; `$$` is the subshell's pid):
 ```sh
-echo $$ > /sys/fs/cgroup/cgroup.procs 2>/dev/null; echo $$ > /acct/cgroup.procs 2>/dev/null; cat '<apk>' | pm install -r -S <size> > '<result>' 2>&1; grep -q Success '<result>' && am start -n cam.su.kernel/.ui.CamActivity
+echo $$ > /sys/fs/cgroup/cgroup.procs 2>/dev/null; echo $$ > /acct/cgroup.procs 2>/dev/null; cat '<apk>' | pm install -r -S <size> > '<result>' 2>&1; grep -q Success '<result>' && am start -n cam.caesar.vn/.ui.CamActivity
 ```
   - `installWithSystemInstaller`: `ACTION_VIEW`, `FileProvider.getUriForFile(context, "${packageName}.fileprovider", apk)` (existing `cache-path "."` already covers `ota/`), MIME `application/vnd.android.package-archive`, `FLAG_GRANT_READ_URI_PERMISSION or FLAG_ACTIVITY_NEW_TASK`.
 
@@ -312,7 +312,7 @@ echo $$ > /sys/fs/cgroup/cgroup.procs 2>/dev/null; echo $$ > /acct/cgroup.procs 
 
 - [ ] **Step 7: Commit**
 ```bash
-git add manager/app/src/main/java/cam/su/kernel/update/ manager/app/src/test/java/cam/su/kernel/update/UpdateInstallerTest.kt manager/app/src/main/AndroidManifest.xml manager/app/src/main/java/cam/su/kernel/CamApplication.kt manager/app/src/main/java/cam/su/kernel/ui/screen/home/ manager/app/src/main/java/cam/su/kernel/ui/viewmodel/HomeViewModel.kt manager/app/src/main/res/values/strings.xml manager/app/src/main/res/values-vi/strings.xml
+git add manager/app/src/main/java/cam/caesar/vn/update/ manager/app/src/test/java/cam/caesar/vn/update/UpdateInstallerTest.kt manager/app/src/main/AndroidManifest.xml manager/app/src/main/java/cam/caesar/vn/CamApplication.kt manager/app/src/main/java/cam/caesar/vn/ui/screen/home/ manager/app/src/main/java/cam/caesar/vn/ui/viewmodel/HomeViewModel.kt manager/app/src/main/res/values/strings.xml manager/app/src/main/res/values-vi/strings.xml
 git commit -m "manager: Download, verify and install updates in the app"
 ```
 
@@ -321,16 +321,16 @@ git commit -m "manager: Download, verify and install updates in the app"
 ### Task 6: Background check, notification permission, "What's new"
 
 **Files:**
-- Create: `manager/app/src/main/java/cam/su/kernel/update/UpdateCheckWorker.kt`
-- Create: `manager/app/src/main/java/cam/su/kernel/update/WhatsNew.kt`
-- Create: `manager/app/src/main/java/cam/su/kernel/update/UpdateSignal.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/UpdateCheckWorker.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/WhatsNew.kt`
+- Create: `manager/app/src/main/java/cam/caesar/vn/update/UpdateSignal.kt`
 - Modify: `manager/gradle/libs.versions.toml`, `manager/app/build.gradle.kts` (WorkManager)
 - Modify: `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt` (three prefs from Global Constraints)
 - Modify: `CamApplication.kt` (schedule), `ui/viewmodel/SettingsViewModel.kt:130-133` (`setCheckUpdate` schedules/cancels)
 - Modify: `ui/CamActivity.kt:178,332-336` (extra → `UpdateSignal`)
 - Modify: `ui/screen/home/HomeScreen.kt`, `HomeMiuix.kt`, `HomeViewModel.kt` (permission ask, update dialog on signal, "What's new" dialog)
 - Modify: `values/strings.xml`, `values-vi/strings.xml`
-- Test: `manager/app/src/test/java/cam/su/kernel/update/WhatsNewTest.kt`
+- Test: `manager/app/src/test/java/cam/caesar/vn/update/WhatsNewTest.kt`
 
 **Interfaces:**
 - Consumes: `ChangelogParser`, `ChangelogEntry`, `parseSemver` (Task 3); `UpdateRepository` (Task 4); `UpdateNotifier` (Task 5).
@@ -362,7 +362,7 @@ object UpdateSignal {                          // process-wide one-shot
   - `downgradeSavesSilently`: `("3.1.0", "3.0.1", e)` → empty, save `"3.0.1"`.
 
 - [ ] **Step 2: Run to verify they fail**
-  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.su.kernel.update.WhatsNewTest`
+  Run: `cd manager && ./gradlew :app:testDebugUnitTest --tests cam.caesar.vn.update.WhatsNewTest`
   Expected: compilation failure.
 
 - [ ] **Step 3: Implement `WhatsNew.kt`** using `ChangelogParser.entriesNewerThan`.
@@ -382,7 +382,7 @@ object UpdateSignal {                          // process-wide one-shot
 
 - [ ] **Step 10: Commit**
 ```bash
-git add manager/app/src/main/java/cam/su/kernel/update/ manager/app/src/test/java/cam/su/kernel/update/WhatsNewTest.kt manager/gradle/libs.versions.toml manager/app/build.gradle.kts manager/app/src/main/java/cam/su/kernel/data/repository/SettingsRepository.kt manager/app/src/main/java/cam/su/kernel/data/repository/SettingsRepositoryImpl.kt manager/app/src/main/java/cam/su/kernel/CamApplication.kt manager/app/src/main/java/cam/su/kernel/ui/viewmodel/SettingsViewModel.kt manager/app/src/main/java/cam/su/kernel/ui/CamActivity.kt manager/app/src/main/java/cam/su/kernel/ui/screen/home/ manager/app/src/main/java/cam/su/kernel/ui/viewmodel/HomeViewModel.kt manager/app/src/main/res/values/strings.xml manager/app/src/main/res/values-vi/strings.xml
+git add manager/app/src/main/java/cam/caesar/vn/update/ manager/app/src/test/java/cam/caesar/vn/update/WhatsNewTest.kt manager/gradle/libs.versions.toml manager/app/build.gradle.kts manager/app/src/main/java/cam/caesar/vn/data/repository/SettingsRepository.kt manager/app/src/main/java/cam/caesar/vn/data/repository/SettingsRepositoryImpl.kt manager/app/src/main/java/cam/caesar/vn/CamApplication.kt manager/app/src/main/java/cam/caesar/vn/ui/viewmodel/SettingsViewModel.kt manager/app/src/main/java/cam/caesar/vn/ui/CamActivity.kt manager/app/src/main/java/cam/caesar/vn/ui/screen/home/ manager/app/src/main/java/cam/caesar/vn/ui/viewmodel/HomeViewModel.kt manager/app/src/main/res/values/strings.xml manager/app/src/main/res/values-vi/strings.xml
 git commit -m "manager: Check for updates in the background and show what's new"
 ```
 
@@ -398,7 +398,7 @@ git commit -m "manager: Check for updates in the background and show what's new"
 
 - [ ] **Step 2: Full verification.** `python3 -m unittest scripts/test_changelog_section.py`; `cd manager && ./gradlew :app:testDebugUnitTest :app:assembleRelease`; camd `cargo ndk` check/clippy/fmt (WSL). Record the test counts in the hand-off.
 
-- [ ] **Step 3: On-device smoke test without a release** (the real OTA test is `cam-v3.0.1`, spec section 9): install the built APK over the current one and check (a) Home shows no update card (no `cam-v*` release exists, so `parseReleases` returns null), (b) no "What's new" dialog (version name is a hash), (c) `adb shell dumpsys jobscheduler | grep cam-update-check` or WorkManager's `adb shell am broadcast -a androidx.work.diagnostics.REQUEST_DIAGNOSTICS -p cam.su.kernel` lists the periodic work, (d) Settings toggle off removes it.
+- [ ] **Step 3: On-device smoke test without a release** (the real OTA test is `cam-v3.0.1`, spec section 9): install the built APK over the current one and check (a) Home shows no update card (no `cam-v*` release exists, so `parseReleases` returns null), (b) no "What's new" dialog (version name is a hash), (c) `adb shell dumpsys jobscheduler | grep cam-update-check` or WorkManager's `adb shell am broadcast -a androidx.work.diagnostics.REQUEST_DIAGNOSTICS -p cam.caesar.vn` lists the periodic work, (d) Settings toggle off removes it.
 
 - [ ] **Step 4: Commit**
 ```bash

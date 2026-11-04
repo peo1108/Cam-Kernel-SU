@@ -1,4 +1,4 @@
-package cam.su.kernel.hiding
+package cam.caesar.vn.hiding
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -18,16 +18,16 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import cam.su.kernel.R
-import cam.su.kernel.data.model.HidingAudit
-import cam.su.kernel.data.repository.HidingHistoryRepository
-import cam.su.kernel.data.repository.HidingRulesRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.CamActivity
-import cam.su.kernel.ui.screen.hidingcheck.findingTitleRes
-import cam.su.kernel.ui.util.listModules
-import cam.su.kernel.ui.util.rootAvailable
-import cam.su.kernel.ui.util.runHidingAudit
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.HidingAudit
+import cam.caesar.vn.data.repository.HidingHistoryRepository
+import cam.caesar.vn.data.repository.HidingRulesRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.ui.CamActivity
+import cam.caesar.vn.ui.screen.hidingcheck.findingTitleRes
+import cam.caesar.vn.ui.util.listModules
+import cam.caesar.vn.ui.util.rootAvailable
+import cam.caesar.vn.ui.util.runHidingAudit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -132,7 +132,7 @@ class ModuleScanWorker(context: Context, params: WorkerParameters) : CoroutineWo
 /** "These new modules leak root", opening the hiding check page. */
 object ModuleScanNotifier {
     const val CHANNEL_ID = "hiding_check"
-    const val EXTRA_OPEN_HIDING_CHECK = "cam.su.kernel.extra.OPEN_HIDING_CHECK"
+    const val EXTRA_OPEN_HIDING_CHECK = "cam.caesar.vn.extra.OPEN_HIDING_CHECK"
 
     private const val ID_LEAKS = 0x0A72
 

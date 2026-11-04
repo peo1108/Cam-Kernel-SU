@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.hidingcheck
+package cam.caesar.vn.ui.screen.hidingcheck
 
-import cam.su.kernel.ui.component.glass.GlassSwitchPreference
+import cam.caesar.vn.ui.component.glass.GlassSwitchPreference
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,14 +54,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.GlassExpandableCard
-import cam.su.kernel.ui.component.glass.GlassIconButton
-import cam.su.kernel.ui.component.statustag.StatusTag
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassExpandableCard
+import cam.caesar.vn.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.component.statustag.StatusTag
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import java.text.DateFormat
 import java.util.Date
 import top.yukonga.miuix.kmp.basic.BasicComponent

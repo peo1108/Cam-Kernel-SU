@@ -63,7 +63,7 @@ else
 fi
 # the console port the commands below talk to; own_port moves it to where $AVD runs
 PORT=$EMU_PORT
-PKG=cam.su.kernel
+PKG=cam.caesar.vn
 
 : "${LOCALAPPDATA:?run this from Git Bash on Windows}"
 SDK=$(cygpath -u "$LOCALAPPDATA")/Android/Sdk

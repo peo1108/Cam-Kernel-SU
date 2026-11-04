@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.miuix.effect
+package cam.caesar.vn.ui.component.miuix.effect
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

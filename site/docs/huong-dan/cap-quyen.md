@@ -23,14 +23,14 @@ camd allow list                  # các app đang có root
 
 Hộp **Ứng dụng được cấp root** khi cài cho phép chọn sẵn app có root ngay lần khởi động đầu, không cần mở app quản lý (xem [Cài đặt](./cai-dat#cai-lan-dau-va-anh-boot)).
 
-## Root của chính SU Kernel
+## Root của chính Cam
 
-Nhân luôn cấp root cho gói `cam.su.kernel`, **chỉ khi** app được ký bằng khoá chính thức của dự án. Nhân đọc chữ ký mà Android đã kiểm lúc cài (`/data/system/packages.xml`), không tự mở file APK.
+Nhân luôn cấp root cho gói `cam.caesar.vn`, **chỉ khi** app được ký bằng khoá chính thức của dự án. Nhân đọc chữ ký mà Android đã kiểm lúc cài (`/data/system/packages.xml`), không tự mở file APK.
 
 - Gỡ rồi cài lại app không mất root.
 - App giả đặt trùng tên gói không lấy được root; nếu nó nhận lại UID cũ đang có root thì bị thu lại.
 - Bản tự build hoặc ký bằng khoá khác cũng **không** có root.
 
-::: info Vì sao không thu được root của SU Kernel
+::: info Vì sao không thu được root của Cam
 Nhân dò lại UID của app quản lý mỗi khi danh sách gói thay đổi và cấp lại root. Đây là chủ ý, để không bao giờ bị khoá ngoài.
 :::

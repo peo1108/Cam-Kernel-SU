@@ -1,9 +1,9 @@
-package cam.su.kernel.ui.intro
+package cam.caesar.vn.ui.intro
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import cam.su.kernel.ui.screen.home.arena.hash
-import cam.su.kernel.ui.screen.home.arena.lerp
+import cam.caesar.vn.ui.screen.home.arena.hash
+import cam.caesar.vn.ui.screen.home.arena.lerp
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos

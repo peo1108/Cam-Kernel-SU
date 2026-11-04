@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.component.profile
+package cam.caesar.vn.ui.component.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import cam.su.kernel.CamNative
+import cam.caesar.vn.CamNative
 
 @Composable
 fun AppProfileConfig(

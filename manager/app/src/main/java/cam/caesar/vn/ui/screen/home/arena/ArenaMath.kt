@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home.arena
+package cam.caesar.vn.ui.screen.home.arena
 
 import androidx.compose.ui.geometry.Offset
 import kotlin.math.PI

@@ -1,6 +1,6 @@
-package cam.su.kernel.backup
+package cam.caesar.vn.backup
 
-import cam.su.kernel.CamNative
+import cam.caesar.vn.CamNative
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue

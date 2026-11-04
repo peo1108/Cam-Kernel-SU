@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.util.module
+package cam.caesar.vn.ui.util.module
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
@@ -16,14 +16,14 @@ import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import com.topjohnwu.superuser.io.SuFile
 import com.topjohnwu.superuser.io.SuFileInputStream
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.CamActivity
-import cam.su.kernel.ui.screen.module.ShortcutType
-import cam.su.kernel.ui.util.getRootShell
-import cam.su.kernel.ui.util.isColorOS
-import cam.su.kernel.ui.util.isHyperOS
-import cam.su.kernel.ui.util.isMiui
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.ui.CamActivity
+import cam.caesar.vn.ui.screen.module.ShortcutType
+import cam.caesar.vn.ui.util.getRootShell
+import cam.caesar.vn.ui.util.isColorOS
+import cam.caesar.vn.ui.util.isHyperOS
+import cam.caesar.vn.ui.util.isMiui
 
 object Shortcut {
 

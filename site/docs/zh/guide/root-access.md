@@ -23,9 +23,9 @@ camd allow list                  # 拥有 Root 的应用
 
 安装时的 **Apps to grant root** 可以让应用在首次开机时就获得 Root（见[安装](./install#首次安装-修补启动镜像)）。
 
-## SU Kernel 自身的 Root
+## Cam 自身的 Root
 
-内核始终为 `cam.su.kernel` 授予 Root，**前提是**它使用项目官方密钥签名。内核读取的是 Android 安装时已验证的签名（`/data/system/packages.xml`），从不打开 APK。
+内核始终为 `cam.caesar.vn` 授予 Root，**前提是**它使用项目官方密钥签名。内核读取的是 Android 安装时已验证的签名（`/data/system/packages.xml`），从不打开 APK。
 
 - 卸载后重新安装应用不会失去 Root。
 - 同包名的仿冒应用拿不到 Root；如果它接管了一个原本有 Root 的 UID，Root 会被收回。

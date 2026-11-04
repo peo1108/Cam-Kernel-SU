@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.slime
+package cam.caesar.vn.ui.slime
 
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -49,22 +49,22 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlin.math.cos
 import kotlin.math.sin
-import cam.su.kernel.ui.screen.home.arena.Cast
-import cam.su.kernel.ui.screen.home.arena.Costume
-import cam.su.kernel.ui.screen.home.arena.PI_F
-import cam.su.kernel.ui.screen.home.arena.SLIME_COUNT
-import cam.su.kernel.ui.screen.home.arena.SlimeGeo
-import cam.su.kernel.ui.screen.home.arena.SlimeLight
-import cam.su.kernel.ui.screen.home.arena.drawSlime
-import cam.su.kernel.ui.screen.home.arena.drawSparkle
-import cam.su.kernel.ui.screen.home.arena.drawSpeechBubble
-import cam.su.kernel.ui.screen.home.arena.easeOutCubic
-import cam.su.kernel.ui.screen.home.arena.hash
-import cam.su.kernel.ui.screen.home.arena.lerp
-import cam.su.kernel.ui.screen.home.arena.progress
-import cam.su.kernel.ui.screen.home.arena.three.Roam3D
-import cam.su.kernel.ui.theme.AppFontFamily
-import cam.su.kernel.ui.util.rememberBackgroundRelease
+import cam.caesar.vn.ui.screen.home.arena.Cast
+import cam.caesar.vn.ui.screen.home.arena.Costume
+import cam.caesar.vn.ui.screen.home.arena.PI_F
+import cam.caesar.vn.ui.screen.home.arena.SLIME_COUNT
+import cam.caesar.vn.ui.screen.home.arena.SlimeGeo
+import cam.caesar.vn.ui.screen.home.arena.SlimeLight
+import cam.caesar.vn.ui.screen.home.arena.drawSlime
+import cam.caesar.vn.ui.screen.home.arena.drawSparkle
+import cam.caesar.vn.ui.screen.home.arena.drawSpeechBubble
+import cam.caesar.vn.ui.screen.home.arena.easeOutCubic
+import cam.caesar.vn.ui.screen.home.arena.hash
+import cam.caesar.vn.ui.screen.home.arena.lerp
+import cam.caesar.vn.ui.screen.home.arena.progress
+import cam.caesar.vn.ui.screen.home.arena.three.Roam3D
+import cam.caesar.vn.ui.theme.AppFontFamily
+import cam.caesar.vn.ui.util.rememberBackgroundRelease
 
 /** The country costume the status card is showing; the roaming slimes dress the same. */
 @Volatile

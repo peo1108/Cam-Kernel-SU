@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.appprofile
+package cam.caesar.vn.ui.screen.appprofile
 
-import cam.su.kernel.ui.bunker.BunkerSignals
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.bunker.BunkerSignals
+import cam.caesar.vn.ui.component.CamToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -21,15 +21,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Cam
-import cam.su.kernel.CamNative
-import cam.su.kernel.R
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.screen.superuser.GroupedApps
-import cam.su.kernel.ui.util.getSepolicy
-import cam.su.kernel.ui.util.setSepolicy
-import cam.su.kernel.ui.viewmodel.getTemplateInfoById
+import cam.caesar.vn.Cam
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.screen.superuser.GroupedApps
+import cam.caesar.vn.ui.util.getSepolicy
+import cam.caesar.vn.ui.util.setSepolicy
+import cam.caesar.vn.ui.viewmodel.getTemplateInfoById
 
 /** Loaded profile of one uid plus the actions that edit it; shared by the profile page and inline cards. */
 @Stable

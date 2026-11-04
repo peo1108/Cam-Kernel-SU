@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

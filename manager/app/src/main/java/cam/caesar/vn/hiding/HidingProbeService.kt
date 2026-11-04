@@ -1,4 +1,4 @@
-package cam.su.kernel.hiding
+package cam.caesar.vn.hiding
 
 import android.app.Service
 import android.content.ComponentName
@@ -7,7 +7,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
-import cam.su.kernel.data.model.HidingAudit
+import cam.caesar.vn.data.model.HidingAudit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.suspendCancellableCoroutine

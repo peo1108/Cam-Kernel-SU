@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.files
+package cam.caesar.vn.ui.screen.files
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,12 +32,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.FileFormat
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.ui.viewmodel.FilesViewModel
-import cam.su.kernel.ui.viewmodel.PropertiesUi
+import cam.caesar.vn.R
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.FileFormat
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.ui.viewmodel.FilesViewModel
+import cam.caesar.vn.ui.viewmodel.PropertiesUi
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text

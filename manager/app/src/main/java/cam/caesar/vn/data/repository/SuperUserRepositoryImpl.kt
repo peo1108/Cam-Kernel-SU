@@ -1,4 +1,4 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
@@ -7,14 +7,14 @@ import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import cam.su.kernel.ICamRootService
-import cam.su.kernel.Cam
-import cam.su.kernel.CamRootClient
-import cam.su.kernel.data.model.AppInfo
-import cam.su.kernel.data.model.WEBVIEW_ZYGOTE_PROFILE_KEY
-import cam.su.kernel.data.model.WEBVIEW_ZYGOTE_UID
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.util.CamCli
+import cam.caesar.vn.ICamRootService
+import cam.caesar.vn.Cam
+import cam.caesar.vn.CamRootClient
+import cam.caesar.vn.data.model.AppInfo
+import cam.caesar.vn.data.model.WEBVIEW_ZYGOTE_PROFILE_KEY
+import cam.caesar.vn.data.model.WEBVIEW_ZYGOTE_UID
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.util.CamCli
 
 class SuperUserRepositoryImpl : SuperUserRepository {
 

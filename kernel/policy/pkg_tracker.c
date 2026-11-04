@@ -281,21 +281,21 @@ out:
 // (and the old one is pruned), so it is found by package name on every packages.list change, then
 // trusted only if signed by a Manager key. Define KSU_MANAGER_PACKAGE at build time for another name.
 #ifndef KSU_MANAGER_PACKAGE
-#define KSU_MANAGER_PACKAGE "cam.su.kernel"
+#define KSU_MANAGER_PACKAGE "cam.caesar.vn"
 #endif
 
-// SHA-256 of the certificate that signs release Managers (CN=SU Kernel, O=Cam), the
+// SHA-256 of the certificate that signs release Managers (CN=Cam, O=Cam), the
 // "certificate SHA-256 digest" of `apksigner verify --print-certs`. KSU_MANAGER_CERT_EXTRA trusts
 // one more at build time, e.g. a debug key; both are lower-case hex.
 #ifndef KSU_MANAGER_CERT
-#define KSU_MANAGER_CERT "1bee10d239c9f1b69c6af8e8e818f6ecdea711e251314ce12e78a38f3d00a318"
+#define KSU_MANAGER_CERT "19008f1f549160de203ef9198398bc9d758a8be12c54b3508a06ad85ae587d10"
 #endif
 
-// Offline backup key (CN=SU Kernel Backup, O=Cam), never used to sign anything yet. If the release
+// Offline backup key (CN=Cam Backup, O=Cam), never used to sign anything yet. If the release
 // key is lost, a Manager signed with this one still gets root from every LKM already flashed
 // (users reinstall the Manager once: Android refuses the signer change as an update).
 #ifndef KSU_MANAGER_CERT_BACKUP
-#define KSU_MANAGER_CERT_BACKUP "38d0a6b8261c83f99a0d664da871d05ace67e64f1a10c19499b1a368102de4d9"
+#define KSU_MANAGER_CERT_BACKUP "ec9d61bfdf7404b67060cd15b1cbbd55e29e56012ad7ab013382acba59d121b5"
 #endif
 
 static const char *const manager_certs[] = {
@@ -306,7 +306,7 @@ static const char *const manager_certs[] = {
 #endif
 };
 
-// An X.509 certificate in DER; the release one is 1261 bytes.
+// An X.509 certificate in DER; the release one is 1249 bytes.
 #define MANAGER_CERT_MAX_SIZE 8192
 #define SHA256_LEN 32
 

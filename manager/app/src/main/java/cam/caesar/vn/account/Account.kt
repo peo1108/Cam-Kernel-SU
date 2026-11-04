@@ -1,10 +1,10 @@
-package cam.su.kernel.account
+package cam.caesar.vn.account
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
-import cam.su.kernel.camApp
+import cam.caesar.vn.camApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cam.su.kernel.ui.webui;
+package cam.caesar.vn.ui.webui;
 
 import java.net.URLConnection;
 

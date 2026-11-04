@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.template
+package cam.caesar.vn.ui.screen.template
 
 import android.content.ClipData
 import androidx.compose.runtime.Composable
@@ -14,11 +14,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import cam.su.kernel.R
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.util.isNetworkAvailable
-import cam.su.kernel.ui.viewmodel.TemplateViewModel
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.util.isNetworkAvailable
+import cam.caesar.vn.ui.viewmodel.TemplateViewModel
 import top.yukonga.miuix.kmp.basic.SnackbarHostState as MiuixSnackbarHostState
 
 @Composable

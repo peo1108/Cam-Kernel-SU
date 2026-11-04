@@ -1,12 +1,12 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
-import cam.su.kernel.R
-import cam.su.kernel.camApp
-import cam.su.kernel.data.repository.HidingRulesRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.hiding.ModuleRisk
-import cam.su.kernel.hiding.ModuleRiskHit
-import cam.su.kernel.hiding.ModuleRiskScanner
+import cam.caesar.vn.R
+import cam.caesar.vn.camApp
+import cam.caesar.vn.data.repository.HidingRulesRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.hiding.ModuleRisk
+import cam.caesar.vn.hiding.ModuleRiskHit
+import cam.caesar.vn.hiding.ModuleRiskScanner
 import java.io.File
 
 // Cam-only, kept out of CamCli.kt (upstream's KsuCli.kt) so upstream merges stay small.

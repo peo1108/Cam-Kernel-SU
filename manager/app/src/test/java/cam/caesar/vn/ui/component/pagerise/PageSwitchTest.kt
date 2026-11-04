@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.pagerise
+package cam.caesar.vn.ui.component.pagerise
 
 import androidx.compose.runtime.MonotonicFrameClock
 import kotlinx.coroutines.CancellationException

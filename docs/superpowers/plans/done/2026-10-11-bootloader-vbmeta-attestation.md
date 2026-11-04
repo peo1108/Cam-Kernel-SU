@@ -25,7 +25,7 @@ Hiện `AttestationInfo` chỉ có `securityLevel`, `deviceLocked`, `verifiedBoo
 mà một app attesting đọc được, để trang chỉ rõ máy đang khai báo mức vá nào.
 
 **File:**
-- `manager/app/src/main/java/cam/su/kernel/data/model/KeyAttestation.kt`
+- `manager/app/src/main/java/cam/caesar/vn/data/model/KeyAttestation.kt`
   - Thêm vào `AttestationInfo`: `osVersion: Int?`, `osPatchLevel: Int?`, `vendorPatchLevel: Int?`,
     `bootPatchLevel: Int?` (null = chứng chỉ không khai báo tag đó).
   - Trong `parseKeyDescription`, đọc thêm từ `hardwareEnforced` (fallback `softwareEnforced`,
@@ -36,7 +36,7 @@ mà một app attesting đọc được, để trang chỉ rõ máy đang khai b
       viết parse chịu được cả hai (nếu con đầu là INTEGER thì đọc luôn, nếu là context thì vào trong).
   - Encode theo chuẩn KeyMint: osPatchLevel = `YYYYMM`, vendor/boot = `YYYYMMDD`, osVersion =
     `major*10000 + minor*100 + sub` (tham khảo `DeviceProps.kt`). Chỉ cần hàm format để hiển thị.
-- `manager/app/src/main/java/cam/su/kernel/ui/component/AttestationResult.kt`
+- `manager/app/src/main/java/cam/caesar/vn/ui/component/AttestationResult.kt`
   - Sau dòng verified boot state, thêm các dòng patch level (chỉ hiện khi không null).
     Đây là dòng thông tin (không có ✓/⚠ "đúng/sai") — hoặc để ✓ trung tính; quyết định khi làm.
   - Dùng lại `AttestationLine`; component này đã chung cho thẻ Tính năng và trang Kiểm tra nên

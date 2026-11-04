@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 /** One thing in the trash: [id] is its folder in [root], [original] where it came from. */
 data class TrashItem(val root: String, val id: String, val original: String, val deletedAt: Long, val size: Long, val isDir: Boolean) {

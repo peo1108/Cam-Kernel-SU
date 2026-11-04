@@ -1,6 +1,6 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
-import cam.su.kernel.data.model.TemplateInfo
+import cam.caesar.vn.data.model.TemplateInfo
 
 interface TemplateRepository {
     suspend fun getTemplates(sync: Boolean): Result<List<TemplateInfo>>

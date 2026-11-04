@@ -425,7 +425,7 @@ pub fn notice_text(notice: &Notice, vietnamese: bool) -> (String, String) {
             format!("Nghi do: {list}")
         };
         (
-            "SU Kernel: chống bootloop".to_owned(),
+            "Cam: chống bootloop".to_owned(),
             format!("Đã tắt tất cả {count} module vì máy khởi động lỗi liên tục. {cause}"),
         )
     } else {
@@ -435,7 +435,7 @@ pub fn notice_text(notice: &Notice, vietnamese: bool) -> (String, String) {
             format!("Likely cause: {list}")
         };
         (
-            "SU Kernel: anti bootloop".to_owned(),
+            "Cam: anti bootloop".to_owned(),
             format!("Disabled all {count} module(s) after repeated failed boots. {cause}"),
         )
     }
@@ -910,7 +910,7 @@ mod tests {
             culprits: ids(&["a", "b"]),
         };
         let (title, body) = notice_text(&notice, true);
-        assert_eq!(title, "SU Kernel: chống bootloop");
+        assert_eq!(title, "Cam: chống bootloop");
         assert_eq!(
             body,
             "Đã tắt tất cả 3 module vì máy khởi động lỗi liên tục. Nghi do: a, b"
@@ -922,7 +922,7 @@ mod tests {
             },
             false,
         );
-        assert_eq!(title, "SU Kernel: anti bootloop");
+        assert_eq!(title, "Cam: anti bootloop");
         assert_eq!(
             body,
             "Disabled all 1 module(s) after repeated failed boots. No module stands out; enable them one at a time to find it."

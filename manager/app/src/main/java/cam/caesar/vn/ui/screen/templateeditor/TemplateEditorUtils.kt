@@ -1,10 +1,10 @@
-package cam.su.kernel.ui.screen.templateeditor
+package cam.caesar.vn.ui.screen.templateeditor
 
-import cam.su.kernel.CamNative
-import cam.su.kernel.data.model.TemplateInfo
-import cam.su.kernel.toRawFlags
-import cam.su.kernel.ui.util.getAppProfileTemplate
-import cam.su.kernel.ui.util.setAppProfileTemplate
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.data.model.TemplateInfo
+import cam.caesar.vn.toRawFlags
+import cam.caesar.vn.ui.util.getAppProfileTemplate
+import cam.caesar.vn.ui.util.setAppProfileTemplate
 
 fun toNativeProfile(templateInfo: TemplateInfo): CamNative.Profile {
     val allFlags = CamNative.Profile.RootProfileFlag.entries

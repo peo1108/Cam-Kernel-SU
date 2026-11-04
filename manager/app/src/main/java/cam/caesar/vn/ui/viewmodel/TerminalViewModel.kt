@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -8,12 +8,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import cam.su.kernel.camApp
-import cam.su.kernel.files.FileChanges
-import cam.su.kernel.files.FileOpProgress
-import cam.su.kernel.files.TerminalSetup
-import cam.su.kernel.ui.util.getCamDaemonPath
-import cam.su.kernel.ui.util.getRootShell
+import cam.caesar.vn.camApp
+import cam.caesar.vn.files.FileChanges
+import cam.caesar.vn.files.FileOpProgress
+import cam.caesar.vn.files.TerminalSetup
+import cam.caesar.vn.ui.util.getCamDaemonPath
+import cam.caesar.vn.ui.util.getRootShell
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import com.termux.view.TerminalView

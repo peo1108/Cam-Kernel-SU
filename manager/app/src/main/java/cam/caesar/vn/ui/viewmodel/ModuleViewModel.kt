@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import android.os.SystemClock
 import android.util.Log
@@ -21,35 +21,35 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import cam.su.kernel.Cam
-import cam.su.kernel.R
-import cam.su.kernel.data.model.Module
-import cam.su.kernel.data.model.ModuleUpdateInfo
-import cam.su.kernel.data.model.RepoModule
-import cam.su.kernel.data.model.libraryUpdate
-import cam.su.kernel.data.repository.ModuleRepoRepositoryImpl
-import cam.su.kernel.data.repository.ModuleRepository
-import cam.su.kernel.data.repository.ModuleRepositoryImpl
-import cam.su.kernel.data.repository.SettingsRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.component.SearchStatus
-import cam.su.kernel.ui.screen.module.ModuleConfirmDialogState
-import cam.su.kernel.ui.screen.module.ModuleConfirmRequest
-import cam.su.kernel.ui.screen.module.ModuleEffect
-import cam.su.kernel.ui.screen.module.ModuleUiState
-import cam.su.kernel.ui.util.PinyinUtil
-import cam.su.kernel.ui.util.hasMagisk
-import cam.su.kernel.ui.util.module.fetchModuleDetail
-import cam.su.kernel.ui.util.module.fetchReleaseDescriptionHtml
+import cam.caesar.vn.Cam
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.Module
+import cam.caesar.vn.data.model.ModuleUpdateInfo
+import cam.caesar.vn.data.model.RepoModule
+import cam.caesar.vn.data.model.libraryUpdate
+import cam.caesar.vn.data.repository.ModuleRepoRepositoryImpl
+import cam.caesar.vn.data.repository.ModuleRepository
+import cam.caesar.vn.data.repository.ModuleRepositoryImpl
+import cam.caesar.vn.data.repository.SettingsRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.component.SearchStatus
+import cam.caesar.vn.ui.screen.module.ModuleConfirmDialogState
+import cam.caesar.vn.ui.screen.module.ModuleConfirmRequest
+import cam.caesar.vn.ui.screen.module.ModuleEffect
+import cam.caesar.vn.ui.screen.module.ModuleUiState
+import cam.caesar.vn.ui.util.PinyinUtil
+import cam.caesar.vn.ui.util.hasMagisk
+import cam.caesar.vn.ui.util.module.fetchModuleDetail
+import cam.caesar.vn.ui.util.module.fetchReleaseDescriptionHtml
 import okhttp3.Request
 import java.text.Collator
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
-import cam.su.kernel.ui.util.restoreModule as restoreModuleUtil
-import cam.su.kernel.ui.util.toggleModule as toggleModuleUtil
-import cam.su.kernel.ui.util.undoUninstallModule as undoUninstallModuleUtil
-import cam.su.kernel.ui.util.uninstallModule as uninstallModuleUtil
+import cam.caesar.vn.ui.util.restoreModule as restoreModuleUtil
+import cam.caesar.vn.ui.util.toggleModule as toggleModuleUtil
+import cam.caesar.vn.ui.util.undoUninstallModule as undoUninstallModuleUtil
+import cam.caesar.vn.ui.util.uninstallModule as uninstallModuleUtil
 
 class ModuleViewModel(
     private val repo: ModuleRepository = ModuleRepositoryImpl(),

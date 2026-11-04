@@ -143,7 +143,7 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
         .args([
             "start",
             "-n",
-            &format!("{package_name}/cam.su.kernel.ui.CamActivity"),
+            &format!("{package_name}/cam.caesar.vn.ui.CamActivity"),
         ])
         .status();
 

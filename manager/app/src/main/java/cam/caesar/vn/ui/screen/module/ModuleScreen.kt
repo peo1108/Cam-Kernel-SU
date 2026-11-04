@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.module
+package cam.caesar.vn.ui.screen.module
 
 import android.Manifest
 import android.content.Intent
@@ -23,17 +23,17 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.SearchStatus
-import cam.su.kernel.ui.component.search.mainSearchQueryFor
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.util.download
-import cam.su.kernel.ui.util.module.Shortcut
-import cam.su.kernel.ui.viewmodel.ModuleListSignal
-import cam.su.kernel.ui.viewmodel.ModuleViewModel
-import cam.su.kernel.ui.webui.WebUIActivity
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.SearchStatus
+import cam.caesar.vn.ui.component.search.mainSearchQueryFor
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.util.download
+import cam.caesar.vn.ui.util.module.Shortcut
+import cam.caesar.vn.ui.viewmodel.ModuleListSignal
+import cam.caesar.vn.ui.viewmodel.ModuleViewModel
+import cam.caesar.vn.ui.webui.WebUIActivity
 
 @Composable
 fun ModulePager(

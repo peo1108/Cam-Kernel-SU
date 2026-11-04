@@ -1,9 +1,9 @@
-package cam.su.kernel.ui.screen.install
+package cam.caesar.vn.ui.screen.install
 
-import cam.su.kernel.ui.component.glass.GlassTextField
-import cam.su.kernel.ui.component.glass.GlassDropdownPreference
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.component.glass.GlassTextField
+import cam.caesar.vn.ui.component.glass.GlassDropdownPreference
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassIconButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -44,13 +44,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
-import cam.su.kernel.ui.component.miuix.WarningCard
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.LkmSelection
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.dialog.rememberConfirmDialog
+import cam.caesar.vn.ui.component.miuix.WarningCard
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.LkmSelection
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon

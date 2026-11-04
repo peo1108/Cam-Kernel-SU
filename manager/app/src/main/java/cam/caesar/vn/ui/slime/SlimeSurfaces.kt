@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.slime
+package cam.caesar.vn.ui.slime
 
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember

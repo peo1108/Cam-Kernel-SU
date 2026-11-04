@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import android.system.OsConstants
 import androidx.lifecycle.ViewModel
@@ -12,28 +12,28 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Cam
-import cam.su.kernel.camApp
-import cam.su.kernel.data.model.HidingAudit
-import cam.su.kernel.data.repository.HidingHistoryRepository
-import cam.su.kernel.data.repository.HidingRulesRepository
-import cam.su.kernel.data.repository.SavedHidingScan
-import cam.su.kernel.data.repository.SettingsRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.hiding.HidingProbeService
-import cam.su.kernel.hiding.ModuleBaseline
-import cam.su.kernel.ui.screen.hidingcheck.CheckedApp
-import cam.su.kernel.ui.screen.hidingcheck.HidingCheckUiState
-import cam.su.kernel.ui.screen.hidingcheck.HidingFix
-import cam.su.kernel.ui.util.applyHidingFixes
-import cam.su.kernel.ui.util.checkAttestationReport
-import cam.su.kernel.ui.util.getHideBootloaderStatus
-import cam.su.kernel.ui.util.launchApp
-import cam.su.kernel.ui.util.listModules
-import cam.su.kernel.ui.util.runAppHidingAudit
-import cam.su.kernel.ui.util.runHidingAudit
-import cam.su.kernel.ui.util.setHideBootloader
-import cam.su.kernel.ui.util.toggleModule
+import cam.caesar.vn.Cam
+import cam.caesar.vn.camApp
+import cam.caesar.vn.data.model.HidingAudit
+import cam.caesar.vn.data.repository.HidingHistoryRepository
+import cam.caesar.vn.data.repository.HidingRulesRepository
+import cam.caesar.vn.data.repository.SavedHidingScan
+import cam.caesar.vn.data.repository.SettingsRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.hiding.HidingProbeService
+import cam.caesar.vn.hiding.ModuleBaseline
+import cam.caesar.vn.ui.screen.hidingcheck.CheckedApp
+import cam.caesar.vn.ui.screen.hidingcheck.HidingCheckUiState
+import cam.caesar.vn.ui.screen.hidingcheck.HidingFix
+import cam.caesar.vn.ui.util.applyHidingFixes
+import cam.caesar.vn.ui.util.checkAttestationReport
+import cam.caesar.vn.ui.util.getHideBootloaderStatus
+import cam.caesar.vn.ui.util.launchApp
+import cam.caesar.vn.ui.util.listModules
+import cam.caesar.vn.ui.util.runAppHidingAudit
+import cam.caesar.vn.ui.util.runHidingAudit
+import cam.caesar.vn.ui.util.setHideBootloader
+import cam.caesar.vn.ui.util.toggleModule
 import org.json.JSONArray
 
 /**
@@ -206,8 +206,8 @@ class HidingCheckViewModel(
             val needAttestation = _uiState.value.attestation?.info == null
             val (info, hal, attestation) = withContext(Dispatchers.IO) {
                 Triple(
-                    cam.su.kernel.ui.util.checkWidevine(),
-                    runCatching { cam.su.kernel.ui.util.widevineHalRunning() }.getOrNull(),
+                    cam.caesar.vn.ui.util.checkWidevine(),
+                    runCatching { cam.caesar.vn.ui.util.widevineHalRunning() }.getOrNull(),
                     if (needAttestation) checkAttestationReport() else null,
                 )
             }
@@ -227,9 +227,9 @@ class HidingCheckViewModel(
         _uiState.update { it.copy(reprovisionStep = "backup", reprovision = null) }
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                cam.su.kernel.ui.util.reprovisionWidevine { step -> _uiState.update { it.copy(reprovisionStep = step) } }
+                cam.caesar.vn.ui.util.reprovisionWidevine { step -> _uiState.update { it.copy(reprovisionStep = step) } }
             }
-            val hal = withContext(Dispatchers.IO) { runCatching { cam.su.kernel.ui.util.widevineHalRunning() }.getOrNull() }
+            val hal = withContext(Dispatchers.IO) { runCatching { cam.caesar.vn.ui.util.widevineHalRunning() }.getOrNull() }
             _uiState.update { it.copy(reprovisionStep = null, reprovision = result, widevine = result.after, widevineHal = hal) }
         }
     }
@@ -312,13 +312,13 @@ class HidingCheckViewModel(
     }
 
     /** Apps without root by uid, only [uids] when given. */
-    private fun nonRootApps(uids: Set<Int>?): Map<Int, List<cam.su.kernel.data.model.AppInfo>> = SuperUserViewModel.apps
+    private fun nonRootApps(uids: Set<Int>?): Map<Int, List<cam.caesar.vn.data.model.AppInfo>> = SuperUserViewModel.apps
         .filter { uids == null || it.uid in uids }
         .groupBy { it.uid }
         .filterValues { apps -> apps.none { it.allowSu } }
 
     /** Of [nonRootApps], the ones whose profile keeps module mounts. */
-    private fun keepingMounts(uids: Set<Int>?): Map<Int, List<cam.su.kernel.data.model.AppInfo>> = nonRootApps(uids).filterKeys { uid ->
+    private fun keepingMounts(uids: Set<Int>?): Map<Int, List<cam.caesar.vn.data.model.AppInfo>> = nonRootApps(uids).filterKeys { uid ->
         !(SuperUserViewModel.getGroupedApp(uid)?.shouldUmount ?: Cam.uidShouldUmount(uid))
     }
 

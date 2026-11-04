@@ -1,7 +1,7 @@
 // Adapted from Kyant0/AndroidLiquidGlass — https://github.com/Kyant0/AndroidLiquidGlass (Apache 2.0).
 // Mirrored from compose-miuix-ui example.
 
-package cam.su.kernel.ui.component.liquid
+package cam.caesar.vn.ui.component.liquid
 
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.ui.unit.LayoutDirection

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.files
+package cam.caesar.vn.ui.screen.files
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,10 +26,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.files.FileFormat
-import cam.su.kernel.ui.viewmodel.FilesSystemTools
-import cam.su.kernel.ui.viewmodel.FilesViewModel
+import cam.caesar.vn.R
+import cam.caesar.vn.files.FileFormat
+import cam.caesar.vn.ui.viewmodel.FilesSystemTools
+import cam.caesar.vn.ui.viewmodel.FilesViewModel
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -99,8 +99,8 @@ internal fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) 
         val live by vm.uiState.collectAsState()
         val ui = live.partitions ?: return@FilesDialog
         val image = ui.image
-        val flashable = ui.list.filter { cam.su.kernel.files.Partitions.canFlash(it.name) }
-        val suggested = image?.let { cam.su.kernel.files.Partitions.guess(it.name, ui.list, ui.slot) }
+        val flashable = ui.list.filter { cam.caesar.vn.files.Partitions.canFlash(it.name) }
+        val suggested = image?.let { cam.caesar.vn.files.Partitions.guess(it.name, ui.list, ui.slot) }
         // flashing only ever offers the boot chain; a backup can be of anything
         val shown = when {
             image != null -> listOfNotNull(suggested) + flashable.filter { it != suggested }
@@ -120,7 +120,7 @@ internal fun PartitionsDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) 
                             vm.system.hidePartitions()
                             onDialog(
                                 if (image != null) {
-                                    FilesDialogState.ConfirmFlash(image, p, otherSlot = !cam.su.kernel.files.Partitions.inSlot(p.name, ui.slot))
+                                    FilesDialogState.ConfirmFlash(image, p, otherSlot = !cam.caesar.vn.files.Partitions.inSlot(p.name, ui.slot))
                                 } else {
                                     FilesDialogState.ConfirmBackup(p)
                                 },
@@ -183,9 +183,9 @@ private fun FlashFirstStep(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewM
     val problems = buildList {
         if (dialog.image.contentSize > dialog.partition.size) add(stringResource(R.string.files_flash_too_big))
         when (check?.problem) {
-            cam.su.kernel.files.ImageProblem.WRONG_FORMAT -> add(stringResource(R.string.files_flash_wrong_format, dialog.partition.name))
-            cam.su.kernel.files.ImageProblem.KERNEL_INTO_INIT_BOOT -> add(stringResource(R.string.files_flash_kernel_into_init_boot))
-            cam.su.kernel.files.ImageProblem.NO_KERNEL -> add(stringResource(R.string.files_flash_no_kernel, dialog.partition.name))
+            cam.caesar.vn.files.ImageProblem.WRONG_FORMAT -> add(stringResource(R.string.files_flash_wrong_format, dialog.partition.name))
+            cam.caesar.vn.files.ImageProblem.KERNEL_INTO_INIT_BOOT -> add(stringResource(R.string.files_flash_kernel_into_init_boot))
+            cam.caesar.vn.files.ImageProblem.NO_KERNEL -> add(stringResource(R.string.files_flash_no_kernel, dialog.partition.name))
             null -> {}
         }
         if (check?.room == false) add(stringResource(R.string.files_flash_no_room, FileFormat.size(dialog.partition.size)))
@@ -194,7 +194,7 @@ private fun FlashFirstStep(dialog: FilesDialogState.ConfirmFlash, vm: FilesViewM
     if (dialog.otherSlot) Text(stringResource(R.string.files_flash_other_slot), color = colorScheme.error, modifier = Modifier.padding(top = 8.dp))
     val note = when {
         check == null -> stringResource(R.string.files_flash_checking)
-        problems.isEmpty() -> stringResource(R.string.files_flash_backup_first, dialog.partition.name, cam.su.kernel.files.Partitions.BACKUP_DIR)
+        problems.isEmpty() -> stringResource(R.string.files_flash_backup_first, dialog.partition.name, cam.caesar.vn.files.Partitions.BACKUP_DIR)
         else -> null
     }
     note?.let { Text(it, fontSize = 13.sp, color = colorScheme.onSurfaceVariantSummary, modifier = Modifier.padding(top = 8.dp)) }

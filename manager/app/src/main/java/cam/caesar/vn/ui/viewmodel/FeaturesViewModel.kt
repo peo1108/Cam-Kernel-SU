@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,28 +9,28 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.adb.WirelessAdb
-import cam.su.kernel.camApp
-import cam.su.kernel.data.repository.HidingHistoryRepository
-import cam.su.kernel.data.repository.HidingRulesRepository
-import cam.su.kernel.hiding.HidingRules
-import cam.su.kernel.hiding.ModuleRiskHit
-import cam.su.kernel.hiding.ModuleRiskScanner
+import cam.caesar.vn.adb.WirelessAdb
+import cam.caesar.vn.camApp
+import cam.caesar.vn.data.repository.HidingHistoryRepository
+import cam.caesar.vn.data.repository.HidingRulesRepository
+import cam.caesar.vn.hiding.HidingRules
+import cam.caesar.vn.hiding.ModuleRiskHit
+import cam.caesar.vn.hiding.ModuleRiskScanner
 import org.json.JSONArray
-import cam.su.kernel.data.repository.SettingsRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.screen.features.FeaturesUiState
-import cam.su.kernel.ui.util.checkAttestationReport
-import cam.su.kernel.ui.util.clearBootGuard
-import cam.su.kernel.ui.util.enableBootGuardInitrc
-import cam.su.kernel.ui.util.reenableBootGuardOthers
-import cam.su.kernel.ui.util.getBootGuardStatus
-import cam.su.kernel.ui.util.getHideBootloaderStatus
-import cam.su.kernel.ui.util.listModuleConflicts
-import cam.su.kernel.ui.util.listModules
-import cam.su.kernel.ui.util.setBootGuardConfig
-import cam.su.kernel.ui.util.setHideBootloader as writeHideBootloader
-import cam.su.kernel.ui.util.toggleModule
+import cam.caesar.vn.data.repository.SettingsRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.ui.screen.features.FeaturesUiState
+import cam.caesar.vn.ui.util.checkAttestationReport
+import cam.caesar.vn.ui.util.clearBootGuard
+import cam.caesar.vn.ui.util.enableBootGuardInitrc
+import cam.caesar.vn.ui.util.reenableBootGuardOthers
+import cam.caesar.vn.ui.util.getBootGuardStatus
+import cam.caesar.vn.ui.util.getHideBootloaderStatus
+import cam.caesar.vn.ui.util.listModuleConflicts
+import cam.caesar.vn.ui.util.listModules
+import cam.caesar.vn.ui.util.setBootGuardConfig
+import cam.caesar.vn.ui.util.setHideBootloader as writeHideBootloader
+import cam.caesar.vn.ui.util.toggleModule
 
 class FeaturesViewModel(
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl(),

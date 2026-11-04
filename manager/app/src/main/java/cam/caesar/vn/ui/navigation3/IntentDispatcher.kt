@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.navigation3
+package cam.caesar.vn.ui.navigation3
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
@@ -15,16 +15,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.core.net.toUri
 import kotlinx.coroutines.channels.ReceiveChannel
-import cam.su.kernel.Cam
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.camApp
-import cam.su.kernel.hiding.ModuleScanNotifier
-import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.util.DownloadService
-import cam.su.kernel.ui.util.getFileName
-import cam.su.kernel.ui.webui.WebUIActivity
+import cam.caesar.vn.Cam
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.camApp
+import cam.caesar.vn.hiding.ModuleScanNotifier
+import cam.caesar.vn.ui.component.dialog.rememberConfirmDialog
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.util.DownloadService
+import cam.caesar.vn.ui.util.getFileName
+import cam.caesar.vn.ui.webui.WebUIActivity
 
 private const val SCHEME_CAM = "cam"
 

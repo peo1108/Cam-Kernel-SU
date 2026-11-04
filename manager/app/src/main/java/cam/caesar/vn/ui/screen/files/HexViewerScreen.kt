@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.files
+package cam.caesar.vn.ui.screen.files
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,15 +38,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.dropUnlessResumed
-import cam.su.kernel.R
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.ui.component.glass.GlassButtonGroup
-import cam.su.kernel.ui.component.glass.GlassIconButton
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.ui.component.glass.GlassButtonGroup
+import cam.caesar.vn.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon

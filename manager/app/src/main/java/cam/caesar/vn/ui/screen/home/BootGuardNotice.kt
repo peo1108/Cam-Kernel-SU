@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,9 +16,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.glass.GlassDialog
-import cam.su.kernel.ui.component.miuix.WarningCard
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.miuix.WarningCard
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 

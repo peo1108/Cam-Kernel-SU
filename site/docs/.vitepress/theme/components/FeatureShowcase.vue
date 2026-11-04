@@ -19,7 +19,7 @@ const T = {
       { key: 'ota', name: 'Tự cập nhật', desc: 'Lặng lẽ mới lên.' },
     ],
     s: {
-      guardNotice: 'SU Kernel đã tắt 1 module vì máy khởi động lỗi liên tục. Nhấn để xem',
+      guardNotice: 'Cam đã tắt 1 module vì máy khởi động lỗi liên tục. Nhấn để xem',
       guardTitle: 'Bị tắt do lỗi khởi động',
       guardSummary: 'Module bật lại sẽ có hiệu lực sau khi khởi động lại.',
       guardBadge: 'Tự tắt do lỗi khởi động',
@@ -54,7 +54,7 @@ const T = {
       { key: 'ota', name: 'Updates itself', desc: 'Quietly new.' },
     ],
     s: {
-      guardNotice: 'SU Kernel disabled 1 module(s) because the device kept failing to boot. Tap to review',
+      guardNotice: 'Cam disabled 1 module(s) because the device kept failing to boot. Tap to review',
       guardTitle: 'Disabled by boot guard',
       guardSummary: 'A module enabled again takes effect after a reboot.',
       guardBadge: 'Disabled by boot guard',
@@ -89,7 +89,7 @@ const T = {
       { key: 'ota', name: '自动更新', desc: '悄悄变新。' },
     ],
     s: {
-      guardNotice: 'SU Kernel 因设备多次启动失败已停用 1 个模块。点按查看',
+      guardNotice: 'Cam 因设备多次启动失败已停用 1 个模块。点按查看',
       guardTitle: '已被防卡开机停用',
       guardSummary: '重新启用的模块将在重启后生效。',
       guardBadge: '因启动失败自动停用',
@@ -250,7 +250,7 @@ const key = computed(() => t.value.items[active.value].key)
               <!-- OTA -->
               <div v-else key="ota" class="pane">
                 <div class="sheet">
-                  <b class="lg-display">SU Kernel {{ version }} {{ t.s.otaTitle }}</b>
+                  <b class="lg-display">Cam {{ version }} {{ t.s.otaTitle }}</b>
                   <ul>
                     <li v-for="(n, i) in otaNotes" :key="i">{{ n }}</li>
                   </ul>

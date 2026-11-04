@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.listdetail
+package cam.caesar.vn.ui.component.listdetail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
+import cam.caesar.vn.ui.component.bottombar.LocalNavSideInsets
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /**

@@ -1,10 +1,10 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /** Every liquid glass tunable lives here so the whole app can be adjusted in one place. */

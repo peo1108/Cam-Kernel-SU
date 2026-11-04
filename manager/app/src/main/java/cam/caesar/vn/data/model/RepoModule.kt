@@ -1,4 +1,4 @@
-package cam.su.kernel.data.model
+package cam.caesar.vn.data.model
 
 import androidx.compose.runtime.Immutable
 

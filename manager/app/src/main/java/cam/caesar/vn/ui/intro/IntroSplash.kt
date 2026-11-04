@@ -1,9 +1,9 @@
-package cam.su.kernel.ui.intro
+package cam.caesar.vn.ui.intro
 
 import android.app.Activity
 import android.content.res.Resources
 import android.os.Build
-import cam.su.kernel.R
+import cam.caesar.vn.R
 
 /**
  * The system splash is plain black (the manifest's), for the start intro to take over from.

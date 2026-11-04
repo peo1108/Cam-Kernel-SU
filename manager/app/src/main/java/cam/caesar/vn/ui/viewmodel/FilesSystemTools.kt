@@ -1,14 +1,14 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
-import cam.su.kernel.files.AppView
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.Errno
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.FileOp
-import cam.su.kernel.files.FsException
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.files.OpKind
-import cam.su.kernel.files.Systemless
+import cam.caesar.vn.files.AppView
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.Errno
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.FileOp
+import cam.caesar.vn.files.FsException
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.files.OpKind
+import cam.caesar.vn.files.Systemless
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -122,7 +122,7 @@ class FilesSystemTools internal constructor(private val host: FilesHost) {
             try {
                 val (list, slot) = CamFileClient.partitions()
                 if (list.isEmpty()) throw FsException(Errno.ENOENT, detail = "/dev/block/by-name")
-                state.update { it.copy(partitions = PartitionsUi(cam.su.kernel.files.Partitions.ordered(list, slot), slot, image)) }
+                state.update { it.copy(partitions = PartitionsUi(cam.caesar.vn.files.Partitions.ordered(list, slot), slot, image)) }
             } catch (e: FsException) {
                 fail(e)
             } finally {
@@ -138,7 +138,7 @@ class FilesSystemTools internal constructor(private val host: FilesHost) {
     /** Into /sdcard/CamBackup/<name>_<time>.img; the active panel opens there when it is done. */
     fun backupPartition(name: String) {
         hidePartitions()
-        val dest = cam.su.kernel.files.Partitions.backupPath(name, System.currentTimeMillis())
+        val dest = cam.caesar.vn.files.Partitions.backupPath(name, System.currentTimeMillis())
         host.scope.launch {
             try {
                 mkdirs(FsPath.parent(dest))
@@ -150,15 +150,15 @@ class FilesSystemTools internal constructor(private val host: FilesHost) {
     }
 
     /** What the flash dialog shows before it lets the flash go. */
-    data class FlashCheck(val problem: cam.su.kernel.files.ImageProblem?, val room: Boolean)
+    data class FlashCheck(val problem: cam.caesar.vn.files.ImageProblem?, val room: Boolean)
 
     /** Reads the image header and the free space; the root side checks both again before writing. */
-    suspend fun checkFlash(image: FileEntry, partition: cam.su.kernel.files.Partition): FlashCheck {
-        val header = runCatching { CamFileClient.readRange(image.path, 0, cam.su.kernel.files.Partitions.HEADER_SIZE) }.getOrNull()
-        val free = runCatching { CamFileClient.statFs(FsPath.parent(cam.su.kernel.files.Partitions.BACKUP_DIR))[1] }.getOrNull()
+    suspend fun checkFlash(image: FileEntry, partition: cam.caesar.vn.files.Partition): FlashCheck {
+        val header = runCatching { CamFileClient.readRange(image.path, 0, cam.caesar.vn.files.Partitions.HEADER_SIZE) }.getOrNull()
+        val free = runCatching { CamFileClient.statFs(FsPath.parent(cam.caesar.vn.files.Partitions.BACKUP_DIR))[1] }.getOrNull()
         return FlashCheck(
-            problem = header?.let { cam.su.kernel.files.Partitions.checkImage(partition.name, it) },
-            room = free == null || free >= cam.su.kernel.files.Partitions.backupRoom(partition.size),
+            problem = header?.let { cam.caesar.vn.files.Partitions.checkImage(partition.name, it) },
+            room = free == null || free >= cam.caesar.vn.files.Partitions.backupRoom(partition.size),
         )
     }
 
@@ -168,7 +168,7 @@ class FilesSystemTools internal constructor(private val host: FilesHost) {
      */
     fun flashPartition(image: FileEntry, name: String) {
         hidePartitions()
-        val backup = cam.su.kernel.files.Partitions.backupPath(name, System.currentTimeMillis())
+        val backup = cam.caesar.vn.files.Partitions.backupPath(name, System.currentTimeMillis())
         host.scope.launch {
             try {
                 mkdirs(FsPath.parent(backup))

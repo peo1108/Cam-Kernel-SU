@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui
+package cam.caesar.vn.ui.webui
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
@@ -25,9 +25,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.ui.theme.CamTheme
-import cam.su.kernel.ui.theme.ThemeController
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.ui.theme.CamTheme
+import cam.caesar.vn.ui.theme.ThemeController
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 
 @SuppressLint("SetJavaScriptEnabled")

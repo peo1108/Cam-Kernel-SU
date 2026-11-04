@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.sulog
+package cam.caesar.vn.ui.screen.sulog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -11,14 +11,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cam.su.kernel.R
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.util.SulogEntry
-import cam.su.kernel.ui.util.SulogEventFilter
-import cam.su.kernel.ui.util.SulogEventType
-import cam.su.kernel.ui.util.SulogFile
-import cam.su.kernel.ui.util.toSulogDisplayName
-import cam.su.kernel.ui.viewmodel.SulogViewModel
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.util.SulogEntry
+import cam.caesar.vn.ui.util.SulogEventFilter
+import cam.caesar.vn.ui.util.SulogEventType
+import cam.caesar.vn.ui.util.SulogFile
+import cam.caesar.vn.ui.util.toSulogDisplayName
+import cam.caesar.vn.ui.viewmodel.SulogViewModel
 
 @Composable
 fun SulogScreen() {

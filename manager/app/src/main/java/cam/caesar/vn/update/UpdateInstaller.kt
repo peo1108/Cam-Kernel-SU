@@ -1,6 +1,6 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
-import cam.su.kernel.account.Account
+import cam.caesar.vn.account.Account
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -14,9 +14,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.util.getRootShell
-import cam.su.kernel.ui.util.rootAvailable
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.util.getRootShell
+import cam.caesar.vn.ui.util.rootAvailable
 import okhttp3.Request
 import java.io.File
 import java.io.IOException
@@ -87,7 +87,7 @@ internal fun rootInstallScript(apk: File, size: Long, result: File): String =
         "echo $$ > /acct/cgroup.procs 2>/dev/null; " +
         "cat '${apk.invariantSeparatorsPath}' | pm install -r -S $size > '${result.invariantSeparatorsPath}' 2>&1; " +
         "grep -q Success '${result.invariantSeparatorsPath}' && " +
-        "{ ${AppCompile.command("cam.su.kernel")} >/dev/null 2>&1; am start -n cam.su.kernel/.ui.CamActivity; }\n"
+        "{ ${AppCompile.command("cam.caesar.vn")} >/dev/null 2>&1; am start -n cam.caesar.vn/.ui.CamActivity; }\n"
 
 /** Downloads, verifies and installs a Manager update; one at a time, process-wide. */
 object UpdateInstaller {

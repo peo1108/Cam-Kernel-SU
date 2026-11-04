@@ -8,7 +8,7 @@ const props = defineProps<{ lang: 'vi' | 'en' | 'zh' }>()
 const T = {
   vi: {
     title: 'Thư viện module',
-    lead: 'Module chọn lọc chạy tốt với SU Kernel. Cũng có trong app: tab Module → Thư viện Module.',
+    lead: 'Module chọn lọc chạy tốt với Cam. Cũng có trong app: tab Module → Thư viện Module.',
     search: 'Tìm module...',
     all: 'Tất cả',
     meta: 'Metamodule',
@@ -22,7 +22,7 @@ const T = {
   },
   en: {
     title: 'Module library',
-    lead: 'Hand-picked modules that work well with SU Kernel. Also in the app: Modules tab → Repos.',
+    lead: 'Hand-picked modules that work well with Cam. Also in the app: Modules tab → Repos.',
     search: 'Search modules...',
     all: 'All',
     meta: 'Metamodule',
@@ -36,7 +36,7 @@ const T = {
   },
   zh: {
     title: '模块库',
-    lead: '与 SU Kernel 配合良好的精选模块。应用内也有：模块页 → 模块库。',
+    lead: '与 Cam 配合良好的精选模块。应用内也有：模块页 → 模块库。',
     search: '搜索模块…',
     all: '全部',
     meta: '元模块',

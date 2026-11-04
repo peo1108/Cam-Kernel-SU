@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.templateeditor
+package cam.caesar.vn.ui.screen.templateeditor
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.CamNative
-import cam.su.kernel.data.model.TemplateInfo
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.data.model.TemplateInfo
 
 @Immutable
 data class TemplateEditorUiState(

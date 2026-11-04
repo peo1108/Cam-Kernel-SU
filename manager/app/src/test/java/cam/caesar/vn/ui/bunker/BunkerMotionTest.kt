@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.bunker
+package cam.caesar.vn.ui.bunker
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

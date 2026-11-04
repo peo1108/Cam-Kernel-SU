@@ -2,7 +2,7 @@
 
 ## Can I use it together with KernelSU, Magisk or APatch?
 
-No. Use one root method at a time. The SU Kernel app does not work with the official KernelSU kernel either. Remove the old root (flash the stock image) first.
+No. Use one root method at a time. The Cam app does not work with the official KernelSU kernel either. Remove the old root (flash the stock image) first.
 
 ## Will it work on my phone?
 
@@ -16,7 +16,7 @@ You need a GKI kernel 5.10 or newer and an unlocked bootloader. Run `adb shell u
 
 ## Other apps cannot call `su`
 
-On the first boot after flashing, open SU Kernel once so it installs `/data/adb/camd`. Then grant root in the Superuser tab or with `camd allow add <package>`.
+On the first boot after flashing, open Cam once so it installs `/data/adb/camd`. Then grant root in the Superuser tab or with `camd allow add <package>`.
 
 ## A module is installed but its files are not in /system
 

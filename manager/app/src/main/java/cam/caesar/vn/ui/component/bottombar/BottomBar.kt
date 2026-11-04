@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.bottombar
+package cam.caesar.vn.ui.component.bottombar
 
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
@@ -14,8 +14,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import cam.su.kernel.ui.component.pagerise.PageSwitch
-import cam.su.kernel.ui.util.shouldShowSplitPane
+import cam.caesar.vn.ui.component.pagerise.PageSwitch
+import cam.caesar.vn.ui.util.shouldShowSplitPane
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 

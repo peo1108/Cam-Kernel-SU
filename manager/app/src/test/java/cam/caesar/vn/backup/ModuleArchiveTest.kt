@@ -1,7 +1,7 @@
-package cam.su.kernel.backup
+package cam.caesar.vn.backup
 
-import cam.su.kernel.hiding.ModuleRisk
-import cam.su.kernel.hiding.ModuleRiskScanner
+import cam.caesar.vn.hiding.ModuleRisk
+import cam.caesar.vn.hiding.ModuleRiskScanner
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

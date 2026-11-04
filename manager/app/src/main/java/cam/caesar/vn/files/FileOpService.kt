@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,7 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import cam.su.kernel.R
+import cam.caesar.vn.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -139,7 +139,7 @@ class FileOpService : Service() {
     companion object {
         private const val CHANNEL_ID = "file_ops"
         private const val NOTIFICATION_ID = 0xF11E
-        private const val ACTION_CANCEL = "cam.su.kernel.action.CANCEL_FILE_OP"
+        private const val ACTION_CANCEL = "cam.caesar.vn.action.CANCEL_FILE_OP"
         private const val NOTIFY_INTERVAL_MS = 500L
 
         fun start(context: Context) {

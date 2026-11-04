@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.templateeditor
+package cam.caesar.vn.ui.screen.templateeditor
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,12 +10,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.dropUnlessResumed
-import cam.su.kernel.R
-import cam.su.kernel.toOrdinalList
-import cam.su.kernel.toRootProfileFlags
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.util.deleteAppProfileTemplate
-import cam.su.kernel.ui.viewmodel.TemplateViewModel
+import cam.caesar.vn.R
+import cam.caesar.vn.toOrdinalList
+import cam.caesar.vn.toRootProfileFlags
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.util.deleteAppProfileTemplate
+import cam.caesar.vn.ui.viewmodel.TemplateViewModel
 
 @Composable
 fun TemplateEditorScreen(template: TemplateViewModel.TemplateInfo, readOnly: Boolean) {

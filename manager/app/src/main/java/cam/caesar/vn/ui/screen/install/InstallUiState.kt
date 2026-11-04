@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.install
+package cam.caesar.vn.ui.screen.install
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.ui.util.LkmSelection
+import cam.caesar.vn.ui.util.LkmSelection
 
 @Immutable
 internal data class InstallUiState(

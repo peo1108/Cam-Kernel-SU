@@ -10,7 +10,7 @@ Cam Kernel SU là một bản fork độc lập của KernelSU. Dự án bổ su
 
 ## Khác gì so với KernelSU
 
-- **Tên riêng:** app **SU Kernel** (gói `cam.su.kernel`), daemon `camd`, dữ liệu ở `/data/adb/cam`, module kernel `camsu.ko`. Cập nhật từ bản dùng tên cũ thì dữ liệu được chuyển tự động.
+- **Tên riêng:** app **Cam** (gói `cam.caesar.vn`), daemon `camd`, dữ liệu ở `/data/adb/cam`, module kernel `camsu.ko`. Cập nhật từ bản dùng tên cũ thì dữ liệu được chuyển tự động.
 - **Không còn "app manager" đặc biệt trong kernel:** lúc patch, kernel được gieo sẵn quyền root cho Manager; cấp/thu root bằng `camd allow` từ adb hoặc Termux.
 - **Giao diện kính (Liquid Glass)** trên Miuix, thẻ trạng thái 3D có slime đi dạo khắp app, trang Hồ sơ ứng dụng có quản lý app (sao lưu APK, xoá dữ liệu, đóng băng, gỡ cả app hệ thống).
 - **Tab Tính năng:**

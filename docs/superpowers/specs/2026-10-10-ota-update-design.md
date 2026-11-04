@@ -20,7 +20,7 @@ Không làm lần này: kênh beta / pre-release, màn lịch sử nhật ký, b
 
 ## 2. Hiện trạng (lý do phải sửa)
 
-- `checkNewVersion()` trong `manager/app/src/main/java/cam/su/kernel/ui/util/Downloader.kt` gọi `api.github.com/repos/tiann/KernelSU/releases/latest`, và công tắc `check_update` mặc định bật: app đang so phiên bản với KernelSU gốc và có thể bảo người dùng tải APK KernelSU.
+- `checkNewVersion()` trong `manager/app/src/main/java/cam/caesar/vn/ui/util/Downloader.kt` gọi `api.github.com/repos/tiann/KernelSU/releases/latest`, và công tắc `check_update` mặc định bật: app đang so phiên bản với KernelSU gốc và có thể bảo người dùng tải APK KernelSU.
 - `releases/latest` của `peo1108/Cam-Kernel-SU` hiện là `sfs-archive` (không có APK).
 - Tag `v3.2.2` … `v3.3.0` trên `origin` là tag upstream. `release.yml` chạy với mọi tag `v*`, nên đẩy nhầm tag upstream sẽ tạo release (và sau thay đổi này: bắn OTA).
 - Tên phiên bản = `git describe --tags` (Manager: `manager/build.gradle.kts`; camd: `userspace/camd/build.rs`), nên đang ra kiểu `v3.3.0-512-g21536a17`, tức số của upstream.
@@ -83,7 +83,7 @@ Không làm lần này: kênh beta / pre-release, màn lịch sử nhật ký, b
 
 ### 4.1 `UpdateRepository`
 
-- File: `manager/app/src/main/java/cam/su/kernel/data/repository/UpdateRepository.kt` (+ `UpdateRepositoryImpl.kt`), theo kiểu các repository hiện có.
+- File: `manager/app/src/main/java/cam/caesar/vn/data/repository/UpdateRepository.kt` (+ `UpdateRepositoryImpl.kt`), theo kiểu các repository hiện có.
 - `suspend fun fetchLatest(): Result<UpdateInfo?>`: gọi `GET https://api.github.com/repos/peo1108/Cam-Kernel-SU/releases?per_page=30` bằng `camApp.okhttpClient`, header `Accept: application/vnd.github+json`. Trả `null` khi không có bản mới hơn bản đang chạy.
 - Hàm thuần (unit test được), file `data/model/UpdateInfo.kt` hoặc cùng file repository:
 
@@ -106,7 +106,7 @@ fun parseReleases(json: String, currentVersionCode: Long): UpdateInfo?
 ### 4.2 Kiểm tra định kỳ
 
 - Thêm `androidx.work:work-runtime-ktx` vào `gradle/libs.versions.toml` và `app/build.gradle.kts`.
-- `UpdateCheckWorker` (`manager/app/src/main/java/cam/su/kernel/update/UpdateCheckWorker.kt`): `CoroutineWorker`, gọi `fetchLatest()`; lỗi hoặc không có bản mới thì `Result.success()` (không retry).
+- `UpdateCheckWorker` (`manager/app/src/main/java/cam/caesar/vn/update/UpdateCheckWorker.kt`): `CoroutineWorker`, gọi `fetchLatest()`; lỗi hoặc không có bản mới thì `Result.success()` (không retry).
 - Lên lịch: trong `CamApplication.onCreate`, nếu `SettingsRepository.checkUpdate` bật thì `enqueueUniquePeriodicWork("cam-update-check", KEEP, 12h, constraint NetworkType.CONNECTED)`; khi người dùng tắt công tắc thì `cancelUniqueWork`, bật lại thì enqueue.
 
 ### 4.3 Thông báo
@@ -128,7 +128,7 @@ fun parseReleases(json: String, currentVersionCode: Long): UpdateInfo?
 
 ## 5. Tải và cài
 
-Code đặt trong `manager/app/src/main/java/cam/su/kernel/update/` (`UpdateInstaller.kt`), gọi từ `HomeViewModel`.
+Code đặt trong `manager/app/src/main/java/cam/caesar/vn/update/` (`UpdateInstaller.kt`), gọi từ `HomeViewModel`.
 
 ### 5.1 Tải
 
@@ -138,13 +138,13 @@ Code đặt trong `manager/app/src/main/java/cam/su/kernel/update/` (`UpdateInst
 ### 5.2 Kiểm tra file
 
 1. Nếu `sha256 != null`: tính SHA-256 file, so sánh; lệch thì xóa, báo "Tải về bị lỗi, thử lại".
-2. `packageManager.getPackageArchiveInfo(path, GET_SIGNING_CERTIFICATES)`: `packageName == "cam.su.kernel"`, `longVersionCode == info.versionCode`, bộ chứng chỉ ký trùng với app đang chạy. Sai điều nào thì xóa file, báo đúng lý do.
+2. `packageManager.getPackageArchiveInfo(path, GET_SIGNING_CERTIFICATES)`: `packageName == "cam.caesar.vn"`, `longVersionCode == info.versionCode`, bộ chứng chỉ ký trùng với app đang chạy. Sai điều nào thì xóa file, báo đúng lý do.
 
 ### 5.3 Cài bằng root (cách chính)
 
 - Trên KernelSU, shell `su` của app vẫn là tiến trình con nằm trong cgroup của app; khi Android tắt app để thay bản, cả cgroup bị giết. Vì vậy lệnh cài chạy trong một shell tách riêng:
   - Ghi script vào `cacheDir/ota/install.sh`, chạy `setsid sh '<install.sh>' &` qua `getRootShell()` (libsu).
-  - Script tự chuyển sang cgroup gốc (`echo $$ > /sys/fs/cgroup/cgroup.procs`, `/acct/cgroup.procs`), rồi `cat '<apk>' | pm install -r -S <size> > '<result>'`, rồi nếu có `Success` thì `am start -n cam.su.kernel/.ui.CamActivity`.
+  - Script tự chuyển sang cgroup gốc (`echo $$ > /sys/fs/cgroup/cgroup.procs`, `/acct/cgroup.procs`), rồi `cat '<apk>' | pm install -r -S <size> > '<result>'`, rồi nếu có `Success` thì `am start -n cam.caesar.vn/.ui.CamActivity`.
   - Đẩy APK qua stdin để `system_server` không phải đọc file trong thư mục riêng của app (tránh SELinux).
 - App đọc `result` mỗi 500 ms, tối đa 120 giây: `Success` thì chờ bị tắt; nội dung khác thì hiện dòng lỗi đầu tiên và nút "Cài bằng trình cài đặt Android" (5.4); hết giờ thì báo lỗi cài.
 - Mở lại app chỉ là cố gắng (chuyển cgroup không được thì `am start` không chạy). Đường chắc chắn: receiver `MY_PACKAGE_REPLACED` đăng thông báo "Đã cập nhật lên Cam Kernel SU {versionName}, chạm để xem có gì mới".
@@ -162,7 +162,7 @@ Code đặt trong `manager/app/src/main/java/cam/su/kernel/update/` (`UpdateInst
 
 ### 6.1 Đọc nhật ký đóng gói
 
-- `ChangelogParser` (`manager/app/src/main/java/cam/su/kernel/update/ChangelogParser.kt`), hàm thuần:
+- `ChangelogParser` (`manager/app/src/main/java/cam/caesar/vn/update/ChangelogParser.kt`), hàm thuần:
   - `fun parse(markdown: String): List<ChangelogEntry>` với `ChangelogEntry(version: String, date: String, body: String)`.
   - `fun entriesNewerThan(entries, lastSeen: String?, current: String): List<ChangelogEntry>`: các mục có `lastSeen < version <= current` theo semver (so từng số `major.minor.patch`), sắp mới nhất trước.
 - Đọc file từ assets `changelog/CHANGELOG.md`.

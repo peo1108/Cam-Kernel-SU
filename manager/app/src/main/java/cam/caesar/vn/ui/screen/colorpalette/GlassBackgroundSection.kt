@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.colorpalette
+package cam.caesar.vn.ui.screen.colorpalette
 
-import cam.su.kernel.ui.component.glass.GlassSlider
-import cam.su.kernel.ui.component.glass.GlassDropdownPreference
+import cam.caesar.vn.ui.component.glass.GlassSlider
+import cam.caesar.vn.ui.component.glass.GlassDropdownPreference
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,12 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.bunker.BunkerWallpaperService
-import cam.su.kernel.ui.component.glass.GlassBackgroundType
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.LocalGlassBackgroundState
-import cam.su.kernel.ui.screen.settings.SettingsUiState
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.bunker.BunkerWallpaperService
+import cam.caesar.vn.ui.component.glass.GlassBackgroundType
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.LocalGlassBackgroundState
+import cam.caesar.vn.ui.screen.settings.SettingsUiState
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text

@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.component.miuix
+package cam.caesar.vn.ui.component.miuix
 
-import cam.su.kernel.ui.component.glass.GlassTextField
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.glass.GlassTextField
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
+import cam.caesar.vn.R
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton

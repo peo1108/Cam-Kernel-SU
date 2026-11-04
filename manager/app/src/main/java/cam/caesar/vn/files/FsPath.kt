@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 /** Absolute path helpers. ".." is resolved by text, the way a file manager shows it. */
 object FsPath {

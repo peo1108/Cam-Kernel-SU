@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,17 +11,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.ModuleRepoRepository
-import cam.su.kernel.data.repository.ModuleRepoRepositoryImpl
-import cam.su.kernel.data.repository.SettingsRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.component.SearchStatus
-import cam.su.kernel.ui.screen.modulerepo.ModuleRepoUiState
-import cam.su.kernel.ui.screen.modulerepo.RepoSort
-import cam.su.kernel.ui.util.PinyinUtil
-import cam.su.kernel.ui.util.isNetworkAvailable
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.ModuleRepoRepository
+import cam.caesar.vn.data.repository.ModuleRepoRepositoryImpl
+import cam.caesar.vn.data.repository.SettingsRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.component.SearchStatus
+import cam.caesar.vn.ui.screen.modulerepo.ModuleRepoUiState
+import cam.caesar.vn.ui.screen.modulerepo.RepoSort
+import cam.caesar.vn.ui.util.PinyinUtil
+import cam.caesar.vn.ui.util.isNetworkAvailable
 import java.text.Collator
 import java.util.Locale
 
@@ -34,7 +34,7 @@ class ModuleRepoViewModel(
         private const val TAG = "ModuleRepoViewModel"
     }
 
-    typealias RepoModule = cam.su.kernel.data.model.RepoModule
+    typealias RepoModule = cam.caesar.vn.data.model.RepoModule
 
     private val _uiState = MutableStateFlow(ModuleRepoUiState())
     val uiState: StateFlow<ModuleRepoUiState> = _uiState.asStateFlow()

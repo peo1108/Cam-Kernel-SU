@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home.arena.three
+package cam.caesar.vn.ui.screen.home.arena.three
 
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color

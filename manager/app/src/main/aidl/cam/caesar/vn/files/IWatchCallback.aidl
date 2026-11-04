@@ -1,5 +1,5 @@
 // IWatchCallback.aidl
-package cam.su.kernel.files;
+package cam.caesar.vn.files;
 
 // A folder the Files tab shows changed (ICamFileService.watch).
 oneway interface IWatchCallback {

@@ -1,6 +1,6 @@
 # 简介
 
-**Cam Kernel SU** 把 Root 放进 Android 内核。配套应用叫 **SU Kernel**。
+**Cam Kernel SU** 把 Root 放进 Android 内核。配套应用叫 **Cam**。
 
 ## 在内核里
 

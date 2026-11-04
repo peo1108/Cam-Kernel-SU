@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,9 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.files.FileFormat
-import cam.su.kernel.ui.util.TransferRate
+import cam.caesar.vn.R
+import cam.caesar.vn.files.FileFormat
+import cam.caesar.vn.ui.util.TransferRate
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text

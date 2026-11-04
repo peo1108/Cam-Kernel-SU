@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home.arena
+package cam.caesar.vn.ui.screen.home.arena
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -13,7 +13,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.ui.theme.AppFontFamily
+import cam.caesar.vn.ui.theme.AppFontFamily
 import java.text.BreakIterator
 import kotlin.math.PI
 import kotlin.math.max

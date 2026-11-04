@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.template
+package cam.caesar.vn.ui.screen.template
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.data.model.TemplateInfo
+import cam.caesar.vn.data.model.TemplateInfo
 
 @Immutable
 data class TemplateUiState(

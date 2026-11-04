@@ -1,9 +1,9 @@
-package cam.su.kernel.data.model
+package cam.caesar.vn.data.model
 
 import android.content.pm.PackageInfo
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
-import cam.su.kernel.CamNative
+import cam.caesar.vn.CamNative
 
 const val WEBVIEW_ZYGOTE_UID = 1053
 const val WEBVIEW_ZYGOTE_PROFILE_KEY = "webview_zygote"

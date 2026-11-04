@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
-import cam.su.kernel.KernelVersion
+import cam.caesar.vn.KernelVersion
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

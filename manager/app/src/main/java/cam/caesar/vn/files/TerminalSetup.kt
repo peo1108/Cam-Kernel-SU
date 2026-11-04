@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 /**
  * What the Files tab's terminal starts with. The shell is `camd debug su -g`: root in the global

@@ -8,7 +8,7 @@
     <string name="home_lkm_update_available">A newer bundled LKM is available. Tap to update.</string>
     <string name="home_lkm_custom">Custom</string>
     <string name="home_unsupported">Unsupported</string>
-    <string name="home_unsupported_reason">SU Kernel only supports GKI kernels now, but you can patch the image for GKI devices.</string>
+    <string name="home_unsupported_reason">Cam only supports GKI kernels now, but you can patch the image for GKI devices.</string>
     <string name="home_device_model">Device model</string>
     <string name="home_kernel">Kernel version</string>
     <string name="home_manager_version">Manager version</string>
@@ -105,7 +105,7 @@
     <string name="require_kernel_version_gki">Kernel update required</string>
     <string name="settings_umount_modules_default">Umount modules by default</string>
     <string name="settings_umount_modules_default_summary">The global default value for \"Umount modules\" in App Profile. If enabled, it will remove all module modifications to the system for apps that don\'t have a profile set.</string>
-    <string name="profile_umount_modules_summary">Enabling this option will allow SU Kernel to restore any modified files by the modules for this app.</string>
+    <string name="profile_umount_modules_summary">Enabling this option will allow Cam to restore any modified files by the modules for this app.</string>
     <string name="profile_selinux_domain">Domain</string>
     <string name="profile_selinux_rules">Rules</string>
     <string name="recently_installed">Recently installed</string>
@@ -196,9 +196,9 @@
     <string name="settings_uninstall_temporary">Uninstall temporarily</string>
     <string name="settings_uninstall_permanent">Uninstall permanently</string>
     <string name="settings_restore_stock_image">Restore stock image</string>
-    <string name="settings_uninstall_temporary_message">Temporarily uninstall SU Kernel, restore to original state after next reboot.</string>
-    <string name="settings_uninstall_permanent_message">Uninstalling SU Kernel (Root and all modules) completely and permanently.</string>
-    <string name="settings_restore_stock_image_message">Restore the stock factory image (if a backup exists), usually used before OTA; if you need to uninstall SU Kernel, please use \"Uninstall permanently\".</string>
+    <string name="settings_uninstall_temporary_message">Temporarily uninstall Cam, restore to original state after next reboot.</string>
+    <string name="settings_uninstall_permanent_message">Uninstalling Cam (Root and all modules) completely and permanently.</string>
+    <string name="settings_restore_stock_image_message">Restore the stock factory image (if a backup exists), usually used before OTA; if you need to uninstall Cam, please use \"Uninstall permanently\".</string>
     <string name="flashing">Flashing</string>
     <string name="flash_success">Flash success</string>
     <string name="flash_failed">Flash failed</string>
@@ -214,7 +214,7 @@
     <string name="settings_selinux_hide_reboot_required">Reboot to take effect</string>
     <string name="settings_selinux_hide_failed">Error: %d</string>
     <string name="settings_sulog">SU Log</string>
-    <string name="settings_sulog_summary">Record Root-related events into SU Kernel sulog files</string>
+    <string name="settings_sulog_summary">Record Root-related events into Cam sulog files</string>
     <string name="feature_status_unsupported_summary">Kernel does not support this feature</string>
     <string name="feature_status_managed_summary">This feature is managed by a module</string>
     <string name="feature_status_forced_summary">This feature is forced by boot config</string>
@@ -325,14 +325,14 @@
     <string name="settings_adb_root" translatable="false">ADB Root</string>
     <string name="settings_adb_root_summary">Run adbd daemon with Root privileges</string>
     <string name="settings_shell_su_adb_only">Restrict shell root to ADB</string>
-    <string name="settings_shell_su_adb_only_summary">Extra check when Shell is granted root: only processes spawned by adbd or a SU Kernel root process (e.g. an ADB module) can use it, preventing apps that obtain shell privileges from escalating to root</string>
+    <string name="settings_shell_su_adb_only_summary">Extra check when Shell is granted root: only processes spawned by adbd or a Cam root process (e.g. an ADB module) can use it, preventing apps that obtain shell privileges from escalating to root</string>
     <string name="menu_sort">Sort</string>
     <string name="sort_by_name">Application name</string>
     <string name="sort_by_package_name">Package name</string>
     <string name="sort_by_install_time">Install time</string>
     <string name="sort_by_update_time">Update time</string>
     <string name="sort_reverse">Reverse</string>
-    <string name="profile_flags_desc_no_new_privs">Prevent further privilege escalation via SU Kernel from within the context of this root profile</string>
+    <string name="profile_flags_desc_no_new_privs">Prevent further privilege escalation via Cam from within the context of this root profile</string>
     <string name="module_shortcut_copy_scheme">Copy URL scheme</string>
     <string name="module_shortcut_scheme_copied">URL scheme copied</string>
     <string name="nav_rail_expand">Expand navigation rail</string>
@@ -365,7 +365,7 @@
     <string name="glass_background_import_failed">Could not load this image</string>
     <string name="home_donate_title">Support at:</string>
     <string name="home_donate_summary">t.me/MDM_Cam</string>
-    <string name="donate_dialog_title">Support Cam Kernel SU</string>
+    <string name="donate_dialog_title">Support Cam</string>
     <string name="donate_dialog_summary">Scan the QR code with your banking or MoMo app. Thank you for helping cover the development costs!</string>
     <string name="donate_qr_description">Donation QR code</string>
     <string name="donate_open_channel">Open the channel</string>
@@ -414,7 +414,7 @@
     <string name="app_manage">Manage</string>
     <string name="app_manage_summary">Back up, clean up, freeze, uninstall</string>
     <string name="app_backup">Back up APK</string>
-    <string name="app_backup_summary">Saved to Download/SU Kernel/APK</string>
+    <string name="app_backup_summary">Saved to Download/Cam/APK</string>
     <string name="app_backup_done">Saved to %1$s</string>
     <string name="app_backup_failed">Backup failed</string>
     <string name="app_backup_running">Backing up the APK…</string>
@@ -438,7 +438,7 @@
     <string name="app_uninstall_user">Uninstall for this user</string>
     <string name="app_uninstall_user_summary">Can be reinstalled from the Superuser menu any time</string>
     <string name="app_uninstall_systemless">Remove systemlessly (module)</string>
-    <string name="app_uninstall_systemless_summary">A SU Kernel module hides it from the ROM after a reboot; disable the module to bring it back</string>
+    <string name="app_uninstall_systemless_summary">A Cam module hides it from the ROM after a reboot; disable the module to bring it back</string>
     <string name="app_uninstall_updates">Uninstall updates</string>
     <string name="app_uninstall_updates_summary">Back to the version in the ROM</string>
     <string name="app_uninstalled">Uninstalled</string>
@@ -451,7 +451,7 @@
     <string name="app_restore_system">Reinstall removed system apps</string>
     <string name="app_restore_none">Nothing to reinstall</string>
     <string name="app_restored">Reinstalled %1$s</string>
-    <string name="boot_guard_notice">SU Kernel turned off all %d module(s) because the device kept failing to boot. Tap to see the likely cause</string>
+    <string name="boot_guard_notice">Cam turned off all %d module(s) because the device kept failing to boot. Tap to see the likely cause</string>
     <string name="boot_guard_culprits">Likely cause</string>
     <string name="boot_guard_no_culprit">No module stands out. Enable them one at a time and reboot to find the one at fault.</string>
     <string name="boot_guard_reason_changed">Installed, updated or enabled again</string>
@@ -480,7 +480,7 @@
     <string name="features_boot_guard">Anti bootloop</string>
     <string name="features_boot_guard_on">Turns off all modules after %d failed boot(s)</string>
     <string name="features_boot_guard_enable">Anti bootloop</string>
-    <string name="features_boot_guard_enable_summary">When the device fails to finish booting several times in a row, every module is turned off on the next boot and SU Kernel points at the likely cause</string>
+    <string name="features_boot_guard_enable_summary">When the device fails to finish booting several times in a row, every module is turned off on the next boot and Cam points at the likely cause</string>
     <string name="features_boot_guard_failures">Failed boots before acting</string>
     <string name="features_conflicts">Module conflicts</string>
     <string name="features_conflicts_none">No conflicts</string>
@@ -492,15 +492,15 @@
     <string name="features_conflicts_rescan">Scan again</string>
     <string name="features_risk">Block dangerous modules</string>
     <string name="features_risk_enable">Refuse dangerous modules</string>
-    <string name="features_risk_enable_summary">Stop installing modules the signed SU Kernel list marks as malware or device-wrecking. Off: show a warning and install anyway</string>
+    <string name="features_risk_enable_summary">Stop installing modules the signed Cam list marks as malware or device-wrecking. Off: show a warning and install anyway</string>
     <string name="features_risk_on">On · %d entries in the list</string>
     <string name="features_risk_warn_only">Warn only</string>
     <string name="features_risk_found">Installed and on the list: %d</string>
     <string name="features_risk_note">The list (%1$d entries, rules version %2$d) comes with the root hiding rules and updates with them. A module is checked by every file when installed, and by its id, name and author once installed.</string>
     <string name="module_badge_risk">Dangerous</string>
     <string name="module_risk_title">On the dangerous module list</string>
-    <string name="flash_risk_blocked">❌ Not installed: this module is on the SU Kernel dangerous module list</string>
-    <string name="flash_risk_warn">⚠ Warning: this module is on the SU Kernel dangerous module list</string>
+    <string name="flash_risk_blocked">❌ Not installed: this module is on the Cam dangerous module list</string>
+    <string name="flash_risk_warn">⚠ Warning: this module is on the Cam dangerous module list</string>
     <string name="flash_risk_reason">Reason: %s</string>
     <string name="flash_risk_source">Source: %s</string>
     <string name="flash_risk_found_in">Found in: %s</string>
@@ -567,9 +567,9 @@
     <string name="audit_rescan">Check again</string>
     <string name="audit_apply">Apply %1$d fixes</string>
     <string name="audit_more">and %1$d more</string>
-    <string name="audit_module_mounts">Mounts modules made themselves (SU Kernel does not unmount them)</string>
+    <string name="audit_module_mounts">Mounts modules made themselves (Cam does not unmount them)</string>
     <string name="audit_cam_mounts">Module mounts stay visible: kernel umount is off</string>
-    <string name="audit_selinux_rules">SU Kernel\'s SELinux rules are visible: SELinux hide is off</string>
+    <string name="audit_selinux_rules">Cam\'s SELinux rules are visible: SELinux hide is off</string>
     <string name="audit_maps">Apps have root files mapped in memory</string>
     <string name="audit_props">Properties show an unlocked bootloader</string>
     <string name="audit_boot_args">Bootconfig / cmdline show an unlocked bootloader</string>
@@ -764,7 +764,7 @@
     <string name="update_installing_hint">The app closes and reopens when done</string>
     <string name="update_retry">Retry</string>
     <string name="update_hide">Hide</string>
-    <!-- caesarvn.xyz account (cam.su.kernel.account.Account) -->
+    <!-- caesarvn.xyz account (cam.caesar.vn.account.Account) -->
     <string name="account_title">Account</string>
     <string name="account_unlinked">Link to get updates</string>
     <string name="account_link">Link account</string>
@@ -793,7 +793,7 @@
     <string name="account_members_only">Join as a member first.</string>
     <string name="account_refresh">Refresh</string>
     <string name="early_card">%1$s is out: yours on %2$s. Tap to get it now.</string>
-    <string name="early_title">Cam Kernel SU %1$s</string>
+    <string name="early_title">Cam %1$s</string>
     <string name="early_not_linked">Link this phone to your account to get updates.</string>
     <string name="early_opens">Opens for your account on %1$s.</string>
     <string name="early_lead">Get it now for %1$s instead of waiting. It stays on your account, here and on caesarvn.xyz.</string>
@@ -812,7 +812,7 @@
     <string name="early_content_hint">Use exactly this note: it is how the payment finds your order.</string>
     <string name="early_copy">Copy</string>
     <string name="early_copied">Copied</string>
-    <string name="early_saved">QR saved to Pictures/Cam Kernel SU</string>
+    <string name="early_saved">QR saved to Pictures/Cam</string>
     <string name="early_save_failed">Could not save the QR</string>
     <string name="early_open">%1$s is open for your account</string>
     <string name="early_update_now">Update now</string>

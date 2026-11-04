@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import java.util.Locale
 import kotlin.math.pow

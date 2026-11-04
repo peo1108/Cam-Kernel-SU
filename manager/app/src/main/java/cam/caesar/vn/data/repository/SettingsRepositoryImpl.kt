@@ -1,4 +1,4 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
 import android.content.ComponentName
 import android.content.Context
@@ -8,14 +8,14 @@ import androidx.core.content.edit
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.topjohnwu.superuser.ShellUtils
-import cam.su.kernel.Cam
-import cam.su.kernel.camApp
-import cam.su.kernel.jailbreak.CamBootReceiver
-import cam.su.kernel.ui.screen.modulerepo.RepoSort
-import cam.su.kernel.ui.util.execCamd
-import cam.su.kernel.ui.util.getFeaturePersistValue
-import cam.su.kernel.ui.util.getFeatureValue
-import cam.su.kernel.ui.util.getFeatureStatus
+import cam.caesar.vn.Cam
+import cam.caesar.vn.camApp
+import cam.caesar.vn.jailbreak.CamBootReceiver
+import cam.caesar.vn.ui.screen.modulerepo.RepoSort
+import cam.caesar.vn.ui.util.execCamd
+import cam.caesar.vn.ui.util.getFeaturePersistValue
+import cam.caesar.vn.ui.util.getFeatureValue
+import cam.caesar.vn.ui.util.getFeatureStatus
 import java.security.SecureRandom
 
 private const val SETTINGS_PREFS = "settings"

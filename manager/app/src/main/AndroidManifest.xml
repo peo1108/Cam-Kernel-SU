@@ -39,7 +39,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Cam"
-        android:zygotePreloadName="cam.su.kernel.jailbreak.CamZygotePreload">
+        android:zygotePreloadName="cam.caesar.vn.jailbreak.CamZygotePreload">
         <!-- Rotation and window resizes stay in Compose. Recreating the activity tore down the
              status card's and the roaming slimes' Filament engines and made them again in the same
              process, and that crashed in native code (SIGSEGV in IBLPrefilterContext or
@@ -173,7 +173,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <intent-filter>
-                <action android:name="cam.su.kernel.jailbreak.LAUNCH" />
+                <action android:name="cam.caesar.vn.jailbreak.LAUNCH" />
             </intent-filter>
         </receiver>
 

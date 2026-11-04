@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import java.io.InputStream
 
@@ -75,7 +75,7 @@ class RootFs(private val fs: FsBackend) {
      * open it through /storage, root included. Gives the disk copy of [path] and everything under
      * it the owner, group, mode and SELinux label of the folder it sits in; files get only that
      * mode's read and write bits. Symlinks are left alone. When the folders above [path] are
-     * wrong too (an old Manager made both Download/SU Kernel and its APK folder that way), the
+     * wrong too (an old Manager made both Download/Cam and its APK folder that way), the
      * repair starts from the topmost of them, under a folder that works: group rwx, the group of
      * the user's root, and the label the media provider gives what it makes, MLS categories and
      * all. Whose folder it is does not matter (a restore can leave Download root's, and it works).

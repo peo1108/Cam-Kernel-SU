@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
 import android.content.Context
 import androidx.compose.runtime.Immutable

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.markdown
+package cam.caesar.vn.ui.component.markdown
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState

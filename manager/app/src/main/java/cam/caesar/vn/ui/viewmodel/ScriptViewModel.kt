@@ -1,14 +1,14 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.FileChanges
-import cam.su.kernel.files.FsException
-import cam.su.kernel.files.ScriptOutput
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.FileChanges
+import cam.caesar.vn.files.FsException
+import cam.caesar.vn.files.ScriptOutput
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -120,7 +120,7 @@ class ScriptViewModel : ViewModel() {
 
     override fun onCleared() {
         // leaving the screen ends the run (it asks first while the script runs)
-        handle?.let { h -> cam.su.kernel.files.FileOpProgress.scope.launch { runCatching { h.stop() } } }
+        handle?.let { h -> cam.caesar.vn.files.FileOpProgress.scope.launch { runCatching { h.stop() } } }
         super.onCleared()
     }
 

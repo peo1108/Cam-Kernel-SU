@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import java.util.Locale
 
@@ -269,7 +269,7 @@ object Systemless {
         name=Cam file overrides
         version=1
         versionCode=1
-        author=Cam Kernel SU
+        author=Cam
         description=Files replaced from the Files tab (systemless).
     """.trimIndent() + "\n"
 

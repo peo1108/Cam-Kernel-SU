@@ -1,6 +1,6 @@
 # Features tab
 
-The **Features** tab (between Modules and Settings) collects what SU Kernel adds.
+The **Features** tab (between Modules and Settings) collects what Cam adds.
 
 ## Bootloop guard
 

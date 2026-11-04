@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 import androidx.compose.runtime.Composable
-import cam.su.kernel.Cam
+import cam.caesar.vn.Cam
 
 @Composable
 fun CamIsValid(

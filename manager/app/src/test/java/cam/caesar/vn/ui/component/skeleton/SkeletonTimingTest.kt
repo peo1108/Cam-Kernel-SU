@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.skeleton
+package cam.caesar.vn.ui.component.skeleton
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

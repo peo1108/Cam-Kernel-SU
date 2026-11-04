@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.flash
+package cam.caesar.vn.ui.screen.flash
 
-import cam.su.kernel.ui.component.glass.GlassButtonGroup
-import cam.su.kernel.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.component.glass.GlassButtonGroup
+import cam.caesar.vn.ui.component.glass.GlassIconButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,11 +29,11 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.KeyEventBlocker
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.KeyEventBlocker
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar

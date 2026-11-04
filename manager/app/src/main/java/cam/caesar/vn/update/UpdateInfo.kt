@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import org.json.JSONArray
 

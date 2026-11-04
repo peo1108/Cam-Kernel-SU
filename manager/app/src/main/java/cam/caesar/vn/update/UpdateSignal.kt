@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

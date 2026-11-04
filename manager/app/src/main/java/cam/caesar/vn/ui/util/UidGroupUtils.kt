@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
-import cam.su.kernel.Cam
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.viewmodel.SuperUserViewModel
+import cam.caesar.vn.Cam
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.viewmodel.SuperUserViewModel
 import java.util.concurrent.ConcurrentHashMap
 
 private val PREFERRED_PKG_BY_SUID = mapOf(

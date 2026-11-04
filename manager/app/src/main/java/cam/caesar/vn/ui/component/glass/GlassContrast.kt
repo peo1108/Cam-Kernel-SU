@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 // Background luma the overlay should reach so on-surface text stays readable:
 // dark theme (white text) needs a dark background, light theme (dark text) a light one.

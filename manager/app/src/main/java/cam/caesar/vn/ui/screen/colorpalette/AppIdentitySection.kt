@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.colorpalette
+package cam.caesar.vn.ui.screen.colorpalette
 
-import cam.su.kernel.ui.component.glass.GlassTextField
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.glass.GlassTextField
+import cam.caesar.vn.ui.component.CamToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -48,10 +48,10 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.util.AppIdentity
-import cam.su.kernel.ui.util.AppIdentity.Preset
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.util.AppIdentity
+import cam.caesar.vn.ui.util.AppIdentity.Preset
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon

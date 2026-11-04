@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.home.arena
+package cam.caesar.vn.ui.screen.home.arena
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
-import cam.su.kernel.ui.slime.SlimeHome
+import cam.caesar.vn.ui.slime.SlimeHome
 import java.util.Random
 import kotlin.math.abs
 import kotlin.math.cos

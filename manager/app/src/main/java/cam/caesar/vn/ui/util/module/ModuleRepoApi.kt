@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.util.module
+package cam.caesar.vn.ui.util.module
 
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.util.isNetworkAvailable
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.util.isNetworkAvailable
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject

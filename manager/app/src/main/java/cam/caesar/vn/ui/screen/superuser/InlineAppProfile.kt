@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.superuser
+package cam.caesar.vn.ui.screen.superuser
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,10 +11,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.screen.appprofile.AppProfileEditorBody
-import cam.su.kernel.ui.screen.appprofile.ProfileWrites
-import cam.su.kernel.ui.screen.appprofile.rememberAppProfileEditor
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.screen.appprofile.AppProfileEditorBody
+import cam.caesar.vn.ui.screen.appprofile.ProfileWrites
+import cam.caesar.vn.ui.screen.appprofile.rememberAppProfileEditor
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.preference.ArrowPreference

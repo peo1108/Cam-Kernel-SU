@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.component.uninstalldialog
+package cam.caesar.vn.ui.component.uninstalldialog
 
-import cam.su.kernel.ui.component.CamToast
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.CamToast
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,16 +15,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.screen.flash.UninstallType
-import cam.su.kernel.ui.screen.flash.UninstallType.NONE
-import cam.su.kernel.ui.screen.flash.UninstallType.PERMANENT
-import cam.su.kernel.ui.screen.flash.UninstallType.RESTORE_STOCK_IMAGE
-import cam.su.kernel.ui.screen.flash.UninstallType.TEMPORARY
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.dialog.rememberConfirmDialog
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.screen.flash.UninstallType
+import cam.caesar.vn.ui.screen.flash.UninstallType.NONE
+import cam.caesar.vn.ui.screen.flash.UninstallType.PERMANENT
+import cam.caesar.vn.ui.screen.flash.UninstallType.RESTORE_STOCK_IMAGE
+import cam.caesar.vn.ui.screen.flash.UninstallType.TEMPORARY
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton

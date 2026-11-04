@@ -22,7 +22,7 @@ const T = {
     floatHide: '0 điểm lộ',
     stepsTitle: 'Ba bước.',
     steps: [
-      ['Tải', 'Cài SU Kernel.'],
+      ['Tải', 'Cài Cam.'],
       ['Vá', 'Đưa app ảnh init_boot gốc.'],
       ['Flash', 'fastboot, rồi khởi động lại.'],
     ],
@@ -52,7 +52,7 @@ const T = {
     floatHide: '0 leaks',
     stepsTitle: 'Three steps.',
     steps: [
-      ['Get', 'Install SU Kernel.'],
+      ['Get', 'Install Cam.'],
       ['Patch', 'Hand it your stock init_boot.'],
       ['Flash', 'fastboot, then reboot.'],
     ],
@@ -82,7 +82,7 @@ const T = {
     floatHide: '0 处泄露',
     stepsTitle: '三步。',
     steps: [
-      ['获取', '安装 SU Kernel。'],
+      ['获取', '安装 Cam。'],
       ['修补', '把原厂 init_boot 交给它。'],
       ['刷入', 'fastboot，然后重启。'],
     ],

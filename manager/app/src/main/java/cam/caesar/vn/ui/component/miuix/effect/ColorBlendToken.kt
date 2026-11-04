@@ -1,6 +1,6 @@
 // Mirrored from compose-miuix-ui example.
 
-package cam.su.kernel.ui.component.miuix.effect
+package cam.caesar.vn.ui.component.miuix.effect
 
 import androidx.compose.ui.graphics.Color
 import top.yukonga.miuix.kmp.blur.BlendColorEntry

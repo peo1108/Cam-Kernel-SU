@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// /ket-noi?code=XXXXXX: link the SU Kernel app on a phone to the signed-in account. The app shows
+// /ket-noi?code=XXXXXX: link the Cam app on a phone to the signed-in account. The app shows
 // the code (and a QR to this page); confirming here hands the app its device token.
 import { computed, onMounted, ref } from 'vue'
 import { ApiError, api, errorText, type Lang } from '../api'
@@ -7,17 +7,17 @@ import { ApiError, api, errorText, type Lang } from '../api'
 const props = defineProps<{ lang: Lang }>()
 const T = {
   vi: {
-    title: 'Kết nối thiết bị.', lead: 'Nhập mã 6 ký tự đang hiện trong SU Kernel → Cài đặt → Tài khoản.', code: 'Mã trên điện thoại',
+    title: 'Kết nối thiết bị.', lead: 'Nhập mã 6 ký tự đang hiện trong Cam → Cài đặt → Tài khoản.', code: 'Mã trên điện thoại',
     link: 'Kết nối', done: 'Đã kết nối', doneLead: 'Quay lại điện thoại: app sẽ tự nhận trong vài giây.', bad: 'Mã sai hoặc đã hết hạn. Tạo mã mới trên app.',
     member: '/thanh-vien', back: 'Về trang thành viên', signin: '/tai-khoan?next=',
   },
   en: {
-    title: 'Link a device.', lead: 'Enter the 6-character code shown in SU Kernel → Settings → Account.', code: 'Code on the phone',
+    title: 'Link a device.', lead: 'Enter the 6-character code shown in Cam → Settings → Account.', code: 'Code on the phone',
     link: 'Link', done: 'Linked', doneLead: 'Back to the phone: the app picks it up in a few seconds.', bad: 'Wrong or expired code. Make a new one in the app.',
     member: '/en/member', back: 'Back to your account', signin: '/en/account?next=',
   },
   zh: {
-    title: '关联设备。', lead: '输入 SU Kernel → 设置 → 账号 中显示的 6 位代码。', code: '手机上的代码',
+    title: '关联设备。', lead: '输入 Cam → 设置 → 账号 中显示的 6 位代码。', code: '手机上的代码',
     link: '关联', done: '已关联', doneLead: '回到手机，应用会在几秒内自动完成。', bad: '代码错误或已过期，请在应用中重新生成。',
     member: '/zh/member', back: '返回会员页', signin: '/zh/account?next=',
   },

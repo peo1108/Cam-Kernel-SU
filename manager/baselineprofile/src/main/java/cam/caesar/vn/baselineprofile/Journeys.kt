@@ -1,4 +1,4 @@
-package cam.su.kernel.baselineprofile
+package cam.caesar.vn.baselineprofile
 
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.platform.app.InstrumentationRegistry
@@ -8,7 +8,7 @@ import androidx.test.uiautomator.Until
 
 /** The Manager's package: scripts/device_baseline_profile.sh passes `targetAppId` (PR builds differ). */
 val targetPackage: String
-    get() = InstrumentationRegistry.getArguments().getString("targetAppId") ?: "cam.su.kernel"
+    get() = InstrumentationRegistry.getArguments().getString("targetAppId") ?: "cam.caesar.vn"
 
 // BottomBarDestination labels, Home last so the run ends where it started
 private val tabs = listOf("superuser", "module", "features", "files", "settings", "home")

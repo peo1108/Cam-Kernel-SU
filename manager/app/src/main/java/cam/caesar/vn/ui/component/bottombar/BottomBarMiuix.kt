@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.bottombar
+package cam.caesar.vn.ui.component.bottombar
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -39,18 +39,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.Cam
-import cam.su.kernel.R
-import cam.su.kernel.ui.LocalMainPagerState
-import cam.su.kernel.ui.component.FloatingBottomBar
-import cam.su.kernel.ui.component.FloatingBottomBarItem
-import cam.su.kernel.ui.component.search.GlassCircleButton
-import cam.su.kernel.ui.component.search.LocalMainSearch
-import cam.su.kernel.ui.component.search.SearchDock
-import cam.su.kernel.ui.component.search.SearchablePages
-import cam.su.kernel.ui.theme.LocalEnableFloatingBottomBar
-import cam.su.kernel.ui.theme.LocalEnableFloatingBottomBarBlur
-import cam.su.kernel.ui.util.BlurredBar
+import cam.caesar.vn.Cam
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.LocalMainPagerState
+import cam.caesar.vn.ui.component.FloatingBottomBar
+import cam.caesar.vn.ui.component.FloatingBottomBarItem
+import cam.caesar.vn.ui.component.search.GlassCircleButton
+import cam.caesar.vn.ui.component.search.LocalMainSearch
+import cam.caesar.vn.ui.component.search.SearchDock
+import cam.caesar.vn.ui.component.search.SearchablePages
+import cam.caesar.vn.ui.theme.LocalEnableFloatingBottomBar
+import cam.caesar.vn.ui.theme.LocalEnableFloatingBottomBarBlur
+import cam.caesar.vn.ui.util.BlurredBar
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon

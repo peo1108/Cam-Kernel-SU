@@ -1,7 +1,7 @@
-package cam.su.kernel.data.model
+package cam.caesar.vn.data.model
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.hiding.ModuleRiskHit
+import cam.caesar.vn.hiding.ModuleRiskHit
 
 @Immutable
 data class Module(

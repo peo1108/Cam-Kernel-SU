@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.executemoduleaction
+package cam.caesar.vn.ui.screen.executemoduleaction
 
 import androidx.compose.runtime.Immutable
 

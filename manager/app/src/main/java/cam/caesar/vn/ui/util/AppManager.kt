@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.content.Context
 import android.content.Intent
@@ -7,9 +7,9 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.provider.Settings
 import android.util.Log
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.shellQuote
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.shellQuote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -214,7 +214,7 @@ suspend fun removeSystemAppSystemless(context: Context, d: AppDetails): Boolean 
                 name=Gỡ ${d.label}
                 version=v1
                 versionCode=1
-                author=SU Kernel
+                author=Cam
                 description=Gỡ systemless ${d.packageName} ($codePath). Tắt hoặc xoá module để khôi phục.
                 """.trimIndent().toByteArray()
             )
@@ -233,7 +233,7 @@ suspend fun removeSystemAppSystemless(context: Context, d: AppDetails): Boolean 
 }
 
 /**
- * Saves the APK (and its splits, zipped into an .apks) to Download/SU Kernel/APK. The root file
+ * Saves the APK (and its splits, zipped into an .apks) to Download/Cam/APK. The root file
  * service writes it through /storage, so the media provider makes the folders and indexes the
  * file like any download. [report] gets the bytes read so far of the total. Returns the saved
  * file, or null on failure.
@@ -248,7 +248,7 @@ suspend fun backupApk(d: AppDetails, report: (done: Long, total: Long) -> Unit):
     try {
         // Older versions made these folders as root straight in /data/media, closed to the
         // media provider: nothing could open them through /storage any more.
-        if (CamFileClient.stat("$download/SU Kernel")?.isDir == true) CamFileClient.repairShared("$download/SU Kernel")
+        if (CamFileClient.stat("$download/Cam")?.isDir == true) CamFileClient.repairShared("$download/Cam")
         var dir = download
         for (name in BACKUP_DIR.split('/')) {
             dir = "$dir/$name"
@@ -287,7 +287,7 @@ suspend fun backupApk(d: AppDetails, report: (done: Long, total: Long) -> Unit):
     }
 }
 
-private const val BACKUP_DIR = "SU Kernel/APK"
+private const val BACKUP_DIR = "Cam/APK"
 
 /** Opens Android's own App info page for the app, as the right user. */
 fun openSystemAppInfo(packageName: String, userId: Int) {

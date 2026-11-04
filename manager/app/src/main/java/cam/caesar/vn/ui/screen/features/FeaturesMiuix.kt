@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.screen.features
+package cam.caesar.vn.ui.screen.features
 
-import cam.su.kernel.ui.component.CamToast
-import cam.su.kernel.ui.component.glass.GlassSwitchPreference
-import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
+import cam.caesar.vn.ui.component.CamToast
+import cam.caesar.vn.ui.component.glass.GlassSwitchPreference
+import cam.caesar.vn.ui.component.bottombar.LocalNavSideInsets
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,18 +47,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.ClipData
 import android.content.ClipboardManager
-import cam.su.kernel.R
-import cam.su.kernel.adb.WirelessAdb
-import cam.su.kernel.data.model.ConflictKind
-import cam.su.kernel.data.model.PropCheck
-import cam.su.kernel.ui.component.AttestationResult
-import cam.su.kernel.ui.component.glass.GlassDropdownPreference
-import cam.su.kernel.ui.component.glass.GlassExpandableCard
-import cam.su.kernel.ui.screen.home.BootGuardReport
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.AttestationReport
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.adb.WirelessAdb
+import cam.caesar.vn.data.model.ConflictKind
+import cam.caesar.vn.data.model.PropCheck
+import cam.caesar.vn.ui.component.AttestationResult
+import cam.caesar.vn.ui.component.glass.GlassDropdownPreference
+import cam.caesar.vn.ui.component.glass.GlassExpandableCard
+import cam.caesar.vn.ui.screen.home.BootGuardReport
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.AttestationReport
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -73,8 +73,8 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.text.DateFormat
 import java.util.Date
-import cam.su.kernel.ui.component.expand.expandClick
-import cam.su.kernel.ui.component.expand.expandSource
+import cam.caesar.vn.ui.component.expand.expandClick
+import cam.caesar.vn.ui.component.expand.expandSource
 
 @Composable
 fun FeaturesPagerMiuix(

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.hidingcheck
+package cam.caesar.vn.ui.screen.hidingcheck
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,12 +20,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.data.model.WidevineDiagnosis
-import cam.su.kernel.data.model.diagnoseWidevine
-import cam.su.kernel.data.repository.HidingRulesStatus
-import cam.su.kernel.ui.component.AttestationResult
-import cam.su.kernel.ui.component.glass.GlassCard
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.WidevineDiagnosis
+import cam.caesar.vn.data.model.diagnoseWidevine
+import cam.caesar.vn.data.repository.HidingRulesStatus
+import cam.caesar.vn.ui.component.AttestationResult
+import cam.caesar.vn.ui.component.glass.GlassCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -167,7 +167,7 @@ internal fun WidevineCard(state: HidingCheckUiState, actions: HidingCheckActions
                 onClick = {
                     context.getSystemService(android.content.ClipboardManager::class.java)
                         ?.setPrimaryClip(android.content.ClipData.newPlainText("widevine", info.summary()))
-                    cam.su.kernel.ui.component.CamToast.show(context, R.string.hiding_widevine_copied)
+                    cam.caesar.vn.ui.component.CamToast.show(context, R.string.hiding_widevine_copied)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -205,7 +205,7 @@ internal fun WidevineCard(state: HidingCheckUiState, actions: HidingCheckActions
         )
     }
 
-    cam.su.kernel.ui.component.glass.GlassDialog(
+    cam.caesar.vn.ui.component.glass.GlassDialog(
         show = confirm,
         title = stringResource(R.string.hiding_widevine_reprovision),
         summary = stringResource(

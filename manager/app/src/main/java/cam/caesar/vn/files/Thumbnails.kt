@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import android.graphics.BitmapFactory
 import android.util.LruCache

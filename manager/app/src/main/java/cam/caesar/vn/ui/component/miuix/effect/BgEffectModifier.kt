@@ -1,6 +1,6 @@
 // Mirrored from compose-miuix-ui example.
 
-package cam.su.kernel.ui.component.miuix.effect
+package cam.caesar.vn.ui.component.miuix.effect
 
 import android.annotation.SuppressLint
 import android.os.Build

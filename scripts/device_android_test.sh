@@ -3,7 +3,7 @@
 #
 #   1. build both APKs (Windows: K: drive, docs/CAM_CHANGES.md section 5):
 #        Push-Location K:\manager; & K:\manager\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest
-#   2. scripts/device_android_test.sh [test class]     e.g. cam.su.kernel.CamRootServiceTest
+#   2. scripts/device_android_test.sh [test class]     e.g. cam.caesar.vn.CamRootServiceTest
 #
 # Never use Gradle's connectedAndroidTest instead: it uninstalls the APKs after the run, and
 # uninstalling the Manager drops its data (settings, account, library state). This installs over
@@ -17,7 +17,7 @@ export MSYS_NO_PATHCONV=1
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADB="${ADB:-$(command -v adb || echo "${LOCALAPPDATA:-}/Android/Sdk/platform-tools/adb.exe")}"
-PKG="${KSU_PACKAGE_NAME:-cam.su.kernel}"
+PKG="${KSU_PACKAGE_NAME:-cam.caesar.vn}"
 OUT="$ROOT/manager/app/build/outputs/apk"
 
 newest() {

@@ -4,7 +4,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Thêm tab "Tính năng" trên thanh điều hướng, gom các tính năng riêng của SU Kernel thành thẻ mở rộng có công tắc và tùy chọn.
+**Goal:** Thêm tab "Tính năng" trên thanh điều hướng, gom các tính năng riêng của Cam thành thẻ mở rộng có công tắc và tùy chọn.
 
 **Architecture:** Cấu hình chống bootloop phải đọc được lúc `post-fs-data`, nên nằm trong `bootguard.json` của ksud và đổi qua lệnh `ksud boot-guard set`. Cấu hình chống xung đột chỉ ảnh hưởng Manager (chip trên thẻ module, cảnh báo khi flash), nên lưu trong SharedPreferences của Manager. Trang mới là một pager thứ 5 dùng lại `ExpandableCard` kiểu trang Hồ sơ ứng dụng.
 

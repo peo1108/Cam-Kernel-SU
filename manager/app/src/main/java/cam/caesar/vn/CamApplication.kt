@@ -1,4 +1,4 @@
-package cam.su.kernel
+package cam.caesar.vn
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
@@ -9,11 +9,11 @@ import android.system.Os
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.update.UpdateInstaller
-import cam.su.kernel.update.UpdateNotifier
-import cam.su.kernel.update.UpdateScheduler
-import cam.su.kernel.ui.viewmodel.SuperUserViewModel
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.update.UpdateInstaller
+import cam.caesar.vn.update.UpdateNotifier
+import cam.caesar.vn.update.UpdateScheduler
+import cam.caesar.vn.ui.viewmodel.SuperUserViewModel
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import org.lsposed.hiddenapibypass.HiddenApiBypass

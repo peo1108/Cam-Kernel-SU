@@ -1,4 +1,4 @@
-package cam.su.kernel.donate
+package cam.caesar.vn.donate
 
 import android.graphics.Bitmap
 import android.graphics.Color

@@ -1,6 +1,6 @@
 # Tab Tính năng
 
-Tab **Tính năng** (giữa Module và Cài đặt) gom các tính năng riêng của SU Kernel.
+Tab **Tính năng** (giữa Module và Cài đặt) gom các tính năng riêng của Cam.
 
 ## Chống bootloop
 

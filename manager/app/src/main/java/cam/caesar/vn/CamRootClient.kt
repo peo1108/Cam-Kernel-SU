@@ -1,4 +1,4 @@
-package cam.su.kernel
+package cam.caesar.vn
 
 import android.content.ComponentName
 import android.content.Intent
@@ -17,8 +17,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import cam.su.kernel.ui.CamRootService
-import cam.su.kernel.ui.util.CamCli
+import cam.caesar.vn.ui.CamRootService
+import cam.caesar.vn.ui.util.CamCli
 import kotlin.coroutines.resume
 
 /**

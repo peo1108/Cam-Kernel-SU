@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -12,8 +12,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.toBitmap
-import cam.su.kernel.R
-import cam.su.kernel.files.shellQuote
+import cam.caesar.vn.R
+import cam.caesar.vn.files.shellQuote
 import java.io.File
 
 /**

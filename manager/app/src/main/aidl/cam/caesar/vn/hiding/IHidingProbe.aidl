@@ -1,5 +1,5 @@
 // IHidingProbe.aidl
-package cam.su.kernel.hiding;
+package cam.caesar.vn.hiding;
 
 // Served by HidingProbeService in an isolated process: no root, modules unmounted,
 // the same view a banking app or a game gets.

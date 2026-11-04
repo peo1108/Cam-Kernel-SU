@@ -2,7 +2,7 @@
 
 ## 能和 KernelSU、Magisk 或 APatch 一起用吗？
 
-不能。同一时间只用一种 Root 方案。SU Kernel 应用也不能与官方 KernelSU 内核配合。请先移除旧的 Root（刷回原厂镜像）。
+不能。同一时间只用一种 Root 方案。Cam 应用也不能与官方 KernelSU 内核配合。请先移除旧的 Root（刷回原厂镜像）。
 
 ## 我的手机能用吗？
 
@@ -16,7 +16,7 @@
 
 ## 其他应用无法调用 `su`
 
-刷入后的首次开机，请先打开一次 SU Kernel，让它安装 `/data/adb/camd`。然后在 Superuser 页授予 Root，或使用 `camd allow add <包名>`。
+刷入后的首次开机，请先打开一次 Cam，让它安装 `/data/adb/camd`。然后在 Superuser 页授予 Root，或使用 `camd allow add <包名>`。
 
 ## 模块已安装，但文件没有出现在 /system
 

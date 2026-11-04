@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.component.dialog
+package cam.caesar.vn.ui.component.dialog
 
-import cam.su.kernel.ui.component.glass.GlassTextField
+import cam.caesar.vn.ui.component.glass.GlassTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import cam.su.kernel.R
+import cam.caesar.vn.R
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.window.WindowDialog

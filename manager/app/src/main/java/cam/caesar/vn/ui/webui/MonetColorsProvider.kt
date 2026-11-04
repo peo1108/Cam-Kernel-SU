@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui
+package cam.caesar.vn.ui.webui
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme

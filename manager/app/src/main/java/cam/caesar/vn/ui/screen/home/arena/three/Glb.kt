@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home.arena.three
+package cam.caesar.vn.ui.screen.home.arena.three
 
 import org.json.JSONArray
 import org.json.JSONObject

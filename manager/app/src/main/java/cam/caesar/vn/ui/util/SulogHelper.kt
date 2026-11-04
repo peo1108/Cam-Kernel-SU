@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.os.SystemClock
 import com.topjohnwu.superuser.io.SuFile

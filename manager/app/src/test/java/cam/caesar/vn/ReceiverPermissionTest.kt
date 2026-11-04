@@ -1,10 +1,10 @@
-package cam.su.kernel
+package cam.caesar.vn
 
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
-import cam.su.kernel.jailbreak.CamBootReceiver
+import cam.caesar.vn.jailbreak.CamBootReceiver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -132,7 +132,7 @@ class ReceiverPermissionTest {
         // javac turns ContextCompat::registerReceiver into an invokedynamic with a method handle,
         // no invokestatic: the call cannot be read, so it must be listed
         val found = sites(classBytes(ReceiverMethodRef::class.java))
-        assertEquals(listOf(Site("cam/su/kernel/ReceiverMethodRef.<reference>#0", REGISTER, null)), found)
+        assertEquals(listOf(Site("cam/caesar/vn/ReceiverMethodRef.<reference>#0", REGISTER, null)), found)
     }
 
     private fun classBytes(type: Class<*>) =

@@ -27,8 +27,8 @@ export MSYS_NO_PATHCONV=1
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADB="${ADB:-$(command -v adb || echo "${LOCALAPPDATA:-}/Android/Sdk/platform-tools/adb.exe")}"
-PKG="${KSU_PACKAGE_NAME:-cam.su.kernel}"
-TEST_PKG=cam.su.kernel.baselineprofile
+PKG="${KSU_PACKAGE_NAME:-cam.caesar.vn}"
+TEST_PKG=cam.caesar.vn.baselineprofile
 DEVICE_OUT="/sdcard/Android/media/$TEST_PKG/additional_test_output"
 SAVE="$ROOT/manager/app/src/release/generated/baselineProfiles"
 RUNS=8

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.motion
+package cam.caesar.vn.ui.component.motion
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.component.expand.LocalExpandPage
+import cam.caesar.vn.ui.component.expand.LocalExpandPage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds

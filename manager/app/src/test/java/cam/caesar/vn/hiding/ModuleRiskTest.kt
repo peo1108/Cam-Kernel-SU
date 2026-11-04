@@ -1,4 +1,4 @@
-package cam.su.kernel.hiding
+package cam.caesar.vn.hiding
 
 import org.json.JSONArray
 import org.junit.Assert.assertEquals

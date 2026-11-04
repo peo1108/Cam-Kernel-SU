@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui.file
+package cam.caesar.vn.ui.webui.file
 
 import android.util.Log
 import android.webkit.JavascriptInterface

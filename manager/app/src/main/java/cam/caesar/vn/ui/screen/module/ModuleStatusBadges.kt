@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.module
+package cam.caesar.vn.ui.screen.module
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,10 +27,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.data.model.ConflictKind
-import cam.su.kernel.data.model.Module
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.ConflictKind
+import cam.caesar.vn.data.model.Module
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton

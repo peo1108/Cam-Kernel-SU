@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.module
+package cam.caesar.vn.ui.screen.module
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -14,8 +14,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import cam.su.kernel.data.model.Module
-import cam.su.kernel.ui.util.module.Shortcut
+import cam.caesar.vn.data.model.Module
+import cam.caesar.vn.ui.util.module.Shortcut
 
 @Stable
 class ModuleShortcutState internal constructor(

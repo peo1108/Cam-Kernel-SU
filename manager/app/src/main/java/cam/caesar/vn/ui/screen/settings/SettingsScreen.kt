@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.settings
+package cam.caesar.vn.ui.screen.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -11,9 +11,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cam.su.kernel.ui.navigation3.Navigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.viewmodel.SettingsViewModel
+import cam.caesar.vn.ui.navigation3.Navigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun SettingPager(

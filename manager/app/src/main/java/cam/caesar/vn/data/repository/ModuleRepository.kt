@@ -1,7 +1,7 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
-import cam.su.kernel.data.model.Module
-import cam.su.kernel.data.model.ModuleUpdateInfo
+import cam.caesar.vn.data.model.Module
+import cam.caesar.vn.data.model.ModuleUpdateInfo
 
 interface ModuleRepository {
     suspend fun getModules(): Result<List<Module>>

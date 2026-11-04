@@ -1,6 +1,6 @@
 // Mirrored from compose-miuix-ui example.
 
-package cam.su.kernel.ui.component.miuix.effect
+package cam.caesar.vn.ui.component.miuix.effect
 
 const val OS3_BG_FRAG = """
     uniform vec2 uResolution;

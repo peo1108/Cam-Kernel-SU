@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.ui.theme.AppSettings
+import cam.caesar.vn.ui.theme.AppSettings
 
 @Immutable
 data class CamActivityUiState(

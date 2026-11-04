@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.slime
+package cam.caesar.vn.ui.slime
 
 import android.os.SystemClock
 import androidx.compose.ui.geometry.Offset
@@ -9,11 +9,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import cam.su.kernel.ui.screen.home.arena.PI_F
-import cam.su.kernel.ui.screen.home.arena.SLIME_COUNT
-import cam.su.kernel.ui.screen.home.arena.drawSparkle
-import cam.su.kernel.ui.screen.home.arena.hash
-import cam.su.kernel.ui.screen.home.arena.progress
+import cam.caesar.vn.ui.screen.home.arena.PI_F
+import cam.caesar.vn.ui.screen.home.arena.SLIME_COUNT
+import cam.caesar.vn.ui.screen.home.arena.drawSparkle
+import cam.caesar.vn.ui.screen.home.arena.hash
+import cam.caesar.vn.ui.screen.home.arena.progress
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin

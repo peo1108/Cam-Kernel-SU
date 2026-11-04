@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import java.io.File
 import java.io.InputStream
@@ -8,8 +8,8 @@ import java.io.OutputStream
  * Debug builds only: runs the Files tab's root code on a real device, outside the app, so
  * FUSE, EXDEV, SELinux labels and setuid bits are the real ones.
  *
- *   su -c "CLASSPATH=$(pm path cam.su.kernel | cut -d: -f2) app_process /system/bin \
- *          cam.su.kernel.files.DeviceCheck /data/local/tmp/camfm_check /sdcard/camfm_check"
+ *   su -c "CLASSPATH=$(pm path cam.caesar.vn | cut -d: -f2) app_process /system/bin \
+ *          cam.caesar.vn.files.DeviceCheck /data/local/tmp/camfm_check /sdcard/camfm_check"
  *
  * Prints PASS/FAIL per check and exits 1 when one fails. Both folders are recreated.
  */
@@ -226,11 +226,11 @@ object DeviceCheck {
 
         // An .xapk's OBB, through the FUSE view of Android/obb as an install writes it: the folder
         // is made, and a file already there is only replaced by a whole new one.
-        val obbRoot = "/sdcard/Android/obb/cam.su.kernel"
+        val obbRoot = "/sdcard/Android/obb/cam.caesar.vn"
         val hadObbRoot = File(obbRoot).exists()
         check("OBB copy makes its folder on FUSE and replaces only with a whole file") {
-            val name = "Android/obb/cam.su.kernel/camfm_check/main.1.cam.su.kernel.obb"
-            val obb = "$obbRoot/camfm_check/main.1.cam.su.kernel.obb"
+            val name = "Android/obb/cam.caesar.vn/camfm_check/main.1.cam.caesar.vn.obb"
+            val obb = "$obbRoot/camfm_check/main.1.cam.caesar.vn.obb"
             var data = "old data"
             val reader = object : ArchiveReader {
                 override val entries = listOf(ArchiveEntry(name, false, 8, 0))

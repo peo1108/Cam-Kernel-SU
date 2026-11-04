@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.intro
+package cam.caesar.vn.ui.intro
 
-import cam.su.kernel.ui.screen.home.arena.hash
+import cam.caesar.vn.ui.screen.home.arena.hash
 import kotlin.math.hypot
 
 /** Lightning bolts by midpoint displacement, written into a caller's array (no allocation per frame). */

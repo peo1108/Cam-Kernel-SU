@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.ColumnScope
@@ -10,13 +10,13 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import cam.su.kernel.ui.component.expand.expandPiece
-import cam.su.kernel.ui.component.listdetail.panePiece
-import cam.su.kernel.ui.component.liquid.lens
-import cam.su.kernel.ui.component.liquid.vibrancy
-import cam.su.kernel.ui.component.pagerise.pageRiseCard
-import cam.su.kernel.ui.slime.slimeSurface
-import cam.su.kernel.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.component.expand.expandPiece
+import cam.caesar.vn.ui.component.listdetail.panePiece
+import cam.caesar.vn.ui.component.liquid.lens
+import cam.caesar.vn.ui.component.liquid.vibrancy
+import cam.caesar.vn.ui.component.pagerise.pageRiseCard
+import cam.caesar.vn.ui.slime.slimeSurface
+import cam.caesar.vn.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults

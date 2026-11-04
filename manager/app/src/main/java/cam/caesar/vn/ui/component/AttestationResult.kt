@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -6,10 +6,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.data.model.formatOsVersion
-import cam.su.kernel.data.model.formatPatchLevel
-import cam.su.kernel.ui.util.AttestationReport
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.formatOsVersion
+import cam.caesar.vn.data.model.formatPatchLevel
+import cam.caesar.vn.ui.util.AttestationReport
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 

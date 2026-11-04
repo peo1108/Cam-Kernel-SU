@@ -1,4 +1,4 @@
-package cam.su.kernel.account
+package cam.caesar.vn.account
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -45,7 +45,7 @@ class AccountParseTest {
         val s = parseStatus(
             """{"email":"a@x.io","member":true,"tester":"none","can_buy_early":true,
                "locked":[{"version":"1.2.0","tag":"cam-v1.2.0","open_at":1,"prerelease":false,"price":20000,
-                          "body":"- Faster boot\n- Fixes","apk":"SU_Kernel_1.2.0_32900-release.apk"}]}""",
+                          "body":"- Faster boot\n- Fixes","apk":"Cam_1.2.0_32900-release.apk"}]}""",
         )
         assertTrue(s.canBuyEarly)
         val r = s.locked[0]

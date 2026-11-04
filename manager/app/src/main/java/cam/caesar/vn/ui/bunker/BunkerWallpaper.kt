@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.bunker
+package cam.caesar.vn.ui.bunker
 
 import android.app.WallpaperManager
 import android.content.ActivityNotFoundException
@@ -25,10 +25,10 @@ import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import cam.su.kernel.ui.intro.IntroArt
-import cam.su.kernel.ui.intro.IntroPaths
-import cam.su.kernel.ui.intro.IntroText
-import cam.su.kernel.ui.intro.loadIntroArt
+import cam.caesar.vn.ui.intro.IntroArt
+import cam.caesar.vn.ui.intro.IntroPaths
+import cam.caesar.vn.ui.intro.IntroText
+import cam.caesar.vn.ui.intro.loadIntroArt
 
 /**
  * The bunker as the device's live wallpaper, in its own process (":wallpaper", so the app's setup

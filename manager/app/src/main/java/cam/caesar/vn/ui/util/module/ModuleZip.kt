@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util.module
+package cam.caesar.vn.ui.util.module
 
 import android.content.Intent
 import android.net.Uri

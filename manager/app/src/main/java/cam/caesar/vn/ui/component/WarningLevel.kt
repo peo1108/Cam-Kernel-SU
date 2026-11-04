@@ -1,3 +1,3 @@
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 enum class WarningLevel { Error, Notice }

@@ -1,5 +1,5 @@
 // ICamRootService.aidl
-package cam.su.kernel;
+package cam.caesar.vn;
 
 import android.content.pm.PackageInfo;
 import android.os.Bundle;

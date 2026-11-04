@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -242,7 +242,7 @@ class RootFsTest {
 
     @Test
     fun sharedStorageMapsToTheDiskUnderFuse() {
-        assertEquals("/data/media/0/Download/SU Kernel", SharedStorage.lower("/storage/emulated/0/Download/SU Kernel"))
+        assertEquals("/data/media/0/Download/Cam", SharedStorage.lower("/storage/emulated/0/Download/Cam"))
         assertEquals("/data/media/10/DCIM", SharedStorage.lower("/storage/emulated/10/DCIM"))
         assertEquals("/data/media/0/Download", SharedStorage.lower("/sdcard/Download"))
         assertEquals("/data/media/0/Download", SharedStorage.lower("/storage/self/primary/Download"))
@@ -277,24 +277,24 @@ class RootFsTest {
         // what root's `mkdir -p` (umask 077) and `chown media_rw` used to leave in Download
         sharedStorage()
         fake.newFileContext = "u:object_r:media_rw_data_file:s0:c512,c768"
-        fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
-        fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
-        fake.createFile("/data/media/0/Download/SU Kernel/APK/a.apk", 0x1B4) // 0664
-        fake.link("/data/media/0/Download/SU Kernel/out", "/data/adb")
-        for (p in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK", "/data/media/0/Download/SU Kernel/APK/a.apk")) {
+        fake.mkdir("/data/media/0/Download/Cam", 0x1C0)
+        fake.mkdir("/data/media/0/Download/Cam/APK", 0x1C0)
+        fake.createFile("/data/media/0/Download/Cam/APK/a.apk", 0x1B4) // 0664
+        fake.link("/data/media/0/Download/Cam/out", "/data/adb")
+        for (p in listOf("/data/media/0/Download/Cam", "/data/media/0/Download/Cam/APK", "/data/media/0/Download/Cam/APK/a.apk")) {
             fake.lchown(p, 1023, 1023)
         }
 
-        fs.repairShared("/storage/emulated/0/Download/SU Kernel")
+        fs.repairShared("/storage/emulated/0/Download/Cam")
 
-        for (dir in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK")) {
+        for (dir in listOf("/data/media/0/Download/Cam", "/data/media/0/Download/Cam/APK")) {
             val node = fake.node(dir)
             assertEquals(0x5F8, node.perm)
             assertEquals(10150, node.uid)
             assertEquals(1023, node.gid)
             assertEquals("u:object_r:media_rw_data_file:s0", node.context)
         }
-        val file = fake.node("/data/media/0/Download/SU Kernel/APK/a.apk")
+        val file = fake.node("/data/media/0/Download/Cam/APK/a.apk")
         assertEquals(0x1B0, file.perm) // 0660: read and write, no execute or setgid
         assertEquals(10150, file.uid)
         assertEquals("u:object_r:media_rw_data_file:s0", file.context)
@@ -306,24 +306,24 @@ class RootFsTest {
     @Test
     fun repairSharedBelowALockedFolderStartsFromTheTopmostLockedOne() {
         sharedStorage()
-        fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
-        fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
-        fake.mkdir("/data/media/0/Download/SU Kernel/Logs", 0x1C0)
-        fake.createFile("/data/media/0/Download/SU Kernel/APK/a.apk", 0x180) // 0600
-        for (p in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK", "/data/media/0/Download/SU Kernel/Logs")) {
+        fake.mkdir("/data/media/0/Download/Cam", 0x1C0)
+        fake.mkdir("/data/media/0/Download/Cam/APK", 0x1C0)
+        fake.mkdir("/data/media/0/Download/Cam/Logs", 0x1C0)
+        fake.createFile("/data/media/0/Download/Cam/APK/a.apk", 0x180) // 0600
+        for (p in listOf("/data/media/0/Download/Cam", "/data/media/0/Download/Cam/APK", "/data/media/0/Download/Cam/Logs")) {
             fake.lchown(p, 1023, 1023)
         }
 
         // opened straight at APK (a bookmark): its own parent is locked as well, so it is no reference
-        fs.repairShared("/storage/emulated/0/Download/SU Kernel/APK")
+        fs.repairShared("/storage/emulated/0/Download/Cam/APK")
 
-        for (dir in listOf("/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK", "/data/media/0/Download/SU Kernel/Logs")) {
+        for (dir in listOf("/data/media/0/Download/Cam", "/data/media/0/Download/Cam/APK", "/data/media/0/Download/Cam/Logs")) {
             val node = fake.node(dir)
             assertEquals(dir, 0x5F8, node.perm)
             assertEquals(dir, 10150, node.uid)
             assertEquals(dir, "u:object_r:media_rw_data_file:s0", node.context)
         }
-        assertEquals(0x1B0, fake.node("/data/media/0/Download/SU Kernel/APK/a.apk").perm)
+        assertEquals(0x1B0, fake.node("/data/media/0/Download/Cam/APK/a.apk").perm)
         // the reference itself is left as it was
         assertEquals(0x5F8, fake.node("/data/media/0/Download").perm)
     }
@@ -334,13 +334,13 @@ class RootFsTest {
         sharedStorage()
         fake.node("/data/media/0/Download").uid = 0
         fake.file("/data/media/0/Download/movie.mp4", perm = 0x180)
-        fake.mkdir("/data/media/0/Download/SU Kernel", 0x1C0)
+        fake.mkdir("/data/media/0/Download/Cam", 0x1C0)
 
-        fs.repairShared("/storage/emulated/0/Download/SU Kernel")
+        fs.repairShared("/storage/emulated/0/Download/Cam")
 
         assertEquals(0, fake.node("/data/media/0/Download").uid)
         assertEquals(0x180, fake.node("/data/media/0/Download/movie.mp4").perm)
-        assertEquals(0x5F8, fake.node("/data/media/0/Download/SU Kernel").perm)
+        assertEquals(0x5F8, fake.node("/data/media/0/Download/Cam").perm)
     }
 
     @Test
@@ -355,21 +355,21 @@ class RootFsTest {
                 context = provider
             }
         }
-        // Download open but without the provider's categories, SU Kernel with the ones root's
+        // Download open but without the provider's categories, Cam with the ones root's
         // mkdir left (owner and mode already right), APK locked
         fake.node("/data/media/0/Download").apply {
             uid = 10208
             context = "u:object_r:media_rw_data_file:s0"
         }
         fake.file("/data/media/0/Download/movie.mp4", perm = 0x180)
-        fake.mkdir("/data/media/0/Download/SU Kernel", 0x5F8)
-        fake.lchown("/data/media/0/Download/SU Kernel", 10208, 1023)
-        fake.node("/data/media/0/Download/SU Kernel").context = "u:object_r:media_rw_data_file:s0:c512,c768"
-        fake.mkdir("/data/media/0/Download/SU Kernel/APK", 0x1C0)
+        fake.mkdir("/data/media/0/Download/Cam", 0x5F8)
+        fake.lchown("/data/media/0/Download/Cam", 10208, 1023)
+        fake.node("/data/media/0/Download/Cam").context = "u:object_r:media_rw_data_file:s0:c512,c768"
+        fake.mkdir("/data/media/0/Download/Cam/APK", 0x1C0)
 
-        fs.repairShared("/storage/emulated/0/Download/SU Kernel/APK")
+        fs.repairShared("/storage/emulated/0/Download/Cam/APK")
 
-        for (dir in listOf("/data/media/0/Download", "/data/media/0/Download/SU Kernel", "/data/media/0/Download/SU Kernel/APK")) {
+        for (dir in listOf("/data/media/0/Download", "/data/media/0/Download/Cam", "/data/media/0/Download/Cam/APK")) {
             val node = fake.node(dir)
             assertEquals(dir, provider, node.context)
             assertEquals(dir, 0x5F8, node.perm)

@@ -7,9 +7,9 @@
 #     | grep -v -f scripts/cam_rename.skip | xargs -r sed -i -f scripts/cam_rename.sed
 
 # Manager: package and classes
-s#me/weishu/kernelsu#cam/su/kernel#g
-s/me\.weishu\.kernelsu/cam.su.kernel/g
-s/Java_me_weishu_kernelsu_/Java_cam_su_kernel_/g
+s#me/weishu/kernelsu#cam/caesar/vn#g
+s/me\.weishu\.kernelsu/cam.caesar.vn/g
+s/Java_me_weishu_kernelsu_/Java_cam_caesar_vn_/g
 s/\bKernelSUApplication\b/CamApplication/g
 s/\bMiuixKernelSUTheme\b/MiuixCamTheme/g
 s/\bKernelSUTheme\b/CamTheme/g
@@ -43,9 +43,9 @@ s/System\.loadLibrary("kernelsu")/System.loadLibrary("camjni")/g
 s/\bAppZygotePreload\b/CamZygotePreload/g
 s/\bMagicaService\b/CamJailbreakService/g
 s/\bBootCompletedReceiver\b/CamBootReceiver/g
-s/cam\.su\.kernel\.magica/cam.su.kernel.jailbreak/g
-s#cam/su/kernel/magica#cam/su/kernel/jailbreak#g
-s/_kernel_magica_/_kernel_jailbreak_/g
+s/cam\.caesar\.vn\.magica/cam.caesar.vn.jailbreak/g
+s#cam/caesar/vn/magica#cam/caesar/vn/jailbreak#g
+s/_vn_magica_/_vn_jailbreak_/g
 s/_AppZygotePreload_/_CamZygotePreload_/g
 s/ExecKsud\b/ExecCamd/g
 

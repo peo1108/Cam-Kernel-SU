@@ -1,10 +1,10 @@
-# Miuix Liquid Glass + SU Kernel Branding Implementation Plan
+# Miuix Liquid Glass + Cam Branding Implementation Plan
 
 > **Trạng thái (2026-10-12): đã xong và đã phát hành.** Các ô `- [ ]` bên dưới không được tick trong lúc làm; đừng coi là việc còn dở. Hiện trạng thật: dòng 7, 9 mục 1 của `docs/CAM_CHANGES.md`.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn the Manager's Miuix UI mode into iOS-style liquid glass over the device wallpaper, and rebrand the app as "SU Kernel" with the new logo icon.
+**Goal:** Turn the Manager's Miuix UI mode into iOS-style liquid glass over the device wallpaper, and rebrand the app as "Cam" with the new logo icon.
 
 **Architecture:** A root-level glass background (device wallpaper read via libsu, gradient, custom image, or plain surface) is drawn per navigation page and recorded into a `LayerBackdrop` exposed as `LocalGlassBackdrop`. Cards sample that background; bars sample background + page content through the existing `CombinedBackdrop`. Most screen call sites stay unchanged because the existing `rememberBlurBackdrop` / `BlurredBar` helpers are rewritten to be glass, and `Card` is swapped for `GlassCard`.
 
@@ -21,7 +21,7 @@
 - Background source default = device wallpaper; fallback when unreadable = plain `MiuixTheme.colorScheme.surface` (no gradient, no wallpaper colors).
 - Background types: `0` device wallpaper, `1` animated gradient, `2` custom image. Blur slider 0-40dp, dim slider 0-0.6.
 - Wallpaper path: `/data/system/users/<uid / 100000>/wallpaper`, read through libsu `SuFile` / `SuFileInputStream`. No new Android permissions.
-- App name `"SU Kernel"` (`"SU Kernel PR"` for PR builds). In-app "KernelSU" strings unchanged.
+- App name `"Cam"` (`"Cam PR"` for PR builds). In-app "KernelSU" strings unchanged.
 - Launcher icon = full `IMG_7454.PNG` logo, fit to the 66dp safe zone of a 108dp canvas, black background.
 - New strings: English `values/strings.xml` + Vietnamese `values-vi/strings.xml` only.
 - Commits: `manager: <Summary>` (`scripts:` for the icon script is folded into the branding commit), ending with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Do not stage `IMG_7454.PNG` at repo root or the unrelated `manager/app/src/main/cpp/uapi` deletion.
@@ -41,7 +41,7 @@
 
 **Files:** throwaway branch `spike/glass-dialog` only; nothing merged. Findings appended to the spec under a new `## 9. Spike results` section (that edit IS committed).
 
-- [ ] **Step 1: Capture baseline performance** - install current `assembleDebug` APK, open Superuser tab, scroll top-to-bottom 5 times, run `adb shell dumpsys gfxinfo cam.su.kernel` and record "Janky frames" % for Superuser and Module lists.
+- [ ] **Step 1: Capture baseline performance** - install current `assembleDebug` APK, open Superuser tab, scroll top-to-bottom 5 times, run `adb shell dumpsys gfxinfo cam.caesar.vn` and record "Janky frames" % for Superuser and Module lists.
 - [ ] **Step 2: Recursion test** - in `ui/component/dialog/DialogMiuix.kt` pass `backgroundColor = Color.Transparent` and `modifier = Modifier.drawBackdrop(backdrop = <page LayerBackdrop>, shape = { RoundedCornerShape(32.dp) }, effects = { blur(16.dp.toPx(), 16.dp.toPx()) })` to one `OverlayDialog`. Open it on device. Record: renders / blank / crash / visible feedback loop.
 - [ ] **Step 3: If Step 2 loops**, retry sampling only a background-only `LayerBackdrop` (a `Box` with `layerBackdrop` placed behind the `Scaffold`). Record result.
 - [ ] **Step 4: WindowDialog audit** - for each `WindowDialog(` call site (`grep -rn "WindowDialog(" manager/app/src/main/java --include=*Miuix.kt` plus `SeedPicker.kt`, `DownloadDialog.kt`, `ScaleDialog.kt`, `SendLogDialog.kt`, `SuperEditArrow.kt`; skip `webui/`), note whether it is shown from outside a Miuix `Scaffold` popup host (needs a window) or can become `OverlayDialog`.
@@ -198,7 +198,7 @@
 
 ---
 
-### Task 5: SU Kernel branding
+### Task 5: Cam branding
 
 **Files:**
 - Create: `manager/icon/launcher-src.png` (copy of repo-root `IMG_7454.PNG`; root file stays untracked)
@@ -211,9 +211,9 @@
 
 - [ ] **Step 1: Script** - write and run `python scripts/gen_launcher_icon.py`; check `xxxhdpi/ic_launcher_logo.png` visually (Read the image).
 - [ ] **Step 2: Resources** - `ic_launcher.xml`: foreground `@mipmap/ic_launcher_logo`, monochrome `@mipmap/ic_launcher_logo_mono`; `colors.xml`: `ic_launcher_background` = `#FF000000`. Leave `@drawable/ic_launcher_foreground` (used in About/Module screens) and the splash drawable untouched.
-- [ ] **Step 3: Name** - `defaultManagerName = if (isPrBuild) "SU Kernel PR" else "SU Kernel"`.
-- [ ] **Step 4: Build gate + install** - launcher label "SU Kernel"; icon correct in round and squircle launchers; themed icon on Android 13+; APK named `SU_Kernel_*.apk`.
-- [ ] **Step 5: Commit** - `manager: Rebrand app as SU Kernel with new launcher icon`.
+- [ ] **Step 3: Name** - `defaultManagerName = if (isPrBuild) "Cam PR" else "Cam"`.
+- [ ] **Step 4: Build gate + install** - launcher label "Cam"; icon correct in round and squircle launchers; themed icon on Android 13+; APK named `Cam_*.apk`.
+- [ ] **Step 5: Commit** - `manager: Rebrand app as Cam with new launcher icon`.
 
 ---
 
@@ -294,6 +294,6 @@
 
 - [ ] **Step 1: Jank** - same procedure as Task 0 Step 1; compare to baseline. If Superuser or Module janky % is more than 5 points above baseline, lower `listCardBlur` to `4.dp` and re-measure; record numbers in the spec section 9.
 - [ ] **Step 2: API 31 fallback** - create/boot an API 31 emulator (`sdkmanager "system-images;android-31;google_apis;x86_64"`, `avdmanager create avd`), install, walk Home/Settings/Module: no crash, blur visible, no lens, gradient type shows static gradient.
-- [ ] **Step 3: Memory** - with a 4000x9000 wallpaper, `adb shell dumpsys meminfo cam.su.kernel` Graphics row stays under 150 MB.
+- [ ] **Step 3: Memory** - with a 4000x9000 wallpaper, `adb shell dumpsys meminfo cam.caesar.vn` Graphics row stays under 150 MB.
 - [ ] **Step 4: Final full verification** - `./gradlew :app:testDebugUnitTest :app:assembleRelease`; walk every screen once in light and dark.
-- [ ] **Step 5: Commit** (if anything changed) - `manager: Tune glass for list performance`; update `docs/CAM_CHANGES.md` with a short "Liquid glass UI + SU Kernel branding" entry in the same commit or as `docs: record liquid glass changes`.
+- [ ] **Step 5: Commit** (if anything changed) - `manager: Tune glass for list performance`; update `docs/CAM_CHANGES.md` with a short "Liquid glass UI + Cam branding" entry in the same commit or as `docs: record liquid glass changes`.

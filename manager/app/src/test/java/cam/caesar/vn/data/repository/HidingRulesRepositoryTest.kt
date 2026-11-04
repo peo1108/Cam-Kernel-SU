@@ -1,6 +1,6 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
-import cam.su.kernel.hiding.HidingRules
+import cam.caesar.vn.hiding.HidingRules
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

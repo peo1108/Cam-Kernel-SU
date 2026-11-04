@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,13 +14,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.ProgressDetails
-import cam.su.kernel.update.UpdateFailure
-import cam.su.kernel.update.UpdateState
-import cam.su.kernel.update.UpdateStep
-import cam.su.kernel.update.formatMegabytes
-import cam.su.kernel.update.step
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.ProgressDetails
+import cam.caesar.vn.update.UpdateFailure
+import cam.caesar.vn.update.UpdateState
+import cam.caesar.vn.update.UpdateStep
+import cam.caesar.vn.update.formatMegabytes
+import cam.caesar.vn.update.step
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text

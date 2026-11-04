@@ -1,11 +1,11 @@
-package cam.su.kernel
+package cam.caesar.vn
 
 import android.os.Parcelable
 import androidx.annotation.Keep
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
-import cam.su.kernel.CamNative.Profile.RootProfileFlag
+import cam.caesar.vn.CamNative.Profile.RootProfileFlag
 
 /**
  * @author weishu

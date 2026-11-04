@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.miuix.modifier
+package cam.caesar.vn.ui.component.miuix.modifier
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown

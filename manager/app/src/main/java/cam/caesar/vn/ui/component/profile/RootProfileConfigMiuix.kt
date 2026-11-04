@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.component.profile
+package cam.caesar.vn.ui.component.profile
 
-import cam.su.kernel.ui.component.glass.GlassTextField
-import cam.su.kernel.ui.component.glass.GlassDropdownPreference
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.glass.GlassTextField
+import cam.caesar.vn.ui.component.glass.GlassDropdownPreference
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,14 +28,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.CamNative
-import cam.su.kernel.R
-import cam.su.kernel.profile.Capabilities
-import cam.su.kernel.profile.Groups
-import cam.su.kernel.toRawFlags
-import cam.su.kernel.toRootProfileFlags
-import cam.su.kernel.ui.component.miuix.SuperEditArrow
-import cam.su.kernel.ui.util.isSepolicyValid
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.R
+import cam.caesar.vn.profile.Capabilities
+import cam.caesar.vn.profile.Groups
+import cam.caesar.vn.toRawFlags
+import cam.caesar.vn.toRootProfileFlags
+import cam.caesar.vn.ui.component.miuix.SuperEditArrow
+import cam.caesar.vn.ui.util.isSepolicyValid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext

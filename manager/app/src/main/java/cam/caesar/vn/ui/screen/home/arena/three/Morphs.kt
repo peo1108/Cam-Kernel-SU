@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.home.arena.three
+package cam.caesar.vn.ui.screen.home.arena.three
 
-import cam.su.kernel.ui.screen.home.arena.SlimePose
+import cam.caesar.vn.ui.screen.home.arena.SlimePose
 import kotlin.math.max
 import kotlin.math.sqrt
 

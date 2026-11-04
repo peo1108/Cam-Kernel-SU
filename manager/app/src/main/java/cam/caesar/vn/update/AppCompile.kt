@@ -1,10 +1,10 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
-import cam.su.kernel.BuildConfig
-import cam.su.kernel.ui.util.getRootShell
+import cam.caesar.vn.BuildConfig
+import cam.caesar.vn.ui.util.getRootShell
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

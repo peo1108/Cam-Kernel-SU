@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -9,10 +9,10 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.unit.Density
-import cam.su.kernel.ui.component.miuix.effect.BgEffectConfig
-import cam.su.kernel.ui.component.miuix.effect.DeviceType
-import cam.su.kernel.ui.theme.isInDarkTheme
-import cam.su.kernel.ui.util.shouldShowSplitPane
+import cam.caesar.vn.ui.component.miuix.effect.BgEffectConfig
+import cam.caesar.vn.ui.component.miuix.effect.DeviceType
+import cam.caesar.vn.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.util.shouldShowSplitPane
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui
+package cam.caesar.vn.ui.webui
 
 import android.app.Activity
 import android.app.NotificationChannel
@@ -31,16 +31,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import cam.su.kernel.R
-import cam.su.kernel.ui.util.DownloadManager
-import cam.su.kernel.ui.util.DownloadService
-import cam.su.kernel.ui.util.createRootShell
-import cam.su.kernel.ui.util.dropStaleDownloadRows
-import cam.su.kernel.ui.util.listModules
-import cam.su.kernel.ui.util.resolveDownloadMimeType
-import cam.su.kernel.ui.util.withNewRootShell
-import cam.su.kernel.ui.webui.file.CamIO
-import cam.su.kernel.ui.webui.pm.CamPm
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.util.DownloadManager
+import cam.caesar.vn.ui.util.DownloadService
+import cam.caesar.vn.ui.util.createRootShell
+import cam.caesar.vn.ui.util.dropStaleDownloadRows
+import cam.caesar.vn.ui.util.listModules
+import cam.caesar.vn.ui.util.resolveDownloadMimeType
+import cam.caesar.vn.ui.util.withNewRootShell
+import cam.caesar.vn.ui.webui.file.CamIO
+import cam.caesar.vn.ui.webui.pm.CamPm
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream

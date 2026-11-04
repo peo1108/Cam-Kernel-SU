@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.miuix
+package cam.caesar.vn.ui.component.miuix
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.FocusInteraction

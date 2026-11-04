@@ -1,10 +1,10 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.media.MediaDrm
 import android.media.NotProvisionedException
 import android.util.Log
-import cam.su.kernel.camApp
-import cam.su.kernel.data.model.WidevineInfo
+import cam.caesar.vn.camApp
+import cam.caesar.vn.data.model.WidevineInfo
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.UUID

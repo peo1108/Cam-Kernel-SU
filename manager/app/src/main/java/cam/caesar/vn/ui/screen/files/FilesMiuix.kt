@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.files
+package cam.caesar.vn.ui.screen.files
 
-import cam.su.kernel.ui.component.bottombar.LocalNavSideInsets
+import cam.caesar.vn.ui.component.bottombar.LocalNavSideInsets
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -102,40 +102,40 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.files.AppView
-import cam.su.kernel.files.Archives
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.FileFormat
-import cam.su.kernel.files.FileKind
-import cam.su.kernel.files.FileKinds
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.files.Thumbnails
-import cam.su.kernel.ui.component.ListPopupDefaults
-import cam.su.kernel.ui.component.glass.GlassButtonGroup
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.GlassIconButton
-import cam.su.kernel.ui.component.glass.MorphIcon
-import cam.su.kernel.ui.component.glass.morphAnchor
-import cam.su.kernel.ui.component.glass.rememberMorphPopupState
+import cam.caesar.vn.R
+import cam.caesar.vn.files.AppView
+import cam.caesar.vn.files.Archives
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.FileFormat
+import cam.caesar.vn.files.FileKind
+import cam.caesar.vn.files.FileKinds
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.files.Thumbnails
+import cam.caesar.vn.ui.component.ListPopupDefaults
+import cam.caesar.vn.ui.component.glass.GlassButtonGroup
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.component.glass.MorphIcon
+import cam.caesar.vn.ui.component.glass.morphAnchor
+import cam.caesar.vn.ui.component.glass.rememberMorphPopupState
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.automirrored.rounded.Sort
-import cam.su.kernel.ui.component.glass.GlassMenuColumn
-import cam.su.kernel.ui.component.glass.GlassMenuDivider
-import cam.su.kernel.ui.component.glass.GlassMenuItem
-import cam.su.kernel.ui.component.glass.GlassListPopup
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
-import cam.su.kernel.ui.util.shouldShowTwoFilePanels
-import cam.su.kernel.ui.viewmodel.FilesUiState
-import cam.su.kernel.ui.viewmodel.FilesViewModel
-import cam.su.kernel.ui.viewmodel.PanelUi
+import cam.caesar.vn.ui.component.glass.GlassMenuColumn
+import cam.caesar.vn.ui.component.glass.GlassMenuDivider
+import cam.caesar.vn.ui.component.glass.GlassMenuItem
+import cam.caesar.vn.ui.component.glass.GlassListPopup
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.ui.util.shouldShowTwoFilePanels
+import cam.caesar.vn.ui.viewmodel.FilesUiState
+import cam.caesar.vn.ui.viewmodel.FilesViewModel
+import cam.caesar.vn.ui.viewmodel.PanelUi
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -168,12 +168,12 @@ sealed interface FilesDialogState {
     data object EditPath : FilesDialogState
     data class OpenAs(val entry: FileEntry) : FilesDialogState
     data object Search : FilesDialogState
-    data class ConfirmBackup(val partition: cam.su.kernel.files.Partition) : FilesDialogState
+    data class ConfirmBackup(val partition: cam.caesar.vn.files.Partition) : FilesDialogState
 
     /** Flashing asks twice: [last] is the second time. [otherSlot]: not the slot the phone boots. */
     data class ConfirmFlash(
         val image: FileEntry,
-        val partition: cam.su.kernel.files.Partition,
+        val partition: cam.caesar.vn.files.Partition,
         val otherSlot: Boolean = false,
         val last: Boolean = false,
     ) : FilesDialogState

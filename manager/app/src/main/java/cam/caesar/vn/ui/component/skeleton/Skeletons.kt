@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.skeleton
+package cam.caesar.vn.ui.component.skeleton
 
 import android.os.SystemClock
 import android.provider.Settings
@@ -45,7 +45,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.component.glass.GlassListCard
+import cam.caesar.vn.ui.component.glass.GlassListCard
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 

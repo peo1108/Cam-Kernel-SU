@@ -9,7 +9,7 @@
     <string name="failed_to_update_app_profile">Cập nhật Hồ sơ ứng dụng cho %s thất bại!</string>
     <string name="settings_umount_modules_default">Umount modules</string>
     <string name="settings_umount_modules_default_summary">Giá trị mặc định chung cho \"Umount modules\" trong Hồ sơ ứng dụng. Nếu được bật, mọi thay đổi hệ thống do các module gây ra sẽ bị gỡ bỏ khỏi hệ thống và các ứng dụng chưa thiết lập hồ sơ.</string>
-    <string name="profile_umount_modules_summary">Bật tùy chọn này sẽ cho phép SU Kernel khôi phục mọi file đã được các module sửa đổi trong ứng dụng này.</string>
+    <string name="profile_umount_modules_summary">Bật tùy chọn này sẽ cho phép Cam khôi phục mọi file đã được các module sửa đổi trong ứng dụng này.</string>
     <string name="module_update">Cập nhật</string>
     <string name="module_downloading">Đang tải xuống module: %s</string>
     <string name="module_start_downloading">Bắt đầu tải xuống: %s</string>
@@ -24,7 +24,7 @@
     <string name="home_working">Đang hoạt động</string>
     <string name="home_working_version">Phiên bản: %s</string>
     <string name="home_unsupported">Không được hỗ trợ!</string>
-    <string name="home_unsupported_reason">SU Kernel hiện tại chỉ hỗ trợ Kernel GKI, nhưng bạn có thể patch file .img của thiết bị GKI mà bạn cần.</string>
+    <string name="home_unsupported_reason">Cam hiện tại chỉ hỗ trợ Kernel GKI, nhưng bạn có thể patch file .img của thiết bị GKI mà bạn cần.</string>
     <string name="home_device_model">Mẫu thiết bị</string>
     <string name="home_kernel">Phiên bản Kernel</string>
     <string name="home_manager_version">Phiên bản Trình quản lý</string>
@@ -130,7 +130,7 @@
     <string name="install_inactive_slot_warning">Thiết bị của bạn sẽ **BUỘC** phải khởi động vào phân vùng không hoạt động hiện tại sau khi khởi động lại!\nChỉ dùng tùy chọn này khi cập nhật OTA đã hoàn tất!\nTiếp tục?</string>
     <string name="direct_install_disables_modules">Mọi module đang bật sẽ bị tắt trước khi flash. Khởi động xong thì bật lại.</string>
     <string name="direct_install_avb_blocked">Máy này khởi động bằng khóa AVB tự ký (trạng thái verified boot màu vàng, ví dụ avbroot). Cài trực tiếp sẽ ghi ảnh boot chưa được ký và bootloader đang khóa sẽ không cho khởi động. Đã chặn cài trực tiếp: hãy vá ảnh bằng \"Chọn và vá file\" rồi ký lại bằng khóa của bạn trên máy tính.</string>
-    <string name="settings_uninstall_temporary_message">Gỡ cài đặt tạm thời SU Kernel, khôi phục lại trạng thái ban đầu sau lần khởi động lại tiếp theo.</string>
+    <string name="settings_uninstall_temporary_message">Gỡ cài đặt tạm thời Cam, khôi phục lại trạng thái ban đầu sau lần khởi động lại tiếp theo.</string>
     <string name="select_kmi">Chọn KMI</string>
     <string name="install_next">Kế tiếp</string>
     <string name="direct_install">Cài đặt trực tiếp (Khuyến nghị)</string>
@@ -144,8 +144,8 @@
     <string name="settings_uninstall_temporary">Gỡ cài đặt tạm thời</string>
     <string name="settings_uninstall_permanent">Gỡ cài đặt vĩnh viễn</string>
     <string name="settings_restore_stock_image">Khôi phục image gốc</string>
-    <string name="settings_uninstall_permanent_message">Gỡ cài đặt SU Kernel (Root và tất cả các module) sạch hoàn toàn, trả về trạng thái ban đầu.</string>
-    <string name="settings_restore_stock_image_message">Khôi phục lại image gốc (nếu có bản sao lưu), thường được sử dụng trước OTA; nếu bạn cần gỡ hẳn SU Kernel, hãy sử dụng \"Gỡ cài đặt vĩnh viễn\".</string>
+    <string name="settings_uninstall_permanent_message">Gỡ cài đặt Cam (Root và tất cả các module) sạch hoàn toàn, trả về trạng thái ban đầu.</string>
+    <string name="settings_restore_stock_image_message">Khôi phục lại image gốc (nếu có bản sao lưu), thường được sử dụng trước OTA; nếu bạn cần gỡ hẳn Cam, hãy sử dụng \"Gỡ cài đặt vĩnh viễn\".</string>
     <string name="flashing">Đang Flash...</string>
     <string name="flash_success">Flash thành công</string>
     <string name="flash_failed">Flash thất bại!</string>
@@ -303,12 +303,12 @@
     <string name="sulog_filter_ioctl_grant_root">Cấp quyền Root</string>
     <string name="sulog_filter_daemon_restart">Khởi động lại tiến trình nền</string>
     <string name="settings_sulog">Nhật ký SU</string>
-    <string name="settings_sulog_summary">Ghi lại các sự kiện liên quan đến quyền Root vào các file nhật ký SU của SU Kernel.</string>
+    <string name="settings_sulog_summary">Ghi lại các sự kiện liên quan đến quyền Root vào các file nhật ký SU của Cam.</string>
     <string name="sulog_filter_root_execve">Root execve</string>
     <string name="settings_adb_root">ADB Root</string>
     <string name="settings_adb_root_summary">Chạy tiến trình nền adbd với quyền Root.</string>
     <string name="settings_shell_su_adb_only">Chỉ cho Shell lấy root qua ADB</string>
-    <string name="settings_shell_su_adb_only_summary">Kiểm tra thêm khi Shell được cấp root: chỉ tiến trình do adbd hoặc tiến trình root của SU Kernel (ví dụ module ADB) tạo ra mới dùng được, để app chiếm được quyền shell không leo lên root</string>
+    <string name="settings_shell_su_adb_only_summary">Kiểm tra thêm khi Shell được cấp root: chỉ tiến trình do adbd hoặc tiến trình root của Cam (ví dụ module ADB) tạo ra mới dùng được, để app chiếm được quyền shell không leo lên root</string>
     <string name="install_block_modules">Chặn module kernel (rủi ro)</string>
     <string name="install_block_modules_warning">Không cho các module kernel trong danh sách nạp lúc khởi động. Module mà giai đoạn đầu khởi động cần (ví dụ mkp của MediaTek trên một số máy) sẽ được để nạp bình thường thay vì làm máy bootloop, nhưng chặn nhầm module hệ thống cần ở giai đoạn sau vẫn có thể làm máy treo ở logo. Chỉ bật khi biết chắc các module này chặn được trên máy bạn. Muốn cứu máy thì flash lại boot / init_boot gốc bằng fastboot.</string>
     <string name="install_block_modules_list">Module cần chặn</string>
@@ -318,7 +318,7 @@
     <string name="sort_by_install_time">Thời gian cài đặt</string>
     <string name="sort_by_update_time">Thời gian cập nhật</string>
     <string name="sort_reverse">Đảo ngược</string>
-    <string name="profile_flags_desc_no_new_privs">Ngăn chặn việc leo thang đặc quyền thông qua SU Kernel từ bên trong phạm vi Hồ sơ người dùng Root này.</string>
+    <string name="profile_flags_desc_no_new_privs">Ngăn chặn việc leo thang đặc quyền thông qua Cam từ bên trong phạm vi Hồ sơ người dùng Root này.</string>
     <string name="module_shortcut_copy_scheme">Sao chép URL Scheme</string>
     <string name="module_shortcut_scheme_copied">Đã sao chép URL Scheme</string>
     <string name="install_force_backup">Sao lưu stock image</string>
@@ -353,7 +353,7 @@
     <string name="glass_background_import_failed">Không đọc được ảnh này</string>
     <string name="home_donate_title">Ủng hộ tại:</string>
     <string name="home_donate_summary">t.me/MDM_Cam</string>
-    <string name="donate_dialog_title">Ủng hộ Cam Kernel SU</string>
+    <string name="donate_dialog_title">Ủng hộ Cam</string>
     <string name="donate_dialog_summary">Quét mã QR bằng app ngân hàng hoặc MoMo. Cảm ơn bạn đã góp phần chi phí phát triển!</string>
     <string name="donate_qr_description">Mã QR ủng hộ</string>
     <string name="donate_open_channel">Mở kênh</string>
@@ -402,7 +402,7 @@
     <string name="app_manage">Quản lý</string>
     <string name="app_manage_summary">Sao lưu, dọn dẹp, đóng băng, gỡ cài đặt</string>
     <string name="app_backup">Sao lưu APK</string>
-    <string name="app_backup_summary">Lưu vào Download/SU Kernel/APK</string>
+    <string name="app_backup_summary">Lưu vào Download/Cam/APK</string>
     <string name="app_backup_done">Đã lưu vào %1$s</string>
     <string name="app_backup_failed">Sao lưu thất bại</string>
     <string name="app_backup_running">Đang sao lưu APK…</string>
@@ -426,7 +426,7 @@
     <string name="app_uninstall_user">Gỡ cho người dùng này</string>
     <string name="app_uninstall_user_summary">Cài lại được bất cứ lúc nào từ menu trang Superuser</string>
     <string name="app_uninstall_systemless">Gỡ systemless bằng module</string>
-    <string name="app_uninstall_systemless_summary">Một module SU Kernel che nó khỏi ROM sau khi khởi động lại; tắt module để khôi phục</string>
+    <string name="app_uninstall_systemless_summary">Một module Cam che nó khỏi ROM sau khi khởi động lại; tắt module để khôi phục</string>
     <string name="app_uninstall_updates">Gỡ bản cập nhật</string>
     <string name="app_uninstall_updates_summary">Trở về bản gốc trong ROM</string>
     <string name="app_uninstalled">Đã gỡ cài đặt</string>
@@ -439,7 +439,7 @@
     <string name="app_restore_system">Cài lại app hệ thống đã gỡ</string>
     <string name="app_restore_none">Không có app nào để cài lại</string>
     <string name="app_restored">Đã cài lại %1$s</string>
-    <string name="boot_guard_notice">SU Kernel đã tắt tất cả %d module vì máy khởi động lỗi liên tục. Nhấn để xem module nghi gây lỗi</string>
+    <string name="boot_guard_notice">Cam đã tắt tất cả %d module vì máy khởi động lỗi liên tục. Nhấn để xem module nghi gây lỗi</string>
     <string name="boot_guard_culprits">Nghi gây lỗi</string>
     <string name="boot_guard_no_culprit">Chưa thấy module nào đáng nghi. Bật lại từng module rồi khởi động lại để tìm ra module gây lỗi.</string>
     <string name="boot_guard_reason_changed">Mới cài, cập nhật hoặc bật lại</string>
@@ -468,7 +468,7 @@
     <string name="features_boot_guard">Chống bootloop</string>
     <string name="features_boot_guard_on">Tắt tất cả module sau %d lần khởi động lỗi</string>
     <string name="features_boot_guard_enable">Chống bootloop</string>
-    <string name="features_boot_guard_enable_summary">Khi máy khởi động lỗi nhiều lần liên tiếp, tất cả module được tự tắt ở lần khởi động kế tiếp và SU Kernel chỉ ra module nghi gây lỗi</string>
+    <string name="features_boot_guard_enable_summary">Khi máy khởi động lỗi nhiều lần liên tiếp, tất cả module được tự tắt ở lần khởi động kế tiếp và Cam chỉ ra module nghi gây lỗi</string>
     <string name="features_boot_guard_failures">Số lần khởi động lỗi trước khi can thiệp</string>
     <string name="features_conflicts">Chống xung đột module</string>
     <string name="features_conflicts_none">Không có xung đột</string>
@@ -480,15 +480,15 @@
     <string name="features_conflicts_rescan">Quét lại</string>
     <string name="features_risk">Chặn module nguy hiểm</string>
     <string name="features_risk_enable">Từ chối module nguy hiểm</string>
-    <string name="features_risk_enable_summary">Không cài module mà danh sách có chữ ký của SU Kernel ghi là mã độc hoặc phá máy. Tắt: chỉ cảnh báo rồi vẫn cài</string>
+    <string name="features_risk_enable_summary">Không cài module mà danh sách có chữ ký của Cam ghi là mã độc hoặc phá máy. Tắt: chỉ cảnh báo rồi vẫn cài</string>
     <string name="features_risk_on">Bật · danh sách có %d mục</string>
     <string name="features_risk_warn_only">Chỉ cảnh báo</string>
     <string name="features_risk_found">Đã cài và nằm trong danh sách: %d</string>
     <string name="features_risk_note">Danh sách (%1$d mục, rule phiên bản %2$d) đi cùng rule ẩn root và cập nhật cùng nó. Lúc cài, module được kiểm từng file; đã cài thì kiểm theo id, tên và tác giả.</string>
     <string name="module_badge_risk">Nguy hiểm</string>
     <string name="module_risk_title">Nằm trong danh sách module nguy hiểm</string>
-    <string name="flash_risk_blocked">❌ Không cài: module này nằm trong danh sách module nguy hiểm của SU Kernel</string>
-    <string name="flash_risk_warn">⚠ Cảnh báo: module này nằm trong danh sách module nguy hiểm của SU Kernel</string>
+    <string name="flash_risk_blocked">❌ Không cài: module này nằm trong danh sách module nguy hiểm của Cam</string>
+    <string name="flash_risk_warn">⚠ Cảnh báo: module này nằm trong danh sách module nguy hiểm của Cam</string>
     <string name="flash_risk_reason">Lý do: %s</string>
     <string name="flash_risk_source">Nguồn: %s</string>
     <string name="flash_risk_found_in">Tìm thấy trong: %s</string>
@@ -553,9 +553,9 @@
     <string name="audit_rescan">Kiểm tra lại</string>
     <string name="audit_apply">Áp dụng %1$d cách sửa</string>
     <string name="audit_more">và %1$d mục nữa</string>
-    <string name="audit_module_mounts">Mount do module tự tạo (SU Kernel không gỡ chúng)</string>
+    <string name="audit_module_mounts">Mount do module tự tạo (Cam không gỡ chúng)</string>
     <string name="audit_cam_mounts">Mount của module vẫn hiện: kernel umount đang tắt</string>
-    <string name="audit_selinux_rules">Rule SELinux của SU Kernel vẫn lộ: ẩn SELinux đang tắt</string>
+    <string name="audit_selinux_rules">Rule SELinux của Cam vẫn lộ: ẩn SELinux đang tắt</string>
     <string name="audit_maps">App đang nạp file root trong bộ nhớ</string>
     <string name="audit_props">Prop cho thấy bootloader đã mở khóa</string>
     <string name="audit_boot_args">Bootconfig / cmdline cho thấy bootloader đã mở khóa</string>
@@ -749,7 +749,7 @@
     <string name="update_installing_hint">App sẽ tự đóng và mở lại khi xong</string>
     <string name="update_retry">Thử lại</string>
     <string name="update_hide">Ẩn</string>
-    <!-- caesarvn.xyz account (cam.su.kernel.account.Account) -->
+    <!-- caesarvn.xyz account (cam.caesar.vn.account.Account) -->
     <string name="account_title">Tài khoản</string>
     <string name="account_unlinked">Liên kết để nhận cập nhật</string>
     <string name="account_link">Liên kết tài khoản</string>
@@ -778,7 +778,7 @@
     <string name="account_members_only">Cần tham gia thành viên trước.</string>
     <string name="account_refresh">Làm mới</string>
     <string name="early_card">Đã có bản %1$s: mở cho bạn ngày %2$s. Chạm để nhận ngay.</string>
-    <string name="early_title">Cam Kernel SU %1$s</string>
+    <string name="early_title">Cam %1$s</string>
     <string name="early_not_linked">Liên kết điện thoại với tài khoản để nhận cập nhật.</string>
     <string name="early_opens">Mở cho tài khoản của bạn ngày %1$s.</string>
     <string name="early_lead">Nhận ngay với %1$s, không phải chờ. Quyền này gắn với tài khoản: dùng được cả trong app và trên caesarvn.xyz.</string>
@@ -797,7 +797,7 @@
     <string name="early_content_hint">Ghi đúng nội dung này: hệ thống dựa vào nó để nhận ra đơn của bạn.</string>
     <string name="early_copy">Chép</string>
     <string name="early_copied">Đã chép</string>
-    <string name="early_saved">Đã lưu mã QR vào Ảnh/Cam Kernel SU</string>
+    <string name="early_saved">Đã lưu mã QR vào Ảnh/Cam</string>
     <string name="early_save_failed">Không lưu được mã QR</string>
     <string name="early_open">Bản %1$s đã mở cho tài khoản của bạn</string>
     <string name="early_update_now">Cập nhật ngay</string>

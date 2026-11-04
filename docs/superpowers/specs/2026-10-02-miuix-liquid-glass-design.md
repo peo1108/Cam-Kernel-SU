@@ -1,4 +1,4 @@
-# Miuix Liquid Glass Redesign + SU Kernel Branding
+# Miuix Liquid Glass Redesign + Cam Branding
 
 Date: 2026-10-02
 Branch: feat/managerless-seed
@@ -8,7 +8,7 @@ Scope: `manager/` only (Kotlin / Compose). No kernel, ksud, or supercall changes
 
 Make the Manager's Miuix UI mode look like iOS "Liquid Glass": translucent,
 refracting glass surfaces (bars, cards, dialogs, popups, buttons) floating over
-a colorful background. Also rebrand the app as "SU Kernel" with a new launcher
+a colorful background. Also rebrand the app as "Cam" with a new launcher
 icon.
 
 Decisions already made with the user:
@@ -21,7 +21,7 @@ Decisions already made with the user:
 - Shared `Glass*` component layer (approach A), not a theme-level hack and not
   a fork of the miuix library.
 - Launcher icon: the full `IMG_7454.PNG` logo (triangle + text), not cropped.
-- App name: "SU Kernel".
+- App name: "Cam".
 
 Out of scope: Material UI mode, module WebUI, kernel/ksud, in-app strings that
 refer to "KernelSU" as the root solution (kept as is).
@@ -164,8 +164,8 @@ Other locales fall back to English.
 ## 6. Branding
 
 - **Name**: `defaultManagerName` in `manager/app/build.gradle.kts` becomes
-  `"SU Kernel"` (`"SU Kernel PR"` for PR builds). The launcher label and APK
-  file name (`SU_Kernel_<version>_<code>.apk`) follow. `KSU_NAME` override
+  `"Cam"` (`"Cam PR"` for PR builds). The launcher label and APK
+  file name (`Cam_<version>_<code>.apk`) follow. `KSU_NAME` override
   still works. In-app strings mentioning "KernelSU" are unchanged.
 - **Icon**: full `IMG_7454.PNG` logo (1254x1254, black background).
   - Adaptive icon: `@color/ic_launcher_background` = black; foreground =
@@ -213,12 +213,12 @@ Each step is one `manager: ...` commit.
 - **Wallpaper**: change the home wallpaper, return to the app, background
   updates. Set a live wallpaper or deny root, background falls back to the
   plain default theme background and the settings note is shown.
-- **Performance**: `adb shell dumpsys gfxinfo cam.su.kernel` while scrolling
+- **Performance**: `adb shell dumpsys gfxinfo cam.caesar.vn` while scrolling
   Module and Superuser lists; compare janky frame % to a pre-change baseline.
   If clearly worse, reduce values in `GlassDefaults`.
 - **Fallback**: API 31 emulator shows static gradient + blur, no
   `RuntimeShader` crash.
-- **Branding**: launcher shows "SU Kernel" and the new icon (round, squircle,
+- **Branding**: launcher shows "Cam" and the new icon (round, squircle,
   themed icon on Android 13+).
 
 ## 9. Spike results

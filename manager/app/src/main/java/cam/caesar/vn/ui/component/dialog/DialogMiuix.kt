@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.component.dialog
+package cam.caesar.vn.ui.component.dialog
 
-import cam.su.kernel.ui.component.glass.LocalGlassOverlayBackdrop
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.glass.LocalGlassOverlayBackdrop
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,9 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.ProgressDetails
-import cam.su.kernel.ui.component.markdown.MarkdownContent
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.ProgressDetails
+import cam.caesar.vn.ui.component.markdown.MarkdownContent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text

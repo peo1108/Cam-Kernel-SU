@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.home
+package cam.caesar.vn.ui.screen.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,9 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.donate.VietQr
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.R
+import cam.caesar.vn.donate.VietQr
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -40,7 +40,7 @@ private const val DONATE_BANK_BIN = "970422"
 private const val DONATE_BANK_NAME = "MB Bank"
 private const val DONATE_ACCOUNT = "0859855556"
 private const val DONATE_HOLDER = "DAO THE VINH"
-private const val DONATE_MESSAGE = "Ung ho Cam Kernel SU"
+private const val DONATE_MESSAGE = "Ung ho Cam"
 
 /** VietQR donation code plus a button to the channel the Home support card links to. */
 @Composable

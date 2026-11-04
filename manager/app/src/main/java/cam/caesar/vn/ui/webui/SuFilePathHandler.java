@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui;
+package cam.caesar.vn.ui.webui;
 
 import android.content.Context;
 import android.content.SharedPreferences;

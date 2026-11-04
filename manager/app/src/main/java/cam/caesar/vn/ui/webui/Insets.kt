@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui
+package cam.caesar.vn.ui.webui
 
 /**
  * Insets data class from GitHub@MMRLApp/WebUI-X-Portable

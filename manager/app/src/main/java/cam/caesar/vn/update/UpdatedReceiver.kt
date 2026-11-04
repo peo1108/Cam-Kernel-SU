@@ -1,9 +1,9 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import cam.su.kernel.BuildConfig
+import cam.caesar.vn.BuildConfig
 
 /**
  * The reliable "update done" signal: reopening the app from the install script is best effort

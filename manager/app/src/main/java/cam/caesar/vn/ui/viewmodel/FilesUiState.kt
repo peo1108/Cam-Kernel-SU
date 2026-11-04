@@ -1,10 +1,10 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.OpKind
-import cam.su.kernel.files.PanelNav
-import cam.su.kernel.files.SortOptions
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.OpKind
+import cam.caesar.vn.files.PanelNav
+import cam.caesar.vn.files.SortOptions
 import java.io.File
 
 data class PanelUi(
@@ -68,7 +68,7 @@ data class OverrideUi(
  * [all] shows every partition, not just the boot chain.
  */
 data class PartitionsUi(
-    val list: List<cam.su.kernel.files.Partition>,
+    val list: List<cam.caesar.vn.files.Partition>,
     val slot: String,
     val image: FileEntry? = null,
     val all: Boolean = false,
@@ -124,7 +124,7 @@ data class FilesUiState(
     val appNames: Map<Int, String> = emptyMap(),
     val partitions: PartitionsUi? = null,
     /** The trash dialog's list; null while it is closed. */
-    val trash: List<cam.su.kernel.files.TrashItem>? = null,
+    val trash: List<cam.caesar.vn.files.TrashItem>? = null,
 ) {
     val activePanel get() = panels[active]
     val otherPanel get() = panels[1 - active]

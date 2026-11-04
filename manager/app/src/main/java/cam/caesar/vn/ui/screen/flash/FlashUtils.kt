@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.flash
+package cam.caesar.vn.ui.screen.flash
 
 import android.net.Uri
 import android.os.Environment
@@ -28,15 +28,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
-import cam.su.kernel.R
-import cam.su.kernel.ui.screen.install.SeedApp
-import cam.su.kernel.ui.util.FlashResult
-import cam.su.kernel.ui.util.LkmSelection
-import cam.su.kernel.ui.util.downloadBoot
-import cam.su.kernel.ui.util.flashModule
-import cam.su.kernel.ui.util.installBoot
-import cam.su.kernel.ui.util.restoreBoot
-import cam.su.kernel.ui.util.uninstallPermanently
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.screen.install.SeedApp
+import cam.caesar.vn.ui.util.FlashResult
+import cam.caesar.vn.ui.util.LkmSelection
+import cam.caesar.vn.ui.util.downloadBoot
+import cam.caesar.vn.ui.util.flashModule
+import cam.caesar.vn.ui.util.installBoot
+import cam.caesar.vn.ui.util.restoreBoot
+import cam.caesar.vn.ui.util.uninstallPermanently
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date

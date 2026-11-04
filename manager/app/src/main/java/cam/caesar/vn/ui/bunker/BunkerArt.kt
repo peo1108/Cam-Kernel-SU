@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.bunker
+package cam.caesar.vn.ui.bunker
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -9,8 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import cam.su.kernel.ui.intro.IntroArt
-import cam.su.kernel.ui.intro.loadIntroArt
+import cam.caesar.vn.ui.intro.IntroArt
+import cam.caesar.vn.ui.intro.loadIntroArt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

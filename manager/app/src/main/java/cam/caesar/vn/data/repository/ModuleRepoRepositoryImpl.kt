@@ -1,13 +1,13 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import cam.su.kernel.data.model.Author
-import cam.su.kernel.data.model.ReleaseAsset
-import cam.su.kernel.data.model.RepoModule
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.util.module.MODULE_REPO_URL
-import cam.su.kernel.ui.util.isNetworkAvailable
+import cam.caesar.vn.data.model.Author
+import cam.caesar.vn.data.model.ReleaseAsset
+import cam.caesar.vn.data.model.RepoModule
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.util.module.MODULE_REPO_URL
+import cam.caesar.vn.ui.util.isNetworkAvailable
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject

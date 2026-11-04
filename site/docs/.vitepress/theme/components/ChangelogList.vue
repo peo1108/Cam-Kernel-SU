@@ -9,19 +9,19 @@ const props = defineProps<{ lang: 'vi' | 'en' | 'zh' }>()
 const T = {
   vi: {
     title: 'Nhật ký cập nhật',
-    lead: 'Mọi bản phát hành của SU Kernel. Cùng nội dung với màn "Có gì mới" trong app.',
+    lead: 'Mọi bản phát hành của Cam. Cùng nội dung với màn "Có gì mới" trong app.',
     latest: 'Mới nhất',
     download: 'Tải bản này',
   },
   en: {
     title: 'Changelog',
-    lead: 'Every SU Kernel release. Same text as the "What’s new" screen in the app. Entries are written in Vietnamese.',
+    lead: 'Every Cam release. Same text as the "What’s new" screen in the app. Entries are written in Vietnamese.',
     latest: 'Latest',
     download: 'Download',
   },
   zh: {
     title: '更新日志',
-    lead: 'SU Kernel 的每一个版本。与应用内“新功能”页面内容相同，日志以越南语撰写。',
+    lead: 'Cam 的每一个版本。与应用内“新功能”页面内容相同，日志以越南语撰写。',
     latest: '最新',
     download: '下载',
   },

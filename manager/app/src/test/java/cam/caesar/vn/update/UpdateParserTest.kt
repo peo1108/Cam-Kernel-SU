@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -16,7 +16,7 @@ class UpdateParserTest {
     }
 
     private fun apk(version: String, code: Long, digest: String? = null) =
-        asset("SU_Kernel_${version}_$code-release.apk", digest = digest)
+        asset("Cam_${version}_$code-release.apk", digest = digest)
 
     private fun release(
         tag: String,
@@ -43,13 +43,13 @@ class UpdateParserTest {
         val info = parseReleases(json, 32800)!!
         assertEquals("3.0.2", info.versionName)
         assertEquals(32950L, info.versionCode)
-        assertEquals("https://example.com/SU_Kernel_3.0.2_32950-release.apk", info.apkUrl)
+        assertEquals("https://example.com/Cam_3.0.2_32950-release.apk", info.apkUrl)
     }
 
     @Test
     fun readsTheCiApkName() {
         // the name Build Manager really produces: <app name>_<version name>_<version code>-release.apk
-        val json = list(release("cam-v3.0.1", asset("SU_Kernel_v3.3.0-187-g21536a17_32788-release.apk")))
+        val json = list(release("cam-v3.0.1", asset("Cam_v3.3.0-187-g21536a17_32788-release.apk")))
         assertEquals(32788L, parseReleases(json, 32700)!!.versionCode)
     }
 
@@ -190,10 +190,10 @@ class UpdateParserTest {
               "published_at": "2026-10-20T10:00:00Z",
               "body": "- beta",
               "assets": [{
-               "name": "SU_Kernel_3.2.0-beta.1_32900-release.apk",
+               "name": "Cam_3.2.0-beta.1_32900-release.apk",
                "size": 21000000,
                "digest": "sha256:ABCDEF0123",
-               "browser_download_url": "https://caesarvn.xyz/dl/cam-v3.2.0-beta.1/SU_Kernel_3.2.0-beta.1_32900-release.apk"
+               "browser_download_url": "https://caesarvn.xyz/dl/cam-v3.2.0-beta.1/Cam_3.2.0-beta.1_32900-release.apk"
               }]
              },
              {
@@ -204,17 +204,17 @@ class UpdateParserTest {
               "published_at": "2026-10-11T19:52:33Z",
               "body": "- stable",
               "assets": [{
-               "name": "SU_Kernel_3.1.0_32836-release.apk",
+               "name": "Cam_3.1.0_32836-release.apk",
                "size": 21000000,
                "digest": "sha256:0123456789",
-               "browser_download_url": "https://caesarvn.xyz/dl/cam-v3.1.0/SU_Kernel_3.1.0_32836-release.apk"
+               "browser_download_url": "https://caesarvn.xyz/dl/cam-v3.1.0/Cam_3.1.0_32836-release.apk"
               }]
              }
             ]
         """.trimIndent()
         val stable = parseReleases(json, 32800)!!
         assertEquals("3.1.0", stable.versionName)
-        assertEquals("https://caesarvn.xyz/dl/cam-v3.1.0/SU_Kernel_3.1.0_32836-release.apk", stable.apkUrl)
+        assertEquals("https://caesarvn.xyz/dl/cam-v3.1.0/Cam_3.1.0_32836-release.apk", stable.apkUrl)
         assertEquals("0123456789", stable.sha256)
         val beta = parseReleases(json, 32800, includePrereleases = true)!!
         assertEquals("3.2.0-beta.1", beta.versionName)

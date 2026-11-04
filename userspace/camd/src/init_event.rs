@@ -213,7 +213,7 @@ fn notify_boot_guard(notice: &boot_guard::Notice) {
     for attempt in 0..3 {
         let posted = std::process::Command::new("cmd")
             .args(["notification", "post", "-S", "bigtext", "-t", &title])
-            .args(["su_kernel_boot_guard", &body])
+            .args(["cam_boot_guard", &body])
             .uid(2000)
             .gid(2000)
             .stdout(std::process::Stdio::null())

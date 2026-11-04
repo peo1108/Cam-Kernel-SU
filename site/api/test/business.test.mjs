@@ -23,7 +23,7 @@ async function start(t, env = {}) {
     published_at: new Date(now - daysAgo * DAY).toISOString(),
     urgent,
     body: '- notes',
-    assets: [{ name: `SU_Kernel_${tag.slice(5)}_1-release.apk`, size: 1, digest: 'sha256:00', browser_download_url: `https://x/dl/${tag}/a.apk` }],
+    assets: [{ name: `Cam_${tag.slice(5)}_1-release.apk`, size: 1, digest: 'sha256:00', browser_download_url: `https://x/dl/${tag}/a.apk` }],
   })
   const beta = { ...rel('cam-v1.3.0-beta.1', 1), prerelease: true }
   writeFileSync(catalog, JSON.stringify([beta, rel('cam-v1.2.0', 2), rel('cam-v1.1.2', 3, true), rel('cam-v1.1.1', 30)]))
@@ -216,7 +216,7 @@ test('early access bought in the app: device token orders, polls, then the relea
   const status = (await dev('GET', '/api/ota/status')).body
   assert.equal(status.can_buy_early, true)
   assert.deepEqual(status.locked.map((r) => r.tag), ['cam-v1.2.0'])
-  assert.equal(status.locked[0].apk, 'SU_Kernel_1.2.0_1-release.apk')
+  assert.equal(status.locked[0].apk, 'Cam_1.2.0_1-release.apk')
   assert.equal(status.locked[0].body, '- notes')
   assert.ok(!JSON.stringify(status.locked).includes('https://'), 'no download link for a locked release')
   // Managers up to 1.1.3 crash drawing the notes: they get none, newer ones get them.

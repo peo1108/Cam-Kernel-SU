@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

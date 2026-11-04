@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.dialog
+package cam.caesar.vn.ui.component.dialog
 
 import android.os.Parcelable
 import android.util.Log

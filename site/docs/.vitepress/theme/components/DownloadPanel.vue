@@ -117,7 +117,7 @@ const archs = computed(() => [...new Set((latest?.lkm ?? []).map((l) => l.arch))
         <img src="/logo.png" alt="" width="76" height="76" />
         <div>
           <div class="cam-chip ok">{{ t.latest }}</div>
-          <div class="hc-title lg-display">SU Kernel <span class="lg-grad-text">v{{ latest.version }}</span></div>
+          <div class="hc-title lg-display">Cam <span class="lg-grad-text">v{{ latest.version }}</span></div>
           <div class="hc-sub">{{ fmtDate(dateOf(latest.version, latest.date), lang) }}<template v-if="latest.apk"> · {{ mb(latest.apk.size) }}</template></div>
         </div>
       </div>

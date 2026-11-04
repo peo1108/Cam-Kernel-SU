@@ -1,10 +1,10 @@
 // ICamFileService.aidl
-package cam.su.kernel.files;
+package cam.caesar.vn.files;
 
-import cam.su.kernel.files.FileEntry;
-import cam.su.kernel.files.IFileOpCallback;
-import cam.su.kernel.files.IScriptCallback;
-import cam.su.kernel.files.IWatchCallback;
+import cam.caesar.vn.files.FileEntry;
+import cam.caesar.vn.files.IFileOpCallback;
+import cam.caesar.vn.files.IScriptCallback;
+import cam.caesar.vn.files.IWatchCallback;
 import rikka.parcelablelist.ParcelableListSlice;
 
 // Served by CamFileService (uid 0) for the Files tab. Paths are absolute.

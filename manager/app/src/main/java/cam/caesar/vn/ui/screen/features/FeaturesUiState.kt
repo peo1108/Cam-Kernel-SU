@@ -1,14 +1,14 @@
-package cam.su.kernel.ui.screen.features
+package cam.caesar.vn.ui.screen.features
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.adb.WirelessAdbStatus
-import cam.su.kernel.data.model.AttestationInfo
-import cam.su.kernel.data.model.BootGuardStatus
-import cam.su.kernel.data.model.HideBootloaderStatus
-import cam.su.kernel.data.model.ModuleConflict
-import cam.su.kernel.data.model.RevokedCert
-import cam.su.kernel.data.model.visible
-import cam.su.kernel.hiding.ModuleRiskHit
+import cam.caesar.vn.adb.WirelessAdbStatus
+import cam.caesar.vn.data.model.AttestationInfo
+import cam.caesar.vn.data.model.BootGuardStatus
+import cam.caesar.vn.data.model.HideBootloaderStatus
+import cam.caesar.vn.data.model.ModuleConflict
+import cam.caesar.vn.data.model.RevokedCert
+import cam.caesar.vn.data.model.visible
+import cam.caesar.vn.hiding.ModuleRiskHit
 
 @Immutable
 data class FeaturesUiState(
@@ -70,6 +70,6 @@ data class FeaturesActions(
     val onCheckAttestation: () -> Unit,
     val onOpenHidingCheck: () -> Unit,
     val onSetWirelessAdb: (Boolean) -> Unit,
-    /** minutes, one of [cam.su.kernel.adb.WirelessAdb.TIMEOUTS] */
+    /** minutes, one of [cam.caesar.vn.adb.WirelessAdb.TIMEOUTS] */
     val onSetAdbTimeout: (Int) -> Unit,
 )

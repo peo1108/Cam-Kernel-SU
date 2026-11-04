@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component
+package cam.caesar.vn.ui.component
 
 import android.content.Context
 import android.widget.Toast

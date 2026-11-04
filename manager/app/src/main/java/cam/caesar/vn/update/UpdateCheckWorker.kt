@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 import android.content.Context
 import androidx.work.Constraints
@@ -8,8 +8,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.data.repository.UpdateRepositoryImpl
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.data.repository.UpdateRepositoryImpl
 import java.util.concurrent.TimeUnit
 
 /** Turns the 12-hour background check on or off with the "check for updates" setting. */

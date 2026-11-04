@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.expand
+package cam.caesar.vn.ui.component.expand
 
 import android.os.SystemClock
 import android.provider.Settings
@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
-import cam.su.kernel.ui.component.glass.GlassDefaults
-import cam.su.kernel.ui.component.glass.GlassPageAnchor
-import cam.su.kernel.ui.component.glass.LocalGlassPageAnchor
-import cam.su.kernel.ui.component.hero.visibleFraction
+import cam.caesar.vn.ui.component.glass.GlassDefaults
+import cam.caesar.vn.ui.component.glass.GlassPageAnchor
+import cam.caesar.vn.ui.component.glass.LocalGlassPageAnchor
+import cam.caesar.vn.ui.component.hero.visibleFraction
 import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.transition.NavMotion
 import top.yukonga.miuix.kmp.nav.transition.NavSettleSpec
@@ -228,7 +228,7 @@ class ExpandState(
     }
 }
 
-/** The app's [ExpandState]; null outside [cam.su.kernel.ui.CamActivity]'s navigation. */
+/** The app's [ExpandState]; null outside [cam.caesar.vn.ui.CamActivity]'s navigation. */
 val LocalExpand: ProvidableCompositionLocal<ExpandState?> = staticCompositionLocalOf { null }
 
 @Composable
@@ -328,7 +328,7 @@ class ExpandPage internal constructor(
 /** The current page's [ExpandPage]; null on pages that did not grow out of anything. */
 val LocalExpandPage: ProvidableCompositionLocal<ExpandPage?> = staticCompositionLocalOf { null }
 
-/** For [cam.su.kernel.ui.component.glass.GlassPage]: registers the page, null unless it expands. */
+/** For [cam.caesar.vn.ui.component.glass.GlassPage]: registers the page, null unless it expands. */
 @Composable
 fun rememberExpandPage(navKey: NavKey?, scope: NavTransitionScope?, anchor: GlassPageAnchor): ExpandPage? {
     val state = LocalExpand.current ?: return null

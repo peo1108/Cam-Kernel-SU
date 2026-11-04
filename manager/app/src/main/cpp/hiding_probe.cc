@@ -1,4 +1,4 @@
-// Raw syscalls for the root hiding probe (cam.su.kernel.hiding.NativeProbe).
+// Raw syscalls for the root hiding probe (cam.caesar.vn.hiding.NativeProbe).
 //
 // A module that hides root inside an app often hooks libc (open, read, stat...). These
 // go straight to the kernel, so the probe can compare them with what libc answers: a
@@ -141,7 +141,7 @@ std::vector<jlong> attr_timing() {
 }  // namespace
 
 extern "C" JNIEXPORT jlongArray JNICALL
-Java_cam_su_kernel_hiding_NativeProbe_attrTiming0(JNIEnv *env, jclass) {
+Java_cam_caesar_vn_hiding_NativeProbe_attrTiming0(JNIEnv *env, jclass) {
     // never from a process that could hold setcurrent
     std::vector<jlong> samples = getuid() < 10000 ? std::vector<jlong>{kNotAppDomain} : attr_timing();
     jlongArray out = env->NewLongArray(static_cast<jsize>(samples.size()));
@@ -150,7 +150,7 @@ Java_cam_su_kernel_hiding_NativeProbe_attrTiming0(JNIEnv *env, jclass) {
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_cam_su_kernel_hiding_NativeProbe_read0(JNIEnv *env, jclass, jstring jpath) {
+Java_cam_caesar_vn_hiding_NativeProbe_read0(JNIEnv *env, jclass, jstring jpath) {
     const char *path = env->GetStringUTFChars(jpath, nullptr);
     std::string data;
     bool ok = raw_read(path, data);
@@ -166,7 +166,7 @@ Java_cam_su_kernel_hiding_NativeProbe_read0(JNIEnv *env, jclass, jstring jpath) 
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_cam_su_kernel_hiding_NativeProbe_access0(JNIEnv *env, jclass, jstring jpath) {
+Java_cam_caesar_vn_hiding_NativeProbe_access0(JNIEnv *env, jclass, jstring jpath) {
     const char *path = env->GetStringUTFChars(jpath, nullptr);
     int err = raw_access(path);
     env->ReleaseStringUTFChars(jpath, path);

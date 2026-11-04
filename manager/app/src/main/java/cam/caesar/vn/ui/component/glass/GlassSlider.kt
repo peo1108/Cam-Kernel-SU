@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -26,7 +26,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import cam.su.kernel.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import kotlin.math.abs
 

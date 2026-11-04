@@ -1,5 +1,5 @@
 // IScriptCallback.aidl
-package cam.su.kernel.files;
+package cam.caesar.vn.files;
 
 // Output of one script started with ICamFileService.runScript.
 oneway interface IScriptCallback {

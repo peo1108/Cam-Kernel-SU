@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.component.miuix
+package cam.caesar.vn.ui.component.miuix
 
-import cam.su.kernel.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassCard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.ui.component.WarningLevel
-import cam.su.kernel.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.component.WarningLevel
+import cam.caesar.vn.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.uninstalldialog
+package cam.caesar.vn.ui.component.uninstalldialog
 
 import androidx.compose.runtime.Composable
 

@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.executemoduleaction
+package cam.caesar.vn.ui.screen.executemoduleaction
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.launch
-import cam.su.kernel.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.LocalNavigator
 
 @Composable
 fun ExecuteModuleActionScreen(moduleId: String, fromShortcut: Boolean = false) {

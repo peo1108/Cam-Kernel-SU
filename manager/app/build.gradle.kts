@@ -26,8 +26,8 @@ val kernelSourceId = rootProject.extra["kernelSourceId"] as String
 val camdSourceId = rootProject.extra["camdSourceId"] as String
 
 val isPrBuild = project.findProperty("IS_PR_BUILD")?.toString()?.toBoolean() ?: false
-val defaultManagerPackageName = if (isPrBuild) "cam.su.kernel.pr" else "cam.su.kernel"
-val defaultManagerName = if (isPrBuild) "SU Kernel PR" else "SU Kernel"
+val defaultManagerPackageName = if (isPrBuild) "cam.caesar.vn.pr" else "cam.caesar.vn"
+val defaultManagerName = if (isPrBuild) "Cam PR" else "Cam"
 val managerPackageName = project.findProperty("KSU_PACKAGE_NAME")?.toString() ?: defaultManagerPackageName
 val managerName = project.findProperty("KSU_NAME")?.toString() ?: defaultManagerName
 
@@ -64,7 +64,7 @@ val baseCFlags = listOf(
 val baseCppFlags = baseCFlags + "-fno-rtti"
 
 android {
-    namespace = "cam.su.kernel"
+    namespace = "cam.caesar.vn"
 
     buildTypes {
         debug {
@@ -134,7 +134,7 @@ android {
 
     androidResources {
         generateLocaleConfig = true
-        // Only English and Vietnamese are kept up to date (Cam's own strings, "SU Kernel" naming).
+        // Only English and Vietnamese are kept up to date (Cam's own strings, "Cam" naming).
         // The other values-* folders stay as upstream ships them so merges do not conflict, but are
         // left out of the APK: those users get English instead of half-translated KernelSU text.
         localeFilters += listOf("en", "vi")

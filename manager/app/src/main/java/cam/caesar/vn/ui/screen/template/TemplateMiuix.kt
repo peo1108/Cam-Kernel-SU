@@ -1,20 +1,20 @@
-package cam.su.kernel.ui.screen.template
+package cam.caesar.vn.ui.screen.template
 
-import cam.su.kernel.ui.bunker.BunkerSignals
-import cam.su.kernel.ui.bunker.ReportPullToBunker
-import cam.su.kernel.ui.component.glass.IosRefreshTexts
-import cam.su.kernel.ui.component.glass.GlassFab
-import cam.su.kernel.ui.component.glass.MorphIcon
-import cam.su.kernel.ui.component.glass.morphAnchor
-import cam.su.kernel.ui.component.glass.rememberMorphPopupState
-import cam.su.kernel.ui.component.glass.GlassMenuColumn
-import cam.su.kernel.ui.component.glass.GlassMenuItem
+import cam.caesar.vn.ui.bunker.BunkerSignals
+import cam.caesar.vn.ui.bunker.ReportPullToBunker
+import cam.caesar.vn.ui.component.glass.IosRefreshTexts
+import cam.caesar.vn.ui.component.glass.GlassFab
+import cam.caesar.vn.ui.component.glass.MorphIcon
+import cam.caesar.vn.ui.component.glass.morphAnchor
+import cam.caesar.vn.ui.component.glass.rememberMorphPopupState
+import cam.caesar.vn.ui.component.glass.GlassMenuColumn
+import cam.caesar.vn.ui.component.glass.GlassMenuItem
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.ContentPaste
-import cam.su.kernel.ui.component.glass.GlassListPopup
-import cam.su.kernel.ui.component.glass.GlassButtonGroup
-import cam.su.kernel.ui.component.glass.GlassListCard
-import cam.su.kernel.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.component.glass.GlassListPopup
+import cam.caesar.vn.ui.component.glass.GlassButtonGroup
+import cam.caesar.vn.ui.component.glass.GlassListCard
+import cam.caesar.vn.ui.component.glass.GlassIconButton
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -47,7 +47,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import cam.su.kernel.ui.component.motion.cardEntrance
+import cam.caesar.vn.ui.component.motion.cardEntrance
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Fingerprint
@@ -76,12 +76,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.data.model.TemplateInfo
-import cam.su.kernel.ui.component.ListPopupDefaults
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.TemplateInfo
+import cam.caesar.vn.ui.component.ListPopupDefaults
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -106,9 +106,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import cam.su.kernel.ui.component.expand.expandClick
-import cam.su.kernel.ui.component.expand.expandSource
-import cam.su.kernel.ui.component.glass.GlassDefaults
+import cam.caesar.vn.ui.component.expand.expandClick
+import cam.caesar.vn.ui.component.expand.expandSource
+import cam.caesar.vn.ui.component.glass.GlassDefaults
 
 // the button a new template's editor grows out of (expandSource key)
 private const val SOURCE_NEW_TEMPLATE = "template/new"

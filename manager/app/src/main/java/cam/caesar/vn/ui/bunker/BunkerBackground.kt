@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.bunker
+package cam.caesar.vn.ui.bunker
 
 import android.provider.Settings
 import androidx.compose.foundation.Canvas
@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
-import cam.su.kernel.ui.intro.IntroPaths
-import cam.su.kernel.ui.intro.IntroText
+import cam.caesar.vn.ui.intro.IntroPaths
+import cam.caesar.vn.ui.intro.IntroText
 import top.yukonga.miuix.kmp.basic.PullToRefreshState
 import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import kotlin.math.abs

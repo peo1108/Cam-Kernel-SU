@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -23,10 +23,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.CamActivity
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.CamActivity
 import okhttp3.Call
 import okhttp3.Request
 import java.io.IOException
@@ -47,10 +47,10 @@ class DownloadService : Service() {
 
     companion object {
         const val CHANNEL_ID = "download_channel"
-        const val ACTION_DOWNLOAD = "cam.su.kernel.action.DOWNLOAD"
-        const val ACTION_CANCEL = "cam.su.kernel.action.CANCEL_DOWNLOAD"
-        const val ACTION_DISMISS_DOWNLOAD = "cam.su.kernel.action.DISMISS_DOWNLOAD"
-        const val ACTION_INSTALL_MODULE = "cam.su.kernel.action.INSTALL_MODULE"
+        const val ACTION_DOWNLOAD = "cam.caesar.vn.action.DOWNLOAD"
+        const val ACTION_CANCEL = "cam.caesar.vn.action.CANCEL_DOWNLOAD"
+        const val ACTION_DISMISS_DOWNLOAD = "cam.caesar.vn.action.DISMISS_DOWNLOAD"
+        const val ACTION_INSTALL_MODULE = "cam.caesar.vn.action.INSTALL_MODULE"
         const val EXTRA_URL = "url"
         const val EXTRA_TOKEN = "token"
         const val EXTRA_FILE_NAME = "fileName"

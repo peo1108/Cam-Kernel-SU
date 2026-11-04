@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.flash
+package cam.caesar.vn.ui.screen.flash
 
-import cam.su.kernel.ui.bunker.BunkerSignals
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.bunker.BunkerSignals
+import cam.caesar.vn.ui.component.CamToast
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -19,12 +19,12 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Cam
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.isSoftRebootPreferred
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.util.getFileName
-import cam.su.kernel.ui.util.reboot
+import cam.caesar.vn.Cam
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.isSoftRebootPreferred
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.util.getFileName
+import cam.caesar.vn.ui.util.reboot
 
 @Composable
 fun FlashScreen(flashIt: FlashIt, onBackEnabledChange: (Boolean) -> Unit) {

@@ -1,8 +1,8 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.util.Log
-import cam.su.kernel.data.model.ModuleConflict
-import cam.su.kernel.data.model.parseModuleConflicts
+import cam.caesar.vn.data.model.ModuleConflict
+import cam.caesar.vn.data.model.parseModuleConflicts
 import org.json.JSONArray
 
 // Cam-only camd commands, kept out of CamCli.kt (upstream's KsuCli.kt) so upstream merges
@@ -27,7 +27,7 @@ private fun enabledModuleIds(): List<String>? = runCatching {
 
 /**
  * Turns off every enabled module before a direct install, so the first boot on the new
- * Cam Kernel SU runs without them. False when a module could not be turned off.
+ * Cam runs without them. False when a module could not be turned off.
  */
 fun disableAllModules(onStdout: (String) -> Unit): Boolean {
     val ids = enabledModuleIds() ?: run {

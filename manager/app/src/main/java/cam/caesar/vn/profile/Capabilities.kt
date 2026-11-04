@@ -1,4 +1,4 @@
-package cam.su.kernel.profile
+package cam.caesar.vn.profile
 
 /**
  * @author weishu

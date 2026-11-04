@@ -1,24 +1,24 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
-import cam.su.kernel.data.model.ATTESTATION_STATUS_URL
-import cam.su.kernel.data.model.AttestationInfo
-import cam.su.kernel.data.model.KEY_ATTESTATION_OID
-import cam.su.kernel.data.model.RevokedCert
-import cam.su.kernel.data.model.findRevoked
-import cam.su.kernel.data.model.parseKeyDescription
-import cam.su.kernel.data.model.parseRevocationList
-import cam.su.kernel.data.model.serialHex
-import cam.su.kernel.camApp
+import cam.caesar.vn.data.model.ATTESTATION_STATUS_URL
+import cam.caesar.vn.data.model.AttestationInfo
+import cam.caesar.vn.data.model.KEY_ATTESTATION_OID
+import cam.caesar.vn.data.model.RevokedCert
+import cam.caesar.vn.data.model.findRevoked
+import cam.caesar.vn.data.model.parseKeyDescription
+import cam.caesar.vn.data.model.parseRevocationList
+import cam.caesar.vn.data.model.serialHex
+import cam.caesar.vn.camApp
 import okhttp3.Request
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 
-private const val CHECK_ALIAS = "su_kernel_attestation_check"
+private const val CHECK_ALIAS = "cam_attestation_check"
 
 /**
  * [info] is null when the certificate could not be read; [revoked] is null when the

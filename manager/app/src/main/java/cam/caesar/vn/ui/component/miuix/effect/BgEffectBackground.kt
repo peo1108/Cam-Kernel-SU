@@ -1,6 +1,6 @@
 // Mirrored from compose-miuix-ui example.
 
-package cam.su.kernel.ui.component.miuix.effect
+package cam.caesar.vn.ui.component.miuix.effect
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
@@ -16,8 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import cam.su.kernel.ui.theme.isInDarkTheme
-import cam.su.kernel.ui.util.shouldShowSplitPane
+import cam.caesar.vn.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.util.shouldShowSplitPane
 import top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.floor

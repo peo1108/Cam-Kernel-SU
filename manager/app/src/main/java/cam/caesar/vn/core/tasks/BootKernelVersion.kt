@@ -1,9 +1,9 @@
-package cam.su.kernel.core.tasks
+package cam.caesar.vn.core.tasks
 
 import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import org.apache.commons.io.IOUtils
-import cam.su.kernel.core.utils.DataSourceChannel
+import cam.caesar.vn.core.utils.DataSourceChannel
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream

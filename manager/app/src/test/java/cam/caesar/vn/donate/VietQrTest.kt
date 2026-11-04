@@ -1,4 +1,4 @@
-package cam.su.kernel.donate
+package cam.caesar.vn.donate
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows

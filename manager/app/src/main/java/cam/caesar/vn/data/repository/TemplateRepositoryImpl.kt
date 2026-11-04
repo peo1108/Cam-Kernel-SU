@@ -1,13 +1,13 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import cam.su.kernel.data.model.TemplateInfo
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.util.getAppProfileTemplate
-import cam.su.kernel.ui.util.listAppProfileTemplates
-import cam.su.kernel.ui.util.setAppProfileTemplate
+import cam.caesar.vn.data.model.TemplateInfo
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.util.getAppProfileTemplate
+import cam.caesar.vn.ui.util.listAppProfileTemplates
+import cam.caesar.vn.ui.util.setAppProfileTemplate
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject

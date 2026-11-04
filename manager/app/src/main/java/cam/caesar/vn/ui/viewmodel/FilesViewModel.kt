@@ -1,28 +1,28 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import android.content.Context
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cam.su.kernel.R
-import cam.su.kernel.camApp
-import cam.su.kernel.files.Archives
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.ConflictChoice
-import cam.su.kernel.files.Errno
-import cam.su.kernel.files.FileChanges
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.FileOp
-import cam.su.kernel.files.FileOpProgress
-import cam.su.kernel.files.FileOpService
-import cam.su.kernel.files.FileSort
-import cam.su.kernel.files.FsException
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.files.OpKind
-import cam.su.kernel.files.PanelNav
-import cam.su.kernel.files.SelectionOps
-import cam.su.kernel.files.SortBy
-import cam.su.kernel.files.SortOptions
+import cam.caesar.vn.R
+import cam.caesar.vn.camApp
+import cam.caesar.vn.files.Archives
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.ConflictChoice
+import cam.caesar.vn.files.Errno
+import cam.caesar.vn.files.FileChanges
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.FileOp
+import cam.caesar.vn.files.FileOpProgress
+import cam.caesar.vn.files.FileOpService
+import cam.caesar.vn.files.FileSort
+import cam.caesar.vn.files.FsException
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.files.OpKind
+import cam.caesar.vn.files.PanelNav
+import cam.caesar.vn.files.SelectionOps
+import cam.caesar.vn.files.SortBy
+import cam.caesar.vn.files.SortOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -65,7 +65,7 @@ internal interface FilesHost {
 }
 
 class FilesViewModel : ViewModel() {
-    private val prefs = camApp.getSharedPreferences(cam.su.kernel.files.Bookmarks.PREFS, Context.MODE_PRIVATE)
+    private val prefs = camApp.getSharedPreferences(cam.caesar.vn.files.Bookmarks.PREFS, Context.MODE_PRIVATE)
     private val raw = arrayOf<List<FileEntry>>(emptyList(), emptyList())
     private val loadJobs = arrayOfNulls<Job>(2)
     private var opHandle: CamFileClient.OpHandle? = null
@@ -190,7 +190,7 @@ class FilesViewModel : ViewModel() {
                 return@launch
             }
             when {
-                entry == null -> _uiState.update { it.copy(message = FilesMessage.Failed(cam.su.kernel.files.Errno.ENOENT, path)) }
+                entry == null -> _uiState.update { it.copy(message = FilesMessage.Failed(cam.caesar.vn.files.Errno.ENOENT, path)) }
                 entry.isDir -> navigateActive(path)
                 else -> navigateActive(FsPath.parent(path))
             }
@@ -295,7 +295,7 @@ class FilesViewModel : ViewModel() {
 
     fun removeBookmark(path: String) = saveBookmarks(_uiState.value.bookmarks - path)
 
-    fun restoreBookmarks() = saveBookmarks((cam.su.kernel.files.Bookmarks.DEFAULTS + _uiState.value.bookmarks).distinct())
+    fun restoreBookmarks() = saveBookmarks((cam.caesar.vn.files.Bookmarks.DEFAULTS + _uiState.value.bookmarks).distinct())
 
     // --- single file actions ---
 
@@ -401,15 +401,15 @@ class FilesViewModel : ViewModel() {
 
     private fun handOver(entries: List<FileEntry>, event: (List<android.net.Uri>) -> FilesEvent) {
         if (entries.isEmpty()) return
-        if (entries.all(cam.su.kernel.files.RootFileProvider::canStream)) {
-            viewModelScope.launch { events.send(event(entries.map(cam.su.kernel.files.RootFileProvider::uriFor))) }
+        if (entries.all(cam.caesar.vn.files.RootFileProvider::canStream)) {
+            viewModelScope.launch { events.send(event(entries.map(cam.caesar.vn.files.RootFileProvider::uriFor))) }
             return
         }
         cached(entries, copyAll = false) { files ->
             event(
                 entries.zip(files).map { (e, f) ->
-                    if (cam.su.kernel.files.RootFileProvider.canStream(e)) {
-                        cam.su.kernel.files.RootFileProvider.uriFor(e)
+                    if (cam.caesar.vn.files.RootFileProvider.canStream(e)) {
+                        cam.caesar.vn.files.RootFileProvider.uriFor(e)
                     } else {
                         androidx.core.content.FileProvider.getUriForFile(camApp, "${camApp.packageName}.fileprovider", f)
                     }
@@ -432,7 +432,7 @@ class FilesViewModel : ViewModel() {
                     mkdirs()
                 }
                 val files = entries.map { File(dir, it.name) }
-                _uiState.copyToLocalShowing(entries.zip(files).filter { (e, _) -> copyAll || !cam.su.kernel.files.RootFileProvider.canStream(e) })
+                _uiState.copyToLocalShowing(entries.zip(files).filter { (e, _) -> copyAll || !cam.caesar.vn.files.RootFileProvider.canStream(e) })
                 events.send(event(files))
             } catch (e: FsException) {
                 _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }
@@ -450,13 +450,13 @@ class FilesViewModel : ViewModel() {
         // Out of an archive, copying is extracting; archive to archive is not supported.
         if (Archives.isInside(sources.first())) {
             if (intoArchive) {
-                _uiState.update { it.copy(message = FilesMessage.Failed(cam.su.kernel.files.Errno.EINVAL, null)) }
+                _uiState.update { it.copy(message = FilesMessage.Failed(cam.caesar.vn.files.Errno.EINVAL, null)) }
                 return
             }
             return extract(sources, destDir)
         }
         if (intoArchive && !Archives.isZip(Archives.split(destDir).first)) {
-            _uiState.update { it.copy(message = FilesMessage.Failed(cam.su.kernel.files.Errno.EROFS, null)) }
+            _uiState.update { it.copy(message = FilesMessage.Failed(cam.caesar.vn.files.Errno.EROFS, null)) }
             return
         }
         runOp(FileOp(if (move) OpKind.MOVE else OpKind.COPY, sources, destDir))
@@ -493,7 +493,7 @@ class FilesViewModel : ViewModel() {
 
     /** Whether Delete on [sources] can go to the trash at all (the dialog says so). */
     fun canTrash(sources: List<String>): Boolean {
-        val trash = cam.su.kernel.files.Trash(cam.su.kernel.files.OsBackend)
+        val trash = cam.caesar.vn.files.Trash(cam.caesar.vn.files.OsBackend)
         return sources.isNotEmpty() && !Archives.isInside(sources.first()) && sources.none(trash::isInTrash)
     }
 
@@ -515,12 +515,12 @@ class FilesViewModel : ViewModel() {
 
     fun hideTrash() = _uiState.update { it.copy(trash = null) }
 
-    fun restoreTrash(item: cam.su.kernel.files.TrashItem) {
+    fun restoreTrash(item: cam.caesar.vn.files.TrashItem) {
         hideTrash()
         runOp(FileOp(OpKind.RESTORE, listOf(item.dir))) { showTrash() }
     }
 
-    fun purgeTrash(items: List<cam.su.kernel.files.TrashItem>) {
+    fun purgeTrash(items: List<cam.caesar.vn.files.TrashItem>) {
         if (items.isEmpty()) return
         hideTrash()
         runOp(FileOp(OpKind.PURGE, items.map { it.dir })) { showTrash() }
@@ -615,10 +615,10 @@ class FilesViewModel : ViewModel() {
     private fun home(panel: Int) =
         prefs.getString(if (panel == 0) KEY_HOME_0 else KEY_HOME_1, null) ?: if (panel == 0) DEFAULT_PATH_0 else DEFAULT_PATH_1
 
-    private fun loadBookmarks(): List<String> = cam.su.kernel.files.Bookmarks.load(prefs)
+    private fun loadBookmarks(): List<String> = cam.caesar.vn.files.Bookmarks.load(prefs)
 
     private fun saveBookmarks(list: List<String>) {
-        cam.su.kernel.files.Bookmarks.save(prefs, list)
+        cam.caesar.vn.files.Bookmarks.save(prefs, list)
         _uiState.update { it.copy(bookmarks = list) }
     }
 
@@ -655,7 +655,7 @@ class FilesViewModel : ViewModel() {
                     loading = false,
                     errorErrno = errno,
                     // without root every call fails with EACCES too: only with root it is FUSE's doing
-                    sharedDenied = errno == Errno.EACCES && CamFileClient.connected && cam.su.kernel.files.SharedStorage.lower(path) != null,
+                    sharedDenied = errno == Errno.EACCES && CamFileClient.connected && cam.caesar.vn.files.SharedStorage.lower(path) != null,
                     selection = p.selection.filterTo(HashSet()) { it in paths },
                     disk = disk,
                     loadedPath = path,

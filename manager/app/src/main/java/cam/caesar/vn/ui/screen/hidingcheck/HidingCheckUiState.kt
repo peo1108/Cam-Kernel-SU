@@ -1,9 +1,9 @@
-package cam.su.kernel.ui.screen.hidingcheck
+package cam.caesar.vn.ui.screen.hidingcheck
 
 import androidx.compose.runtime.Immutable
-import cam.su.kernel.data.model.HidingAudit
-import cam.su.kernel.data.repository.HidingRulesStatus
-import cam.su.kernel.ui.util.AttestationReport
+import cam.caesar.vn.data.model.HidingAudit
+import cam.caesar.vn.data.repository.HidingRulesStatus
+import cam.caesar.vn.ui.util.AttestationReport
 
 /** How a finding compares with the scan before it. */
 enum class FindingChange { NEW, SAME }
@@ -75,14 +75,14 @@ data class HidingCheckUiState(
     val attestation: AttestationReport? = null,
     val checkingAttestation: Boolean = false,
     /** the Widevine DRM level, once the user asked for it */
-    val widevine: cam.su.kernel.data.model.WidevineInfo? = null,
+    val widevine: cam.caesar.vn.data.model.WidevineInfo? = null,
     val checkingWidevine: Boolean = false,
     /** the Widevine HAL service state; null when unknown */
     val widevineHal: Boolean? = null,
     /** clearing and fetching the DRM certificates again: the step under way, null when idle */
     val reprovisionStep: String? = null,
-    val reprovision: cam.su.kernel.ui.util.WidevineReprovision? = null,
-    /** check once after a boot that brings in a module ([cam.su.kernel.hiding.ModuleScanWorker]) */
+    val reprovision: cam.caesar.vn.ui.util.WidevineReprovision? = null,
+    /** check once after a boot that brings in a module ([cam.caesar.vn.hiding.ModuleScanWorker]) */
     val moduleScan: Boolean = false,
 ) {
     val leaks: Int

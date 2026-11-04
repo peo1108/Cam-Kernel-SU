@@ -1,12 +1,12 @@
-package cam.su.kernel.ui.component.miuix
+package cam.caesar.vn.ui.component.miuix
 
 import androidx.compose.ui.graphics.RectangleShape
 import top.yukonga.miuix.kmp.blur.drawBackdrop
-import cam.su.kernel.ui.component.glass.LocalGlassBackdrop
+import cam.caesar.vn.ui.component.glass.LocalGlassBackdrop
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
-import cam.su.kernel.ui.component.glass.liquidControl
-import cam.su.kernel.ui.component.glass.GlassDefaults
+import cam.caesar.vn.ui.component.glass.liquidControl
+import cam.caesar.vn.ui.component.glass.GlassDefaults
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -74,7 +74,7 @@ import androidx.compose.ui.zIndex
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import cam.su.kernel.ui.component.SearchStatus
+import cam.caesar.vn.ui.component.SearchStatus
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Text

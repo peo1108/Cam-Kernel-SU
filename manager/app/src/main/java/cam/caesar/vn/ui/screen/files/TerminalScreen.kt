@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.files
+package cam.caesar.vn.ui.screen.files
 
 import android.graphics.Typeface
 import android.view.KeyEvent
@@ -40,7 +40,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
-import cam.su.kernel.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassCard
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,18 +69,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cam.su.kernel.R
-import cam.su.kernel.files.FsPath
-import cam.su.kernel.ui.component.glass.GlassIconButton
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.theme.isInDarkTheme
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.R
+import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import androidx.compose.ui.graphics.toArgb
 import com.termux.terminal.TextStyle
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import cam.su.kernel.ui.viewmodel.TerminalViewModel
+import cam.caesar.vn.ui.viewmodel.TerminalViewModel
 import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient

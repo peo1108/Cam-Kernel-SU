@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.superuser
+package cam.caesar.vn.ui.screen.superuser
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,10 +25,10 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.glass.GlassDialog
-import cam.su.kernel.ui.util.listRemovedSystemApps
-import cam.su.kernel.ui.util.reinstallSystemApp
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.util.listRemovedSystemApps
+import cam.caesar.vn.ui.util.reinstallSystemApp
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme

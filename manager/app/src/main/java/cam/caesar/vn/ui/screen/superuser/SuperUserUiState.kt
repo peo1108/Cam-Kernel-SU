@@ -1,11 +1,11 @@
-package cam.su.kernel.ui.screen.superuser
+package cam.caesar.vn.ui.screen.superuser
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
-import cam.su.kernel.data.model.AppInfo
-import cam.su.kernel.ui.component.SearchStatus
-import cam.su.kernel.ui.viewmodel.AppSortConfig
+import cam.caesar.vn.data.model.AppInfo
+import cam.caesar.vn.ui.component.SearchStatus
+import cam.caesar.vn.ui.viewmodel.AppSortConfig
 
 @Immutable
 data class GroupedApps(

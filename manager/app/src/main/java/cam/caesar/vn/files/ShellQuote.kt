@@ -1,4 +1,4 @@
-package cam.su.kernel.files
+package cam.caesar.vn.files
 
 /**
  * [value] as one sh word: single quotes, a quote inside closed, escaped and reopened. The one copy

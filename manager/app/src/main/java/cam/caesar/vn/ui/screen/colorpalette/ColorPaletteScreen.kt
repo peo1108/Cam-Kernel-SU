@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.colorpalette
+package cam.caesar.vn.ui.screen.colorpalette
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
@@ -9,11 +9,11 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
-import cam.su.kernel.CamApplication
-import cam.su.kernel.ui.intro.IntroSplash
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.theme.ColorMode
-import cam.su.kernel.ui.viewmodel.SettingsViewModel
+import cam.caesar.vn.CamApplication
+import cam.caesar.vn.ui.intro.IntroSplash
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.theme.ColorMode
+import cam.caesar.vn.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun ColorPaletteScreen() {

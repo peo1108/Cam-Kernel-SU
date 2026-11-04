@@ -1,6 +1,6 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
-import cam.su.kernel.data.model.AppInfo
+import cam.caesar.vn.data.model.AppInfo
 
 interface SuperUserRepository {
     suspend fun getAppList(): Result<Pair<List<AppInfo>, List<Int>>>

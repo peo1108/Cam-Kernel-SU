@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.theme
+package cam.caesar.vn.ui.theme
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring

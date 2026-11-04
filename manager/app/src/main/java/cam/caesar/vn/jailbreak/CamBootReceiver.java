@@ -1,13 +1,13 @@
-package cam.su.kernel.jailbreak;
+package cam.caesar.vn.jailbreak;
 
-import static cam.su.kernel.jailbreak.CamZygotePreload.TAG;
+import static cam.caesar.vn.jailbreak.CamZygotePreload.TAG;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import cam.su.kernel.ui.util.CamCliKt;
+import cam.caesar.vn.ui.util.CamCliKt;
 
 public class CamBootReceiver extends BroadcastReceiver {
 
@@ -19,7 +19,7 @@ public class CamBootReceiver extends BroadcastReceiver {
         var action = intent.getAction();
         if (!Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(action)
                 && !Intent.ACTION_BOOT_COMPLETED.equals(action)
-                && !"cam.su.kernel.jailbreak.LAUNCH".equals(action)) {
+                && !"cam.caesar.vn.jailbreak.LAUNCH".equals(action)) {
             return;
         }
         if (CamCliKt.rootAvailable()) return;

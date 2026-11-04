@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
-import cam.su.kernel.ui.component.CamToast
-import cam.su.kernel.update.UpdateScheduler
+import cam.caesar.vn.ui.component.CamToast
+import cam.caesar.vn.update.UpdateScheduler
 import android.net.Uri
 import android.system.OsConstants
 import androidx.lifecycle.ViewModel
@@ -13,16 +13,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Cam
-import cam.su.kernel.R
-import cam.su.kernel.data.repository.SettingsRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.component.glass.GlassBackgroundType
-import cam.su.kernel.ui.component.glass.glassImageFile
-import cam.su.kernel.ui.component.glass.writeGlassImage
-import cam.su.kernel.ui.screen.settings.SettingsUiState
-import cam.su.kernel.ui.theme.ColorMode
+import cam.caesar.vn.Cam
+import cam.caesar.vn.R
+import cam.caesar.vn.data.repository.SettingsRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.component.glass.GlassBackgroundType
+import cam.caesar.vn.ui.component.glass.glassImageFile
+import cam.caesar.vn.ui.component.glass.writeGlassImage
+import cam.caesar.vn.ui.screen.settings.SettingsUiState
+import cam.caesar.vn.ui.theme.ColorMode
 
 class SettingsViewModel(
     private val repo: SettingsRepository = SettingsRepositoryImpl()
@@ -39,7 +39,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val checkUpdate = repo.checkUpdate
             val betaUpdates = repo.betaUpdates
-            val accountEmail = cam.su.kernel.account.Account.email()
+            val accountEmail = cam.caesar.vn.account.Account.email()
             val checkModuleUpdate = repo.checkModuleUpdate
             val themeMode = repo.themeMode
             val miuixMonet = repo.miuixMonet
@@ -168,7 +168,7 @@ class SettingsViewModel(
         repo.betaUpdates = enabled
         _uiState.update { it.copy(betaUpdates = enabled) }
         // Turning betas on asks to be a beta tester; Cam approves it on caesarvn.xyz.
-        if (enabled) viewModelScope.launch(Dispatchers.IO) { cam.su.kernel.account.Account.requestTester() }
+        if (enabled) viewModelScope.launch(Dispatchers.IO) { cam.caesar.vn.account.Account.requestTester() }
     }
 
     fun setCheckModuleUpdate(enabled: Boolean) {

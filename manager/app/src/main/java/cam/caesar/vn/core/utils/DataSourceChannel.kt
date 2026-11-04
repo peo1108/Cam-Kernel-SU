@@ -1,4 +1,4 @@
-package cam.su.kernel.core.utils
+package cam.caesar.vn.core.utils
 
 import okhttp3.OkHttpClient
 import okhttp3.Request

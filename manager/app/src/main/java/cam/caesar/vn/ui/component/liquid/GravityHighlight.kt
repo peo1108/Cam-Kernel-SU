@@ -1,6 +1,6 @@
 // Shared from FloatingBottomBar (adapted from compose-miuix-ui example, Apache 2.0).
 
-package cam.su.kernel.ui.component.liquid
+package cam.caesar.vn.ui.component.liquid
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State

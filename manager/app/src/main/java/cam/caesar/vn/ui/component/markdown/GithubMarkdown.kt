@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.markdown
+package cam.caesar.vn.ui.component.markdown
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
@@ -28,12 +28,12 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.theme.isInDarkTheme
-import cam.su.kernel.ui.util.adjustLightnessArgb
-import cam.su.kernel.ui.util.cssColorFromArgb
-import cam.su.kernel.ui.util.ensureVisibleByMix
-import cam.su.kernel.ui.util.relativeLuminance
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.util.adjustLightnessArgb
+import cam.caesar.vn.ui.util.cssColorFromArgb
+import cam.caesar.vn.ui.util.ensureVisibleByMix
+import cam.caesar.vn.ui.util.relativeLuminance
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.OkHttpClient
 import okhttp3.Request

@@ -1,9 +1,9 @@
-package cam.su.kernel.data.model
+package cam.caesar.vn.data.model
 
 import androidx.compose.runtime.Immutable
 
 /**
- * What the Widevine DRM plugin reports ([cam.su.kernel.ui.util.checkWidevine]). [securityLevel] is
+ * What the Widevine DRM plugin reports ([cam.caesar.vn.ui.util.checkWidevine]). [securityLevel] is
  * "L1" (keys handled in the TEE: HD in streaming apps), "L2" or "L3" (software only: SD at most).
  * [supported] is false when the device has no Widevine plugin at all.
  */

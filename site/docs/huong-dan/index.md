@@ -1,6 +1,6 @@
 # Giới thiệu
 
-**Cam Kernel SU** đặt root vào trong nhân Android. App đi kèm tên **SU Kernel**.
+**Cam Kernel SU** đặt root vào trong nhân Android. App đi kèm tên **Cam**.
 
 ## Trong nhân
 

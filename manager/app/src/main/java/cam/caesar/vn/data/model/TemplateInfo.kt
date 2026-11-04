@@ -1,12 +1,12 @@
-package cam.su.kernel.data.model
+package cam.caesar.vn.data.model
 
 import android.os.Parcelable
 import android.util.Log
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
-import cam.su.kernel.CamNative
-import cam.su.kernel.profile.Capabilities
-import cam.su.kernel.profile.Groups
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.profile.Capabilities
+import cam.caesar.vn.profile.Groups
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Locale

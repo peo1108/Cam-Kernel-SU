@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.account
+package cam.caesar.vn.ui.screen.account
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,21 +42,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cam.su.kernel.R
-import cam.su.kernel.account.Account
-import cam.su.kernel.account.AccountStatus
-import cam.su.kernel.account.LockedRelease
-import cam.su.kernel.account.Pairing
-import cam.su.kernel.account.PollResult
-import cam.su.kernel.donate.VietQr
-import cam.su.kernel.ui.component.glass.GlassCard
-import cam.su.kernel.ui.component.glass.GlassIconButton
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.theme.LocalEnableBlur
-import cam.su.kernel.ui.util.BlurredBar
-import cam.su.kernel.ui.util.rememberBlurBackdrop
-import cam.su.kernel.update.UpdateSignal
+import cam.caesar.vn.R
+import cam.caesar.vn.account.Account
+import cam.caesar.vn.account.AccountStatus
+import cam.caesar.vn.account.LockedRelease
+import cam.caesar.vn.account.Pairing
+import cam.caesar.vn.account.PollResult
+import cam.caesar.vn.donate.VietQr
+import cam.caesar.vn.ui.component.glass.GlassCard
+import cam.caesar.vn.ui.component.glass.GlassIconButton
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.theme.LocalEnableBlur
+import cam.caesar.vn.ui.util.BlurredBar
+import cam.caesar.vn.ui.util.rememberBlurBackdrop
+import cam.caesar.vn.update.UpdateSignal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -84,7 +84,7 @@ private sealed interface AccountUi {
 }
 
 /**
- * Settings → Account: link this phone to a caesarvn.xyz account (cam.su.kernel.account.Account).
+ * Settings → Account: link this phone to a caesarvn.xyz account (cam.caesar.vn.account.Account).
  * Updates come only to linked member accounts; beta testers are approved on the website.
  */
 @Composable

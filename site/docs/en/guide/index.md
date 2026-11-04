@@ -1,6 +1,6 @@
 # Introduction
 
-**Cam Kernel SU** puts root inside the Android kernel. Its app is called **SU Kernel**.
+**Cam Kernel SU** puts root inside the Android kernel. Its app is called **Cam**.
 
 ## In the kernel
 

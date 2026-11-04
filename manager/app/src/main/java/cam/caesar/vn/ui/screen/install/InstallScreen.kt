@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.install
+package cam.caesar.vn.ui.screen.install
 
 import android.app.Activity
 import android.content.Intent
@@ -23,25 +23,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import cam.su.kernel.R
-import cam.su.kernel.getKernelVersion
-import cam.su.kernel.ui.component.choosekmidialog.ChooseKmiDialog
-import cam.su.kernel.ui.component.dialog.DownloadDialog
-import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
-import cam.su.kernel.ui.navigation3.LocalNavigator
-import cam.su.kernel.ui.navigation3.Route
-import cam.su.kernel.ui.screen.flash.FlashIt
-import cam.su.kernel.ui.util.LkmSelection
-import cam.su.kernel.ui.util.getAvailablePartitions
-import cam.su.kernel.ui.util.getCurrentKmi
-import cam.su.kernel.ui.util.getDefaultPartition
-import cam.su.kernel.ui.util.getLoadedBlockableModules
-import cam.su.kernel.ui.util.isBlockModulesValid
-import cam.su.kernel.ui.util.getSlotSuffix
-import cam.su.kernel.ui.util.isAbDevice
-import cam.su.kernel.ui.util.isCustomAvbKey
-import cam.su.kernel.ui.util.probeRemoteBootPartitions
-import cam.su.kernel.ui.util.rootAvailable
+import cam.caesar.vn.R
+import cam.caesar.vn.getKernelVersion
+import cam.caesar.vn.ui.component.choosekmidialog.ChooseKmiDialog
+import cam.caesar.vn.ui.component.dialog.DownloadDialog
+import cam.caesar.vn.ui.component.dialog.rememberLoadingDialog
+import cam.caesar.vn.ui.navigation3.LocalNavigator
+import cam.caesar.vn.ui.navigation3.Route
+import cam.caesar.vn.ui.screen.flash.FlashIt
+import cam.caesar.vn.ui.util.LkmSelection
+import cam.caesar.vn.ui.util.getAvailablePartitions
+import cam.caesar.vn.ui.util.getCurrentKmi
+import cam.caesar.vn.ui.util.getDefaultPartition
+import cam.caesar.vn.ui.util.getLoadedBlockableModules
+import cam.caesar.vn.ui.util.isBlockModulesValid
+import cam.caesar.vn.ui.util.getSlotSuffix
+import cam.caesar.vn.ui.util.isAbDevice
+import cam.caesar.vn.ui.util.isCustomAvbKey
+import cam.caesar.vn.ui.util.probeRemoteBootPartitions
+import cam.caesar.vn.ui.util.rootAvailable
 import top.yukonga.miuix.kmp.basic.SnackbarHostState as MiuixSnackbarHostState
 
 @Composable

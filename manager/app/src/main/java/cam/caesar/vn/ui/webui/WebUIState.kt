@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.webui
+package cam.caesar.vn.ui.webui
 
 import android.app.Activity
 import android.content.Intent
@@ -10,7 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.topjohnwu.superuser.Shell
-import cam.su.kernel.R
+import cam.caesar.vn.R
 
 sealed class WebUIEvent {
     data object Loading : WebUIEvent()

@@ -1,4 +1,4 @@
-package cam.su.kernel.data.model
+package cam.caesar.vn.data.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

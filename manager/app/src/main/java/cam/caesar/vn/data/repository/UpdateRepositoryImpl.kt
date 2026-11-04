@@ -1,15 +1,15 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import cam.su.kernel.BuildConfig
-import cam.su.kernel.account.Account
-import cam.su.kernel.account.LockedRelease
-import cam.su.kernel.account.newestOffer
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.util.isNetworkAvailable
-import cam.su.kernel.update.UpdateInfo
-import cam.su.kernel.update.parseReleases
+import cam.caesar.vn.BuildConfig
+import cam.caesar.vn.account.Account
+import cam.caesar.vn.account.LockedRelease
+import cam.caesar.vn.account.newestOffer
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.util.isNetworkAvailable
+import cam.caesar.vn.update.UpdateInfo
+import cam.caesar.vn.update.parseReleases
 import okhttp3.CacheControl
 import okhttp3.Request
 import java.io.IOException

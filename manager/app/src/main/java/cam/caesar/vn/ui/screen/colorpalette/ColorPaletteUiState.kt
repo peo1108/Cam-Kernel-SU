@@ -1,11 +1,11 @@
-package cam.su.kernel.ui.screen.colorpalette
+package cam.caesar.vn.ui.screen.colorpalette
 
 import android.net.Uri
 import androidx.compose.runtime.Immutable
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
-import cam.su.kernel.ui.screen.settings.SettingsUiState
-import cam.su.kernel.ui.theme.ColorMode
+import cam.caesar.vn.ui.screen.settings.SettingsUiState
+import cam.caesar.vn.ui.theme.ColorMode
 
 @Immutable
 data class ColorPaletteUiState(

@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
 import android.content.pm.ApplicationInfo
 import android.util.Log
@@ -18,18 +18,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import cam.su.kernel.Cam
-import cam.su.kernel.data.repository.SettingsRepository
-import cam.su.kernel.data.repository.SettingsRepositoryImpl
-import cam.su.kernel.data.repository.SuperUserRepository
-import cam.su.kernel.data.repository.SuperUserRepositoryImpl
-import cam.su.kernel.camApp
-import cam.su.kernel.ui.component.SearchStatus
-import cam.su.kernel.ui.screen.superuser.GroupedApps
-import cam.su.kernel.ui.screen.superuser.SuperUserUiState
-import cam.su.kernel.ui.util.PinyinUtil
-import cam.su.kernel.ui.util.ownerNameForUid
-import cam.su.kernel.ui.util.pickPrimary
+import cam.caesar.vn.Cam
+import cam.caesar.vn.data.repository.SettingsRepository
+import cam.caesar.vn.data.repository.SettingsRepositoryImpl
+import cam.caesar.vn.data.repository.SuperUserRepository
+import cam.caesar.vn.data.repository.SuperUserRepositoryImpl
+import cam.caesar.vn.camApp
+import cam.caesar.vn.ui.component.SearchStatus
+import cam.caesar.vn.ui.screen.superuser.GroupedApps
+import cam.caesar.vn.ui.screen.superuser.SuperUserUiState
+import cam.caesar.vn.ui.util.PinyinUtil
+import cam.caesar.vn.ui.util.ownerNameForUid
+import cam.caesar.vn.ui.util.pickPrimary
 import java.text.Collator
 import java.util.Locale
 
@@ -136,7 +136,7 @@ class SuperUserViewModel(
         }
     }
 
-    typealias AppInfo = cam.su.kernel.data.model.AppInfo
+    typealias AppInfo = cam.caesar.vn.data.model.AppInfo
 
     private val _uiState = MutableStateFlow(SuperUserUiState())
     val uiState: StateFlow<SuperUserUiState> = _uiState.asStateFlow()

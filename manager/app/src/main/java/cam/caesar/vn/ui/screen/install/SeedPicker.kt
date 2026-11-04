@@ -1,7 +1,7 @@
-package cam.su.kernel.ui.screen.install
+package cam.caesar.vn.ui.screen.install
 
-import cam.su.kernel.ui.component.glass.GlassTextField
-import cam.su.kernel.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.glass.GlassTextField
+import cam.caesar.vn.ui.component.glass.GlassDialog
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
-import cam.su.kernel.R
+import cam.caesar.vn.R
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.CheckboxPreference

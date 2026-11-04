@@ -17,7 +17,7 @@ val androidSourceCompatibility = rootProject.extra["androidSourceCompatibility"]
 val androidTargetCompatibility = rootProject.extra["androidTargetCompatibility"] as JavaVersion
 
 android {
-    namespace = "cam.su.kernel.baselineprofile"
+    namespace = "cam.caesar.vn.baselineprofile"
     compileSdk {
         version =
             release(androidCompileSdkVersion) {

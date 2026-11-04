@@ -1,7 +1,7 @@
-package cam.su.kernel.data.repository
+package cam.caesar.vn.data.repository
 
-import cam.su.kernel.account.LockedRelease
-import cam.su.kernel.update.UpdateInfo
+import cam.caesar.vn.account.LockedRelease
+import cam.caesar.vn.update.UpdateInfo
 
 interface UpdateRepository {
     /** The newest Cam release newer than the running Manager, null when there is none. */

@@ -9,7 +9,7 @@ Flash ảnh boot sai bản có thể làm máy không khởi động được. L
 - Bootloader **đã mở khoá**.
 - Máy tính có [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools) (`adb`, `fastboot`).
 - Ảnh **init_boot** (máy xuất xưởng với Android 13 trở lên) hoặc **boot** (máy cũ hơn) gốc, lấy từ firmware của **đúng bản ROM đang chạy**.
-- App SU Kernel mới nhất từ trang [Tải về](/tai-ve).
+- App Cam mới nhất từ trang [Tải về](/tai-ve).
 
 ### Kiểm tra KMI
 
@@ -21,10 +21,10 @@ Kết quả có dạng `5.15.148-android13-8-...`: phần `android13` và hai s�
 
 ## Cài lần đầu: vá ảnh boot
 
-1. Cài APK SU Kernel lên điện thoại và mở app.
+1. Cài APK Cam lên điện thoại và mở app.
 2. Ở màn chính, chạm thẻ **Nhấn để cài đặt**, rồi chọn **Chọn và vá file**.
 3. Chọn file `init_boot.img` (hoặc `boot.img`) đã chép vào máy.
-4. Hộp **Ứng dụng được cấp root** hiện ra. SU Kernel luôn được chọn; thêm app khác nếu muốn chúng có root ngay lần khởi động đầu (tìm theo tên hoặc thêm bằng tên gói).
+4. Hộp **Ứng dụng được cấp root** hiện ra. Cam luôn được chọn; thêm app khác nếu muốn chúng có root ngay lần khởi động đầu (tìm theo tên hoặc thêm bằng tên gói).
 5. Tuỳ chọn: **Block kernel modules** chặn một số module nhân nạp lúc khởi động (ví dụ module chống root của hãng). App tự điền sẵn các module đáng ngờ đang nạp, bạn sửa hoặc xoá tuỳ ý.
 6. Chạm **Kế tiếp**. App vá ảnh và lưu file `camsu_patched_<ngày>_<giờ>.img` vào thư mục Download.
 7. Chép file đó sang máy tính, khởi động điện thoại vào fastboot rồi flash:
@@ -35,7 +35,7 @@ fastboot flash init_boot camsu_patched_xxx.img   # máy cũ dùng: fastboot flas
 fastboot reboot
 ```
 
-8. Khởi động xong, **mở SU Kernel một lần**. Lần đầu app cài `/data/adb/camd`; trước đó các app khác chưa gọi được `su`.
+8. Khởi động xong, **mở Cam một lần**. Lần đầu app cài `/data/adb/camd`; trước đó các app khác chưa gọi được `su`.
 
 ::: tip Vá trên máy tính
 Không muốn vá trên điện thoại thì dùng `camd` cho máy tính (Windows, Linux, macOS) ở trang Tải về:
@@ -44,7 +44,7 @@ Không muốn vá trên điện thoại thì dùng `camd` cho máy tính (Window
 camd boot-patch -b init_boot.img --kmi android14-6.1
 ```
 
-File vá nằm ở thư mục hiện tại. SU Kernel vẫn có root vì nhân luôn cấp root cho đúng gói `cam.su.kernel` ký bằng khoá chính thức.
+File vá nằm ở thư mục hiện tại. Cam vẫn có root vì nhân luôn cấp root cho đúng gói `cam.caesar.vn` ký bằng khoá chính thức.
 :::
 
 ## Đã có root: cài trực tiếp
@@ -56,7 +56,7 @@ Khi máy đã root (cập nhật LKM, hoặc chuyển từ cách root khác), ch
 
 ## Sau khi cập nhật OTA
 
-OTA ghi hệ thống mới vào slot không hoạt động và làm mất root ở slot đó. Sau khi OTA tải và cài xong (**chưa khởi động lại**), mở SU Kernel và chọn **Cài đặt vào phân vùng không hoạt động (Sau OTA)**, rồi mới khởi động lại.
+OTA ghi hệ thống mới vào slot không hoạt động và làm mất root ở slot đó. Sau khi OTA tải và cài xong (**chưa khởi động lại**), mở Cam và chọn **Cài đặt vào phân vùng không hoạt động (Sau OTA)**, rồi mới khởi động lại.
 
 ## Cập nhật app và module nhân
 
@@ -72,4 +72,4 @@ OTA ghi hệ thống mới vào slot không hoạt động và làm mất root �
 fastboot flash init_boot init_boot.img
 ```
 
-- **Gỡ hẳn:** flash lại ảnh gốc rồi gỡ app SU Kernel.
+- **Gỡ hẳn:** flash lại ảnh gốc rồi gỡ app Cam.

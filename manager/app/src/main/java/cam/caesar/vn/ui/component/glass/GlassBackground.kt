@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.glass
+package cam.caesar.vn.ui.component.glass
 
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.derivedStateOf
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.nav.core.NavKey
-import cam.su.kernel.ui.component.expand.LocalExpandPage
-import cam.su.kernel.ui.component.expand.rememberExpandPage
+import cam.caesar.vn.ui.component.expand.LocalExpandPage
+import cam.caesar.vn.ui.component.expand.rememberExpandPage
 import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.Image
@@ -41,14 +41,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
-import cam.su.kernel.data.repository.PrefsStampStore
-import cam.su.kernel.data.repository.WallpaperRepository
-import cam.su.kernel.ui.bunker.BunkerBackground
-import cam.su.kernel.ui.component.miuix.effect.BgEffectBackground
-import cam.su.kernel.ui.component.miuix.effect.BgEffectConfig
-import cam.su.kernel.ui.component.miuix.effect.DeviceType
-import cam.su.kernel.ui.theme.isInDarkTheme
-import cam.su.kernel.ui.util.shouldShowSplitPane
+import cam.caesar.vn.data.repository.PrefsStampStore
+import cam.caesar.vn.data.repository.WallpaperRepository
+import cam.caesar.vn.ui.bunker.BunkerBackground
+import cam.caesar.vn.ui.component.miuix.effect.BgEffectBackground
+import cam.caesar.vn.ui.component.miuix.effect.BgEffectConfig
+import cam.caesar.vn.ui.component.miuix.effect.DeviceType
+import cam.caesar.vn.ui.theme.isInDarkTheme
+import cam.caesar.vn.ui.util.shouldShowSplitPane
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop

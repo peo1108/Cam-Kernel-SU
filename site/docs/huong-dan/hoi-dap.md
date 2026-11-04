@@ -2,7 +2,7 @@
 
 ## Dùng chung với KernelSU, Magisk, APatch được không?
 
-Không. Mỗi lúc chỉ dùng một cách root. App SU Kernel cũng không làm việc với nhân KernelSU chính thức. Gỡ cách root cũ (flash lại ảnh gốc) trước khi cài.
+Không. Mỗi lúc chỉ dùng một cách root. App Cam cũng không làm việc với nhân KernelSU chính thức. Gỡ cách root cũ (flash lại ảnh gốc) trước khi cài.
 
 ## Máy tôi có dùng được không?
 
@@ -16,7 +16,7 @@ Cần nhân GKI 5.10 trở lên và bootloader đã mở khoá. Chạy `adb shel
 
 ## App khác gọi `su` không được?
 
-Lần khởi động đầu sau khi flash, mở SU Kernel một lần để app cài `/data/adb/camd`. Sau đó cấp root cho app trong tab Superuser hoặc bằng `camd allow add <gói>`.
+Lần khởi động đầu sau khi flash, mở Cam một lần để app cài `/data/adb/camd`. Sau đó cấp root cho app trong tab Superuser hoặc bằng `camd allow add <gói>`.
 
 ## Cài module xong nhưng file không hiện trong /system?
 

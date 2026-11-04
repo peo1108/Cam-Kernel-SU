@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.screen.settings
+package cam.caesar.vn.ui.screen.settings
 
 import androidx.compose.runtime.Immutable
 import com.materialkolor.PaletteStyle

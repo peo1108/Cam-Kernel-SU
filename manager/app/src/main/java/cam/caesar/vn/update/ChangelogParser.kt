@@ -1,4 +1,4 @@
-package cam.su.kernel.update
+package cam.caesar.vn.update
 
 /** One `## <version> - <date>` entry of CHANGELOG.md. */
 data class ChangelogEntry(val version: String, val date: String, val body: String)

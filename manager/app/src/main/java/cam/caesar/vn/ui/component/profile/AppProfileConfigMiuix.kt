@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.component.profile
+package cam.caesar.vn.ui.component.profile
 
-import cam.su.kernel.ui.component.glass.GlassSwitchPreference
+import cam.caesar.vn.ui.component.glass.GlassSwitchPreference
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,10 +10,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import cam.su.kernel.Cam
-import cam.su.kernel.CamNative
-import cam.su.kernel.R
-import cam.su.kernel.ui.component.miuix.EditText
+import cam.caesar.vn.Cam
+import cam.caesar.vn.CamNative
+import cam.caesar.vn.R
+import cam.caesar.vn.ui.component.miuix.EditText
 
 @Composable
 fun AppProfileConfigMiuix(

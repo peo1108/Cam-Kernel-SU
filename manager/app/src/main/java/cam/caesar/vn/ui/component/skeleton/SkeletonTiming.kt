@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.skeleton
+package cam.caesar.vn.ui.component.skeleton
 
 /** A first load faster than this shows no skeleton at all (no flash of placeholder cards). */
 internal const val SKELETON_DELAY_MS = 150L

@@ -1,11 +1,11 @@
-package cam.su.kernel.ui.screen.hidingcheck
+package cam.caesar.vn.ui.screen.hidingcheck
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import cam.su.kernel.R
-import cam.su.kernel.data.model.HidingAudit
+import cam.caesar.vn.R
+import cam.caesar.vn.data.model.HidingAudit
 
 @Composable
 internal fun findingTitle(finding: HidingAudit.Finding): String =

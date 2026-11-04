@@ -1,11 +1,11 @@
-package cam.su.kernel.ui.viewmodel
+package cam.caesar.vn.ui.viewmodel
 
-import cam.su.kernel.camApp
-import cam.su.kernel.files.Archives
-import cam.su.kernel.files.CamFileClient
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.FsException
-import cam.su.kernel.files.FsPath
+import cam.caesar.vn.camApp
+import cam.caesar.vn.files.Archives
+import cam.caesar.vn.files.CamFileClient
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.FsException
+import cam.caesar.vn.files.FsPath
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -75,13 +75,13 @@ class FilesInspector internal constructor(private val host: FilesHost) {
                 val source = if (Archives.isApkBundle(entry.name)) {
                     val inside = CamFileClient.listDir(Archives.join(entry.path, "")).filter { it.name.endsWith(".apk", true) }
                     inside.firstOrNull { it.name.equals("base.apk", true) } ?: inside.firstOrNull()
-                        ?: throw FsException(cam.su.kernel.files.Errno.ENOENT, entry.path)
+                        ?: throw FsException(cam.caesar.vn.files.Errno.ENOENT, entry.path)
                 } else {
                     entry
                 }
                 val file = File(camApp.cacheDir, "apk_info.apk")
                 state.copyToLocalShowing(listOf(source to file))
-                val info = readApk(file) ?: throw FsException(cam.su.kernel.files.Errno.EINVAL, entry.name, "not a valid APK")
+                val info = readApk(file) ?: throw FsException(cam.caesar.vn.files.Errno.EINVAL, entry.name, "not a valid APK")
                 state.update { it.copy(apkInfo = info) }
             } catch (e: FsException) {
                 state.update { it.copy(message = FilesMessage.Failed(e.errno, e.message)) }

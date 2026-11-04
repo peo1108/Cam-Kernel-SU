@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.component.statustag
+package cam.caesar.vn.ui.component.statustag
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

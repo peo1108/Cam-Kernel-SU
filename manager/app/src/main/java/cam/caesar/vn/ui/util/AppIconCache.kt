@@ -1,4 +1,4 @@
-package cam.su.kernel.ui.util
+package cam.caesar.vn.ui.util
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import cam.su.kernel.ui.util.AppIconCache.getMainUserId
+import cam.caesar.vn.ui.util.AppIconCache.getMainUserId
 import me.zhanghai.android.appiconloader.AppIconLoader
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import java.util.concurrent.ConcurrentHashMap

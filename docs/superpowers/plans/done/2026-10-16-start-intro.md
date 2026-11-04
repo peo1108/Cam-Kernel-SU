@@ -33,7 +33,7 @@ Luật mở màn:
 
 ## Kiến trúc
 
-Package mới `manager/app/src/main/java/cam/su/kernel/ui/intro/`:
+Package mới `manager/app/src/main/java/cam/caesar/vn/ui/intro/`:
 
 1. **`IntroTimeline.kt`**: toán thuần, không phụ thuộc Android, để test trên JVM.
    - Hằng số các nhịp: `BOOT_END`, `FIRE_END`, `CHARGE_END`, `BLAST_AT`, `TEXT_END`, `MIN_REVEAL_AT=1.20`, `MAX_REVEAL_AT=1.90`, `REVEAL_LEN=0.30`.
@@ -51,7 +51,7 @@ Package mới `manager/app/src/main/java/cam/su/kernel/ui/intro/`:
    - Seed đổi theo `floor(t * 20)` nên điện "giật" khoảng 20 lần/giây.
    - Không cấp phát bộ nhớ mỗi frame.
 3. **`IntroFx.kt`**: các hàm `DrawScope.*` vẽ hiệu ứng.
-   - `drawBoltPath`: 3 lớp gồm quầng teal `0xFF2EE6D6` dày và mờ, lớp cyan ở giữa, lõi trắng mảnh. Tham khảo cách 3 lớp của `drawLightning` trong [ArenaFx.kt:183](manager/app/src/main/java/cam/su/kernel/ui/screen/home/arena/ArenaFx.kt#L183), nhưng làm hàm mới vì hàm cũ màu vàng hoạt hình và chỉ có 8 điểm.
+   - `drawBoltPath`: 3 lớp gồm quầng teal `0xFF2EE6D6` dày và mờ, lớp cyan ở giữa, lõi trắng mảnh. Tham khảo cách 3 lớp của `drawLightning` trong [ArenaFx.kt:183](manager/app/src/main/java/cam/caesar/vn/ui/screen/home/arena/ArenaFx.kt#L183), nhưng làm hàm mới vì hàm cũ màu vàng hoạt hình và chỉ có 8 điểm.
    - `drawEdgeLightning` (có tham số `grow` và `surge`), `drawBranches`.
    - `drawBullet` (vệt sáng, sọc xoáy), `drawEmbedded` (cam nóng, nhịp sáng).
    - `drawFireball` (dùng lại `drawGlow`, mảnh văng tính giải tích từ t, không giữ state).
@@ -61,9 +61,9 @@ Package mới `manager/app/src/main/java/cam/su/kernel/ui/intro/`:
 4. **`IntroGate.kt`**: `object` chung (cùng kiểu với `SlimeHome`).
    - `@Volatile` state gồm `Unknown`, `Coming`, `Warm`, kèm hàm `reset()`, `coming()`, `warm()`.
    - `StatusArena` gọi vào đây; lớp phủ đọc ra.
-5. **`IntroLogo.kt`**: `preload(context)` giải mã `R.drawable.intro_logo` trên `Dispatchers.IO` thành `ImageBitmap`, cùng cách làm với `GlassBackgroundCache.preload` trong [CamActivity.kt:191](manager/app/src/main/java/cam/su/kernel/ui/CamActivity.kt#L191). Ảnh xong từ lâu trước khi `camInitDone`.
+5. **`IntroLogo.kt`**: `preload(context)` giải mã `R.drawable.intro_logo` trên `Dispatchers.IO` thành `ImageBitmap`, cùng cách làm với `GlassBackgroundCache.preload` trong [CamActivity.kt:191](manager/app/src/main/java/cam/caesar/vn/ui/CamActivity.kt#L191). Ảnh xong từ lâu trước khi `camInitDone`.
 6. **`IntroOverlay.kt`**: `@Composable IntroOverlay(expectArena: Boolean, onFinished: () -> Unit)`.
-   - Vòng `withFrameNanos` cập nhật `t`, cùng cách làm với [StatusArena.kt:134-161](manager/app/src/main/java/cam/su/kernel/ui/screen/home/arena/StatusArena.kt#L134-L161).
+   - Vòng `withFrameNanos` cập nhật `t`, cùng cách làm với [StatusArena.kt:134-161](manager/app/src/main/java/cam/caesar/vn/ui/screen/home/arena/StatusArena.kt#L134-L161).
    - Một `Canvas` toàn màn hình vẽ theo các nhịp, rung màn bằng `translate` với `hash(frame)` giảm dần theo `exp`.
    - `pointerInput` nuốt mọi chạm, chạm thì nhảy tới mở màn.
    - Haptic qua `LocalHapticFeedback`: `ContextClick` ở 3 phát mang mảnh, `LongPress` lúc kích nổ (cùng kiểu với `StatusArena`).
@@ -74,24 +74,24 @@ Package mới `manager/app/src/main/java/cam/su/kernel/ui/intro/`:
      - `RNG`: tô đè một ô đen rồi `drawText` monospace.
    - Hết mở màn thì gọi `onFinished`.
 
-Dùng lại từ [ArenaMath.kt](manager/app/src/main/java/cam/su/kernel/ui/screen/home/arena/ArenaMath.kt) (đều là `internal`, cùng module): `hash`, `progress`, `easeInOutCubic`, `easeOutCubic`, `easeOutBack`, `TAU`, `lerp`. Dùng lại `drawGlow` và `drawSparkle` từ `ArenaFx.kt`.
+Dùng lại từ [ArenaMath.kt](manager/app/src/main/java/cam/caesar/vn/ui/screen/home/arena/ArenaMath.kt) (đều là `internal`, cùng module): `hash`, `progress`, `easeInOutCubic`, `easeOutCubic`, `easeOutBack`, `TAU`, `lerp`. Dùng lại `drawGlow` và `drawSparkle` từ `ArenaFx.kt`.
 
 ## Tín hiệu "Arena đã ấm"
 
-- [Arena3D.kt](manager/app/src/main/java/cam/su/kernel/ui/screen/home/arena/three/Arena3D.kt):
+- [Arena3D.kt](manager/app/src/main/java/cam/caesar/vn/ui/screen/home/arena/three/Arena3D.kt):
   - Thêm biến đếm `warmFrames`. Trong `render()`, sau mỗi `endFrame()` thành công, tăng biến này nếu `asset != null && latestPanorama != null && rig.dressed`.
   - Thêm `val warm get() = warmFrames >= 3`: 3 frame để vượt qua lần giật do compile shader.
 - `SlimeRig.dressed` chuyển tiếp sang `Closet.settled == SLIME_COUNT`.
   - `settled` tăng trên main thread mỗi khi một bộ outfit xong việc, kể cả khi `sew` lỗi.
   - Nếu chỉ đếm số outfit thành công thì một outfit hỏng sẽ khiến intro chờ tới mức tối đa.
-  - Code liên quan: [Closet.kt:50-61](manager/app/src/main/java/cam/su/kernel/ui/screen/home/arena/three/Closet.kt#L50-L61), `hang`.
-- [StatusArena.kt](manager/app/src/main/java/cam/su/kernel/ui/screen/home/arena/StatusArena.kt):
+  - Code liên quan: [Closet.kt:50-61](manager/app/src/main/java/cam/caesar/vn/ui/screen/home/arena/three/Closet.kt#L50-L61), `hang`.
+- [StatusArena.kt](manager/app/src/main/java/cam/caesar/vn/ui/screen/home/arena/StatusArena.kt):
   - Khi `arena3d != null` thì `LaunchedEffect(arena3d) { IntroGate.coming() }`.
   - Trong vòng frame, sau `arena3d.render(nanos)`: `if (arena3d.warm) IntroGate.warm()`.
 
 ## Gắn vào CamActivity
 
-[CamActivity.kt](manager/app/src/main/java/cam/su/kernel/ui/CamActivity.kt):
+[CamActivity.kt](manager/app/src/main/java/cam/caesar/vn/ui/CamActivity.kt):
 - Trong `onCreate`, tính `showIntro` một lần. Intro chỉ chạy khi đủ tất cả các điều kiện:
   - `savedInstanceState == null`;
   - `intent.action == ACTION_MAIN`, có category LAUNCHER (mở từ thông báo hay shortcut thì không chạy);
@@ -109,7 +109,7 @@ Dùng lại từ [ArenaMath.kt](manager/app/src/main/java/cam/su/kernel/ui/scree
 - `SettingsRepository` / `SettingsRepositoryImpl`: key `start_intro`, mặc định `true`.
 - `SettingsUiState`, `SettingsViewModel` (đọc lên và hàm `setStartIntro`).
 - `ColorPaletteUiState` (`onSetStartIntro`), `ColorPaletteScreen` (nối vào viewmodel).
-- `ColorPaletteScreenMiuix`: thêm `GlassSwitchPreference` cạnh "Slime ngủ đêm" ([ColorPaletteScreenMiuix.kt:536](manager/app/src/main/java/cam/su/kernel/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt#L536)), icon `Icons.Rounded.AutoAwesome`.
+- `ColorPaletteScreenMiuix`: thêm `GlassSwitchPreference` cạnh "Slime ngủ đêm" ([ColorPaletteScreenMiuix.kt:536](manager/app/src/main/java/cam/caesar/vn/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt#L536)), icon `Icons.Rounded.AutoAwesome`.
 - `CamActivity` đọc thẳng `settings.startIntro` từ `SettingsRepositoryImpl` đã có sẵn trong `onCreate`, không cần sửa `CamActivityViewModel`.
 - Chuỗi `settings_start_intro` và `settings_start_intro_summary` trong `values/strings.xml` và `values-vi/strings.xml`.
 
@@ -129,7 +129,7 @@ Dùng lại từ [ArenaMath.kt](manager/app/src/main/java/cam/su/kernel/ui/scree
 
 ## Test
 
-JVM, đặt trong `manager/app/src/test/java/cam/su/kernel/ui/intro/`; xem `HeroMathTest` và `SkeletonTimingTest` để theo đúng kiểu viết:
+JVM, đặt trong `manager/app/src/test/java/cam/caesar/vn/ui/intro/`; xem `HeroMathTest` và `SkeletonTimingTest` để theo đúng kiểu viết:
 - **`IntroTimelineTest`**:
   - các nhịp tăng dần và không chồng lên nhau;
   - mọi `hits` đều nằm trong khung hỏa lực;
@@ -156,14 +156,14 @@ Chạy trên ổ `K:` (subst lại nếu mất sau reboot): `./gradlew :app:test
 
 1. `./gradlew :app:assembleDebug`, rồi cài qua adb. Không đụng camd nên `checkDebugCamdSource` chỉ cảnh báo.
 2. Mở lạnh, đồng thời quay màn hình:
-   - `adb shell am force-stop cam.su.kernel`
+   - `adb shell am force-stop cam.caesar.vn`
    - `adb shell screenrecord --bit-rate 20000000 --time-limit 6 /sdcard/intro.mp4 &`
-   - `adb shell monkey -p cam.su.kernel -c android.intent.category.LAUNCHER 1`
+   - `adb shell monkey -p cam.caesar.vn -c android.intent.category.LAUNCHER 1`
    - Pull video về, tách frame bằng ffmpeg ở các mốc 0.3, 0.7, 1.0, 1.3, 1.6, 2.0s, rồi xem từng frame:
      - các nhịp chạy đúng thứ tự;
      - **lúc mở màn slime đã đứng và chạy, không còn khoảng khởi động**.
 3. Đo frame time:
-   - Chạy `adb shell dumpsys gfxinfo cam.su.kernel reset` trước khi mở app, rồi `dumpsys gfxinfo cam.su.kernel` sau khi mở.
+   - Chạy `adb shell dumpsys gfxinfo cam.caesar.vn reset` trước khi mở app, rồi `dumpsys gfxinfo cam.caesar.vn` sau khi mở.
    - So tỉ lệ frame giật với lúc tắt intro.
    - Nếu giật nhiều thì giảm số tia lửa và độ dày quầng điện.
 4. Các trường hợp phụ:

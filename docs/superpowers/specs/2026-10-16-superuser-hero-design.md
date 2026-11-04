@@ -29,7 +29,7 @@ follow the finger. Releasing a half swipe (cancel) slides them back into the hea
 
 ## 2. Architecture
 
-New package `manager/app/src/main/java/cam/su/kernel/ui/component/hero/`:
+New package `manager/app/src/main/java/cam/caesar/vn/ui/component/hero/`:
 
 **`HeroMath.kt`** (plain Kotlin, JVM-tested):
 - `heroProgress(depth: Float): Float` — App Profile entry's `relativeDepth` to t = (1 + depth)

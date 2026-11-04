@@ -1,6 +1,6 @@
-package cam.su.kernel.ui.screen.appprofile
+package cam.caesar.vn.ui.screen.appprofile
 
-import cam.su.kernel.ui.component.CamToast
+import cam.caesar.vn.ui.component.CamToast
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -72,28 +72,28 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import cam.su.kernel.R
-import cam.su.kernel.files.FileEntry
-import cam.su.kernel.files.RootFileProvider
-import cam.su.kernel.ui.component.dialog.ConfirmResult
-import cam.su.kernel.ui.component.dialog.rememberConfirmDialog
-import cam.su.kernel.ui.component.dialog.rememberLoadingDialog
-import cam.su.kernel.ui.component.glass.GlassDialog
-import cam.su.kernel.ui.component.glass.GlassExpandableCard
-import cam.su.kernel.ui.component.glass.GlassListCard
-import cam.su.kernel.ui.util.AppDetails
-import cam.su.kernel.ui.util.AppStorage
-import cam.su.kernel.ui.util.backupApk
-import cam.su.kernel.ui.util.clearAppCache
-import cam.su.kernel.ui.util.clearAppData
-import cam.su.kernel.ui.util.formatBytes
-import cam.su.kernel.ui.util.isProtectedApp
-import cam.su.kernel.ui.util.loadAppDetails
-import cam.su.kernel.ui.util.measureAppStorage
-import cam.su.kernel.ui.util.removeSystemAppSystemless
-import cam.su.kernel.ui.util.setAppFrozen
-import cam.su.kernel.ui.util.uninstallApp
-import cam.su.kernel.ui.util.uninstallSystemUpdates
+import cam.caesar.vn.R
+import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.RootFileProvider
+import cam.caesar.vn.ui.component.dialog.ConfirmResult
+import cam.caesar.vn.ui.component.dialog.rememberConfirmDialog
+import cam.caesar.vn.ui.component.dialog.rememberLoadingDialog
+import cam.caesar.vn.ui.component.glass.GlassDialog
+import cam.caesar.vn.ui.component.glass.GlassExpandableCard
+import cam.caesar.vn.ui.component.glass.GlassListCard
+import cam.caesar.vn.ui.util.AppDetails
+import cam.caesar.vn.ui.util.AppStorage
+import cam.caesar.vn.ui.util.backupApk
+import cam.caesar.vn.ui.util.clearAppCache
+import cam.caesar.vn.ui.util.clearAppData
+import cam.caesar.vn.ui.util.formatBytes
+import cam.caesar.vn.ui.util.isProtectedApp
+import cam.caesar.vn.ui.util.loadAppDetails
+import cam.caesar.vn.ui.util.measureAppStorage
+import cam.caesar.vn.ui.util.removeSystemAppSystemless
+import cam.caesar.vn.ui.util.setAppFrozen
+import cam.caesar.vn.ui.util.uninstallApp
+import cam.caesar.vn.ui.util.uninstallSystemUpdates
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -594,7 +594,7 @@ private fun installerName(context: Context, installer: String?): String = when (
 }
 
 private fun copy(context: Context, text: String) {
-    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("SU Kernel", text))
+    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Cam", text))
 }
 
 private fun toast(context: Context, text: String) {

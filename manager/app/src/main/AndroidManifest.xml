@@ -74,6 +74,9 @@
                     android:mimeType="application/zip"
                     android:scheme="content" />
             </intent-filter>
+            <!-- cam:// only. Root checkers (Luna 1.4.4.6) resolve VIEW ksu://action and
+                 ksu://webui to find KernelSU managers: an app with just those filters is listed
+                 as a risk app (tested on a TB323FU, 2026-11-04, docs/CAM_CHANGES.md row 84). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -81,8 +84,7 @@
 
                 <data
                     android:host="action"
-                    android:scheme="ksu" />
-                <data android:scheme="cam" />
+                    android:scheme="cam" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -91,8 +93,7 @@
 
                 <data
                     android:host="webui"
-                    android:scheme="ksu" />
-                <data android:scheme="cam" />
+                    android:scheme="cam" />
             </intent-filter>
         </activity>
 

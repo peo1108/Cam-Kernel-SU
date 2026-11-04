@@ -6,6 +6,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - App đổi tên thành Cam, là một app mới nên không tự cập nhật được: tải APK ở caesarvn.xyz, cài tay rồi làm theo phần Lưu ý. Ngoài ra sửa một lỗi hiếm có thể làm máy khởi động lại lúc bật ẩn SELinux, cài .xapk không còn làm mất OBB đang dùng, sửa hồ sơ app không còn khựng
 ### Thay đổi
 - App đổi tên thành Cam, với tên gói và khoá ký mới. Một số app kiểm tra root đọc được tên app cũ qua cài đặt hệ thống của ZUI và đánh dấu nó là app root vì tên có chữ "su" và "kernel"; tên mới không còn chữ nào như vậy. Thư mục sao lưu APK đổi thành Download/Cam/APK, ảnh mã QR lưu vào Ảnh/Cam
+- Ẩn root: app không còn nhận link ksu:// của KernelSU (chỉ còn cam://). Luna dò app nào mở được loại link này để tìm app quản lý root; đã thử trên Y700: Luna không còn báo app nguy hiểm
 - Ẩn SELinux: ghi context SELinux hợp lệ nhanh như máy gốc, nên app đo thời gian ghi context không còn thấy lần ghi hợp lệ chậm hơn bình thường. Có hiệu lực khi cài lại LKM
 - Ẩn SELinux: theo KernelSU, mỗi lần nạp lại chính sách SELinux được tính đúng là một thế hệ mới. App vẫn chỉ thấy số của máy gốc. Có hiệu lực khi cài lại LKM
 - Bật hoặc tắt chữ đậm của hệ thống, đổi SIM: Manager đổi theo tại chỗ, không dựng lại trang

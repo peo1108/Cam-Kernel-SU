@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { config, createApp } from '../server.mjs'
 import { sha256 } from '../auth.mjs'
 import { code as totpCode } from '../totp.mjs'
+import { MOVE_NOTICE, forOldPackage } from '../routes/device.mjs'
 
 const DAY = 24 * 3600 * 1000
 const KEY = 'test-webhook-key-123'
@@ -301,6 +302,62 @@ test('pair a device, OTA lists only open releases, /dl gate follows the same rul
   const me = (await c('GET', '/api/me')).body
   await c('DELETE', `/api/devices/${me.devices[0].id}`)
   assert.equal((await fetch(base + '/api/ota/status', { headers: dev })).status, 401)
+})
+
+// Releases with real APK names: version code 33183 on is the renamed app (cam.caesar.vn).
+const named = (tag, code, daysAgo, prerelease = false) => ({
+  tag_name: tag,
+  prerelease,
+  published_at: new Date(Date.now() - daysAgo * DAY).toISOString(),
+  urgent: false,
+  body: `- ${tag}`,
+  assets: [{ name: `Cam_${tag.slice(5)}_${code}-release.apk`, size: 1, digest: 'sha256:00', browser_download_url: `https://x/dl/${tag}/a.apk` }],
+})
+
+test('Managers from before the rename are told how to move to the new app; newer ones get the list as is', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'cam-rename-'))
+  const catalog = join(dir, 'releases.json')
+  writeFileSync(catalog, JSON.stringify([named('cam-v1.2.4', 33210, 1), named('cam-v1.2.3', 33185, 40), named('cam-v1.2.2', 33170, 50)]))
+  const { app, base } = await start(t, { CATALOG: catalog })
+  const c = client(base)
+  await c('POST', '/api/auth/register', { email: 'm@x.io', password: 'password1' })
+  await prove(app, base, 'm@x.io')
+  app.db.prepare("INSERT INTO grants(email, kind, by, created_at) VALUES ('m@x.io', 'member', 't', ?)").run(Date.now())
+  const pair = await (await fetch(base + '/api/devices/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Y700' }) })).json()
+  await c('POST', '/api/devices/confirm', { code: pair.code })
+  const { token } = await (await fetch(`${base}/api/devices/poll?id=${pair.id}`)).json()
+  const asApp = (path, code) =>
+    fetch(base + path, { headers: { Authorization: `Bearer ${token}`, ...(code ? { 'User-Agent': `CamSU/${code}` } : {}) } }).then((r) => r.json())
+
+  for (const code of [0, 33183, 33193]) {
+    const list = await asApp('/api/ota/releases', code)
+    assert.deepEqual(list.map((r) => [r.tag_name, r.body]), [['cam-v1.2.3', '- cam-v1.2.3'], ['cam-v1.2.2', '- cam-v1.2.2']], `app ${code}`)
+    assert.equal((await asApp('/api/ota/status', code)).locked[0].body, '- cam-v1.2.4')
+  }
+  for (const code of [33170, 33182]) {
+    const list = await asApp('/api/ota/releases', code)
+    assert.deepEqual(list.map((r) => r.tag_name), ['cam-v1.2.3', 'cam-v1.2.2'])
+    assert.equal(list[0].body, `${MOVE_NOTICE}\n\n- cam-v1.2.3`, 'the renamed release leads with the move')
+    assert.equal(list[1].body, '- cam-v1.2.2', 'its own releases as they are')
+    // early access offered in the old app says how to install it too
+    assert.equal((await asApp('/api/ota/status', code)).locked[0].body, `${MOVE_NOTICE}\n\n- cam-v1.2.4`)
+  }
+})
+
+test('forOldPackage keeps the newest renamed stable and beta, whichever the beta switch picks', () => {
+  const list = [
+    named('cam-v1.3.0-beta.2', 33200, 1, true),
+    named('cam-v1.3.0-beta.1', 33190, 2, true),
+    named('cam-v1.2.3', 33185, 3),
+    named('cam-v1.2.3-beta.2', 33184, 4, true),
+    named('cam-v1.2.3-beta.1', 33178, 5, true),
+    named('cam-v1.2.2', 33170, 6),
+  ]
+  const out = forOldPackage(list)
+  assert.deepEqual(out.map((r) => r.tag_name), ['cam-v1.3.0-beta.2', 'cam-v1.2.3', 'cam-v1.2.3-beta.1', 'cam-v1.2.2'])
+  assert.deepEqual(out.map((r) => r.body.startsWith(MOVE_NOTICE)), [true, true, false, false])
+  assert.equal(list[0].body, '- cam-v1.3.0-beta.2', 'the catalog itself is not touched')
+  assert.deepEqual(forOldPackage([named('cam-v1.2.2', 33170, 6)]).map((r) => r.body), ['- cam-v1.2.2'])
 })
 
 test('two-step sign-in: setup, login needs the code, admin pages need it, codes work once', async (t) => {

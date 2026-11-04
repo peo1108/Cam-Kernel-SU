@@ -13,6 +13,43 @@ import { str } from './auth.mjs'
 const PAIR_ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 const PAIR_MS = 10 * 60 * 1000
 
+/** The Manager's version code, from the User-Agent it sends (`CamSU/<code>`); 0 when unknown. */
+export const appCodeOf = (req) => Number(/^CamSU\/(\d+)/.exec(String(req.headers['user-agent'] || ''))?.[1] ?? 0)
+
+/** A release's APK version code, from its name (`..._<code>-release.apk`); 0 when it has none. */
+const apkCodeOf = (release) => Number(/_(\d+)-release\.apk$/.exec(release?.assets?.find((a) => a.name.endsWith('.apk'))?.name ?? '')?.[1] ?? 0)
+
+// The Manager became cam.caesar.vn at version code 33183 (docs/CAM_CHANGES.md row 83). A Manager
+// built before (cam.su.kernel, 1.2.3-beta.1 and older) refuses an APK of another package or
+// signer ("the file is not an update for this app"), so no release from 33183 on can reach it by
+// OTA: it is told how to move to the new app instead (row 89).
+export const FIRST_RENAMED_CODE = 33183
+export const isOldPackage = (code) => code > 0 && code < FIRST_RENAMED_CODE
+export const isRenamed = (release) => apkCodeOf(release) >= FIRST_RENAMED_CODE
+
+export const MOVE_NOTICE = [
+  '> **App đã đổi tên thành Cam, phải cài app mới.** Từ bản này Cam là một app khác (tên gói và khoá ký mới), nên app này không tự cập nhật lên được: bấm Cập nhật sẽ báo "File tải về không phải bản cập nhật của app này". Chuyển một lần, giữ nguyên root và module:',
+  '>',
+  '> 1. Đăng nhập caesarvn.xyz/thanh-vien, tải APK của bản này và cài (app cũ vẫn để đó).',
+  '> 2. Mở app cũ, tab **Superuser**, bật root cho **Cam**.',
+  '> 3. Mở **Cam**, bấm thẻ "Hiện có phiên bản LKM tích hợp mới hơn", chọn **Cài đặt trực tiếp**, rồi khởi động lại.',
+  '> 4. Gỡ app cũ. Trong Cam, đăng nhập lại ở Cài đặt → Tài khoản.',
+].join('\n')
+
+const withNotice = (body) => `${MOVE_NOTICE}\n\n${body ?? ''}`.trim()
+
+/**
+ * What a Manager from before the rename gets from /api/ota/releases: its own releases as they are,
+ * and of the renamed ones only the newest stable and the newest beta (each the newest of its kind,
+ * whichever the app's beta switch picks), their notes led by the move notice.
+ */
+export function forOldPackage(releases) {
+  const newest = (beta) =>
+    releases.filter((r) => isRenamed(r) && !!r.prerelease === beta).sort((a, b) => apkCodeOf(b) - apkCodeOf(a))[0]
+  const keep = new Set([newest(false), newest(true)].filter(Boolean))
+  return releases.filter((r) => !isRenamed(r) || keep.has(r)).map((r) => (keep.has(r) ? { ...r, body: withNotice(r.body) } : r))
+}
+
 export default function deviceRoutes(app) {
   const { db, cfg, router: r, limited } = app
 
@@ -81,8 +118,9 @@ export default function deviceRoutes(app) {
       const rel = app.releaseStates(st)
       // Managers up to 1.1.3 (version code 32864) crash drawing the notes in the early access
       // popup (nested vertical scroll, fixed in c7b4a565): send them no notes, the popup works.
-      const appCode = Number(/^CamSU\/(\d+)/.exec(String(ctx.req.headers['user-agent'] || ''))?.[1] ?? 0)
+      const appCode = appCodeOf(ctx.req)
       const notesCrash = appCode > 0 && appCode <= 32864
+      const oldPackage = isOldPackage(appCode)
       const req = db.prepare('SELECT status FROM tester_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').get(ctx.user.id)
       return {
         email: ctx.user.email,
@@ -95,7 +133,9 @@ export default function deviceRoutes(app) {
           .map((x) => {
             const r = app.catalog().find((c) => c.tag_name === x.tag)
             const apk = r?.assets?.find((a) => a.name.endsWith('.apk'))
-            return { version: x.version, tag: x.tag, open_at: x.open_at, prerelease: x.prerelease, price: s.price_early, body: notesCrash ? '' : r?.body ?? '', apk: apk?.name ?? null }
+            // early access to a renamed release: the old app must not sell it without saying how to install it
+            const body = notesCrash ? '' : oldPackage && isRenamed(r) ? withNotice(r?.body) : r?.body ?? ''
+            return { version: x.version, tag: x.tag, open_at: x.open_at, prerelease: x.prerelease, price: s.price_early, body, apk: apk?.name ?? null }
           }),
         // The app offers "get it now" only while early access is on sale and payments are set up.
         can_buy_early: !!(st.member && s.sales_open && s.early_open && cfg.bankAccount && cfg.bankCode),
@@ -114,7 +154,8 @@ export default function deviceRoutes(app) {
       const st = app.accountState(ctx.user)
       if (!st.member && !st.admin) fail(403, 'members_only')
       const open = new Set(app.releaseStates(st).filter((x) => x.open).map((x) => x.tag))
-      return app.catalog().filter((x) => open.has(x.tag_name)).map(({ urgent, ...rest }) => rest)
+      const list = app.catalog().filter((x) => open.has(x.tag_name)).map(({ urgent, ...rest }) => rest)
+      return isOldPackage(appCodeOf(ctx.req)) ? forOldPackage(list) : list
     },
     { auth: 'device' },
   )

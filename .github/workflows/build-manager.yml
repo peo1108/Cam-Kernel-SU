@@ -324,6 +324,12 @@ jobs:
           name: manager
           path: dist/*.apk
 
+      # After the upload, so a failing APK can still be looked at. Any app that can see the Manager
+      # can read its APK; an upstream merge easily brings a name back (CAM_CHANGES row 85).
+      - name: Check the APK for upstream names
+        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}
+        run: python3 scripts/check_apk_strings.py dist/*.apk
+
       - name: Upload to telegram
         if: github.event_name != 'pull_request' && steps.need_upload.outputs.UPLOAD == 'true'
         env:

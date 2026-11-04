@@ -1,5 +1,5 @@
 use crate::{
-    defs, ksucalls,
+    defs, supercalls,
     utils::{self, umask},
 };
 use anyhow::{Context, Ok, Result, anyhow, bail};
@@ -14,14 +14,14 @@ use std::{
     process::Command,
 };
 
-use crate::ksucalls::get_wrapped_fd;
+use crate::supercalls::get_wrapped_fd;
 use rustix::{
     process::getuid,
     thread::{Gid, Uid, set_thread_res_gid, set_thread_res_uid},
 };
 
 pub fn grant_root(global_mnt: bool) -> Result<()> {
-    crate::ksucalls::grant_root()?;
+    crate::supercalls::grant_root()?;
 
     let mut command = Command::new("sh");
     let command = unsafe {
@@ -38,7 +38,7 @@ pub fn grant_root(global_mnt: bool) -> Result<()> {
 }
 
 fn print_usage(program: &str, opts: &Options) {
-    let brief = format!("KernelSU\n\nUsage: {program} [options] [-] [user [argument...]]");
+    let brief = format!("Cam\n\nUsage: {program} [options] [-] [user [argument...]]");
     print!("{}", opts.usage(&brief));
 }
 
@@ -113,7 +113,7 @@ pub fn root_shell() -> Result<()> {
     // A su-session driver fd deliberately survives the exec into camd. Claim
     // it before handling any arguments and restore FD_CLOEXEC so it cannot
     // leak into the target shell, including when fd wrapping is disabled.
-    ksucalls::claim_inherited_driver_fd().context("claim inherited KernelSU driver fd")?;
+    supercalls::claim_inherited_driver_fd().context("claim the inherited driver fd")?;
 
     let env_args: Vec<String> = env::args().collect();
     let program = env_args[0].clone();
@@ -190,11 +190,13 @@ pub fn root_shell() -> Result<()> {
         "Specify a supplementary group. The first specified supplementary group is also used as a primary group if the option -g is not specified.",
         "GROUP",
     );
-    opts.optflag("W", "no-wrapper", "don't use ksu fd wrapper");
+    opts.optflag("W", "no-wrapper", "don't use the fd wrapper");
+    // the upstream flag name (`--ksu-no-new-privs`), which scripts pass
+    let no_new_privs_flag = hidden!("ksu-no-new-privs");
     opts.optflag(
         "",
-        "ksu-no-new-privs",
-        "Prevent this process (and its children) from privilege re-escalation via KernelSU",
+        &no_new_privs_flag,
+        "Prevent this process (and its children) from privilege re-escalation via su",
     );
     opts.optopt("Z", "context", "Specify the SELinux context", "CONTEXT");
 
@@ -227,7 +229,8 @@ pub fn root_shell() -> Result<()> {
     }
 
     if matches.opt_present("v") {
-        println!("{}:KernelSU", defs::VERSION_NAME);
+        // root apps read the upstream suffix to tell which su this is
+        println!("{}:{}", defs::VERSION_NAME, hidden!("KernelSU"));
         return Ok(());
     }
 
@@ -243,7 +246,7 @@ pub fn root_shell() -> Result<()> {
     let preserve_env = matches.opt_present("p");
     let mount_master = matches.opt_present("M");
     let use_fd_wrapper = !matches.opt_present("W");
-    let ksu_no_new_privs = matches.opt_present("ksu-no-new-privs");
+    let no_new_privs = matches.opt_present(&no_new_privs_flag);
     let selinux_context = matches.opt_str("Z");
 
     let groups = matches
@@ -323,8 +326,8 @@ pub fn root_shell() -> Result<()> {
         command.env("ENV", defs::KSURC_PATH);
     }
 
-    if ksu_no_new_privs {
-        ksucalls::set_ksu_no_new_privs().context("set KSU_NO_NEW_PRIVS")?;
+    if no_new_privs {
+        supercalls::set_no_new_privs().context("set no_new_privs")?;
     }
 
     // escape from the current cgroup and become session leader

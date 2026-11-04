@@ -5,7 +5,7 @@ use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
 use crate::defs;
 use crate::lkm_image::BootPatchV2Args;
 
-/// KernelSU cli for non-android
+/// Cam cli for non-android
 #[derive(Parser, Debug)]
 #[command(author, version = defs::VERSION_NAME, about, long_about = None)]
 struct Args {
@@ -15,13 +15,13 @@ struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
-    /// Patch boot or init_boot images to apply KernelSU
+    /// Patch boot or init_boot images to apply Cam
     BootPatch(BootPatchArgs),
 
-    /// Restore boot or init_boot images patched by KernelSU
+    /// Restore boot or init_boot images patched by Cam
     BootRestore(BootRestoreArgs),
 
-    /// Patch KernelSU into a boot image
+    /// Patch Cam into a boot image
     ///
     /// Always operates on a boot image; never selects init_boot or vendor_boot.
     BootPatchV2(BootPatchV2Args),

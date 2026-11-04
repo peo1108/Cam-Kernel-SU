@@ -1,5 +1,6 @@
 package cam.caesar.vn.ui.screen.about
 
+import cam.caesar.vn.Hidden
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -14,8 +15,8 @@ fun AboutScreen() {
     val uriHandler = LocalUriHandler.current
     val htmlString = stringResource(
         id = R.string.about_source_code,
-        "<b><a href=\"https://github.com/tiann/KernelSU\">GitHub</a></b>",
-        "<b><a href=\"https://t.me/KernelSU\">Telegram</a></b>"
+        "<b><a href=\"${Hidden.UPSTREAM_GITHUB}\">GitHub</a></b>",
+        "<b><a href=\"${Hidden.UPSTREAM_TELEGRAM}\">Telegram</a></b>"
     )
     val state = AboutUiState(
         title = stringResource(R.string.about),

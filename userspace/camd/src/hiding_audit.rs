@@ -37,11 +37,23 @@ pub const SU_PATHS: [&str; 8] = [
 /// Folders recovery apps leave on shared storage.
 pub const RECOVERY_PATHS: [&str; 3] = ["/sdcard/TWRP", "/sdcard/Fox", "/sdcard/OrangeFox"];
 
-/// KernelSU's own su, answered by sucompat for allowed apps only: always there for camd.
+/// The root's own su, answered by sucompat for allowed apps only: always there for camd.
 const SUCOMPAT_SU: &str = "/system/bin/su";
 
+/// The mount source module mounts carry (upstream's name, `hidden!` in the binary).
+fn module_mount_source() -> String {
+    hidden!("KSU")
+}
+
 /// Mount sources root tooling uses; a stock device never shows them to apps.
-const MOUNT_SOURCES: [&str; 4] = ["KSU", "APatch", "magisk", "worker"];
+fn mount_sources() -> Vec<String> {
+    vec![
+        module_mount_source(),
+        "APatch".to_owned(),
+        "magisk".to_owned(),
+        "worker".to_owned(),
+    ]
+}
 
 /// Partitions apps expect stock: an overlay or a tmpfs over them comes from a module.
 const PARTITIONS: [&str; 5] = ["/system", "/vendor", "/product", "/system_ext", "/odm"];
@@ -61,7 +73,7 @@ impl Default for Rules {
         Self {
             su_paths: owned(&SU_PATHS),
             map_markers: owned(&ROOT_PREFIXES),
-            mount_sources: owned(&MOUNT_SOURCES),
+            mount_sources: mount_sources(),
         }
     }
 }
@@ -85,7 +97,14 @@ impl Rules {
             map_markers: list("mapMarkers").map_or(default.map_markers, |markers| {
                 markers.iter().map(|m| m.to_lowercase()).collect()
             }),
-            mount_sources: list("mountSources").unwrap_or(default.mount_sources),
+            // the rules leave out the module mount source (an upstream name); it is always checked
+            mount_sources: list("mountSources").map_or(default.mount_sources, |mut sources| {
+                let own = module_mount_source();
+                if !sources.contains(&own) {
+                    sources.insert(0, own);
+                }
+                sources
+            }),
         })
     }
 
@@ -295,28 +314,31 @@ fn from_adb(m: &Mount) -> bool {
 }
 
 /// Mounts a module made itself (a bind from /data/adb, an overlay over module dirs):
-/// KernelSU only umounts what it mounted, so apps keep seeing these.
+/// kernel umount only undoes the root's own mounts, so apps keep seeing these.
 fn module_mounts(mountinfo: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
+    let source = module_mount_source();
     for m in mounts(mountinfo) {
-        if m.source != "KSU" && from_adb(&m) && !out.iter().any(|p| p == m.point) {
+        if m.source != source && from_adb(&m) && !out.iter().any(|p| p == m.point) {
             out.push(m.point.to_owned());
         }
     }
     out
 }
 
-/// The modules behind [`module_mounts`], or behind KernelSU's own mounts with `ksu`.
-fn mount_modules(mountinfo: &str, ksu: bool) -> Vec<String> {
+/// The modules behind [`module_mounts`], or behind the root's own mounts with `own`.
+fn mount_modules(mountinfo: &str, own: bool) -> Vec<String> {
+    let source = module_mount_source();
     module_ids(
         mounts(mountinfo)
-            .filter(|m| (m.source == "KSU") == ksu && (ksu || from_adb(m)))
+            .filter(|m| (m.source == source) == own && (own || from_adb(m)))
             .flat_map(|m| [m.root, m.options]),
     )
 }
 
-fn ksu_mount_count(mountinfo: &str) -> usize {
-    mounts(mountinfo).filter(|m| m.source == "KSU").count()
+fn own_mount_count(mountinfo: &str) -> usize {
+    let source = module_mount_source();
+    mounts(mountinfo).filter(|m| m.source == source).count()
 }
 
 /// Mounts an app sees that come from root tooling: its mount sources, its folders, or
@@ -509,7 +531,7 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
         }
     }
 
-    let ksu_mounts = ksu_mount_count(&s.mountinfo);
+    let ksu_mounts = own_mount_count(&s.mountinfo);
     if ksu_mounts > 0 && s.kernel_umount == Some(false) {
         push(
             &mut out,
@@ -673,7 +695,7 @@ const fn fix_name(fix: Fix) -> &'static str {
 /// Counts the page shows next to the findings (what is hidden well): numbers, by name.
 pub fn stats(s: &Snapshot) -> Value {
     let mut stats = json!({
-        "rootModuleMounts": ksu_mount_count(&s.mountinfo) + module_mounts(&s.mountinfo).len(),
+        "rootModuleMounts": own_mount_count(&s.mountinfo) + module_mounts(&s.mountinfo).len(),
         "modules": s.modules.len(),
     });
     // avcLookup: 1 when the counts were classified (the check ran), 0 when the probe answered
@@ -758,7 +780,7 @@ mod device {
 
     use super::{Adbd, Fix, RECOVERY_PATHS, Rules, Snapshot};
     use crate::feature_id::FeatureId;
-    use crate::{defs, hide_bootloader, ksucalls, resetprop};
+    use crate::{defs, hide_bootloader, resetprop, supercalls};
 
     /// Android app uids (per user), isolated processes included.
     fn is_app_uid(uid: u32) -> bool {
@@ -823,7 +845,7 @@ mod device {
     }
 
     fn feature(id: FeatureId) -> Option<bool> {
-        ksucalls::get_feature(id as u32)
+        supercalls::get_feature(id as u32)
             .ok()
             .filter(|state| state.supported)
             .map(|state| state.value != 0)
@@ -873,13 +895,13 @@ mod device {
     /// Turns a KernelSU feature on now and in the saved config, like the Manager's switch;
     /// true when it only starts on the next boot.
     fn enable_feature(id: FeatureId) -> Result<bool> {
-        let pending = match ksucalls::set_feature(id as u32, 1) {
+        let pending = match supercalls::set_feature(id as u32, 1) {
             Ok(()) => false,
             // SELinux hiding after its policy backup was dropped (off at boot_completed):
             // the kernel keeps the switch on and the next boot starts it, as in the Manager
             Err(e)
                 if id == FeatureId::SelinuxHide
-                    && ksucalls::ksuctl_errno(&e) == Some(libc::EAGAIN) =>
+                    && supercalls::supercall_errno(&e) == Some(libc::EAGAIN) =>
             {
                 true
             }

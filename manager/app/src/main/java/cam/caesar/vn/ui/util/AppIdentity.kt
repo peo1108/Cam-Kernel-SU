@@ -42,11 +42,11 @@ object AppIdentity {
     private const val KEY_ICON = "icon"
 
     private const val OVERLAY_OWNER = "com.android.shell"
-    private const val NAME_OVERLAY = "KsuIdentityName"
-    private const val ICON_OVERLAY = "KsuIdentityIcon"
+    private const val NAME_OVERLAY = "CamIdentityName"
+    private const val ICON_OVERLAY = "CamIdentityIcon"
 
     /** idmap can only read the overlay source from the resource cache partition. */
-    private const val STAGE = "/data/resource-cache/ksu_identity_icon.png"
+    private const val STAGE = "/data/resource-cache/cam_identity_icon.png"
 
     /** 108dp adaptive icon at xxxhdpi. */
     private const val ICON_SIZE = 432

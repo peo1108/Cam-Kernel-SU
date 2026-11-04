@@ -20,6 +20,6 @@ class ShellQuoteTest {
     fun terminalRcQuotesTheFolderAndScript() {
         val rc = TerminalSetup.rc("/sdcard/it's", "/data/a b.sh", busybox = false)
         assertTrue(rc, rc.startsWith("cd '/sdcard/it'\\''s' 2>/dev/null\n"))
-        assertTrue(rc, "KSU=true sh '/data/a b.sh'\n" in rc)
+        assertTrue(rc, "KSU=true CAM=true sh '/data/a b.sh'\n" in rc)
     }
 }

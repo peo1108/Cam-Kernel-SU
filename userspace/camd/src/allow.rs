@@ -7,8 +7,6 @@ use crate::seed::{MAX_APPID, MIN_APPID, is_valid_package_name};
 
 #[cfg(target_os = "android")]
 const PACKAGES_LIST: &str = "/data/system/packages.list";
-#[cfg(target_os = "android")]
-const KSU_DEFAULT_SELINUX_DOMAIN: &[u8] = b"u:r:ksu:s0";
 
 /// `(package, appid)` pairs from packages.list; malformed lines are skipped.
 pub fn parse_packages_list(content: &str) -> Vec<(String, u32)> {
@@ -49,7 +47,7 @@ fn installed_packages() -> Result<Vec<(String, u32)>> {
 
 #[cfg(target_os = "android")]
 fn set_root(package: &str, appid: u32, allow: bool) -> Result<()> {
-    use crate::{ksu_uapi, ksucalls};
+    use crate::{ksu_uapi, supercalls};
 
     // SAFETY: plain C struct, all-zero is a valid starting point.
     let mut cmd: ksu_uapi::ksu_set_app_profile_cmd = unsafe { std::mem::zeroed() };
@@ -65,19 +63,16 @@ fn set_root(package: &str, appid: u32, allow: bool) -> Result<()> {
         if allow {
             let rp = &mut profile.__bindgen_anon_1.rp_config;
             rp.use_default = true;
-            for (dst, src) in rp
-                .profile
-                .selinux_domain
-                .iter_mut()
-                .zip(KSU_DEFAULT_SELINUX_DOMAIN)
-            {
+            // stored allowlist text keeps the pre-rename domain so older kernels read it
+            let domain = hidden!("u:r:ksu:s0");
+            for (dst, src) in rp.profile.selinux_domain.iter_mut().zip(domain.as_bytes()) {
                 *dst = *src as std::os::raw::c_char;
             }
         } else {
             profile.__bindgen_anon_1.nrp_config.use_default = true;
         }
     }
-    ksucalls::set_app_profile(&mut cmd)
+    supercalls::set_app_profile(&mut cmd)
 }
 
 #[cfg(target_os = "android")]
@@ -99,7 +94,7 @@ pub fn remove(package: &str) -> Result<()> {
 #[cfg(target_os = "android")]
 pub fn list() -> Result<()> {
     for (package, appid) in installed_packages()? {
-        if (MIN_APPID..=MAX_APPID).contains(&appid) && crate::ksucalls::uid_granted_root(appid)? {
+        if (MIN_APPID..=MAX_APPID).contains(&appid) && crate::supercalls::uid_granted_root(appid)? {
             println!("{package} {appid}");
         }
     }

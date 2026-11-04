@@ -6,13 +6,14 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - App đổi tên thành Cam, là một app mới nên không tự cập nhật được: tải APK ở caesarvn.xyz, cài tay rồi làm theo phần Lưu ý. Ngoài ra sửa một lỗi hiếm có thể làm máy khởi động lại lúc bật ẩn SELinux, cài .xapk không còn làm mất OBB đang dùng, sửa hồ sơ app không còn khựng
 ### Thay đổi
 - App đổi tên thành Cam, với tên gói và khoá ký mới. Một số app kiểm tra root đọc được tên app cũ qua cài đặt hệ thống của ZUI và đánh dấu nó là app root vì tên có chữ "su" và "kernel"; tên mới không còn chữ nào như vậy. Thư mục sao lưu APK đổi thành Download/Cam/APK, ảnh mã QR lưu vào Ảnh/Cam
-- Ẩn root: app không còn nhận link ksu:// của KernelSU (chỉ còn cam://). Luna dò app nào mở được loại link này để tìm app quản lý root; đã thử trên Y700: Luna không còn báo app nguy hiểm
+- Ẩn root: app không còn nhận loại link của bản gốc (chỉ còn cam://). Luna dò app nào mở được loại link này để tìm app quản lý root; đã thử trên Y700: Luna không còn báo app nguy hiểm
+- Ẩn root: file cài đặt của app (app khác đọc được) không còn tên nào của bản gốc. Những tên module vẫn dùng (biến môi trường cho script, hàm của WebUI) vẫn chạy như cũ
 - Ẩn SELinux: ghi context SELinux hợp lệ nhanh như máy gốc, nên app đo thời gian ghi context không còn thấy lần ghi hợp lệ chậm hơn bình thường. Có hiệu lực khi cài lại LKM
-- Ẩn SELinux: theo KernelSU, mỗi lần nạp lại chính sách SELinux được tính đúng là một thế hệ mới. App vẫn chỉ thấy số của máy gốc. Có hiệu lực khi cài lại LKM
+- Ẩn SELinux: theo bản gốc, mỗi lần nạp lại chính sách SELinux được tính đúng là một thế hệ mới. App vẫn chỉ thấy số của máy gốc. Có hiệu lực khi cài lại LKM
 - Bật hoặc tắt chữ đậm của hệ thống, đổi SIM: Manager đổi theo tại chỗ, không dựng lại trang
 - Hồ sơ app: thay đổi hiện ngay và được ghi ở nền, nên không còn khựng. Ghi lỗi thì hiện lại đúng giá trị máy đang dùng
 ### Sửa lỗi
-- Máy có thể khởi động lại đúng lúc kernel bật ẩn SELinux, nếu có tiến trình đổi context SELinux cùng lúc (lỗi từ KernelSU). Rất hiếm: mới thấy một lần trên máy ảo, chưa thấy trên Y700. Có hiệu lực khi cài lại LKM
+- Máy có thể khởi động lại đúng lúc kernel bật ẩn SELinux, nếu có tiến trình đổi context SELinux cùng lúc (lỗi từ bản gốc). Rất hiếm: mới thấy một lần trên máy ảo, chưa thấy trên Y700. Có hiệu lực khi cài lại LKM
 - Kernel không đọc được thông tin BTF: trước đây LKM không nạp được và máy mất root. Giờ LKM vẫn nạp, chỉ su trong terminal chạy không có lớp bọc. Y700 không dính lỗi này. Có hiệu lực khi cài lại LKM
 - Khi bật slime đi dạo: đổi màu hình nền hay giao diện hệ thống, hoặc bật tắt cử chỉ quay lại, không còn làm Manager văng
 - Tab Tệp, cài gói .xapk: cập nhật game có OBB cùng tên mà bấm Huỷ hoặc gói bị lỗi lúc chép thì OBB đang dùng vẫn còn nguyên, trước đây bị xoá. Riêng khi máy gần đầy, không đủ chỗ cho cả hai bản, OBB mới vẫn ghi đè lên bản cũ
@@ -29,22 +30,22 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ## 1.2.2 - 2026-11-01
 - Rule ẩn root v23 theo Duck Detector mới nhất; ẩn SELinux nhanh hơn một chút và không còn báo lỗi khi chính sách SELinux được nạp lại; WebUI của module đọc ghi được file và tải được file về máy; tablet xoay ngang hiện danh sách và chi tiết cạnh nhau; tablet xoay ngang cài được module ngay cạnh danh sách; bấm tab có hiệu ứng thẻ bay lên; kernel không còn giữ file thừa và bớt hẳn log khi cấp root
 ### Thay đổi
-- Rule ẩn root v23: theo Duck Detector tới bản nightly 31/10 (9dcefa06). Duck Detector bỏ một phép đo cũ nhắm vào KernelSU gốc (theo dõi ai mở thư mục cài đặt của app); Cam vốn không làm việc đó nên không có gì thay đổi với máy của bạn
-- Rule ẩn root v22: theo Duck Detector tới bản nightly 31/10 (8acd43e6). Duck Detector thêm phép đo nhắm vào lỗi giữ file thừa của KernelSU khi mở lại terminal của su (Cam sửa trong bản này, xem Sửa lỗi). App thường không giữ terminal đó nên phép đo không chạy được với Cam; đã thử trên Y700: không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi như trước
-- Kernel không còn ghi một dòng log cho từng tiến trình mỗi lần cấp hay thu root (trên Y700 khoảng 3.500 dòng mỗi lần, đẩy trôi các log khác), cùng các log lặp lại mỗi lần mở app (từ KernelSU). Có hiệu lực khi cài lại LKM
+- Rule ẩn root v23: theo Duck Detector tới bản nightly 31/10 (9dcefa06). Duck Detector bỏ một phép đo cũ nhắm vào bản gốc (theo dõi ai mở thư mục cài đặt của app); Cam vốn không làm việc đó nên không có gì thay đổi với máy của bạn
+- Rule ẩn root v22: theo Duck Detector tới bản nightly 31/10 (8acd43e6). Duck Detector thêm phép đo nhắm vào lỗi giữ file thừa của bản gốc khi mở lại terminal của su (Cam sửa trong bản này, xem Sửa lỗi). App thường không giữ terminal đó nên phép đo không chạy được với Cam; đã thử trên Y700: không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi như trước
+- Kernel không còn ghi một dòng log cho từng tiến trình mỗi lần cấp hay thu root (trên Y700 khoảng 3.500 dòng mỗi lần, đẩy trôi các log khác), cùng các log lặp lại mỗi lần mở app (từ bản gốc). Có hiệu lực khi cài lại LKM
 - Tablet xoay ngang: nút + ở Module mở trình duyệt file ngay cột bên phải, chỉ hiện thư mục và file zip, vào được cả chỗ cần root. Chọn zip nào là thấy đó là module gì, bản mới hay bản cập nhật, có nằm trong danh sách nguy hiểm không, rồi cài ngay tại đó, chọn được nhiều zip cài một lượt. Xoay dọc giữa chừng vẫn cài tiếp. Vẫn có nút mở trình chọn file của hệ thống cho Drive hay USB
 - Bấm tab: trang cũ mờ đi, các thẻ của trang mới bay từ dưới lên lần lượt. Áp dụng cho mọi tab; vuốt vẫn kéo trang theo tay như cũ
 - Tablet xoay ngang: nút của cột trái gộp thành một thanh ở góc trái, nút đóng và các nút của cột phải thành thanh dọc ở góc phải, cùng chỗ với nút menu của tab Tệp; nút cài module về góc trái màn hình
 - Sau khi bật, tắt hay gỡ module, thông báo kèm nút khởi động lại nằm ở phía trên thay cho thanh đen dưới đáy, và ở lại tới khi bấm Xong
 - Trang flash, trang Action của module và khung cài module dùng chung một giao diện: thẻ trạng thái với các nút có nhãn, log cuộn trong thẻ riêng. Trang Action giờ báo đúng là thành công hay lỗi
-- Logo lúc cài module đổi thành Cam Ksu
+- Logo lúc cài module đổi thành Cam
 - Tablet xoay ngang: Superuser, Module và Nhật ký SU để danh sách bên trái, mục đang chọn bên phải, đổi app hay module không phải mở rồi đóng trang. Module có phần chi tiết mới (mô tả đầy đủ, các nút, ID, mã phiên bản, nguồn cập nhật); một sự kiện trong Nhật ký SU mở thẳng hồ sơ của app đó. Xoay dọc hoặc dùng điện thoại thì vẫn như cũ
 - Trang chủ có thẻ Tình trạng ẩn root: kết quả lần kiểm tra gần nhất, các công tắc ẩn và phiên bản rule; chạm để mở trang Kiểm tra ẩn root
-- WebUI của module: thêm `ksu.io()` để đọc ghi file bằng root, `ksu.pm()` để xem thông tin app, và tải file về thư mục Download, kể cả file lớn (từ KernelSU). File lớn hơn 10 MB ở bản gốc không tải được, đã sửa trong Cam. `ksu.io()` vẫn có root khi tắt tương thích su
+- WebUI của module: thêm `io()` để đọc ghi file bằng root, `pm()` để xem thông tin app, và tải file về thư mục Download, kể cả file lớn (từ bản gốc). File lớn hơn 10 MB ở bản gốc không tải được, đã sửa trong Cam. `io()` vẫn có root khi tắt tương thích su
 - Rule ẩn root v21: theo Duck Detector tới bản nightly 29/10 (824591e6). Duck Detector không còn lấy nhầm kết quả của lượt quét trước khi đo thời gian ghi context SELinux từ App Zygote, nên số đo đáng tin hơn; không có cách đo mới nào nhắm vào Cam. Đã thử trên máy với kernel của bản này, kể cả khi cố ý chuyển Duck Detector qua lại giữa các nhân CPU: thẻ SELinux vẫn sạch
-- Rule ẩn root v20: theo Duck Detector tới bản nightly 25/10 (4c2e29e2). Duck Detector thêm phép đo thời gian lời gọi `prctl` nhắm vào KernelSU bản cũ; Cam không có gì trên đường đó, đo trên máy không thấy mẫu nào trên cả 8 nhân CPU
+- Rule ẩn root v20: theo Duck Detector tới bản nightly 25/10 (4c2e29e2). Duck Detector thêm phép đo thời gian lời gọi `prctl` nhắm vào bản gốc đời cũ; Cam không có gì trên đường đó, đo trên máy không thấy mẫu nào trên cả 8 nhân CPU
 - Rule ẩn root v19: theo Duck Detector tới bản nightly 25/10 (b4083aee). Duck Detector giờ hỏi quyền SELinux thêm một đường nữa, ghi đọc thẳng vào selinuxfs thay vì qua thư viện của Android, và xét thêm vài quy tắc mà các bản root hay thêm vào. Phần ẩn SELinux của Cam trả lời đường này giống hai đường cũ, theo chính sách gốc của máy, nên không cần sửa gì thêm
-- Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ KernelSU). Có hiệu lực khi cài lại LKM
+- Ẩn SELinux: khi app mở trạng thái SELinux, kernel không còn phải chờ khoá trước khi đưa trang trạng thái giả (từ bản gốc). Có hiệu lực khi cài lại LKM
 - Thanh tiến trình cho các việc phải chờ: cài APK và chép tệp để mở/chia sẻ trong tab Tệp, sao lưu APK, tải bản cập nhật. Hiện phần trăm, dung lượng, tốc độ và thời gian còn lại; sao chép/di chuyển/giải nén cũng có thêm tốc độ và thời gian còn lại. Cài APK giờ chạy nền như sao chép (có thông báo và nút Huỷ khi đang chép vào trình cài đặt)
 ### Sửa lỗi
 - Tab Tệp, cài gói .xapk: tệp OBB trong gói giờ chỉ được chép vào Android/obb. Trước đây một gói cố ý đặt tên tệp lạ có thể ghi tệp ra bất kỳ đâu bằng quyền root, kể cả thư mục của Cam. Chỉ cài .xapk từ nguồn tin cậy
@@ -53,8 +54,8 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - WebUI của module: đóng WebUI của một module không còn làm hỏng việc đọc ghi tệp hay tải tệp đang dở ở WebUI của module khác đang mở cùng lúc
 - Tablet xoay ngang: chọn một app đã có root trong Superuser không còn làm khựng hiệu ứng mở hồ sơ
 - Tab Tệp, nút Sửa quyền: mở thẳng một thư mục con (ví dụ Download/Cam/APK) mà thư mục cha cũng bị khoá thì sửa xong vẫn không mở được. Giờ sửa từ thư mục bị khoá cao nhất
-- Máy chạy kernel 6.6 bản mới (từ 6.6.144): kernel có thể gặp lỗi nghiêm trọng và khởi động lại khi dùng su trong terminal, do Google đổi cách kernel sắp xếp dữ liệu SELinux (từ KernelSU). Có hiệu lực khi cài lại LKM; Y700 (kernel 6.12) không dính lỗi này
-- Mỗi lần một lệnh chạy bằng su trong terminal mở lại terminal của chính nó, kernel giữ thừa một file tới lần khởi động sau (từ KernelSU). Có hiệu lực khi cài lại LKM
+- Máy chạy kernel 6.6 bản mới (từ 6.6.144): kernel có thể gặp lỗi nghiêm trọng và khởi động lại khi dùng su trong terminal, do Google đổi cách kernel sắp xếp dữ liệu SELinux (từ bản gốc). Có hiệu lực khi cài lại LKM; Y700 (kernel 6.12) không dính lỗi này
+- Mỗi lần một lệnh chạy bằng su trong terminal mở lại terminal của chính nó, kernel giữ thừa một file tới lần khởi động sau (từ bản gốc). Có hiệu lực khi cài lại LKM
 - Tablet dựng dọc với cỡ hiển thị nhỏ vẫn bị chia hai cột. Giờ chỉ chia khi nằm ngang
 - Cột chi tiết bên cạnh danh sách: nội dung bị cắt cứng ở thanh trên khi cuộn và thẻ đầu lệch với cột trái. Giờ mờ dần như cột danh sách, thẻ đầu hai cột bằng nhau, kể cả ở Nhật ký SU
 - Chế độ jailbreak: sau khi khởi động lại mềm, kernel báo lỗi trong log và theo dõi danh sách app thành hai lần. Có hiệu lực khi nạp lại LKM; máy cài LKM vào init_boot như Y700 không dính lỗi này
@@ -63,7 +64,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Khi tắt tương thích su: trang Nhật ký SU và việc vá ảnh boot từ gói ROM tải về không còn mất quyền root
 - Manager không còn văng lúc mở trên máy mà GPU chỉ có OpenGL ES 2.0 (chủ yếu là máy ảo): thẻ trạng thái chỉ hiện phông nền, không có slime. Máy Y700 không dính lỗi này
 - Máy x86_64 có tính năng IBT (máy ảo): nạp LKM trên kernel 6.6 không còn làm máy khởi động lại. Máy Y700 không dính lỗi này
-- Ẩn SELinux: nếu chính sách SELinux được nạp lại đúng lúc một app đổi context SELinux, app có thể nhận lỗi trong khi máy gốc vẫn chạy bình thường. Giờ kernel thử lại trên chính sách mới như máy gốc (từ KernelSU). Có hiệu lực khi cài lại LKM
+- Ẩn SELinux: nếu chính sách SELinux được nạp lại đúng lúc một app đổi context SELinux, app có thể nhận lỗi trong khi máy gốc vẫn chạy bình thường. Giờ kernel thử lại trên chính sách mới như máy gốc (từ bản gốc). Có hiệu lực khi cài lại LKM
 - Tab Tệp: thư mục Download/Cam báo "Không có quyền (đã cấp root chưa?)". Sao lưu APK bản cũ tạo thư mục này thẳng bằng root mà không cho bộ nhớ chung quyền đọc, nên không ai mở được, kể cả root. Sao lưu APK giờ ghi qua bộ nhớ chung như mọi tệp tải về và tự sửa thư mục cũ; tab Tệp có nút Sửa quyền cho mọi thư mục bị như vậy
 ### Lưu ý
 - Bản này có thay đổi nhỏ ở kernel: cài lại LKM (thẻ trên trang chủ) rồi khởi động lại để có phần sửa ẩn SELinux, sửa lỗi giữ file thừa và bớt log. Không cài lại thì mọi thứ vẫn chạy như 1.2.1
@@ -80,7 +81,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Duck Detector bản mới không còn tính "OEM unlock allowed" là dấu hiệu. Trên Android 16, bản cũ báo nguy hiểm mỗi khi có `sys.oem_unlock_allowed`, kể cả giá trị 0 do Ẩn bootloader đặt; giờ chỉ hiện giá trị. Trang Kiểm tra ẩn root cũng thôi báo lộ khi máy cho phép mở khóa OEM (Ẩn bootloader vẫn sửa giá trị này như cũ)
 ### Sửa lỗi
 - Kiểm tra ẩn root: hết báo "ADB đang bật" khi đã tắt cả gỡ lỗi USB lẫn không dây. ROM của Lenovo vẫn để lại một giá trị cũ báo ADB sau khi tắt; giờ trang xem ADB có thật sự đang chạy hay không, giống Duck Detector, và ghi rõ dấu hiệu nào cho thấy ADB đang bật
-- Khởi động lại mềm: sửa lỗi crash của chương trình nhỏ chờ Android dừng hẳn trước khi khởi động lại (từ KernelSU)
+- Khởi động lại mềm: sửa lỗi crash của chương trình nhỏ chờ Android dừng hẳn trước khi khởi động lại (từ bản gốc)
 ### Lưu ý
 - Bản này không đổi kernel: không cần cài lại LKM. Ai chưa cài lại LKM sau khi lên 1.2.0 thì vẫn nên cài lại để có phần sửa ẩn SELinux của 1.2.0
 
@@ -107,11 +108,11 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ### Tính năng mới
 - Chặn module nguy hiểm (tab Tính năng): Cam không cài module nằm trong danh sách mã độc hoặc phá máy. Danh sách có chữ ký và tự cập nhật cùng rule ẩn root. Module đã cài mà nằm trong danh sách có nhãn đỏ "Nguy hiểm", bấm vào để xem lý do và tắt. Tắt công tắc "Từ chối module nguy hiểm" thì chỉ cảnh báo rồi vẫn cài
 - Sao lưu module (Cài đặt → Sao lưu cấu hình → Module): lưu chính các module đã cài vào một file .tar. Khôi phục thì chọn từng module, module được thay ở lần khởi động sau như một lần cập nhật và giữ trạng thái bật hay tắt như lúc sao lưu
-- Cài module không cần khởi động lại, với module tự khai hỗ trợ (hot install, từ KernelSU). Module khác vẫn cần khởi động lại như cũ
+- Cài module không cần khởi động lại, với module tự khai hỗ trợ (hot install, từ bản gốc). Module khác vẫn cần khởi động lại như cũ
 - Intro khi mở app: logo Inner Veterans được ráp lại từ từng mảnh giáp, đạn găm vào khung, điện chạy quanh viền rồi nổ tung, mở ra trang chủ với slime đã chạy sẵn. Chạm để bỏ qua, tắt trong Cài đặt → Chủ đề (tắt thì màn hình chờ có logo như cũ)
 - Nền kính mới "Hầm chỉ huy Inner Veterans" (Cài đặt → Chủ đề → Nền kính): logo làm nền sống động, ánh sáng lạnh lướt trên các mảnh thép và viền chrome, thỉnh thoảng một viên đạn găm vào khung. Nghiêng máy thấy chiều sâu và vệt phản chiếu trượt theo, kéo để làm mới thì viền nung sáng rồi chớp, cấp root hay cài module xong thì tâm ngắm khoá mục tiêu
 - Hầm chỉ huy làm hình nền máy: chọn nền "Hầm chỉ huy Inner Veterans" rồi bấm "Đặt làm hình nền máy". Hình nền động, logo nằm phía trên thanh dock nên không bị che, chỉ chạy khi đang nhìn thấy
-- Module preinit (từ KernelSU): module có thư mục `preinit/` chạy được vài việc trước khi Android nạp SELinux (nạp kernel module, chạy chương trình, ghi vào /proc, /sys). Khởi động lỗi 3 lần liên tiếp thì preinit tự tắt; module nào không chạy được preinit có dòng cảnh báo đỏ dưới thẻ module
+- Module preinit (từ bản gốc): module có thư mục `preinit/` chạy được vài việc trước khi Android nạp SELinux (nạp kernel module, chạy chương trình, ghi vào /proc, /sys). Khởi động lỗi 3 lần liên tiếp thì preinit tự tắt; module nào không chạy được preinit có dòng cảnh báo đỏ dưới thẻ module
 ### Thay đổi
 - Hiệu ứng chuyển trang mới: trang mở ra từ đúng dòng hoặc thẻ vừa bấm (Cài đặt, Superuser, Module, Thư viện module, Trang chủ, Tính năng, Mẫu hồ sơ), các thẻ bay ra lần lượt, trang cũ lùi xuống phía sau. Quay lại thì trang thu về chỗ cũ, theo cả thao tác vuốt
 - Superuser, Module và Thư viện module hiện các thẻ mờ trong lúc tải lần đầu thay cho vòng xoay
@@ -124,9 +125,9 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Chặn module kernel (trang Cài đặt LKM): chặn nhầm module mà máy cần ngay lúc mới khởi động không còn làm máy bootloop. Cam để module đó nạp bình thường và chỉ chặn những module chặn được an toàn. Có hiệu lực khi cài lại LKM
 - Quyền root và hồ sơ của các app không còn có thể bị xoá hàng loạt khi danh sách gói của Android có một dòng đọc không được
 - Root của Cam chỉ được cấp lại khi chữ ký khớp đúng bản app đang cài (chặt hơn lúc gỡ rồi cài lại app)
-- Máy Android 17 QPR3 khởi động được với Cam (từ KernelSU)
-- Ẩn root: trên máy có file init.rc được gắn từ chỗ khác, phần kernel chạy lúc khởi động giờ cũng được gỡ sau khi máy lên như các máy khác, để app không đo được nó (Duck Detector mới thêm cách đo này; sửa từ KernelSU). Đã đo trên máy thử, chưa thử trên máy có init.rc gắn từ chỗ khác. Có hiệu lực khi cài lại LKM
-- Ẩn root: bỏ một quyền mà thư viện AndroidX tự thêm vào app. Duck Detector dò quyền này để tìm app quản lý của KernelSU gốc; Cam chưa từng bị tìm ra theo cách này, bỏ đi để sau này cũng không bị (từ KernelSU)
+- Máy Android 17 QPR3 khởi động được với Cam (từ bản gốc)
+- Ẩn root: trên máy có file init.rc được gắn từ chỗ khác, phần kernel chạy lúc khởi động giờ cũng được gỡ sau khi máy lên như các máy khác, để app không đo được nó (Duck Detector mới thêm cách đo này; sửa từ bản gốc). Đã đo trên máy thử, chưa thử trên máy có init.rc gắn từ chỗ khác. Có hiệu lực khi cài lại LKM
+- Ẩn root: bỏ một quyền mà thư viện AndroidX tự thêm vào app. Duck Detector dò quyền này để tìm app quản lý của bản gốc; Cam chưa từng bị tìm ra theo cách này, bỏ đi để sau này cũng không bị (từ bản gốc)
 - Kiểm tra ẩn root: mục Duck Detector luôn báo "không kiểm tra được" từ khi Duck Detector đổi cách phát hành bản nightly (18/10), và có máy báo nhầm "có bản nightly mới" với một bản cũ hơn rule đang dùng. Giờ Cam lấy bản nightly mới nhất từ caesarvn.xyz (không hỏi GitHub nữa) và so theo ngày, chỉ báo bản mới khi Duck Detector thật sự có bản mới hơn. Không lấy được thì dòng Duck Detector ghi rõ "không kiểm tra được bản nightly mới nhất"
 ### Lưu ý
 - Bản này có thay đổi kernel: sau khi cập nhật, bấm "Cài lại LKM" (thẻ trên trang chủ) rồi khởi động lại. Chưa cài lại LKM thì module sẽ không chạy ở lần khởi động sau
@@ -186,7 +187,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - App được biên dịch sẵn sau khi cài / cập nhật nên lần mở đầu không còn giật
 
 ## 1.1.5 - 2026-10-13
-- Cập nhật theo KernelSU mới nhất: thêm tuỳ chọn chỉ cho Shell lấy root qua ADB
+- Cập nhật theo bản gốc mới nhất: thêm tuỳ chọn chỉ cho Shell lấy root qua ADB
 ### Tính năng mới
 - Cài đặt → "Chỉ cho Shell lấy root qua ADB" (mặc định tắt): khi Shell được cấp root, chỉ phiên `adb shell` thật hoặc tiến trình đã có root (ví dụ module ADB) mới dùng được, app chiếm được quyền shell qua lỗi hệ thống không leo lên root được
 ### Thay đổi

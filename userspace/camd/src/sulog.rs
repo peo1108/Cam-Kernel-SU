@@ -12,7 +12,7 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::Duration;
 
-use crate::{defs, ksucalls, module_config, utils};
+use crate::{defs, module_config, supercalls, utils};
 
 const KSU_EVENT_QUEUE_TYPE_DROPPED: u16 = u16::MAX;
 const KSU_EVENT_RECORD_FLAG_INTERNAL: u16 = 1;
@@ -632,7 +632,7 @@ fn handle_readable(fd: RawFd, writer: &mut DailyLogWriter) -> Result<ReadState> 
 }
 
 pub fn open_sulog_fd() -> Result<OwnedFd> {
-    let fd = ksucalls::get_sulog_fd()?;
+    let fd = supercalls::get_sulog_fd()?;
     let fd = unsafe { OwnedFd::from_raw_fd(fd) };
     let flags = unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_GETFL) };
     if flags < 0 {

@@ -14,7 +14,7 @@ use std::{
 };
 
 use crate::defs::KSU_TEMP_BACKUP_DIR_NAME;
-use crate::{assets, boot_patch, defs, ksucalls, module, restorecon};
+use crate::{assets, boot_patch, defs, module, restorecon, supercalls};
 #[allow(unused_imports)]
 use std::fs::{Permissions, set_permissions};
 use std::os::unix::prelude::PermissionsExt;
@@ -158,7 +158,7 @@ pub fn is_safe_mode() -> bool {
     if safemode {
         return true;
     }
-    let safemode = ksucalls::check_kernel_safemode();
+    let safemode = supercalls::check_kernel_safemode();
     log::info!("kernel_safemode: {safemode}");
     safemode
 }
@@ -299,7 +299,7 @@ pub fn uninstall(package_name: &str) -> Result<()> {
         out: None,
         out_name: None,
     })?;
-    println!("- Uninstall KernelSU manager..");
+    println!("- Uninstall the Manager..");
     Command::new("pm")
         .args(["uninstall", package_name])
         .spawn()?;
@@ -394,7 +394,7 @@ fn create_daemon_impl<F: FnOnce() -> Result<()>>(
 
 pub fn detach_process_group(use_init_pgrp: bool) {
     if use_init_pgrp {
-        if let Err(e) = ksucalls::set_init_pgrp() {
+        if let Err(e) = supercalls::set_init_pgrp() {
             log::error!("failed to switch to init group: {e:?}");
         } else {
             return;

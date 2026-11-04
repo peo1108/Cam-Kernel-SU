@@ -1,5 +1,7 @@
 package cam.caesar.vn.files
 
+import cam.caesar.vn.Hidden
+
 /**
  * What the Files tab's terminal starts with. The shell is `camd debug su -g`: root in the global
  * mount namespace, ending in an interactive `sh` (mksh) on the PTY. mksh runs the file named by
@@ -15,7 +17,7 @@ object TerminalSetup {
         appendLine("alias ls='ls --color=auto'")
         if (script != null) {
             val shell = if (busybox) "ASH_STANDALONE=1 $BUSYBOX sh" else "sh"
-            appendLine("KSU=true $shell ${shellQuote(script)}")
+            appendLine("${Hidden.LEGACY_ENV}=true CAM=true $shell ${shellQuote(script)}")
             // the exit code, green or red, then a prompt to look around or run it again
             appendLine("rc=\$?; if [ \$rc -eq 0 ]; then c=32; else c=31; fi")
             appendLine("printf '\\n\\033[%sm[exit %s]\\033[0m\\n' \$c \$rc; unset rc c")
@@ -29,7 +31,8 @@ object TerminalSetup {
         env["COLORTERM"] = "truecolor"
         env["HOME"] = "/"
         env["ENV"] = rcFile
-        env["KSU"] = "true"
+        env[Hidden.LEGACY_ENV] = "true"
+        env["CAM"] = "true"
         env["PATH"] = listOfNotNull(path?.takeIf { it.isNotEmpty() } ?: "/system/bin:/system/xbin", "/data/adb/cam/bin").joinToString(":")
         return env.map { (k, v) -> "$k=$v" }.toTypedArray()
     }

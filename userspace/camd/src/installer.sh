@@ -1,14 +1,14 @@
 #!/system/bin/sh
 ############################################
-# KernelSU installer script
+# Cam module installer script
 # mostly from module_installer.sh
 # and util_functions.sh in Magisk
 ############################################
 
 umask 022
 
-# customize.sh may set MODULE_HOT_INSTALL_REQUEST=true to skip the reboot
-export KSU_HAS_HOT_INSTALL=true
+# customize.sh may set MODULE_HOT_INSTALL_REQUEST=true to skip the reboot; camd sets
+# CAM_HAS_HOT_INSTALL=true (and the upstream name modules check) before running this
 
 ui_print() {
   if $BOOTMODE; then
@@ -410,7 +410,7 @@ install_module() {
     set_permissions
   else
     print_title "$MODNAME" "by $MODAUTH"
-    print_title "Powered by Cam Ksu"
+    print_title "Powered by Cam"
 
     unzip -o "$ZIPFILE" customize.sh -d $MODPATH >&2
 
@@ -455,9 +455,9 @@ install_module() {
 
     # Tell camd to apply the module right away
     if [ "$MODULE_HOT_INSTALL_REQUEST" = "true" ]; then
-      echo "$MODULE_HOT_RUN_SCRIPT" > $MODPATH/.ksu_hot_install
+      echo "$MODULE_HOT_RUN_SCRIPT" > $MODPATH/.cam_hot_install
     else
-      rm -f $MODPATH/.ksu_hot_install
+      rm -f $MODPATH/.cam_hot_install
     fi
   fi
 

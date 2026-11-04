@@ -23,7 +23,7 @@ use crate::{assets, boot_patch};
 const ARM64_IMAGE_MAGIC_OFFSET: usize = 0x38;
 const ARM64_IMAGE_MAGIC: &[u8; 4] = b"ARM\x64";
 const ARM64_IMAGE_SIZE_OFFSET: usize = 0x10;
-const CAPSULE_MAGIC: &[u8; 8] = b"KSULKM1\0";
+const CAPSULE_MAGIC: &[u8; 8] = b"CAMLKM1\0";
 const CAPSULE_VERSION: u32 = 2;
 const CAPSULE_ALIGNMENT: usize = 4096;
 const CAPSULE_HEADER_SIZE: usize = 112;
@@ -87,7 +87,7 @@ pub struct BootPatchV2Args {
     pub force: bool,
 
     #[command(flatten)]
-    pub config: boot_patch::KsuConfigArgs,
+    pub config: boot_patch::BootConfigArgs,
 }
 
 #[derive(Clone, Debug)]
@@ -1960,10 +1960,10 @@ impl<'a> BootstrapObject<'a> {
             );
             Ok(matches.first().copied())
         };
-        let text_index = find_section(".text.ksu_bootstrap")?
-            .context("bootstrap must contain exactly one .text.ksu_bootstrap section")?;
+        let text_index = find_section(".text.cam_bootstrap")?
+            .context("bootstrap must contain exactly one .text.cam_bootstrap section")?;
         // Optional, the bootstrap currently keeps all its constants in literal pools
-        let rodata_index = find_section(".rodata.ksu_bootstrap")?;
+        let rodata_index = find_section(".rodata.cam_bootstrap")?;
         let text = &sections[text_index];
         ensure!(
             text.section_type == SHT_PROGBITS
@@ -2273,14 +2273,14 @@ impl<'a> BootstrapObject<'a> {
         }
 
         Ok(LinkedBootstrap {
-            entry_address: self.named_symbol_value("ksu_bootstrap", code_address, definitions)?,
+            entry_address: self.named_symbol_value("cam_bootstrap", code_address, definitions)?,
             reserve_wrapper_address: self.named_symbol_value(
-                "ksu_memblock_reserve_wrapper",
+                "cam_memblock_reserve_wrapper",
                 code_address,
                 definitions,
             )?,
             strndup_adapter_address: self.named_symbol_value(
-                "ksu_strndup_user_adapter",
+                "cam_strndup_user_adapter",
                 code_address,
                 definitions,
             )?,
@@ -2426,44 +2426,44 @@ fn inject_image(
 
     let mut definitions = BTreeMap::<&str, u64>::new();
     definitions.insert(
-        "ksu_ext_memblock_reserve",
+        "cam_ext_memblock_reserve",
         sites.memblock_reserve_call.target,
     );
-    definitions.insert("ksu_ext_memstart_addr", required.memstart_addr.address);
-    definitions.insert("ksu_ext_kimage_voffset", required.kimage_voffset.address);
-    definitions.insert("ksu_ext_async_synchronize_full", sites.async_call.target);
-    definitions.insert("ksu_ext_vmalloc", required.vmalloc.address);
-    definitions.insert("ksu_ext_memcpy", required.memcpy.address);
-    definitions.insert("ksu_ext_load_module", required.load_module.address);
-    definitions.insert("ksu_ext_kstrdup", required.kstrdup.address);
-    definitions.insert("ksu_ext_strndup_user", sites.strndup_call.target);
-    definitions.insert("ksu_image_base", image_base);
-    definitions.insert("ksu_capsule_magic", u64::from_le_bytes(*CAPSULE_MAGIC));
-    definitions.insert("ksu_capsule_version", u64::from(CAPSULE_VERSION));
-    definitions.insert("ksu_capsule_header_size", CAPSULE_HEADER_SIZE as u64);
-    definitions.insert("ksu_capsule_image_offset", capsule.file_offset as u64);
-    definitions.insert("ksu_capsule_size", capsule.data.len() as u64);
+    definitions.insert("cam_ext_memstart_addr", required.memstart_addr.address);
+    definitions.insert("cam_ext_kimage_voffset", required.kimage_voffset.address);
+    definitions.insert("cam_ext_async_synchronize_full", sites.async_call.target);
+    definitions.insert("cam_ext_vmalloc", required.vmalloc.address);
+    definitions.insert("cam_ext_memcpy", required.memcpy.address);
+    definitions.insert("cam_ext_load_module", required.load_module.address);
+    definitions.insert("cam_ext_kstrdup", required.kstrdup.address);
+    definitions.insert("cam_ext_strndup_user", sites.strndup_call.target);
+    definitions.insert("cam_image_base", image_base);
+    definitions.insert("cam_capsule_magic", u64::from_le_bytes(*CAPSULE_MAGIC));
+    definitions.insert("cam_capsule_version", u64::from(CAPSULE_VERSION));
+    definitions.insert("cam_capsule_header_size", CAPSULE_HEADER_SIZE as u64);
+    definitions.insert("cam_capsule_image_offset", capsule.file_offset as u64);
+    definitions.insert("cam_capsule_size", capsule.data.len() as u64);
     definitions.insert(
-        "ksu_module_capsule_offset",
+        "cam_module_capsule_offset",
         capsule.module_offset.saturating_sub(capsule.file_offset) as u64,
     );
     definitions.insert(
-        "ksu_fixup_capsule_offset",
+        "cam_fixup_capsule_offset",
         capsule.fixup_offset.saturating_sub(capsule.file_offset) as u64,
     );
     definitions.insert(
-        "ksu_args_capsule_offset",
+        "cam_args_capsule_offset",
         capsule.args_offset.saturating_sub(capsule.file_offset) as u64,
     );
-    definitions.insert("ksu_args_size", capsule.args_size as u64);
-    definitions.insert("ksu_reserve_extension", reserve_extension as u64);
-    definitions.insert("ksu_page_offset", sites.page_offset);
-    definitions.insert("ksu_module_size", module.len() as u64);
-    definitions.insert("ksu_fixup_count", fixups.len() as u64);
-    definitions.insert("ksu_load_info_size", gki_abi.load_info_storage_size);
-    definitions.insert("ksu_load_info_hdr_offset", gki_abi.load_info_hdr_offset);
-    definitions.insert("ksu_load_info_len_offset", gki_abi.load_info_len_offset);
-    definitions.insert("ksu_gfp_kernel", gki_abi.gfp_kernel);
+    definitions.insert("cam_args_size", capsule.args_size as u64);
+    definitions.insert("cam_reserve_extension", reserve_extension as u64);
+    definitions.insert("cam_page_offset", sites.page_offset);
+    definitions.insert("cam_module_size", module.len() as u64);
+    definitions.insert("cam_fixup_count", fixups.len() as u64);
+    definitions.insert("cam_load_info_size", gki_abi.load_info_storage_size);
+    definitions.insert("cam_load_info_hdr_offset", gki_abi.load_info_hdr_offset);
+    definitions.insert("cam_load_info_len_offset", gki_abi.load_info_len_offset);
+    definitions.insert("cam_gfp_kernel", gki_abi.gfp_kernel);
 
     let bootstrap_object = BootstrapObject::parse(BOOTSTRAP_OBJECT)
         .context("cannot parse the embedded LKM bootstrap")?;
@@ -2638,7 +2638,7 @@ pub fn patch_boot(args: &BootPatchV2Args) -> Result<()> {
         println!("- KMI: {kmi}");
         println!("- Embedded module: {name}");
         assets::get_asset_data(&name)
-            .with_context(|| format!("no embedded KernelSU module for KMI {kmi}: {name}"))?
+            .with_context(|| format!("no embedded LKM for KMI {kmi}: {name}"))?
             .into_owned()
     };
 
@@ -2767,7 +2767,7 @@ mod tests {
             .filter(|symbol| symbol.section_index == SHN_UNDEF && !symbol.name.is_empty())
             .enumerate()
         {
-            let value = if symbol.name.starts_with("ksu_ext_") || symbol.name == "ksu_image_base" {
+            let value = if symbol.name.starts_with("cam_ext_") || symbol.name == "cam_image_base" {
                 image_base + 0x10_000 + index as u64 * 0x100
             } else {
                 index as u64 + 1

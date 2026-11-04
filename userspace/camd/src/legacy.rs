@@ -1,7 +1,8 @@
-//! Moves data left by builds that still used the KernelSU names over to the
-//! Cam paths. While the running kernel is still a KernelSU one (it execs
-//! /data/adb/ksud and reads /data/adb/ksu), links are left at the old names;
-//! once a kernel with the cam domain runs, those links are removed again.
+//! Moves data left by builds that still used the upstream names over to the
+//! Cam paths. While the running kernel is still an upstream one (it execs the
+//! old daemon path and reads the old working dir), links are left at the old
+//! names; once a kernel with the cam domain runs, those links are removed again.
+//! The old names are `hidden!` (they would put KernelSU's names in libcamd.so).
 //! It also clears what removed Cam features left on the device.
 
 use std::fs;
@@ -15,15 +16,6 @@ use log::{info, warn};
 
 use crate::{defs, restorecon};
 
-const LEGACY_WORKING_DIR: &str = "/data/adb/ksu";
-const LEGACY_DAEMON_PATH: &str = "/data/adb/ksud";
-const LEGACY_PREINIT_DIRS: [(&str, &str); 2] = [
-    ("/metadata/ksu", "/metadata/cam"),
-    ("/metadata/watchdog/ksu", "/metadata/watchdog/cam"),
-];
-const LEGACY_RC_NAME: &str = ".ksurc";
-const LEGACY_BACKUP_PREFIX: &str = "ksu_backup_";
-
 // Block RKP (1.1.3 to 1.1.5-beta.1) was removed: its flag kept a watcher from an older camd
 // running, and that watcher inserted this DROP rule while Duck Detector was on top.
 const BLOCK_RKP_FLAG: &str = concatcp!(defs::WORKING_DIR, ".block_rkp");
@@ -34,12 +26,16 @@ const BLOCK_RKP_RULE: [&str; 8] = ["-w", "-D", "OUTPUT", "!", "-o", "lo", "-j", 
 pub fn migrate() {
     let keep_links = !restorecon::kernel_has_cam_domain();
     let working_dir = defs::WORKING_DIR.trim_end_matches('/');
-    move_and_link(LEGACY_WORKING_DIR, working_dir, keep_links);
+    move_and_link(&hidden!("/data/adb/ksu"), working_dir, keep_links);
     rename_legacy_files(working_dir);
-    for (old, new) in LEGACY_PREINIT_DIRS {
+    let preinit_dirs = [
+        (hidden!("/metadata/ksu"), "/metadata/cam"),
+        (hidden!("/metadata/watchdog/ksu"), "/metadata/watchdog/cam"),
+    ];
+    for (old, new) in &preinit_dirs {
         move_and_link(old, new, keep_links);
     }
-    move_and_link(LEGACY_DAEMON_PATH, defs::DAEMON_PATH, keep_links);
+    move_and_link(&hidden!("/data/adb/ksud"), defs::DAEMON_PATH, keep_links);
     remove_block_rkp();
 }
 
@@ -141,11 +137,12 @@ fn rename_legacy_files(working_dir: &str) {
         .unwrap_or_default()
         .to_string_lossy()
         .into_owned();
+    let (legacy_rc, legacy_backup_prefix) = (hidden!(".ksurc"), hidden!("ksu_backup_"));
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();
-        let new_name = if name == LEGACY_RC_NAME {
+        let new_name = if name == legacy_rc {
             rc_name.clone()
-        } else if let Some(rest) = name.strip_prefix(LEGACY_BACKUP_PREFIX) {
+        } else if let Some(rest) = name.strip_prefix(legacy_backup_prefix.as_str()) {
             format!("{}{rest}", defs::KSU_BACKUP_FILE_PREFIX)
         } else {
             continue;

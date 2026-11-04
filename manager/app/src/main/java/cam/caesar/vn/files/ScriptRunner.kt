@@ -1,5 +1,6 @@
 package cam.caesar.vn.files
 
+import cam.caesar.vn.Hidden
 import android.system.Os
 import android.system.OsConstants
 import java.io.File
@@ -120,7 +121,8 @@ class ScriptRunner(
         /** What camd gives module scripts (module.rs, get_common_script_envs). */
         fun environment(path: String?): Map<String, String> = mapOf(
             "ASH_STANDALONE" to "1",
-            "KSU" to "true",
+            Hidden.LEGACY_ENV to "true",
+            "CAM" to "true",
             "PATH" to listOfNotNull(path?.takeIf { it.isNotEmpty() } ?: "/system/bin:/system/xbin", BIN_DIR).joinToString(":"),
         )
     }

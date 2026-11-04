@@ -26,10 +26,8 @@ import cam.caesar.vn.ui.util.DownloadService
 import cam.caesar.vn.ui.util.getFileName
 import cam.caesar.vn.ui.webui.WebUIActivity
 
+// cam:// only: the upstream scheme went with the old package (docs/CAM_CHANGES.md row 84)
 private const val SCHEME_CAM = "cam"
-
-// links made before the rename, e.g. pinned shortcuts
-private const val SCHEME_KSU = "ksu"
 private const val HOST_ACTION = "action"
 private const val HOST_WEBUI = "webui"
 private const val PARAM_ID = "id"
@@ -143,7 +141,7 @@ private fun resolveIntent(intent: Intent): PendingAction? {
 }
 
 private fun parseValidatedDeepLink(uri: Uri?): CamDeepLink? {
-    if (uri?.scheme != SCHEME_CAM && uri?.scheme != SCHEME_KSU) return null
+    if (uri?.scheme != SCHEME_CAM) return null
 
     val moduleId = uri.getQueryParameter(PARAM_ID)?.takeIf { it.isNotBlank() } ?: return null
     val token = uri.getQueryParameter(PARAM_TOKEN)?.takeIf { it.isNotBlank() } ?: return null

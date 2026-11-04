@@ -38,7 +38,7 @@ s/\bksudStdout\b/camdStdout/g
 s/\bksudPath\b/camdPath/g
 s/\bFLAG_KSU_NO_NEW_PRIVS\b/FLAG_CAM_NO_NEW_PRIVS/g
 s/\bKERNEL_SU_DOMAIN = /CAM_DOMAIN = /g
-s/CamNative\.KERNEL_SU_DOMAIN/CamNative.CAM_DOMAIN/g
+s/CamNative\.KERNEL_SU_DOMAIN/Hidden.LEGACY_DOMAIN/g
 s/System\.loadLibrary("kernelsu")/System.loadLibrary("camjni")/g
 s/\bAppZygotePreload\b/CamZygotePreload/g
 s/\bMagicaService\b/CamJailbreakService/g

@@ -40,9 +40,9 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
     info!("late-load command triggered!");
     dump_process_info("late-load start");
 
-    // 1. Check if KernelSU is already loaded
+    // 1. Check if the LKM is already loaded
     if caminit::has_kernelsu() {
-        info!("KernelSU already loaded, skip loading ko");
+        info!("LKM already loaded, skip loading ko");
     } else {
         // 2. Detect current KMI version
         let kmi = kmi.map_or_else(
@@ -134,8 +134,8 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
     // 13. Execute boot-completed stage scripts (non-blocking)
     init_event::run_stage("boot-completed", ScriptWait::NoWait);
 
-    // 14. Restart Manager so it gets a fresh ksu fd from the newly loaded kernel module
-    info!("Restarting KernelSU Manager {package_name}...");
+    // 14. Restart Manager so it gets a fresh driver fd from the newly loaded kernel module
+    info!("Restarting the Manager {package_name}...");
     let _ = Command::new("am")
         .args(["force-stop", package_name])
         .status();

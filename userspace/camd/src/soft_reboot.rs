@@ -21,12 +21,10 @@ use rustix::{
 use crate::{
     assets, defs,
     init_event::{on_boot_completed, on_post_fs_data, on_services, run_stage},
-    ksucalls,
     module::ScriptWait,
+    supercalls,
     utils::{self, switch_mnt_ns},
 };
-
-const WAITSYS_FD_ENV: &str = "KSU_WAITSYS_FD";
 
 struct Waitsys {
     child: Child,
@@ -52,7 +50,11 @@ impl Waitsys {
         .context("set write_fd flags")?;
 
         let mut cmd = Command::new(format!("/proc/self/fd/{}", executable.as_raw_fd()));
-        cmd.env(WAITSYS_FD_ENV, format!("{}", write_fd.as_raw_fd()));
+        // the prebuilt waitsys reads the upstream name
+        cmd.env(
+            hidden!("KSU_WAITSYS_FD"),
+            format!("{}", write_fd.as_raw_fd()),
+        );
         let child = cmd.spawn()?;
 
         drop(write_fd);
@@ -150,7 +152,7 @@ fn wait_for_boot_completed() -> Result<()> {
 
 pub fn soft_reboot() -> Result<()> {
     // check it avoid user click "soft_reboot" in manager when version mismatch
-    if let Err(e) = ksucalls::ensure_uapi_version_matched() {
+    if let Err(e) = supercalls::ensure_uapi_version_matched() {
         error!("{e:#}, skip soft_reboot");
         return Ok(());
     }

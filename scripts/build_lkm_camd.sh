@@ -73,6 +73,8 @@ export LIBCLANG_PATH="$KW/toolchains/clang-r536225/lib"
 export BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android$API --sysroot=$SYSROOT"
 
 cd "$WORK/userspace/camd"
+# shellcheck source=scripts/remap_dep_paths.sh
+source "$WORK/scripts/remap_dep_paths.sh" Cargo.toml
 cargo build --release --target aarch64-linux-android > /root/camd-build.log 2>&1 \
   || { tail -30 /root/camd-build.log; exit 1; }
 # camd is a workspace member: the binary lands in the workspace root target/.

@@ -95,7 +95,7 @@ pub fn init() -> Result<()> {
     // Setup kernel log first
     setup_kmsg();
 
-    log::info!("Hello, KernelSU!");
+    log::info!("Hello, Cam!");
 
     // mount /proc to access kernel interface
     let _dontdrop = prepare_mount();
@@ -116,7 +116,7 @@ pub fn init() -> Result<()> {
     }
 
     if caminit::has_kernelsu() {
-        log::info!("KernelSU may be already loaded in kernel, skip!");
+        log::info!("the LKM may be already loaded in kernel, skip!");
     } else {
         log::info!("Loading camsu.ko..");
         // a ramdisk patched before the rename only has the old name

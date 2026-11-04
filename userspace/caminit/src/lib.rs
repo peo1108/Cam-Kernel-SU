@@ -469,7 +469,7 @@ fn has_kernelsu_legacy() -> bool {
         );
     }
 
-    log::info!("KernelSU version: {}", version);
+    log::info!("LKM version: {}", version);
 
     version != 0
 }
@@ -542,7 +542,7 @@ fn has_kernelsu_v2() -> bool {
         0
     };
 
-    log::info!("KernelSU version: {}", version);
+    log::info!("LKM version: {}", version);
 
     version != 0
 }

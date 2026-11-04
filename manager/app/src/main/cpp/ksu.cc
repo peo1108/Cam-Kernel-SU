@@ -20,8 +20,21 @@
 
 static int fd = -1;
 
+// The kernel's name for the driver fd, shifted up by one like Hidden.kt so libcamjni.so holds no
+// upstream name (docs/CAM_CHANGES.md row 85). volatile keeps the compiler from folding it back.
+static void driver_fd_name(char *out, size_t size) {
+    static const char kShifted[] = "\\ltv`esjwfs^";
+    volatile int shift = 1;
+    size_t i = 0;
+    for (; i + 1 < size && kShifted[i]; i++) {
+        out[i] = static_cast<char>(kShifted[i] - shift);
+    }
+    out[i] = '\0';
+}
+
 static inline int scan_driver_fd() {
-    const char *kName = "[ksu_driver]";
+    char kName[16];
+    driver_fd_name(kName, sizeof(kName));
     DIR *dir = opendir("/proc/self/fd");
     if (!dir) {
         return -1;

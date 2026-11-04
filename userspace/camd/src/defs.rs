@@ -63,7 +63,7 @@ mod android {
     pub const MODULE_PREINIT_DIR: &str = "preinit";
     pub const PREINIT_CONF: &str = "preinit.conf";
     // Written by installer.sh when customize.sh requests a hot install
-    pub const HOT_INSTALL_MARKER: &str = ".ksu_hot_install";
+    pub const HOT_INSTALL_MARKER: &str = ".cam_hot_install";
 
     // Module config system
     pub const MODULE_CONFIG_DIR: &str = concatcp!(WORKING_DIR, "module_configs/");

@@ -78,8 +78,14 @@ pub fn setup_sigsys_handler() {
     }
 }
 
-const DRIVER_FD_NAME: &str = "anon_inode:[ksu_driver]";
-const SU_DRIVER_FD_NAME: &str = "anon_inode:[ksu_driver_su]";
+/// The kernel's names for the driver fd (`anon_inode:[ksu_driver]`), kept out of the binary.
+pub fn driver_fd_name() -> String {
+    hidden!("anon_inode:[ksu_driver]")
+}
+
+fn su_driver_fd_name() -> String {
+    hidden!("anon_inode:[ksu_driver_su]")
+}
 
 // Global driver fd cache
 static DRIVER_FD: OnceLock<RawFd> = OnceLock::new();
@@ -88,16 +94,17 @@ static INFO_CACHE: OnceLock<ksu_uapi::ksu_get_info_cmd> = OnceLock::new();
 fn scan_driver_fd() -> io::Result<Option<RawFd>> {
     let fd_dir = fs::read_dir("/proc/self/fd")?;
     let mut driver_fd = None;
+    let (driver_name, su_driver_name) = (driver_fd_name(), su_driver_fd_name());
 
     for entry in fd_dir.flatten() {
         if let Ok(fd_num) = entry.file_name().to_string_lossy().parse::<i32>() {
             let link_path = format!("/proc/self/fd/{fd_num}");
             if let Ok(target) = fs::read_link(&link_path) {
                 let target_str = target.to_string_lossy();
-                if target_str == SU_DRIVER_FD_NAME {
+                if target_str == su_driver_name {
                     return Ok(Some(fd_num));
                 }
-                if target_str == DRIVER_FD_NAME {
+                if target_str == driver_name {
                     driver_fd = Some(fd_num);
                 }
             }
@@ -131,8 +138,8 @@ fn init_driver_fd() -> Option<RawFd> {
             )
         });
         if take_sigsys_occurred() {
-            eprintln!("KernelSU driver install syscall was blocked by seccomp");
-            log::error!("KernelSU driver install syscall was blocked by seccomp");
+            eprintln!("driver install syscall was blocked by seccomp");
+            log::error!("driver install syscall was blocked by seccomp");
         }
         if fd >= 0 { Some(fd) } else { None }
     } else {
@@ -142,33 +149,33 @@ fn init_driver_fd() -> Option<RawFd> {
 
 /// A failed ioctl on the driver fd; keeps the errno for callers that act on it.
 #[derive(Debug)]
-pub struct KsuctlError(pub io::Error);
+pub struct SupercallError(pub io::Error);
 
-impl std::fmt::Display for KsuctlError {
+impl std::fmt::Display for SupercallError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ksuctl failed: {}", self.0)
+        write!(f, "supercall failed: {}", self.0)
     }
 }
 
-impl std::error::Error for KsuctlError {}
+impl std::error::Error for SupercallError {}
 
 /// The kernel's errno when `error` is a failed driver ioctl.
-pub fn ksuctl_errno(error: &anyhow::Error) -> Option<i32> {
+pub fn supercall_errno(error: &anyhow::Error) -> Option<i32> {
     error
-        .downcast_ref::<KsuctlError>()
+        .downcast_ref::<SupercallError>()
         .and_then(|e| e.0.raw_os_error())
 }
 
 // ioctl wrapper using libc
-fn ksuctl<T>(request: u32, arg: *mut T) -> Result<i32> {
+fn supercall<T>(request: u32, arg: *mut T) -> Result<i32> {
     let fd = *DRIVER_FD.get_or_init(|| init_driver_fd().unwrap_or(-1));
     if fd < 0 {
-        bail!("could not retrieve kernelsu driver fd")
+        bail!("could not retrieve the driver fd")
     }
     unsafe {
         let ret = libc::ioctl(fd as libc::c_int, request as i32, arg);
         if ret < 0 {
-            return Err(KsuctlError(io::Error::last_os_error()).into());
+            return Err(SupercallError(io::Error::last_os_error()).into());
         }
         Ok(ret)
     }
@@ -183,8 +190,8 @@ pub fn get_info() -> ksu_uapi::ksu_get_info_cmd {
             features: 0,
             uapi_version: 0,
         };
-        if ksuctl(ksu_uapi::KSU_IOCTL_GET_INFO, &raw mut cmd).is_err() {
-            let _ = ksuctl(ksu_uapi::KSU_IOCTL_GET_INFO_LEGACY, &raw mut cmd);
+        if supercall(ksu_uapi::KSU_IOCTL_GET_INFO, &raw mut cmd).is_err() {
+            let _ = supercall(ksu_uapi::KSU_IOCTL_GET_INFO_LEGACY, &raw mut cmd);
         }
         cmd
     })
@@ -226,20 +233,20 @@ pub fn ensure_uapi_version_matched() -> anyhow::Result<()> {
     let userspace_uapi = uapi_version();
     if kernel_uapi != userspace_uapi {
         bail!(
-            "UAPI version mismatch: kernel={kernel_uapi}, camd={userspace_uapi}. Please update KernelSU!"
+            "UAPI version mismatch: kernel={kernel_uapi}, camd={userspace_uapi}. Please update Cam!"
         );
     }
     Ok(())
 }
 
 pub fn grant_root() -> Result<()> {
-    ksuctl(ksu_uapi::KSU_IOCTL_GRANT_ROOT, std::ptr::null_mut::<u8>())?;
+    supercall(ksu_uapi::KSU_IOCTL_GRANT_ROOT, std::ptr::null_mut::<u8>())?;
     Ok(())
 }
 
 fn report_event(event: u32) {
     let mut cmd = ksu_uapi::ksu_report_event_cmd { event };
-    let _ = ksuctl(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd);
+    let _ = supercall(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd);
 }
 
 pub fn report_post_fs_data() {
@@ -250,7 +257,7 @@ pub fn report_services() -> Result<bool> {
     let mut cmd = ksu_uapi::ksu_report_event_cmd {
         event: ksu_uapi::EVENT_SERVICES,
     };
-    Ok(ksuctl(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd)? == 1)
+    Ok(supercall(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd)? == 1)
 }
 
 pub fn report_boot_complete() {
@@ -263,7 +270,7 @@ pub fn report_module_mounted() {
 
 pub fn check_kernel_safemode() -> bool {
     let mut cmd = ksu_uapi::ksu_check_safemode_cmd { in_safe_mode: 0 };
-    let _ = ksuctl(ksu_uapi::KSU_IOCTL_CHECK_SAFEMODE, &raw mut cmd);
+    let _ = supercall(ksu_uapi::KSU_IOCTL_CHECK_SAFEMODE, &raw mut cmd);
     cmd.in_safe_mode != 0
 }
 
@@ -273,7 +280,7 @@ pub fn set_sepolicy(payload: *const u8, payload_len: u64) -> Result<i32> {
         data: payload as u64,
     };
 
-    ksuctl(ksu_uapi::KSU_IOCTL_SET_SEPOLICY, &raw mut ioctl_cmd)
+    supercall(ksu_uapi::KSU_IOCTL_SET_SEPOLICY, &raw mut ioctl_cmd)
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -291,7 +298,7 @@ pub fn get_feature(feature_id: u32) -> Result<FeatureState> {
         value: 0,
         supported: 0,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_GET_FEATURE, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_GET_FEATURE, &raw mut cmd)?;
     let flags = u32::from(cmd.supported);
     Ok(FeatureState {
         value: cmd.value,
@@ -303,21 +310,21 @@ pub fn get_feature(feature_id: u32) -> Result<FeatureState> {
 
 /// Set an app profile (root only; the kernel validates it)
 pub fn set_app_profile(cmd: &mut ksu_uapi::ksu_set_app_profile_cmd) -> Result<()> {
-    ksuctl(ksu_uapi::KSU_IOCTL_SET_APP_PROFILE, std::ptr::from_mut(cmd))?;
+    supercall(ksu_uapi::KSU_IOCTL_SET_APP_PROFILE, std::ptr::from_mut(cmd))?;
     Ok(())
 }
 
 /// Whether the kernel currently grants root to `uid`
 pub fn uid_granted_root(uid: u32) -> Result<bool> {
     let mut cmd = ksu_uapi::ksu_uid_granted_root_cmd { uid, granted: 0 };
-    ksuctl(ksu_uapi::KSU_IOCTL_UID_GRANTED_ROOT, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_UID_GRANTED_ROOT, &raw mut cmd)?;
     Ok(cmd.granted != 0)
 }
 
 /// Set feature value in kernel
 pub fn set_feature(feature_id: u32, value: u64) -> Result<()> {
     let mut cmd = ksu_uapi::ksu_set_feature_cmd { feature_id, value };
-    ksuctl(ksu_uapi::KSU_IOCTL_SET_FEATURE, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_SET_FEATURE, &raw mut cmd)?;
     Ok(())
 }
 
@@ -326,7 +333,7 @@ pub fn get_wrapped_fd(fd: RawFd) -> Result<RawFd> {
         fd: fd as u32,
         flags: 0,
     };
-    let result = ksuctl(ksu_uapi::KSU_IOCTL_GET_WRAPPER_FD, &raw mut cmd)?;
+    let result = supercall(ksu_uapi::KSU_IOCTL_GET_WRAPPER_FD, &raw mut cmd)?;
     Ok(result)
 }
 
@@ -334,7 +341,7 @@ pub fn get_wrapped_fd(fd: RawFd) -> Result<RawFd> {
 /// empty when unknown.
 pub fn get_source_id() -> Result<String> {
     let mut cmd = ksu_uapi::ksu_get_source_id_cmd { id: [0; 48] };
-    ksuctl(ksu_uapi::KSU_IOCTL_GET_SOURCE_ID, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_GET_SOURCE_ID, &raw mut cmd)?;
     cmd.id[cmd.id.len() - 1] = 0;
     // SAFETY: the buffer ends with a NUL set just above.
     let id = unsafe { std::ffi::CStr::from_ptr(cmd.id.as_ptr()) };
@@ -343,7 +350,7 @@ pub fn get_source_id() -> Result<String> {
 
 pub fn get_sulog_fd() -> Result<RawFd> {
     let mut cmd = ksu_uapi::ksu_get_sulog_fd_cmd { flags: 0 };
-    let result = ksuctl(ksu_uapi::KSU_IOCTL_GET_SULOG_FD, &raw mut cmd)?;
+    let result = supercall(ksu_uapi::KSU_IOCTL_GET_SULOG_FD, &raw mut cmd)?;
     Ok(result)
 }
 
@@ -354,7 +361,7 @@ pub fn mark_get(pid: i32) -> Result<u32> {
         pid,
         result: 0,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
     Ok(cmd.result)
 }
 
@@ -365,7 +372,7 @@ pub fn mark_set(pid: i32) -> Result<()> {
         pid,
         result: 0,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
     Ok(())
 }
 
@@ -376,7 +383,7 @@ pub fn mark_unset(pid: i32) -> Result<()> {
         pid,
         result: 0,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
     Ok(())
 }
 
@@ -387,7 +394,7 @@ pub fn mark_refresh() -> Result<()> {
         pid: 0,
         result: 0,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_MANAGE_MARK, &raw mut cmd)?;
     Ok(())
 }
 
@@ -396,7 +403,7 @@ pub fn nuke_ext4_sysfs(mnt: &str) -> anyhow::Result<()> {
     let mut ioctl_cmd = ksu_uapi::ksu_nuke_ext4_sysfs_cmd {
         arg: c_mnt.as_ptr() as u64,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_NUKE_EXT4_SYSFS, &raw mut ioctl_cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_NUKE_EXT4_SYSFS, &raw mut ioctl_cmd)?;
     Ok(())
 }
 
@@ -407,7 +414,7 @@ pub fn umount_list_wipe() -> Result<()> {
         flags: 0,
         mode: ksu_uapi::KSU_UMOUNT_WIPE,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_ADD_TRY_UMOUNT, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_ADD_TRY_UMOUNT, &raw mut cmd)?;
     Ok(())
 }
 
@@ -419,7 +426,7 @@ pub fn umount_list_add(path: &str, flags: u32) -> anyhow::Result<()> {
         flags,
         mode: ksu_uapi::KSU_UMOUNT_ADD,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_ADD_TRY_UMOUNT, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_ADD_TRY_UMOUNT, &raw mut cmd)?;
     Ok(())
 }
 
@@ -431,13 +438,13 @@ pub fn umount_list_del(path: &str) -> anyhow::Result<()> {
         flags: 0,
         mode: ksu_uapi::KSU_UMOUNT_DEL,
     };
-    ksuctl(ksu_uapi::KSU_IOCTL_ADD_TRY_UMOUNT, &raw mut cmd)?;
+    supercall(ksu_uapi::KSU_IOCTL_ADD_TRY_UMOUNT, &raw mut cmd)?;
     Ok(())
 }
 
 /// Set current process's process group to init_group (pgid = 0)
 pub fn set_init_pgrp() -> Result<()> {
-    ksuctl(
+    supercall(
         ksu_uapi::KSU_IOCTL_SET_INIT_PGRP,
         std::ptr::null_mut::<u8>(),
     )?;
@@ -463,14 +470,14 @@ pub fn lookup_symbols(names: &[&str]) -> Result<Vec<Option<u64>>> {
             count: chunk.len() as u32,
             flags: 0,
         };
-        ksuctl(ksu_uapi::KSU_IOCTL_LOOKUP_SYMBOLS, &raw mut cmd)?;
+        supercall(ksu_uapi::KSU_IOCTL_LOOKUP_SYMBOLS, &raw mut cmd)?;
         result.extend(addrs.into_iter().map(|addr| (addr != 0).then_some(addr)));
     }
     Ok(result)
 }
 
-pub fn set_ksu_no_new_privs() -> anyhow::Result<()> {
-    let result = ksuctl(
+pub fn set_no_new_privs() -> anyhow::Result<()> {
+    let result = supercall(
         ksu_uapi::KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT,
         std::ptr::null_mut::<u8>(),
     )?;

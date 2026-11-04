@@ -25,10 +25,6 @@ object CamNative {
     // 32513: add uapi version
     const val MINIMAL_SUPPORTED_KERNEL = 32513
 
-    // Saved profiles keep the KernelSU context so older kernels read them too;
-    // a kernel with the cam domain runs it as u:r:cam:s0.
-    const val CAM_DOMAIN = "u:r:ksu:s0"
-
     const val ROOT_UID = 0
     const val ROOT_GID = 0
 
@@ -149,7 +145,8 @@ object CamNative {
         val gid: Int = ROOT_GID,
         val groups: List<Int> = mutableListOf(),
         val capabilities: List<Int> = mutableListOf(),
-        val context: String = CAM_DOMAIN,
+        // pre-rename domain, so older kernels read saved profiles; a cam kernel runs u:r:cam:s0
+        val context: String = Hidden.LEGACY_DOMAIN,
         val namespace: Int = Namespace.INHERITED.ordinal,
 
         val nonRootUseDefault: Boolean = true,

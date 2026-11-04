@@ -8,8 +8,10 @@ use extattr::{Flags as XattrFlags, lsetxattr};
 
 pub const SYSTEM_CON: &str = "u:object_r:system_file:s0";
 pub const CAM_CON: &str = "u:object_r:cam_file:s0";
-/// what a kernel from before the Cam rename knows
-pub const KSU_CON: &str = "u:object_r:ksu_file:s0";
+/// What a kernel from before the Cam rename knows (`ksu_file`).
+pub fn legacy_file_con() -> String {
+    hidden!("u:object_r:ksu_file:s0")
+}
 pub const UNLABEL_CON: &str = "u:object_r:unlabeled:s0";
 
 const SELINUX_XATTR: &str = "security.selinux";
@@ -28,12 +30,11 @@ pub fn lsetfilecon<P: AsRef<Path>>(path: P, con: &str) -> Result<()> {
 /// Asks the policy first: with mac_admin, setting an unknown label succeeds and
 /// leaves a file init cannot run after a reboot.
 pub fn set_su_file_con<P: AsRef<Path>>(path: P) -> Result<()> {
-    let con = if is_context_valid(CAM_CON) {
-        CAM_CON
+    if is_context_valid(CAM_CON) {
+        lsetfilecon(path, CAM_CON)
     } else {
-        KSU_CON
-    };
-    lsetfilecon(path, con)
+        lsetfilecon(path, &legacy_file_con())
+    }
 }
 
 /// Whether the running kernel is one with the cam domain, not a KernelSU one.

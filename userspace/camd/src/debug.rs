@@ -1,7 +1,7 @@
 use anyhow::{Context, Ok, Result, bail};
 use std::{ffi::CString, fs, path::Path};
 
-use crate::ksucalls;
+use crate::supercalls;
 
 pub fn insmod(module: &Path, params: &[String]) -> Result<()> {
     // KSU_IOCTL_LOOKUP_SYMBOLS was introduced in Cam UAPI v7 (upstream v6; Cam's v6 is
@@ -16,9 +16,9 @@ pub fn insmod(module: &Path, params: &[String]) -> Result<()> {
     let module_data =
         fs::read(&module).with_context(|| format!("read module failed: {}", module.display()))?;
 
-    if ksucalls::get_info().uapi_version >= LOOKUP_SYMBOL_UAPI_VERSION {
+    if supercalls::get_info().uapi_version >= LOOKUP_SYMBOL_UAPI_VERSION {
         caminit::load_module_with_resolver(&module_data, &cparams, |names| {
-            ksucalls::lookup_symbols(names).or_else(|e| {
+            supercalls::lookup_symbols(names).or_else(|e| {
                 log::warn!("kernel symbol lookup failed: {e:#}, using /proc/kallsyms");
                 caminit::resolve_kallsyms(names)
             })
@@ -35,7 +35,7 @@ pub fn insmod(module: &Path, params: &[String]) -> Result<()> {
 
 /// Get mark status for a process
 pub fn mark_get(pid: i32) -> Result<()> {
-    let result = ksucalls::mark_get(pid)?;
+    let result = supercalls::mark_get(pid)?;
     if pid == 0 {
         bail!("Please specify a pid to get its mark status");
     }
@@ -48,7 +48,7 @@ pub fn mark_get(pid: i32) -> Result<()> {
 
 /// Mark a process
 pub fn mark_set(pid: i32) -> Result<()> {
-    ksucalls::mark_set(pid)?;
+    supercalls::mark_set(pid)?;
     if pid == 0 {
         println!("All processes marked successfully");
     } else {
@@ -59,7 +59,7 @@ pub fn mark_set(pid: i32) -> Result<()> {
 
 /// Unmark a process
 pub fn mark_unset(pid: i32) -> Result<()> {
-    ksucalls::mark_unset(pid)?;
+    supercalls::mark_unset(pid)?;
     if pid == 0 {
         println!("All processes unmarked successfully");
     } else {
@@ -70,7 +70,7 @@ pub fn mark_unset(pid: i32) -> Result<()> {
 
 /// Refresh mark for all running processes
 pub fn mark_refresh() -> Result<()> {
-    ksucalls::mark_refresh()?;
+    supercalls::mark_refresh()?;
     println!("Refreshed mark for all running processes");
     Ok(())
 }

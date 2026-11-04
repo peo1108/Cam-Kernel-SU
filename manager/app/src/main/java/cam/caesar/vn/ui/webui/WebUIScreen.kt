@@ -96,7 +96,7 @@ fun WebUIScreen(webUIState: WebUIState) {
                             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
                         )
                         if (!webUIState.isUrlLoaded) {
-                            val homePage = "https://mui.kernelsu.org/index.html"
+                            val homePage = "https://$WEB_DOMAIN/index.html"
                             if (width > 0 && height > 0) {
                                 loadUrl(homePage)
                                 webUIState.isUrlLoaded = true

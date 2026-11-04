@@ -32,7 +32,7 @@ class BlobDownloadHandler {
     /** Register a new blob download session and return its id. */
     fun registerBlobDownload(fileName: String, mimeType: String?, cacheDir: File): String {
         val downloadId = UUID.randomUUID().toString()
-        val tempFile = File.createTempFile("ksu-blob-", ".download", cacheDir)
+        val tempFile = File.createTempFile("cam-blob-", ".download", cacheDir)
         pendingDownloads[downloadId] = PendingDownload(
             fileName = fileName,
             mimeType = mimeType,

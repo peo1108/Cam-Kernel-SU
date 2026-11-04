@@ -1,5 +1,6 @@
 package cam.caesar.vn.ui.viewmodel
 
+import cam.caesar.vn.Hidden
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.Dispatchers
@@ -101,7 +102,7 @@ fun generateTemplates() {
 
     templateJson.put("groups", JSONArray().apply { put(Groups.INET.name) })
     templateJson.put("capabilities", JSONArray().apply { put(Capabilities.CAP_NET_RAW.name) })
-    templateJson.put("context", "u:r:ksu:s0")
+    templateJson.put("context", Hidden.LEGACY_DOMAIN)
     templateJson.put("flags", JSONArray().apply { put(CamNative.Profile.RootProfileFlag.NO_NEW_PRIVS.name) })
     Log.i(TAG, "$templateJson")
 }

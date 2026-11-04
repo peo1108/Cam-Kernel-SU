@@ -9,10 +9,10 @@ use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
 use crate::lkm_image::BootPatchV2Args;
 use crate::module::regenerate_preinit;
 use crate::{
-    assets, debug, defs, init_event, ksu_uapi, ksucalls, module, module_config, sulog, utils,
+    assets, debug, defs, init_event, ksu_uapi, module, module_config, sulog, supercalls, utils,
 };
 
-/// KernelSU userspace cli
+/// Cam userspace cli
 #[derive(Parser, Debug)]
 #[command(author, version = defs::FULL_VERSION, about, long_about = None)]
 struct Args {
@@ -22,7 +22,7 @@ struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
-    /// Manage KernelSU modules
+    /// Manage modules
     Module {
         #[command(subcommand)]
         command: Module,
@@ -76,7 +76,7 @@ enum Commands {
         params: Vec<String>,
     },
 
-    /// Install KernelSU userspace component to system
+    /// Install the Cam userspace component to system
     Install {
         #[arg(long, default_value = None)]
         libadbroot: Option<PathBuf>,
@@ -85,10 +85,10 @@ enum Commands {
         data_path: Option<PathBuf>,
     },
 
-    /// Unload KernelSU kernel module (LKM Only)
+    /// Unload the Cam kernel module (LKM Only)
     Unload,
 
-    /// Uninstall KernelSU modules and itself(LKM Only)
+    /// Uninstall Cam modules and itself (LKM Only)
     Uninstall {
         #[arg(long, default_value_t = String::from(defs::DEFAULT_PACKAGE_NAME))]
         package_name: String,
@@ -118,13 +118,13 @@ enum Commands {
         command: Feature,
     },
 
-    /// Patch boot or init_boot images to apply KernelSU
+    /// Patch boot or init_boot images to apply Cam
     BootPatch(BootPatchArgs),
 
-    /// Restore boot or init_boot images patched by KernelSU
+    /// Restore boot or init_boot images patched by Cam
     BootRestore(BootRestoreArgs),
 
-    /// Patch KernelSU into a boot image
+    /// Patch Cam into a boot image
     ///
     /// Always operates on a boot image; never selects init_boot or vendor_boot.
     BootPatchV2(BootPatchV2Args),
@@ -620,10 +620,10 @@ pub fn run() -> Result<()> {
     android_logger::init_once(
         Config::default()
             .with_max_level(crate::debug_select!(LevelFilter::Trace, LevelFilter::Info))
-            .with_tag("KernelSU"),
+            .with_tag("Cam"),
     );
 
-    ksucalls::setup_sigsys_handler();
+    supercalls::setup_sigsys_handler();
 
     // the kernel executes su with argv[0] = "su" and replace it with us
     let arg0 = std::env::args().next().unwrap_or_default();
@@ -696,7 +696,7 @@ pub fn run() -> Result<()> {
                     let module_id = match internal {
                         Some(internal_name) => format!("internal.{internal_name}"),
                         None => std::env::var("CAM_MODULE")
-                            .or_else(|_| std::env::var("KSU_MODULE"))
+                            .or_else(|_| std::env::var(crate::module::legacy_env_name("CAM_MODULE")))
                             .map_err(|_| {
                             anyhow::anyhow!(
                                 "This command must be run in the context of a module or passed --internal <name>"
@@ -820,8 +820,8 @@ pub fn run() -> Result<()> {
             result
         }
         Commands::Services => {
-            if ksucalls::get_version() <= 0 {
-                info!("KernelSU not available, exiting services");
+            if supercalls::get_version() <= 0 {
+                info!("kernel driver not available, exiting services");
                 std::process::exit(0);
             }
             init_event::on_services();
@@ -865,7 +865,7 @@ pub fn run() -> Result<()> {
 
         Commands::Debug { command } => match command {
             Debug::Version => {
-                println!("Kernel Version: {}", ksucalls::get_version());
+                println!("Kernel Version: {}", supercalls::get_version());
                 Ok(())
             }
             Debug::SourceId => {
@@ -894,7 +894,7 @@ pub fn run() -> Result<()> {
                 Ok(())
             }
             Debug::Info => {
-                let info = ksucalls::get_info();
+                let info = supercalls::get_info();
                 let text = format!(
                     "version: {}\nflags: 0x{:x}\nuapi_version: {}\nfeatures: 0x{:x}\nlkm: {}\n\
                      bundled: {}\nlate_load: {}\nruntime_mode: {}\npr_build: {}\nsource_id: {}\n",
@@ -902,12 +902,12 @@ pub fn run() -> Result<()> {
                     info.flags,
                     info.uapi_version,
                     info.features,
-                    ksucalls::is_lkm(),
+                    supercalls::is_lkm(),
                     (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_BUNDLED) != 0,
-                    ksucalls::is_late_load(),
-                    ksucalls::runtime_mode(),
+                    supercalls::is_late_load(),
+                    supercalls::runtime_mode(),
                     (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_PR_BUILD) != 0,
-                    ksucalls::get_source_id().unwrap_or_default(),
+                    supercalls::get_source_id().unwrap_or_default(),
                 );
                 // `camd debug info | head -n 1` closes the pipe; println! would abort on that
                 let _ = std::io::Write::write_all(&mut std::io::stdout(), text.as_bytes());
@@ -970,14 +970,14 @@ pub fn run() -> Result<()> {
         }
 
         Commands::Kernel { command } => match command {
-            Kernel::NukeExt4Sysfs { mnt } => ksucalls::nuke_ext4_sysfs(&mnt),
+            Kernel::NukeExt4Sysfs { mnt } => supercalls::nuke_ext4_sysfs(&mnt),
             Kernel::Umount { command } => match command {
-                UmountOp::Add { mnt, flags } => ksucalls::umount_list_add(&mnt, flags),
-                UmountOp::Del { mnt } => ksucalls::umount_list_del(&mnt),
-                UmountOp::Wipe => ksucalls::umount_list_wipe(),
+                UmountOp::Add { mnt, flags } => supercalls::umount_list_add(&mnt, flags),
+                UmountOp::Del { mnt } => supercalls::umount_list_del(&mnt),
+                UmountOp::Wipe => supercalls::umount_list_wipe(),
             },
             Kernel::NotifyModuleMounted => {
-                ksucalls::report_module_mounted();
+                supercalls::report_module_mounted();
                 Ok(())
             }
         },

@@ -1,9 +1,9 @@
 #[allow(clippy::wildcard_imports)]
 use crate::utils::*;
 use crate::{
-    assets, boot_guard, defs, hot_install, ksucalls, metamodule, module_conflicts,
+    assets, boot_guard, defs, hot_install, metamodule, module_conflicts,
     restorecon::{restore_syscon, setsyscon},
-    sepolicy,
+    sepolicy, supercalls,
 };
 
 use anyhow::{Context, Result, anyhow, bail, ensure};
@@ -60,17 +60,32 @@ pub fn validate_module_id(module_id: &str) -> Result<()> {
 }
 
 /// Get common environment variables for script execution
-pub fn get_common_script_envs(module_id: Option<&str>) -> Vec<(&'static str, String)> {
+pub fn get_common_script_envs(module_id: Option<&str>) -> Vec<(String, String)> {
+    let mut cam: Vec<(&str, String)> = vec![
+        ("CAM", "true".to_string()),
+        ("CAM_KERNEL_VER_CODE", supercalls::get_version().to_string()),
+        ("CAM_VER_CODE", defs::VERSION_CODE.to_string()),
+        ("CAM_VER", defs::VERSION_NAME.to_string()),
+        ("CAM_UAPI_VER", supercalls::uapi_version().to_string()),
+        ("CAM_RUNTIME_MODE", supercalls::runtime_mode().to_string()),
+    ];
+
+    if let Some(id) = module_id {
+        if validate_module_id(id).is_ok() {
+            cam.push(("CAM_MODULE", id.to_string()));
+        } else {
+            error!("Invalid module_id provided: {id}");
+        }
+    }
+
+    if supercalls::is_late_load() {
+        cam.push(("CAM_LATE_LOAD", "1".to_string()));
+    }
+
     let mut envs = vec![
-        ("ASH_STANDALONE", "1".to_string()),
-        ("KSU", "true".to_string()),
-        ("KSU_KERNEL_VER_CODE", ksucalls::get_version().to_string()),
-        ("KSU_VER_CODE", defs::VERSION_CODE.to_string()),
-        ("KSU_VER", defs::VERSION_NAME.to_string()),
-        ("KSU_UAPI_VER", ksucalls::uapi_version().to_string()),
-        ("KSU_RUNTIME_MODE", ksucalls::runtime_mode().to_string()),
+        ("ASH_STANDALONE".to_string(), "1".to_string()),
         (
-            "PATH",
+            "PATH".to_string(),
             format!(
                 "{}:{}",
                 env_var("PATH").unwrap_or_default(),
@@ -78,44 +93,19 @@ pub fn get_common_script_envs(module_id: Option<&str>) -> Vec<(&'static str, Str
             ),
         ),
     ];
-
-    if let Some(id) = module_id {
-        if validate_module_id(id).is_ok() {
-            envs.push(("KSU_MODULE", id.to_string()));
-        } else {
-            error!("Invalid module_id provided: {id}");
-        }
+    // modules still check the KernelSU names (KSU=true, KSU_VER...): same values under both
+    for (key, value) in cam {
+        envs.push((legacy_env_name(key), value.clone()));
+        envs.push((key.to_string(), value));
     }
-
-    if ksucalls::is_late_load() {
-        envs.push(("KSU_LATE_LOAD", "1".to_string()));
-    }
-
-    // our own names next to the KernelSU ones, which modules still check
-    let cam_envs: Vec<_> = envs
-        .iter()
-        .filter_map(|(key, value)| {
-            CAM_ENV_ALIASES
-                .iter()
-                .find(|(ksu, _)| ksu == key)
-                .map(|(_, cam)| (*cam, value.clone()))
-        })
-        .collect();
-    envs.extend(cam_envs);
-
     envs
 }
 
-const CAM_ENV_ALIASES: [(&str, &str); 8] = [
-    ("KSU", "CAM"),
-    ("KSU_KERNEL_VER_CODE", "CAM_KERNEL_VER_CODE"),
-    ("KSU_VER_CODE", "CAM_VER_CODE"),
-    ("KSU_VER", "CAM_VER"),
-    ("KSU_UAPI_VER", "CAM_UAPI_VER"),
-    ("KSU_RUNTIME_MODE", "CAM_RUNTIME_MODE"),
-    ("KSU_MODULE", "CAM_MODULE"),
-    ("KSU_LATE_LOAD", "CAM_LATE_LOAD"),
-];
+/// `CAM_MODULE` -> the KernelSU name modules read (`KSU_MODULE`), built at runtime.
+pub fn legacy_env_name(cam_name: &str) -> String {
+    let rest = cam_name.strip_prefix("CAM").unwrap_or(cam_name);
+    hidden!("KSU") + rest
+}
 
 fn exec_install_script(module_file: &str, is_metamodule: bool, module_id: &str) -> Result<()> {
     let realpath = std::fs::canonicalize(module_file)
@@ -128,6 +118,8 @@ fn exec_install_script(module_file: &str, is_metamodule: bool, module_id: &str) 
     let result = Command::new(assets::BUSYBOX_PATH)
         .args(["sh", "-c", &install_script])
         .envs(get_common_script_envs(Some(module_id)))
+        .env("CAM_HAS_HOT_INSTALL", "true")
+        .env(legacy_env_name("CAM_HAS_HOT_INSTALL"), "true")
         .env("OUTFD", "1")
         .env("ZIPFILE", realpath)
         .status()?;
@@ -337,7 +329,7 @@ pub fn exec_script_with<T: AsRef<Path>>(
 
     if is_module_script && module_id.is_none() {
         debug!(
-            "Failed to extract module_id from script path '{}'. Script will run without KSU_MODULE environment variable.",
+            "Failed to extract module_id from script path '{}'. Script will run without the module id variable.",
             path.as_ref().display()
         );
     }
@@ -510,8 +502,8 @@ pub fn prune_modules() -> Result<()> {
 const PREINIT_VOLD_UAPI_VERSION: u32 = 7;
 
 // Prefer /metadata/vold/ when the kernel reads it, else /metadata/watchdog/, else /metadata.
-pub fn preinit_ksu_dir() -> &'static str {
-    if ksucalls::get_info().uapi_version >= PREINIT_VOLD_UAPI_VERSION
+pub fn preinit_dir() -> &'static str {
+    if supercalls::get_info().uapi_version >= PREINIT_VOLD_UAPI_VERSION
         && Path::new("/metadata/vold").is_dir()
     {
         defs::PREINIT_DIR_VOLD
@@ -680,7 +672,7 @@ fn write_synced(path: &Path, data: &[u8]) -> Result<()> {
 /// Rebuild what the kernel picks up from the preinit partition on the next boot: modules.rc and
 /// the modules' preinit dirs.
 pub fn regenerate_preinit() -> Result<()> {
-    let preinit_str = preinit_ksu_dir();
+    let preinit_str = preinit_dir();
     let con = preinit_con(preinit_str);
     // The candidates we are not using this boot; clean any leftover from them.
     let stale_strs: Vec<&str> = [
@@ -710,7 +702,7 @@ pub fn regenerate_preinit() -> Result<()> {
         &stale_dirs,
         &modules,
         con,
-        crate::ksucalls::is_preinit_supported(),
+        crate::supercalls::is_preinit_supported(),
     );
     rc.and(preinit)
 }
@@ -718,7 +710,7 @@ pub fn regenerate_preinit() -> Result<()> {
 /// Whether this boot ran without the module init rc because the boots before it
 /// never reached post-fs-data (see `boot_guard::guarded_module_rc`).
 pub fn module_rc_held_back() -> bool {
-    Path::new(preinit_ksu_dir())
+    Path::new(preinit_dir())
         .join(boot_guard::HELD_BACK_FLAG)
         .exists()
 }
@@ -1051,7 +1043,7 @@ fn mark_boot_guard_suspect(id: &str) {
 }
 
 pub fn install_module(zip: &str) -> Result<()> {
-    ksucalls::ensure_uapi_version_matched()?;
+    supercalls::ensure_uapi_version_matched()?;
 
     let module_id = install_module_to_system(zip).inspect_err(|e| println!("- Error: {e}"))?;
     if let Err(e) = regenerate_preinit() {
@@ -1107,7 +1099,7 @@ pub fn uninstall_module(id: &str) -> Result<()> {
 
 pub fn run_action(id: &str) -> Result<()> {
     validate_module_id(id)?;
-    ksucalls::ensure_uapi_version_matched()?;
+    supercalls::ensure_uapi_version_matched()?;
 
     let action_script_path = format!("/data/adb/modules/{id}/action.sh");
     exec_script(&action_script_path, ScriptWait::Forever)

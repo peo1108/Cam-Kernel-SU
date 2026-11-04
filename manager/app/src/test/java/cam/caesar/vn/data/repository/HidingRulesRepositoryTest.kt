@@ -23,7 +23,7 @@ class HidingRulesRepositoryTest {
 
     @Test
     fun changedRulesFailTheSignature() {
-        val tampered = rules.readText().replace("\"KSU\", ", "").toByteArray()
+        val tampered = rules.readText().replace("\"APatch\", ", "").toByteArray()
         assertFalse(HidingRulesRepository.verify(tampered, signature.readText()))
         assertFalse(HidingRulesRepository.verify(rules.readBytes(), "not base64"))
     }
@@ -33,7 +33,9 @@ class HidingRulesRepositoryTest {
         val parsed = HidingRules.parse(rules.readText())
         assertNotNull(parsed)
         parsed!!
+        // left out of the file (an upstream name), added back by parse
         assertTrue("KSU" in parsed.mountSources)
+        assertFalse(rules.readText().contains("KSU"))
         assertEquals("green", parsed.safeProps["ro.boot.verifiedbootstate"])
         assertEquals(parsed, HidingRules.parse(parsed.toJson()))
     }

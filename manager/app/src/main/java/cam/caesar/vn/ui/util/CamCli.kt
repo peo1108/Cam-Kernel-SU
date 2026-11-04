@@ -93,7 +93,7 @@ fun createRootShell(globalMnt: Boolean = false): Shell {
             builder.build(getCamDaemonPath(), "debug", "su")
         }
     } catch (e: Throwable) {
-        Log.w(TAG, "ksu failed: ", e)
+        Log.w(TAG, "camd su failed: ", e)
         try {
             if (globalMnt) {
                 builder.build("su", "-mm")

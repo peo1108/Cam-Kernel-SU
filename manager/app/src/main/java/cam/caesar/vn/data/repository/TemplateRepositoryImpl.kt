@@ -1,5 +1,6 @@
 package cam.caesar.vn.data.repository
 
+import cam.caesar.vn.Hidden
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,8 +17,8 @@ class TemplateRepositoryImpl : TemplateRepository {
 
     companion object {
         private const val TAG = "TemplateRepository"
-        private const val TEMPLATE_INDEX_URL = "https://kernelsu.org/templates/index.json"
-        private const val TEMPLATE_URL = "https://kernelsu.org/templates/%s"
+        private val TEMPLATE_INDEX_URL get() = Hidden.TEMPLATE_BASE + "index.json"
+        private val TEMPLATE_URL get() = Hidden.TEMPLATE_BASE + "%s"
     }
 
     override suspend fun getTemplates(sync: Boolean): Result<List<TemplateInfo>> = withContext(Dispatchers.IO) {

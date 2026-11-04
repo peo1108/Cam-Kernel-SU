@@ -103,6 +103,8 @@ export LIBCLANG_PATH="$TC/lib"
 export BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--target=aarch64-linux-android$API --sysroot=$TC/sysroot"
 
 cd "$WORK/userspace/camd"
+# shellcheck source=scripts/remap_dep_paths.sh
+source "$SCRIPT_DIR/remap_dep_paths.sh" Cargo.toml
 log="$CARGO_TARGET_DIR/camd-build.log"
 mkdir -p "$CARGO_TARGET_DIR"
 cargo build --release --target aarch64-linux-android > "$log" 2>&1 \

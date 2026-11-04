@@ -22,7 +22,15 @@ use crate::seed::{SeedEntry, build_seed_param, random_nonce};
 
 /// The LKM inside a patched ramdisk; images patched before the Cam rename carry the old name.
 const LKM_NAME: &str = "camsu.ko";
-const LEGACY_LKM_NAME: &str = "kernelsu.ko";
+
+fn legacy_lkm_name() -> String {
+    hidden!("kernelsu.ko")
+}
+
+/// The module params file in the ramdisk, read by caminit (keeps the upstream name).
+fn boot_config_name() -> String {
+    hidden!("ksu_config")
+}
 
 #[cfg(target_os = "android")]
 mod android {
@@ -519,7 +527,7 @@ pub struct BootPatchArgs {
     pub cmdline: Option<String>,
 
     #[command(flatten)]
-    config: KsuConfigArgs,
+    config: BootConfigArgs,
 
     /// Force enable adbd and disable adbd auth
     #[arg(long, default_value = "false")]
@@ -529,7 +537,7 @@ pub struct BootPatchArgs {
     #[arg(long, required = false)]
     adb_debug_prop: Option<String>,
 
-    /// Do not (re-)install kernelsu, only modify configs (allow_shell, etc.)
+    /// Do not (re-)install the LKM, only modify configs (allow_shell, etc.)
     #[arg(long, default_value = "false")]
     no_install: bool,
 
@@ -546,10 +554,10 @@ pub struct BootPatchArgs {
     seed: Vec<SeedEntry>,
 }
 
-/// KernelSU module params, stored in ramdisk `/ksu_config` (boot-patch) or the
+/// LKM module params, stored in the ramdisk boot config (boot-patch) or the
 /// injected capsule (boot-patch-v2).
 #[derive(clap::Args, Debug, Default)]
-pub struct KsuConfigArgs {
+pub struct BootConfigArgs {
     /// Always allow shell to get root permission
     #[arg(long, default_value = "false")]
     allow_shell: bool,
@@ -582,7 +590,7 @@ pub struct KsuConfigArgs {
 /// silently truncated there, so reject it on the host instead.
 const MAX_BLOCK_MODULES_LEN: usize = 255;
 
-impl KsuConfigArgs {
+impl BootConfigArgs {
     /// Validate options whose full value is only known after joining. Call
     /// before `apply` so the user gets an error instead of the kernel silently
     /// truncating an over-long list (which would leave some modules unblocked).
@@ -857,8 +865,8 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
                 "Cannot work with Magisk patched image"
             );
 
-            println!("- Adding KernelSU LKM");
-            let is_kernelsu_patched = cpio.exists(LKM_NAME) || cpio.exists(LEGACY_LKM_NAME);
+            println!("- Adding the Cam LKM");
+            let is_kernelsu_patched = cpio.exists(LKM_NAME) || cpio.exists(&legacy_lkm_name());
 
             if !is_kernelsu_patched && cpio.exists("init") {
                 cpio.mv("init", "init.real")?;
@@ -866,7 +874,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
 
             cpio.add("init", CpioEntry::regular(0o755, ksu_init))?;
             // an image patched before the rename still carries the old name
-            cpio.rm(LEGACY_LKM_NAME, false);
+            cpio.rm(&legacy_lkm_name(), false);
             cpio.add(LKM_NAME, CpioEntry::regular(0o755, kernelsu_ko))?;
 
             #[cfg(target_os = "android")]
@@ -877,8 +885,9 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             }
         }
 
+        let config_name = boot_config_name();
         let mut ksu_config: Vec<String> = cpio
-            .entry_by_name("ksu_config")
+            .entry_by_name(&config_name)
             .and_then(CpioEntry::data)
             .and_then(|v| str::from_utf8(v).ok())
             .map(|v| v.split(' ').map(std::borrow::ToOwned::to_owned).collect())
@@ -897,10 +906,10 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         }
 
         if ksu_config.is_empty() {
-            cpio.rm("ksu_config", false);
+            cpio.rm(&config_name, false);
         } else {
             let data = ksu_config.join(" ").into_bytes();
-            cpio.add("ksu_config", CpioEntry::regular(0o644, Box::new(data)))?;
+            cpio.add(&config_name, CpioEntry::regular(0o644, Box::new(data)))?;
         }
 
         // remove legacy config file
@@ -1073,8 +1082,8 @@ pub fn restore(args: BootRestoreArgs) -> Result<()> {
         };
 
     ensure!(
-        cpio.exists(LKM_NAME) || cpio.exists(LEGACY_LKM_NAME),
-        "boot image is not patched by KernelSU"
+        cpio.exists(LKM_NAME) || cpio.exists(&legacy_lkm_name()),
+        "boot image is not patched by Cam"
     );
 
     #[cfg(target_os = "android")]
@@ -1160,9 +1169,9 @@ fn rebuild_without_ksu(
     cpio: &mut Cpio,
     vendor_ramdisk_idx: Option<usize>,
 ) -> Result<Vec<u8>> {
-    println!("- Removing KernelSU from boot image");
+    println!("- Removing Cam from boot image");
     cpio.rm(LKM_NAME, false);
-    cpio.rm(LEGACY_LKM_NAME, false);
+    cpio.rm(&legacy_lkm_name(), false);
     if cpio.exists("init.real") {
         cpio.mv("init.real", "init")?;
     }
@@ -1207,7 +1216,7 @@ mod block_modules_tests {
 
     #[test]
     fn apply_writes_and_clears_block_modules() {
-        let args = KsuConfigArgs {
+        let args = BootConfigArgs {
             block_module: vec!["vr".to_owned(), "vklp".to_owned()],
             ..Default::default()
         };
@@ -1218,14 +1227,14 @@ mod block_modules_tests {
         assert!(config.contains(&"bundled=1".to_owned()));
 
         // Omitting the option removes a previously written entry.
-        let empty = KsuConfigArgs::default();
+        let empty = BootConfigArgs::default();
         empty.apply(&mut config);
         assert!(!config.iter().any(|v| v.starts_with("block_modules=")));
     }
 
     #[test]
     fn apply_replaces_existing_block_modules() {
-        let args = KsuConfigArgs {
+        let args = BootConfigArgs {
             block_module: vec!["vr".to_owned()],
             ..Default::default()
         };
@@ -1245,7 +1254,7 @@ mod block_modules_tests {
     fn apply_keeps_sibling_keys_with_shared_prefix() {
         // A key that merely starts with "block_modules" but is not the exact
         // "block_modules=" entry must not be dropped by retain().
-        let args = KsuConfigArgs {
+        let args = BootConfigArgs {
             block_module: vec!["vr".to_owned()],
             ..Default::default()
         };
@@ -1261,18 +1270,18 @@ mod block_modules_tests {
         // value budget must be rejected rather than silently truncated.
         let names: Vec<String> = (0..30).map(|i| format!("module_name_{i:03}")).collect();
         assert!(names.join(",").len() > MAX_BLOCK_MODULES_LEN);
-        let args = KsuConfigArgs {
+        let args = BootConfigArgs {
             block_module: names,
             ..Default::default()
         };
         assert!(args.validate().is_err());
 
         // A short list is accepted.
-        let ok = KsuConfigArgs {
+        let ok = BootConfigArgs {
             block_module: vec!["vr".to_owned(), "mkp".to_owned()],
             ..Default::default()
         };
         assert!(ok.validate().is_ok());
-        assert!(KsuConfigArgs::default().validate().is_ok());
+        assert!(BootConfigArgs::default().validate().is_ok());
     }
 }

@@ -1,5 +1,6 @@
 package cam.caesar.vn.data.model
 
+import cam.caesar.vn.Hidden
 import android.os.Parcelable
 import android.util.Log
 import androidx.compose.runtime.Immutable
@@ -24,7 +25,7 @@ data class TemplateInfo(
     val gid: Int = CamNative.ROOT_GID,
     val groups: List<Int> = mutableListOf(),
     val capabilities: List<Int> = mutableListOf(),
-    val context: String = CamNative.CAM_DOMAIN,
+    val context: String = Hidden.LEGACY_DOMAIN,
     val rules: List<String> = mutableListOf(),
     val flags: List<Int> = mutableListOf(
         CamNative.Profile.RootProfileFlag.NO_NEW_PRIVS.ordinal // default no new privs for new template
@@ -39,7 +40,7 @@ data class TemplateInfo(
                 val capabilitiesJsonArray = templateJson.optJSONArray("capabilities")
                 val flagsJsonArray = templateJson.optJSONArray("flags")
                 val context = templateJson.optString("context").takeIf { it.isNotEmpty() }
-                    ?: CamNative.CAM_DOMAIN
+                    ?: Hidden.LEGACY_DOMAIN
                 val namespace = templateJson.optString("namespace").takeIf { it.isNotEmpty() }
                     ?: CamNative.Profile.Namespace.INHERITED.name
 

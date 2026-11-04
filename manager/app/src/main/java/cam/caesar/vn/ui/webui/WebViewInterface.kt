@@ -227,7 +227,7 @@ class WebViewInterface(private val state: WebUIState) {
         return currentModuleInfo.toString()
     }
 
-    @Deprecated("Use ksu.pm().listPackages() instead")
+    @Deprecated("Use pm().listPackages() instead")
     @JavascriptInterface
     fun listPackages(type: String): String {
         val packageNames = webUIApps()
@@ -250,7 +250,7 @@ class WebViewInterface(private val state: WebUIState) {
         return jsonArray.toString()
     }
 
-    @Deprecated("Use ksu.pm().getPackagesInfo() instead")
+    @Deprecated("Use pm().getPackagesInfo() instead")
     @JavascriptInterface
     fun getPackagesInfo(packageNamesJson: String): String {
         val packageNames = JSONArray(packageNamesJson)

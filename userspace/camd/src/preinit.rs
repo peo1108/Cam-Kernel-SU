@@ -466,7 +466,7 @@ fn remove_unlisted(preinit_dir: &Path, keep: &BTreeSet<&str>, changed: &mut bool
 }
 
 fn bootcount_path() -> PathBuf {
-    Path::new(crate::module::preinit_ksu_dir()).join(defs::PREINIT_BOOTCOUNT_FILE)
+    Path::new(crate::module::preinit_dir()).join(defs::PREINIT_BOOTCOUNT_FILE)
 }
 
 fn read_bootcount() -> u64 {

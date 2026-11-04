@@ -2,7 +2,7 @@ use crate::boot_guard::{self, Decision};
 use crate::module::{ScriptWait, handle_updated_modules, prune_modules};
 use crate::utils::is_safe_mode;
 use crate::{
-    assets, defs, ksucalls, metamodule, restorecon,
+    assets, defs, metamodule, restorecon, supercalls,
     utils::{self},
 };
 use anyhow::{Context, Result};
@@ -22,12 +22,12 @@ pub fn on_post_fs_data() -> Result<()> {
         warn!("regenerate preinit failed: {e:#}");
     }
 
-    if let Err(e) = ksucalls::ensure_uapi_version_matched() {
+    if let Err(e) = supercalls::ensure_uapi_version_matched() {
         error!("{e:#}, skip on_post_fs_data");
         return Ok(());
     }
 
-    ksucalls::report_post_fs_data();
+    supercalls::report_post_fs_data();
 
     // like the kernel flag: a (soft) reboot runs the service stage again
     if let Err(e) = std::fs::remove_file(defs::SERVICES_STARTED_PATH)
@@ -259,12 +259,12 @@ pub fn run_stage(stage: &str, wait: ScriptWait) {
 }
 
 pub fn on_services() {
-    if let Err(e) = ksucalls::ensure_uapi_version_matched() {
+    if let Err(e) = supercalls::ensure_uapi_version_matched() {
         error!("{e:#}, skip on_services");
         return;
     }
 
-    let kernel_first = match ksucalls::report_services() {
+    let kernel_first = match supercalls::report_services() {
         Ok(first) => Some(first),
         Err(e) => {
             warn!("Failed to report services: {e:#}");
@@ -328,12 +328,12 @@ fn claim_services_stage() -> std::io::Result<bool> {
 }
 
 pub fn on_boot_completed() {
-    if let Err(e) = ksucalls::ensure_uapi_version_matched() {
+    if let Err(e) = supercalls::ensure_uapi_version_matched() {
         error!("{e:#}, skip on_boot_completed");
         return;
     }
 
-    ksucalls::report_boot_complete();
+    supercalls::report_boot_complete();
     info!("on_boot_completed triggered!");
 
     crate::preinit::on_boot_completed();

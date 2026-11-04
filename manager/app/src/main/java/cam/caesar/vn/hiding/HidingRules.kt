@@ -1,5 +1,6 @@
 package cam.caesar.vn.hiding
 
+import cam.caesar.vn.Hidden
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -48,7 +49,8 @@ data class HidingRules(
                 version = obj.getInt("version"),
                 updated = obj.optString("updated"),
                 duckDetector = obj.optString("duckDetector"),
-                mountSources = strings(obj.getJSONArray("mountSources")).toSet(),
+                // the rules leave out the module mount source (an upstream name); always checked
+                mountSources = setOf(Hidden.MOUNT_SOURCE) + strings(obj.getJSONArray("mountSources")),
                 mapMarkers = strings(obj.getJSONArray("mapMarkers")).map(String::lowercase),
                 suPaths = strings(obj.getJSONArray("suPaths")),
                 safeProps = props.keys().asSequence().associateWith { props.getString(it) },

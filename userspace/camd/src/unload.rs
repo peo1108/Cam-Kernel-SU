@@ -10,6 +10,7 @@ use crate::utils;
 fn find_su_domain_pids() -> Vec<i32> {
     let my_pid = std::process::id() as i32;
     let mut pids = Vec::new();
+    let legacy_domain = hidden!("u:r:ksu:s0");
 
     let Ok(entries) = fs::read_dir("/proc") else {
         return pids;
@@ -27,7 +28,7 @@ fn find_su_domain_pids() -> Vec<i32> {
         let attr_path = format!("/proc/{pid}/attr/current");
         if let Ok(context) = fs::read_to_string(&attr_path) {
             let context = context.trim().trim_end_matches('\0');
-            if context == "u:r:cam:s0" || context == "u:r:ksu:s0" {
+            if context == "u:r:cam:s0" || context == legacy_domain {
                 pids.push(pid);
             }
         }
@@ -36,11 +37,21 @@ fn find_su_domain_pids() -> Vec<i32> {
     pids
 }
 
-/// Find PIDs of processes holding ksu_driver or ksu_fdwrapper file descriptors.
+/// The driver and fd wrapper anon inodes (the kernel's `[ksu_driver*]`, `[ksu_fdwrapper]`).
+fn is_driver_fd(target: &str, driver: &str, wrapper: &str) -> bool {
+    target.contains(driver) || target.contains(wrapper)
+}
+
+fn driver_fd_names() -> (String, String) {
+    (hidden!("[ksu_driver"), hidden!("[ksu_fdwrapper]"))
+}
+
+/// Find PIDs of processes holding driver or fd wrapper file descriptors.
 /// Returns a list of PIDs excluding our own.
-fn find_ksu_fd_holders() -> Vec<i32> {
+fn find_driver_fd_holders() -> Vec<i32> {
     let my_pid = std::process::id() as i32;
     let mut pids = Vec::new();
+    let (driver, wrapper) = driver_fd_names();
 
     let Ok(entries) = fs::read_dir("/proc") else {
         return pids;
@@ -64,7 +75,7 @@ fn find_ksu_fd_holders() -> Vec<i32> {
             let link_path = fd_entry.path();
             if let Ok(target) = fs::read_link(&link_path) {
                 let target_str = target.to_string_lossy();
-                if target_str.contains("[ksu_driver") || target_str.contains("[ksu_fdwrapper]") {
+                if is_driver_fd(&target_str, &driver, &wrapper) {
                     pids.push(pid);
                     break;
                 }
@@ -83,11 +94,12 @@ fn kill_pids(pids: &[i32], signal: i32) {
     }
 }
 
-/// Close all ksu_driver and ksu_fdwrapper fds held by the current process.
-fn close_ksu_fds() {
+/// Close all driver and fd wrapper fds held by the current process.
+fn close_driver_fds() {
     let Ok(entries) = fs::read_dir("/proc/self/fd") else {
         return;
     };
+    let (driver, wrapper) = driver_fd_names();
 
     for entry in entries.flatten() {
         let Ok(fd) = entry.file_name().to_string_lossy().parse::<i32>() else {
@@ -95,7 +107,7 @@ fn close_ksu_fds() {
         };
         if let Ok(target) = fs::read_link(entry.path()) {
             let target_str = target.to_string_lossy();
-            if target_str.contains("[ksu_driver") || target_str.contains("[ksu_fdwrapper]") {
+            if is_driver_fd(&target_str, &driver, &wrapper) {
                 info!("unload: closing fd {fd} -> {target_str}");
                 unsafe {
                     libc::close(fd);
@@ -106,7 +118,7 @@ fn close_ksu_fds() {
 }
 
 pub fn unload() -> Result<()> {
-    info!("unload: starting KernelSU unload sequence");
+    info!("unload: starting the unload sequence");
 
     // 0. Switch cgroups so we don't get killed along with our parent shell
     utils::switch_cgroups();
@@ -115,7 +127,7 @@ pub fn unload() -> Result<()> {
     info!("unload: stopping Android services...");
     let _ = Command::new("stop").status();
 
-    // 2. Kill all su domain processes and processes holding ksu fds (except ourselves)
+    // 2. Kill all su domain processes and processes holding driver fds (except ourselves)
     info!("unload: killing su domain processes...");
     let su_pids = find_su_domain_pids();
     if !su_pids.is_empty() {
@@ -126,26 +138,27 @@ pub fn unload() -> Result<()> {
         kill_pids(&su_pids, libc::SIGKILL);
     }
 
-    info!("unload: killing processes holding ksu fds...");
-    let fd_pids = find_ksu_fd_holders();
+    info!("unload: killing processes holding driver fds...");
+    let fd_pids = find_driver_fd_holders();
     if !fd_pids.is_empty() {
         info!(
-            "unload: found {} processes holding ksu fds, sending SIGKILL",
+            "unload: found {} processes holding driver fds, sending SIGKILL",
             fd_pids.len()
         );
         kill_pids(&fd_pids, libc::SIGKILL);
     }
 
-    // 3. Close all our own ksu_driver and ksu_fdwrapper fds
-    info!("unload: closing all ksu fds...");
-    close_ksu_fds();
+    // 3. Close all our own driver and fd wrapper fds
+    info!("unload: closing all driver fds...");
+    close_driver_fds();
 
-    // 4. delete_module, under the old name too for a kernelsu.ko loaded before the rename
+    // 4. delete_module, under the old name too for an LKM loaded before the rename
     info!("unload: removing camsu module...");
     if let Err(e) = rustix::system::delete_module(c"camsu", 0) {
         warn!("unload: delete_module camsu failed: {e}");
-        if let Err(e) = rustix::system::delete_module(c"kernelsu", 0) {
-            warn!("unload: delete_module kernelsu failed: {e}");
+        let legacy = std::ffi::CString::new(hidden!("kernelsu")).expect("no NUL");
+        if let Err(e) = rustix::system::delete_module(&legacy, 0) {
+            warn!("unload: delete_module of the old name failed: {e}");
         }
     }
 

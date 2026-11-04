@@ -11,6 +11,9 @@
     clippy::redundant_field_names
 )]
 
+#[macro_use]
+mod hidden;
+
 mod allow;
 mod assets;
 mod avc_lookup;
@@ -35,8 +38,6 @@ mod hot_install;
 mod init_event;
 #[cfg(target_os = "android")]
 mod jailbreak;
-#[cfg(target_os = "android")]
-mod ksucalls;
 #[cfg(target_os = "android")]
 mod late_load;
 #[cfg(target_os = "android")]
@@ -68,6 +69,8 @@ mod soft_reboot;
 mod su;
 #[cfg(target_os = "android")]
 mod sulog;
+#[cfg(target_os = "android")]
+mod supercalls;
 #[cfg(target_os = "android")]
 mod unload;
 #[cfg(target_os = "android")]

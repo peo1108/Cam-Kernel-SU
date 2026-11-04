@@ -1,5 +1,6 @@
 package cam.caesar.vn.ui.webui
 
+import cam.caesar.vn.Hidden
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.ActivityManager
@@ -32,13 +33,16 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 
-private const val WEB_DOMAIN = "mui.kernelsu.org"
-private const val KSU_SCHEME = "ksu"
+/** The host module WebUIs are served from, and their `ksu` bridge and icon scheme (Hidden). */
+internal val WEB_DOMAIN: String get() = Hidden.WEBUI_HOST
+private val KSU_SCHEME: String get() = Hidden.MODULE_API
 private const val CAM_SCHEME = "cam"
 private const val ICON_HOST = "icon"
 
 private fun loadDownloadJs(context: Context): String {
+    // the script names the WebUI host as a placeholder (no upstream name in the APK)
     return context.assets.open("webview/download.js").bufferedReader(Charsets.UTF_8).use { it.readText() }
+        .replace("__WEBUI_HOST__", WEB_DOMAIN)
 }
 
 internal fun webUIApps(): List<AppInfo> = runBlocking {
@@ -208,10 +212,10 @@ internal suspend fun prepareWebView(
             webUIState.webViewInterface = webviewInterface
             webUIState.downloadInterface = downloadInterface
             webUIState.webView = webView
-            webView.addJavascriptInterface(webviewInterface, "ksu")
-            // same bridge under our own name; module WebUIs still call `ksu`
+            webView.addJavascriptInterface(webviewInterface, Hidden.MODULE_API)
+            // same bridge under our own name; module WebUIs still call the upstream one
             webView.addJavascriptInterface(webviewInterface, "cam")
-            webView.addJavascriptInterface(downloadInterface, "ksu_download")
+            webView.addJavascriptInterface(downloadInterface, "cam_download")
             webView.setDownloadListener { url, _, _, _, _ ->
                 downloadInterface.openExternal(url)
             }

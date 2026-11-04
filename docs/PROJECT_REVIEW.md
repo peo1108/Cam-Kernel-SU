@@ -4,6 +4,40 @@ Chấm lại ngày 2026-10-15 trên `11d748ea` (2973 commit). Lần chấm trư�
 
 Khách hàng gần như toàn bộ là người dùng riêng, chủ yếu Lenovo Y700 Gen5 (một ít Gen4): một lượt thử trên máy của Cam được coi là phủ khoảng 95% người dùng thật, nên mục "Kiểm chứng trên máy thật" chấm theo máy đó chứ không theo số dòng máy.
 
+## Cập nhật 2026-11-04: bản 1.2.3 (`9008a90d`, 3201 commit)
+
+Không chấm lại điểm (bảng điểm dưới là của 2026-10-15); mục này ghi số liệu, test và rủi ro mới sau lần review tổng thể trước khi phát hành 1.2.3.
+
+| Phần | File | Dòng |
+|---|---|---|
+| `kernel/` (C, không tính `tests/`) | 142 | 23.343 |
+| `userspace/camd/src` (Rust) | 42 | 20.430 |
+| `userspace/caminit/src` (Rust) | 4 | 1.124 |
+| `manager/app/src/main/java` (Kotlin, Java) | 412 | 80.344 |
+| `manager/app/src/main/cpp` (JNI, probe) | 6 | 1.082 |
+| `site/api` (Node) | 15 | 3.090 |
+
+| Test | Kết quả |
+|---|---|
+| Kernel `make -C kernel/tests` | 32 + 18 (ASan + UBSan) |
+| camd / caminit host test | 136 / 9; `cargo ndk` check và clippy sạch, `cargo fmt` sạch |
+| Manager `testDebugUnitTest` | 60 lớp, 422 |
+| `site/api` | 22 |
+| Script (`changelog_section`, `check_apk_strings`) | chạy trong job `scripts` của `test.yml` |
+| Trên TB323FU (LKM `33193`/`33201`) | smoke 15/15, timing SELinux 18/18, boot guard 25/25 (bootloop thật), `device_android_test.sh` 15/15, `DeviceCheck` 25/25; Luna 8/8 "Trust Phone", Duck 0 Danger |
+| Trên máy ảo khách | chuyển máy từ app `cam.su.kernel` sang Cam đủ bốn bước (dòng 89 và mục 11 của `CAM_CHANGES.md`) |
+
+Rủi ro mới hoặc đổi:
+
+| Vấn đề | Mức | Tình trạng |
+|---|---|---|
+| App `cam.su.kernel` không tự cập nhật lên `cam.caesar.vn` (OTA từ chối gói khác) | Cao | Máy chủ đưa bốn bước chuyển máy vào ghi chú cập nhật mà app cũ hiện (dòng 89); đã deploy. Chưa thấy trên app cũ thật: 1.2.3 mở cho thành viên thường khoảng 24/11 |
+| Feed phát rule bỏ nguồn mount `KSU` cho app cũ | Cao | Xong (dòng 86): feed phát bản riêng còn `KSU` |
+| Kernel dùng lại context đã parse khi policy thật không do KSU dựng | Trung bình | Xong (dòng 87): so con trỏ và seqno, parse lại khi khác |
+| APK mang lại tên upstream sau merge | Trung bình | Xong: CI kiểm mỗi lần build (dòng 85); bỏ qua dữ liệu nén theo entropy |
+| ZUI giữ khoá `<gói>\|<quyền>` trong `settings global` của app đã gỡ, app nào cũng đọc được | Thấp | Đã xoá trên tablet các khoá của `me.weishu.kernelsu`, `org.probe.*` và gói test; máy khách từng cài app root khác có thể còn |
+| OTA thật từ đầu đến cuối trên gói mới, thông báo `cam_boot_guard` mới | Thấp | Chưa thử |
+
 ## Điểm tổng: 8,3 / 10 (trước: 7,9)
 
 Tăng nhờ một ngày dọn và kiểm chứng: thử trên máy những tính năng chưa từng chạy thật (shell adb-only, Widevine, tài khoản, OTA), test trên máy cho root service và AIDL, sửa một lỗ hổng chiếm quyền thành viên trên `site/api`, nhả bộ nhớ 3D khi app nằm nền, sửa một crash có sẵn ở thẻ trạng thái. Mục Bảo mật tính 8,5 khi bản API mới đã được deploy (việc làm bằng tay, xem cuối trang).
@@ -76,6 +110,7 @@ Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo 
 
 1. **Deploy API** (`site/scripts/deploy-api.sh`): migration 4 tự chạy, tài khoản cũ được coi là đã xác minh nên không ai mất quyền. Push `site/**` tự deploy giao diện; giao diện chỉ hiện nhắc xác minh khi API mới báo `verified: false`, nên thứ tự deploy nào cũng được.
 2. **Một lượt OTA thật**: gắn tag beta, để máy của Cam nhận và cài qua OTA, ghi kết quả vào mục 6 của `CAM_CHANGES.md`.
+4. **Theo dõi khách chuyển sang Cam** (từ khoảng 24/11, khi 1.2.3 mở cho thành viên thường): app cũ phải hiện hướng dẫn trong hộp thoại cập nhật; ai báo kẹt thì xem bước nào (dòng 89 của `CAM_CHANGES.md`).
 3. **Thử cấp lại Widevine** trên một máy chịu được rủi ro (có sao lưu và tự khôi phục, nhưng xóa `/data/vendor/mediadrm` là thật).
 
 ## Cách chấm

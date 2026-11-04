@@ -19,7 +19,11 @@
 # Duck), so they are no pass mark. Duck itself across CPU changes: probe jostle (its header)
 # while Duck scans, then read "Parent preload" in Duck's exported report (CAM_CHANGES row 71).
 # It also checks what the hook is for: root contexts unknown with hiding on, known with it off,
-# and a stock transition still allowed.
+# and a stock transition still allowed. And a policy reload (camd sepolicy patch with a rule that
+# changes nothing, gone after a reboot; two per run): with hiding on neither root nor an
+# app_zygote hears the netlink POLICYLOAD (reset_avc_cache in kernel/selinux/rules.c) and the
+# app's status page stays put, while root's real page counts the load; with it off both hear
+# POLICYLOAD with the seqno root's page shows (the control).
 #
 # Known residual, not measured here: a context valid in both policies (a successful attr/current
 # transition) is parsed twice by the hook (backup to decide hiding, live for the transition SID)
@@ -130,6 +134,38 @@ case "$out" in
 *now=u:r:isolated_app:s0*) ok "hide on: lsm_set_self_attr app_zygote -> isolated_app still allowed" ;;
 *) bad "hide on: lsm_set_self_attr app_zygote -> isolated_app" "$out" ;;
 esac
+
+# A policy load while root and an app_zygote listen on NETLINK_SELINUX. Prints "root <messages>
+# heard=<n>" and "app <messages> heard=<n>".
+NL=/data/local/tmp/cam_selinux_nl
+RULE='allow cam cam file { read }'
+reload_heard() {
+    "${ADB[@]}" shell "su -c '($PROBE netlink 3 2>&1 | cat >$NL.app) & ($PROBE rootnetlink 3 >$NL.root 2>&1) & sleep 1; $CAMD sepolicy patch \"$RULE\" >/dev/null 2>&1; wait; echo root \$(cat $NL.root); echo app \$(cat $NL.app); rm -f $NL.root $NL.app'" | tr -d '\r'
+}
+policyload_of() { sed -n 's/.*policyload=\([0-9]\{1,\}\).*/\1/p'; }
+heard_of() { sed -n "s/^$1 .*heard=\([0-9]\{1,\}\).*/\1/p"; }
+set_hide 1
+r0=$(probe rootstatus | policyload_of)
+a0=$(probe status)
+heard=$(reload_heard)
+r1=$(probe rootstatus | policyload_of)
+a1=$(probe status)
+if [ -n "$r0" ] && [ "$r1" = "$((r0 + 1))" ] 2>/dev/null; then ok "hide on: a load moves root's policyload $r0 -> $r1"; else bad "hide on: root's policyload $r0 -> $r1 (want +1)"; fi
+if [ -n "$a0" ] && [ "$a1" = "$a0" ]; then ok "hide on: the app's status page stays put ($a1)"; else bad "hide on: the app's status page moved" "$a0 -> $a1"; fi
+if [ "$(heard_of root <<<"$heard")" = 0 ] && [ "$(heard_of app <<<"$heard")" = 0 ]; then
+    ok "hide on: no POLICYLOAD broadcast, root and app_zygote hear nothing"
+else
+    bad "hide on: the load was broadcast" "$heard"
+fi
+set_hide 0
+heard=$(reload_heard)
+r2=$(probe rootstatus | policyload_of)
+want="POLICYLOAD seqno=$r2 heard=1"
+if [ -n "$r1" ] && [ "$r2" = "$((r1 + 1))" ] 2>/dev/null && grep -qx "root $want" <<<"$heard" && grep -qx "app $want" <<<"$heard"; then
+    ok "hide off (control): root's policyload $r1 -> $r2, root and app_zygote hear POLICYLOAD seqno=$r2"
+else
+    bad "hide off (control): want policyload $r1 -> $((r1 + 1)) and both hearing it" "policyload $r2; $(tr '\n' ';' <<<"$heard")"
+fi
 
 possible=$("${ADB[@]}" shell cat /sys/devices/system/cpu/possible | tr -d '\r')
 last=${possible##*-}

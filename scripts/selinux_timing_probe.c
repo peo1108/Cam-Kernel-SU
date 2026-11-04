@@ -26,6 +26,11 @@
 //                       reports how far the live sidtab grew; stock grows it, so must the hook.
 //   selfattr <context>  sets the context via lsm_set_self_attr(2), the path not covered by the
 //                       setprocattr hook (needs -DCAM_NR_LSM_SET_SELF_ATTR=460 if the libc lacks it).
+//   netlink <s>         listens on NETLINK_SELINUX, group SELNLGRP_AVC, for s seconds and prints
+//                       every message (POLICYLOAD seqno=<n>, SETENFORCE val=<n>), then heard=<count>.
+//                       Hiding drops the policyload broadcast, which an app could otherwise hear
+//                       when the policy is reloaded (kernel/selinux/rules.c, reset_avc_cache).
+//   rootnetlink <s>     the same as root.
 //
 // app_zygote may not write to the adb terminal: run it with its output into a pipe (`| cat`).
 #define _GNU_SOURCE
@@ -38,7 +43,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <linux/netlink.h>
+#include <sys/socket.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -417,6 +425,56 @@ static int run_sidtab(const char *node, int count)
     return 0;
 }
 
+// linux/selinux_netlink.h
+#define CAM_NETLINK_SELINUX 7
+#define CAM_SELNLGRP_AVC 1
+#define CAM_SELNL_MSG_SETENFORCE 0x10
+#define CAM_SELNL_MSG_POLICYLOAD 0x11
+
+static int run_netlink(int seconds)
+{
+    int fd = socket(AF_NETLINK, SOCK_RAW | SOCK_CLOEXEC, CAM_NETLINK_SELINUX);
+    if (fd < 0) {
+        printf("error: socket NETLINK_SELINUX: %s\n", strerror(errno));
+        return 1;
+    }
+    struct sockaddr_nl addr = { 0 };
+    addr.nl_family = AF_NETLINK;
+    addr.nl_groups = 1u << (CAM_SELNLGRP_AVC - 1);
+    if (bind(fd, (struct sockaddr *)&addr, sizeof(addr))) {
+        printf("error: bind SELNLGRP_AVC: %s\n", strerror(errno));
+        return 1;
+    }
+    struct timeval tv = { .tv_sec = 0, .tv_usec = 200000 };
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    int heard = 0;
+    uint64_t deadline = now_ns() + (uint64_t)seconds * 1000000000ull;
+    while (now_ns() < deadline) {
+        char buf[4096] __attribute__((aligned(NLMSG_ALIGNTO)));
+        int len = (int)recv(fd, buf, sizeof(buf), 0);
+        if (len < 0)
+            continue;
+        // NLMSG_OK with the signs spelled out
+        for (struct nlmsghdr *h = (struct nlmsghdr *)buf;
+             len >= (int)sizeof(*h) && h->nlmsg_len >= sizeof(*h) && h->nlmsg_len <= (unsigned)len;
+             h = NLMSG_NEXT(h, len)) {
+            uint32_t value = 0;
+            if (h->nlmsg_len >= NLMSG_LENGTH(sizeof(value)))
+                memcpy(&value, NLMSG_DATA(h), sizeof(value));
+            heard++;
+            if (h->nlmsg_type == CAM_SELNL_MSG_POLICYLOAD)
+                printf("POLICYLOAD seqno=%u\n", value);
+            else if (h->nlmsg_type == CAM_SELNL_MSG_SETENFORCE)
+                printf("SETENFORCE val=%d\n", (int32_t)value);
+            else
+                printf("type=0x%x\n", h->nlmsg_type);
+        }
+    }
+    close(fd);
+    printf("heard=%d\n", heard);
+    return 0;
+}
+
 #if defined(__NR_lsm_set_self_attr) || defined(CAM_NR_LSM_SET_SELF_ATTR)
 #ifndef __NR_lsm_set_self_attr
 #define __NR_lsm_set_self_attr CAM_NR_LSM_SET_SELF_ATTR
@@ -480,6 +538,10 @@ int main(int argc, char **argv)
             return 2;
         return become_carrier() ? 1 : run_sidtab(argv[2], count);
     }
+    if (argc == 3 && !strcmp(argv[1], "netlink"))
+        return become_carrier() ? 1 : run_netlink(atoi(argv[2]));
+    if (argc == 3 && !strcmp(argv[1], "rootnetlink"))
+        return run_netlink(atoi(argv[2]));
 #if defined(__NR_lsm_set_self_attr) || defined(CAM_NR_LSM_SET_SELF_ATTR)
     if (argc == 3 && !strcmp(argv[1], "selfattr"))
         return become_carrier() ? 1 : run_selfattr(argv[2]);
@@ -487,7 +549,7 @@ int main(int argc, char **argv)
     fprintf(stderr,
             "usage: %s time <cpu> <pairs> | duck <free|hop|split> <runs> | jostle <name> <us> <s> | "
             "write <context> | status | rootstatus | "
-            "sidtab <context|access> <count> | selfattr <context>\n",
+            "sidtab <context|access> <count> | selfattr <context> | netlink <s> | rootnetlink <s>\n",
             argv[0]);
     return 2;
 }

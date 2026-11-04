@@ -5,7 +5,7 @@
 # Order: tests -> backup of the live database -> install -> restart -> health check.
 set -euo pipefail
 KEY="${1:-$HOME/.ssh/cc_vps_ed25519}"
-HOST="root@36.50.135.173"
+HOST="root@180.93.125.38"
 cd "$(dirname "$0")/../api"
 
 echo "== tests"

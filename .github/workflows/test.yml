@@ -22,6 +22,8 @@ on:
       - 'CHANGELOG.md'
       - 'scripts/changelog_section.py'
       - 'scripts/test_changelog_section.py'
+      - 'scripts/check_apk_strings.py'
+      - 'scripts/test_check_apk_strings.py'
       - 'site/api/**'
   pull_request:
     branches: [ "main", "dev" ]
@@ -38,6 +40,8 @@ on:
       - 'CHANGELOG.md'
       - 'scripts/changelog_section.py'
       - 'scripts/test_changelog_section.py'
+      - 'scripts/check_apk_strings.py'
+      - 'scripts/test_check_apk_strings.py'
       - 'site/api/**'
   workflow_dispatch:
   # release.yml runs every test before it publishes an OTA update
@@ -54,6 +58,9 @@ jobs:
 
       - name: Changelog extractor tests
         run: python3 -m unittest scripts/test_changelog_section.py -v
+
+      - name: APK name scanner tests
+        run: python3 -m unittest scripts/test_check_apk_strings.py -v
 
   # caesarvn.xyz API (site/api): accounts, payments and the SePay webhook, devices, OTA, 2FA.
   site-api:

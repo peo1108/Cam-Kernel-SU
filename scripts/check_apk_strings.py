@@ -8,11 +8,15 @@ runtime are built by camd's `hidden!` and the Manager's `Hidden.s`, so they neve
     python3 scripts/check_apk_strings.py Cam_<version>_<code>-release.apk [more files...]
 
 Exit status 1 when anything is found. Images and fonts are skipped (random bytes), and so are
-names where "ksu" sits inside a word ("checksum", "LockSupport", "zygisksu").
+names where "ksu" sits inside a word ("checksum", "LockSupport", "zygisksu"), and matches inside
+compressed data: camd carries caminit and the .ko compressed, and three random bytes there spell
+"ksU" often enough to fail a build now and then.
 """
+import math
 import re
 import sys
 import zipfile
+from collections import Counter
 
 # "ksu" not preceded by a letter, so words that merely contain it stay out
 PATTERN = re.compile(rb"(?i)(?<![a-z])ksu|kernel_?su|weishu")
@@ -21,6 +25,15 @@ CONTEXT = 24
 
 
 MIN_TEXT_RUN = 8
+# Bits per byte over 512 bytes around a match. Measured on a release APK: real strings in camd,
+# libcamjni and classes.dex 4.4 to 5.0, camd's compressed payload 7.56 to 7.59, /dev/urandom 7.59.
+ENTROPY_WINDOW = 256
+MAX_TEXT_ENTROPY = 7.3
+
+
+def entropy(data):
+    counts = Counter(data)
+    return -sum(n / len(data) * math.log2(n / len(data)) for n in counts.values())
 
 
 def printable_run(data, start, end):
@@ -36,6 +49,8 @@ def scan(name, data, hits):
     for m in PATTERN.finditer(data):
         # three letters inside compressed or random bytes are noise, not a name
         if printable_run(data, m.start(), m.end()) < MIN_TEXT_RUN:
+            continue
+        if entropy(data[max(0, m.start() - ENTROPY_WINDOW) : m.start() + ENTROPY_WINDOW]) > MAX_TEXT_ENTROPY:
             continue
         start, end = max(0, m.start() - CONTEXT), min(len(data), m.end() + CONTEXT)
         text = data[start:end].decode("latin-1")

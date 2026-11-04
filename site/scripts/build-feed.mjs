@@ -6,7 +6,8 @@
 //   dist/feed/releases.json           the GitHub releases API layout the Manager's OTA parses
 //                                     (UpdateInfo.kt parseReleases), pointing at /dl/ and carrying
 //                                     a sha256 digest computed here
-//   dist/feed/hiding-rules.json(.sig) byte-for-byte copies of the signed rules in the repo
+//   dist/feed/hiding-rules.json(.sig) byte-for-byte copies of site/feed (the APK's signed rules
+//                                     plus the module mount source, scripts/sign_hiding_rules.py)
 //   dist/feed/module-repo/...         the module-repo branch (modules.json, module/<id>.json)
 //   dist/_private/releases.json       the same releases plus `urgent` (CHANGELOG heading ends in
 //                                     [gấp]) for the API's membership rules; Caddy never serves it
@@ -22,6 +23,7 @@ const REPO = 'peo1108/Cam-Kernel-SU'
 const SITE = process.env.SITE_URL || 'https://caesarvn.xyz'
 const DIST = fileURLToPath(new URL('../docs/.vitepress/dist/', import.meta.url))
 const ASSETS = fileURLToPath(new URL('../../manager/app/src/main/assets/', import.meta.url))
+const FEED_RULES = fileURLToPath(new URL('../feed/', import.meta.url))
 const CHANGELOG = fileURLToPath(new URL('../../CHANGELOG.md', import.meta.url))
 const auth = process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}
 
@@ -113,8 +115,15 @@ console.log(`releases: ${feed.map((r) => r.tag_name).join(', ')} (${(fetched / 1
 
 /* ---------------- hiding rules (signed: copied byte for byte) ---------------- */
 
-for (const f of ['hiding-rules.json', 'hiding-rules.json.sig']) await copyFile(join(ASSETS, f), join(DIST, 'feed', f))
-console.log('hiding rules: copied')
+// site/feed holds the APK's rules with the module mount source kept in mountSources, signed by
+// scripts/sign_hiding_rules.py: Managers before 1.2.3-beta.4 read that list as written.
+const shippedRules = JSON.parse(await readFile(join(ASSETS, 'hiding-rules.json'), 'utf8'))
+const feedRules = JSON.parse(await readFile(join(FEED_RULES, 'hiding-rules.json'), 'utf8'))
+if (feedRules.version !== shippedRules.version) {
+  throw new Error(`hiding rules: site/feed has version ${feedRules.version}, the APK ${shippedRules.version}; run scripts/sign_hiding_rules.py`)
+}
+for (const f of ['hiding-rules.json', 'hiding-rules.json.sig']) await copyFile(join(FEED_RULES, f), join(DIST, 'feed', f))
+console.log(`hiding rules: copied version ${feedRules.version}`)
 
 /* ---------------- module library ---------------- */
 

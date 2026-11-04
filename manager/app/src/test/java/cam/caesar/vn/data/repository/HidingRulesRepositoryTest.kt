@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.json.JSONObject
 import org.junit.Test
 import java.io.File
 import java.time.Duration
@@ -14,6 +15,8 @@ class HidingRulesRepositoryTest {
 
     private val rules = File("src/main/assets/hiding-rules.json")
     private val signature = File("src/main/assets/hiding-rules.json.sig")
+    private val feedRules = File("../../site/feed/hiding-rules.json")
+    private val feedSignature = File("../../site/feed/hiding-rules.json.sig")
 
     @Test
     fun shippedRulesAreSigned() {
@@ -38,6 +41,21 @@ class HidingRulesRepositoryTest {
         assertFalse(rules.readText().contains("KSU"))
         assertEquals("green", parsed.safeProps["ro.boot.verifiedbootstate"])
         assertEquals(parsed, HidingRules.parse(parsed.toJson()))
+    }
+
+    @Test
+    fun feedRulesAreTheShippedOnesSigned() {
+        // what caesarvn.xyz/feed serves; fails when the shipped rules changed without
+        // scripts/sign_hiding_rules.py rewriting site/feed
+        assertTrue(HidingRulesRepository.verify(feedRules.readBytes(), feedSignature.readText()))
+        assertEquals(HidingRules.parse(rules.readText()), HidingRules.parse(feedRules.readText()))
+    }
+
+    @Test
+    fun feedRulesKeepTheModuleMountSourceForOldManagers() {
+        // Managers before 1.2.3-beta.4 take mountSources as written and do not add it back
+        val sources = JSONObject(feedRules.readText()).getJSONArray("mountSources")
+        assertEquals("KSU", sources.getString(0))
     }
 
     @Test

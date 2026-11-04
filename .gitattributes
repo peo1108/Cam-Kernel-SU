@@ -5,3 +5,5 @@
 # signed byte for byte: git must not touch line endings
 manager/app/src/main/assets/hiding-rules.json -text
 manager/app/src/main/assets/hiding-rules.json.sig -text
+site/feed/hiding-rules.json -text
+site/feed/hiding-rules.json.sig -text

@@ -25,11 +25,12 @@
 # app's status page stays put, while root's real page counts the load; with it off both hear
 # POLICYLOAD with the seqno root's page shows (the control).
 #
-# Known residual, not measured here: a context valid in both policies (a successful attr/current
-# transition) is parsed twice by the hook (backup to decide hiding, live for the transition SID)
-# where stock parses once. It cannot be dropped without ceasing to hide, and a successful write
-# mutates the thread's creds, so it does not micro-time in a tight loop like the invalid payloads.
-# The context/access selinuxfs writes no longer double-parse (they discard the live result).
+# Known residual, not measured here: a successful attr/current transition does one sidtab lookup
+# more than stock. The hook parses the context once, against the backup, and takes the live SID
+# from the same parsed struct while the live policy is one KSU derived from the backup
+# (live_policy_is_derived in kernel/feature/selinux_hide.c; a policy loaded another way is parsed
+# again). A successful write mutates the thread's creds, so it does not micro-time in a tight loop
+# like the invalid payloads. The context/access selinuxfs writes take the same single parse.
 #
 # Needs root granted to Shell and the NDK (NDK_CLANG=<clang> to pick one). Changes selinux_hide
 # in the kernel only (camd feature set, not saved) and puts it back, even when interrupted.

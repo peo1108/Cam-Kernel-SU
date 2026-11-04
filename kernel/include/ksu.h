@@ -14,6 +14,10 @@ extern bool allow_shell;
 extern bool ksu_bundled;
 #endif
 extern struct selinux_policy *backup_sepolicy;
+// The live policy KSU last published and its seqno (kernel/selinux/rules.c), set while every
+// policy since the backup came from KSU; read by selinux_hide (live_policy_is_derived).
+extern struct selinux_policy *ksu_derived_policy;
+extern u32 ksu_derived_seqno;
 extern bool ksu_no_custom_rc;
 
 static inline int startswith(char *s, char *prefix)

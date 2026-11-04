@@ -1,8 +1,10 @@
 // Host tests for the context parsing in feature/selinux_hide.c (string_to_context_struct and
 // security_context_to_sid_with_policy, taken verbatim from the module by extract_fn.awk): a context
 // the backup policy rejects never reaches the live policy (one parse, like stock: Duck times that
-// path, row 71 of docs/CAM_CHANGES.md); an accepted one is synced into the live sidtab; a live
-// sidtab frozen by a policy reload (-ESTALE) is retried on the new policy (upstream #3936).
+// path, row 71 of docs/CAM_CHANGES.md); an accepted one is synced into the live sidtab, from the
+// same parsed struct while the live policy is one KSU derived from the backup
+// (live_policy_is_derived) and parsed again against a policy loaded another way; a live sidtab
+// frozen by a policy reload (-ESTALE) is retried on the new policy (upstream #3936).
 // The policy, sidtab and MLS calls are fakes that count what the code does.
 // Run: make -C kernel/tests (needs gcc or clang with AddressSanitizer).
 #include <assert.h>
@@ -50,7 +52,14 @@ struct sidtab {
 struct selinux_policy {
     struct sidtab *sidtab;
     struct policydb policydb;
+    u32 latest_granting;
 };
+
+// kernel/selinux/rules.c: the live policy KSU last published
+static struct selinux_policy *ksu_derived_policy;
+static u32 ksu_derived_seqno;
+#define READ_ONCE(x) (x)
+#define likely(x) (x)
 
 struct context {
     u32 user, role, type;
@@ -187,7 +196,12 @@ static void reset(void)
     make_policy(&backup, &backup_sidtab, "backup", stock_types, 1000);
     make_policy(&live, &live_sidtab, "live", live_types, 2000);
     make_policy(&reloaded, &reloaded_sidtab, "reloaded", live_types, 3000);
+    live.latest_granting = 2;
+    reloaded.latest_granting = 3;
     selinux_state.policy = &live;
+    // the live policy is the one KSU published (apply_kernelsu_rules)
+    ksu_derived_policy = &live;
+    ksu_derived_seqno = live.latest_granting;
     rcu_depth = rcu_locks = kmemdup_calls = 0;
 }
 
@@ -303,20 +317,66 @@ T(accepted_context_syncs_without_reparsing_live)
     assert(lookups(&live.policydb) == 0 && live.policydb.mls_calls == 0);
 }
 
+T(foreign_live_policy_is_parsed)
+{
+    // a policy loaded through selinuxfs, not by KSU: its values may differ from the backup's
+    ksu_derived_policy = NULL;
+    struct result r = to_sid("u:r:untrusted_app:s0:c1,c2");
+    assert(r.rc == 0 && r.orig_rc == 0);
+    assert(r.sid == 1001 && r.orig_sid == 2001);
+    assert(backup_sidtab.inserts == 1 && live_sidtab.inserts == 1);
+    // both policies parse the whole string: the copy is restored after the backup mutated it
+    assert(!strcmp(backup.policydb.mls_seen, "s0:c1,c2") && !strcmp(live.policydb.mls_seen, "s0:c1,c2"));
+    assert(lookups(&backup.policydb) == 3 && lookups(&live.policydb) == 3);
+    assert(kmemdup_calls == 1 && rcu_locks == 1);
+}
+
+T(foreign_live_rejection_leaves_orig_sid_null)
+{
+    // a type the backup has and a foreign live policy lacks: no live SID, so no transition
+    ksu_derived_policy = NULL;
+    live.policydb.p_types.names[0] = "renamed_app";
+    struct result r = to_sid("u:r:untrusted_app:s0");
+    assert(r.rc == 0 && r.sid == 1001);
+    assert(r.orig_rc == -EINVAL && r.orig_sid == SECSID_NULL && live_sidtab.inserts == 0);
+}
+
+T(newer_policy_at_the_same_address_is_parsed)
+{
+    // KSU's policy freed and another allocated where it was: the seqno has moved on
+    live.latest_granting = 9;
+    struct result r = to_sid("u:r:untrusted_app:s0");
+    assert(r.rc == 0 && r.orig_rc == 0 && r.orig_sid == 2001);
+    assert(lookups(&live.policydb) == 3 && live.policydb.mls_calls == 1);
+}
+
 T(stale_live_sidtab_retries_on_reloaded_policy)
 {
+    // reloaded through selinuxfs: the new policy is not KSU's, so it is parsed
     live_sidtab.reloaded = &reloaded;
     struct result r = to_sid("u:r:untrusted_app:s0:c5");
     assert(r.rc == 0 && r.orig_rc == 0);
     assert(r.sid == 1001 && r.orig_sid == 3001);
     assert(rcu_locks == 2);
-    // the second pass re-parses the intact string against the backup; the reloaded
-    // live sidtab is grown from the reused struct (its policy is not parsed)
+    // the second pass parses an intact string again on both sides
     assert(backup.policydb.mls_calls == 2 && !strcmp(backup.policydb.mls_seen, "s0:c5"));
-    assert(reloaded.policydb.mls_calls == 0);
+    assert(reloaded.policydb.mls_calls == 1 && !strcmp(reloaded.policydb.mls_seen, "s0:c5"));
     assert(reloaded_sidtab.inserts == 1 && live_sidtab.inserts == 0);
     // the backup sidtab returns the same SID for the same context; the fake just counts
     assert(backup_sidtab.inserts == 2 && kmemdup_calls == 1);
+}
+
+T(stale_live_sidtab_retries_on_ksu_reload)
+{
+    // handle_sepolicy published the new policy while the old one was foreign
+    ksu_derived_policy = &reloaded;
+    ksu_derived_seqno = reloaded.latest_granting;
+    live_sidtab.reloaded = &reloaded;
+    struct result r = to_sid("u:r:untrusted_app:s0:c5");
+    assert(r.rc == 0 && r.orig_rc == 0 && r.orig_sid == 3001 && rcu_locks == 2);
+    // the foreign policy was parsed on the first pass, KSU's is grown from the reused struct
+    assert(live.policydb.mls_calls == 1 && reloaded.policydb.mls_calls == 0);
+    assert(lookups(&reloaded.policydb) == 0 && reloaded_sidtab.inserts == 1);
 }
 
 T(other_live_sidtab_errors_are_not_retried)
@@ -373,7 +433,11 @@ int main(void)
     RUN(accepted_context_syncs_live_sidtab);
     RUN(context_without_mls_is_rejected);
     RUN(accepted_context_syncs_without_reparsing_live);
+    RUN(foreign_live_policy_is_parsed);
+    RUN(foreign_live_rejection_leaves_orig_sid_null);
+    RUN(newer_policy_at_the_same_address_is_parsed);
     RUN(stale_live_sidtab_retries_on_reloaded_policy);
+    RUN(stale_live_sidtab_retries_on_ksu_reload);
     RUN(other_live_sidtab_errors_are_not_retried);
     RUN(backup_sidtab_failure_skips_live);
     RUN(selinuxfs_callers_without_orig_pointers_still_sync);

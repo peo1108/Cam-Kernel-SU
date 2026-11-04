@@ -300,15 +300,14 @@ static int __nocfi my_setprocattr(const char *name, void *value, size_t size)
 
     /* Obtain a SID for the context. */
     {
-        // Residual timing tell we cannot remove here: a context valid in both
-        // policies (a normal transition) is parsed twice, once against the
-        // backup to decide whether to hide it and once against the live policy
-        // for the SID the transition needs, where stock parses once. Rejected
-        // and empty contexts already match stock (see the early-out above and
-        // security_context_to_sid_with_policy); only a successful transition
-        // pays the extra parse, and dropping it would mean no longer parsing
-        // the backup, i.e. no longer hiding. scripts/device_selinux_timing_test.sh
-        // tracks the invalid-context gap, which is the one Duck times.
+        // A context valid in the backup is parsed once, against the backup to
+        // decide whether to hide it; the SID the transition needs in the live
+        // policy comes from the same parsed struct while the live policy is
+        // one KSU derived from the backup (security_context_to_sid_with_policy),
+        // so a normal transition costs stock's parse plus one more sidtab
+        // lookup. Rejected and empty contexts already match stock (see the
+        // early-out above). scripts/device_selinux_timing_test.sh tracks the
+        // invalid-context gap, which is the one Duck times.
         struct selinux_policy *policy = backup_get();
 
         if (!policy)
@@ -832,6 +831,14 @@ out:
     return rc;
 }
 
+// Whether the live policy came from the backup through KSU's own edits only (ksu_derived_policy
+// in kernel/selinux/rules.c), which append symbols and keep every stock value: then a context
+// parsed against the backup means the same in it. A pointer and a seqno compare, no parse.
+static bool live_policy_is_derived(struct selinux_policy *live)
+{
+    return live == READ_ONCE(ksu_derived_policy) && live->latest_granting == READ_ONCE(ksu_derived_seqno);
+}
+
 static int security_context_to_sid_with_policy(struct selinux_policy *policy, const char *scontext, u32 scontext_len,
                                                u32 *sid, u32 def_sid, gfp_t gfp_flags, u32 *orig_sid_p, int *orig_rc_p)
 {
@@ -839,7 +846,7 @@ static int security_context_to_sid_with_policy(struct selinux_policy *policy, co
     struct policydb *policydb;
     struct sidtab *sidtab, *orig_sidtab;
     char *scontext2;
-    struct context context;
+    struct context context, orig_context;
     int rc = 0, orig_rc = -EINVAL;
     u32 orig_sid;
 
@@ -874,16 +881,29 @@ retry:
             // backup accepted is also synced into the live sidtab, as stock
             // does: stock grows the live sidtab for every context checked
             // through selinuxfs and an app (app_zygote) reads that growth in
-            // ss/sidtab_hash_stats. KSU only appends types, so a context valid
-            // in the backup has identical symbol values in the live policy:
-            // reuse the already-parsed struct for the live sidtab instead of
-            // parsing the string a second time. That second parse cost ~200ns
-            // only on the accepted path, which skewed the accept/reject timing
-            // ratio -- the reject path already matches stock, so a slower
-            // accept stood out to an app_zygote probe that compares the two.
-            // setprocattr additionally takes the live SID for the transition
-            // (orig_sid_p); the other callers discard it.
-            orig_rc = sidtab_context_to_sid(orig_sidtab, &context, &orig_sid);
+            // ss/sidtab_hash_stats. When the live policy is one KSU derived
+            // from the backup (it only appends types), a context valid in the
+            // backup has identical symbol values in it: reuse the parsed struct
+            // for the live sidtab instead of parsing the string a second time.
+            // That second parse cost ~200ns only on the accepted path, which
+            // skewed the accept/reject timing ratio -- the reject path already
+            // matches stock, so a slower accept stood out to an app_zygote
+            // probe that compares the two. A policy loaded some other way may
+            // number its symbols differently: parse against it, and a context
+            // it lacks gets no live SID. setprocattr additionally takes the
+            // live SID for the transition (orig_sid_p); the other callers
+            // discard it.
+            if (likely(live_policy_is_derived(orig_policy))) {
+                orig_rc = sidtab_context_to_sid(orig_sidtab, &context, &orig_sid);
+            } else {
+                memcpy(scontext2, scontext, scontext_len);
+                orig_rc =
+                    string_to_context_struct(&orig_policy->policydb, orig_sidtab, scontext2, &orig_context, def_sid);
+                if (!orig_rc) {
+                    orig_rc = sidtab_context_to_sid(orig_sidtab, &orig_context, &orig_sid);
+                    context_destroy(&orig_context);
+                }
+            }
             if (!orig_rc && orig_sid_p)
                 *orig_sid_p = orig_sid;
         }

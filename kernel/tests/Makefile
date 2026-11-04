@@ -15,7 +15,8 @@ pkg_tracker_test: pkg_tracker_test.c xml_builder.h ../policy/pkg_tracker.c ../po
 
 # The parsing functions come out of the module source itself, not a copy.
 selinux_hide_parse.inc: ../feature/selinux_hide.c extract_fn.awk
-	awk -v names="string_to_context_struct security_context_to_sid_with_policy" -f extract_fn.awk $< > $@ || \
+	awk -v names="string_to_context_struct live_policy_is_derived security_context_to_sid_with_policy" \
+		-f extract_fn.awk $< > $@ || \
 		{ rm -f $@; exit 1; }
 
 selinux_hide_test: selinux_hide_test.c selinux_hide_parse.inc

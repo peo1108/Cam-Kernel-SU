@@ -18,6 +18,20 @@
 
 struct selinux_policy *backup_sepolicy;
 
+// Cam: the live policy KSU last published and its seqno, kept only while every policy since
+// the backup was copied came from here. KSU's edits only append symbols, so a context parsed
+// against the backup has the same values in such a policy and selinux_hide reuses the parsed
+// struct for the live sidtab instead of parsing twice. A policy loaded any other way (selinuxfs,
+// booleans) never matches: seqnos only grow, so not even one allocated at a freed one's address.
+struct selinux_policy *ksu_derived_policy;
+u32 ksu_derived_seqno;
+
+static void set_derived_policy(struct selinux_policy *pol)
+{
+    WRITE_ONCE(ksu_derived_policy, pol);
+    WRITE_ONCE(ksu_derived_seqno, pol ? pol->latest_granting : 0);
+}
+
 #define SELINUX_POLICY_INSTEAD_SELINUX_SS
 
 #define ALL NULL
@@ -177,6 +191,8 @@ void apply_kernelsu_rules()
 
     pol->latest_granting = old_pol->latest_granting + 1;
     rcu_assign_pointer(selinux_state.policy, pol);
+    // the backup and pol are both copies of old_pol; pol only gained KSU's types
+    set_derived_policy(pol);
     synchronize_rcu();
     ksu_destroy_sepolicy(old_pol);
 
@@ -537,6 +553,8 @@ int handle_sepolicy(void __user *user_data, u64 data_len)
 
     pol->latest_granting = old_pol->latest_granting + 1;
     rcu_assign_pointer(selinux_state.policy, pol);
+    // still the backup's line only if old_pol was (not after a policy loaded some other way)
+    set_derived_policy(old_pol == ksu_derived_policy && old_pol->latest_granting == ksu_derived_seqno ? pol : NULL);
     synchronize_rcu();
     ksu_destroy_sepolicy(old_pol);
 

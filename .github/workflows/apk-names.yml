@@ -1,0 +1,43 @@
+name: APK names
+
+# The upstream name scanner (scripts/check_apk_strings.py) on the newest Manager APK main built, so
+# a change to it is tried on a real APK without rebuilding everything. build-manager.yml runs it on
+# every APK it builds; its unit tests run in test.yml (docs/CAM_CHANGES.md row 90). Not part of
+# test.yml, which release.yml calls without the actions permission this needs.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '.github/workflows/apk-names.yml'
+      - 'scripts/check_apk_strings.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Failed runs too: the APK is uploaded before it is checked, and the APK that failed the
+      # check is the one a scanner change has to be tried on.
+      - name: Scan the newest Manager APK of main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          runs=$(gh run list -R "$GITHUB_REPOSITORY" --workflow build-manager.yml --branch main --status completed -L 20 --json databaseId -q '.[].databaseId')
+          for run in $runs; do
+            artifact=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/artifacts?name=manager" -q '.artifacts[] | select(.expired | not) | .id')
+            if [ -n "$artifact" ]; then
+              gh run download "$run" -R "$GITHUB_REPOSITORY" -n manager -D apk
+              echo "APK of run $run"
+              exec python3 scripts/check_apk_strings.py apk/*.apk
+            fi
+          done
+          # Red, so a scanner change is never taken as tried on a real APK when it was not.
+          echo "::error::No Manager APK of main to scan (artifacts expire): run Build Manager, then this"
+          exit 1

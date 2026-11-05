@@ -42,6 +42,9 @@ jobs:
   generate-key:
     runs-on: ubuntu-latest
     outputs:
+      # Builds that end in a signed Manager APK (uploaded, repacked with camd, checked): PRs, main,
+      # dev and tags. Other refs only build.
+      signed: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref_type == 'tag' }}
       expected_size: ${{ steps.extract.outputs.expected_size }}
       expected_hash: ${{ steps.extract.outputs.expected_hash }}
       keystore: ${{ steps.gen.outputs.keystore }}
@@ -63,7 +66,7 @@ jobs:
             -validity 1 \
             -storepass "$KEYSTORE_PASSWORD" \
             -keypass "$KEY_PASSWORD" \
-            -dname "CN=KernelSU PR Build" \
+            -dname "CN=Cam PR Build" \
             -storetype JKS \
             -keystore pr-key.jks
 
@@ -154,7 +157,7 @@ jobs:
           fetch-depth: 0
 
       - name: Write key
-        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
+        if: needs.generate-key.outputs.signed == 'true' && github.event_name != 'pull_request'
         run: |
           if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
             {
@@ -199,7 +202,7 @@ jobs:
           fi
 
       - name: Upload build artifact
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}
+        if: needs.generate-key.outputs.signed == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: manager-gradle
@@ -207,14 +210,14 @@ jobs:
 
       - name: Upload mappings
         uses: actions/upload-artifact@v7
-        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
+        if: needs.generate-key.outputs.signed == 'true' && github.event_name != 'pull_request'
         with:
           name: "mappings"
           path: "manager/app/build/outputs/mapping/release/"
 
   repack-manager:
     needs: [build-manager, build-camd, generate-key]
-    if: always() && needs.build-manager.result == 'success' && needs.build-camd.result == 'success' && needs.generate-key.result == 'success'
+    if: always() && needs.build-manager.result == 'success' && needs.build-camd.result == 'success' && needs.generate-key.result == 'success' && needs.generate-key.outputs.signed == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -277,7 +280,6 @@ jobs:
           cp -f "$RISCV64_CAMD" target/riscv64-linux-android/release/camd
 
       - name: Prepare signing inputs
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}
         env:
           PR_KEYSTORE: ${{ needs.generate-key.outputs.keystore }}
           PR_KEYSTORE_PASSWORD: ${{ needs.generate-key.outputs.keystore_password }}
@@ -303,7 +305,6 @@ jobs:
           fi
 
       - name: Repack and resign
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}
         run: |
           python3 repack_apk.py repack \
             -b release \
@@ -318,7 +319,6 @@ jobs:
             --strip
 
       - name: Upload build artifact
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}
         uses: actions/upload-artifact@v7
         with:
           name: manager
@@ -327,7 +327,6 @@ jobs:
       # After the upload, so a failing APK can still be looked at. Any app that can see the Manager
       # can read its APK; an upstream merge easily brings a name back (CAM_CHANGES row 85).
       - name: Check the APK for upstream names
-        if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}
         run: python3 scripts/check_apk_strings.py dist/*.apk
 
       - name: Upload to telegram

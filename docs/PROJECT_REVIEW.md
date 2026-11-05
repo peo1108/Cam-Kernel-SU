@@ -34,7 +34,7 @@ Rủi ro mới hoặc đổi:
 | App `cam.su.kernel` không tự cập nhật lên `cam.caesar.vn` (OTA từ chối gói khác) | Cao | Máy chủ đưa bốn bước chuyển máy vào ghi chú cập nhật mà app cũ hiện (dòng 89); đã deploy. Chưa thấy trên app cũ thật: 1.2.3 mở cho thành viên thường khoảng 24/11 |
 | Feed phát rule bỏ nguồn mount `KSU` cho app cũ | Cao | Xong (dòng 86): feed phát bản riêng còn `KSU` |
 | Kernel dùng lại context đã parse khi policy thật không do KSU dựng | Trung bình | Xong (dòng 87): so con trỏ và seqno, parse lại khi khác |
-| APK mang lại tên upstream sau merge | Trung bình | Xong: CI kiểm mỗi lần build (dòng 85); bỏ qua dữ liệu nén theo entropy |
+| APK mang lại tên upstream sau merge | Trung bình | Xong: CI kiểm mỗi lần build (dòng 85), đọc theo định dạng (dòng 90) |
 | ZUI giữ khoá `<gói>\|<quyền>` trong `settings global` của app đã gỡ, app nào cũng đọc được | Thấp | Đã xoá trên tablet các khoá của `me.weishu.kernelsu`, `org.probe.*` và gói test; máy khách từng cài app root khác có thể còn |
 | OTA thật từ đầu đến cuối trên gói mới, thông báo `cam_boot_guard` mới | Thấp | Chưa thử |
 
@@ -110,8 +110,8 @@ Cách tính: trung bình có trọng số, kiến trúc, kiểm thử và bảo 
 
 1. **Deploy API** (`site/scripts/deploy-api.sh`): migration 4 tự chạy, tài khoản cũ được coi là đã xác minh nên không ai mất quyền. Push `site/**` tự deploy giao diện; giao diện chỉ hiện nhắc xác minh khi API mới báo `verified: false`, nên thứ tự deploy nào cũng được.
 2. **Một lượt OTA thật**: gắn tag beta, để máy của Cam nhận và cài qua OTA, ghi kết quả vào mục 6 của `CAM_CHANGES.md`.
-4. **Theo dõi khách chuyển sang Cam** (từ khoảng 24/11, khi 1.2.3 mở cho thành viên thường): app cũ phải hiện hướng dẫn trong hộp thoại cập nhật; ai báo kẹt thì xem bước nào (dòng 89 của `CAM_CHANGES.md`).
 3. **Thử cấp lại Widevine** trên một máy chịu được rủi ro (có sao lưu và tự khôi phục, nhưng xóa `/data/vendor/mediadrm` là thật).
+4. **Theo dõi khách chuyển sang Cam** (từ khoảng 24/11, khi 1.2.3 mở cho thành viên thường): app cũ phải hiện hướng dẫn trong hộp thoại cập nhật; ai báo kẹt thì xem bước nào (dòng 89 của `CAM_CHANGES.md`).
 
 ## Cách chấm
 

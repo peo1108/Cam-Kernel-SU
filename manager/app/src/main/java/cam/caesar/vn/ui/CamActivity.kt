@@ -161,10 +161,6 @@ import cam.caesar.vn.ui.theme.CamTheme
 import cam.caesar.vn.ui.theme.LocalColorMode
 import cam.caesar.vn.ui.theme.LocalEnableBlur
 import cam.caesar.vn.ui.theme.LocalEnableFloatingBottomBar
-import androidx.compose.ui.unit.dp
-import cam.caesar.vn.ui.slime.SlimeLayer
-import androidx.compose.runtime.snapshotFlow
-import cam.caesar.vn.ui.slime.SlimeHome
 import cam.caesar.vn.ui.theme.LocalEnableFloatingBottomBarBlur
 import cam.caesar.vn.ui.theme.LocalEnableNavigationBadge
 import cam.caesar.vn.ui.theme.LocalModuleDescriptionMaxLines
@@ -422,25 +418,10 @@ class CamActivity : ComponentActivity() {
                         LocalGlassBackgroundState provides glassState,
                         LocalLiquidGravityAngle provides rememberQuantizedGravityAngle(),
                     ) {
-                        // The roaming slimes live over every page; a new page re-rolls who is around.
-                        val route = navigator.backStack.lastOrNull()
-                        val onMain = route == Route.Main || route == Route.Home || route == Route.SuperUser || route == Route.Module || route == Route.Settings
-                        SlimeLayer(
-                            page = if (onMain) "main_$selectedMainPage" else route ?: "none",
-                            home = (onMain && selectedMainPage == 0) || route == Route.Home,
-                            // the floating bar at the bottom is the slimes' floor; down a side it is not
-                            floorInset = if (onMain && uiState.enableFloatingBottomBar && rememberNavSide() == NavSide.Bottom) 92.dp else 10.dp,
-                            enabled = uiState.roamingSlimes,
-                            maxCount = uiState.roamingSlimeCount,
-                            nightNap = uiState.slimeNightNap,
-                            // Out of the way while something is being flashed, installed or run.
-                            quiet = route is Route.Flash || route is Route.ExecuteModuleAction || route == Route.Install,
-                        ) {
-                            Scaffold(containerColor = Color.Transparent) {
-                                Box {
-                                    CompositionLocalProvider(LocalHero provides hero, LocalExpand provides expand) { navDisplay() }
-                                    HeroOverlay(hero)
-                                }
+                        Scaffold(containerColor = Color.Transparent) {
+                            Box {
+                                CompositionLocalProvider(LocalHero provides hero, LocalExpand provides expand) { navDisplay() }
+                                HeroOverlay(hero)
                             }
                         }
                     }
@@ -637,15 +618,6 @@ fun MainScreen(
     LaunchedEffect(updateRequested) {
         if (updateRequested) mainPagerState.animateToPage(0)
     }
-    // Lets the slimes in the status card see a swipe away from home as it starts.
-    DisposableEffect(mainPagerState.pagerState) {
-        onDispose { SlimeHome.pagerPos = Float.NaN }
-    }
-    LaunchedEffect(mainPagerState.pagerState) {
-        val state = mainPagerState.pagerState
-        snapshotFlow { state.currentPage + state.currentPageOffsetFraction }.collect { SlimeHome.pagerPos = it }
-    }
-
     MainScreenBackHandler(mainPagerState, navController)
 
     // shared by the Superuser and Module pages; back and switching tabs close it first
@@ -703,8 +675,8 @@ fun MainScreen(
         }
         // The activity handles rotation itself (manifest), and rotating a tablet moves the bar
         // between the bottom and a side, so the pager changes branch below. Moved, not rebuilt:
-        // rebuilt, every page lost its state and the status card and the roaming slimes made their
-        // 3D engines again, which crashed in Filament (see AndroidManifest). The pager lambda runs
+        // rebuilt, every page lost its state and the status card made its 3D engine again, which
+        // crashed in Filament (see AndroidManifest). The pager lambda runs
         // at the same spot inside this group, so its state comes along.
         val pagerHost = remember {
             movableContentOf { bottomInnerPadding: Dp, content: @Composable (Dp) -> Unit -> content(bottomInnerPadding) }

@@ -17,8 +17,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 const val BACKGROUND_RELEASE_MS = 10_000L
 
 /**
- * For GPU-heavy objects (the Filament engines of the status card and the roaming slimes, a few
- * hundred MB between them) that should not stay alive while the app sits in the background:
+ * For GPU-heavy objects (the Filament engine of the status card, a few hundred MB) that should not stay alive while the app sits in the background:
  * [release] runs [graceMillis] after the activity stops, and the returned generation changes when
  * it starts again after a release, so `remember(generation) { create() }` makes a fresh one.
  *

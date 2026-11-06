@@ -12,10 +12,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import com.google.android.filament.Colors
 import com.google.android.filament.Engine
-import com.google.android.filament.Material
-import com.google.android.filament.MaterialInstance
 import com.google.android.filament.Scene
 import com.google.android.filament.Texture
 import com.google.android.filament.TextureSampler
@@ -37,22 +34,14 @@ import kotlin.math.sqrt
 
 /**
  * The four 3D slimes themselves: jelly body with shape-key arms, painted face, and their
- * wardrobe. Shared by the diorama in the status card and by the layer the slimes roam the rest
- * of the app in, so the ones running over the pages are the very same models as in the box.
- *
- * [candy] picks the jelly: inside the box it refracts the room behind it; over the app there is
- * nothing rendered behind it to refract, so it is a glossy see-through candy instead.
+ * wardrobe, in the diorama of the status card. The jelly refracts the room behind it.
  */
 internal class SlimeRig(
     private val engine: Engine,
     assetLoader: AssetLoader,
     resourceLoader: ResourceLoader,
     scene: Scene,
-    private val candy: Boolean,
-    /** The see-through jelly for the candy body: clear in the middle, denser at the rim. */
-    private val clear: Material? = null,
 ) {
-    private val clearInstances = ArrayList<MaterialInstance>()
     val roots = IntArray(SLIME_COUNT)
     private val bodies = IntArray(SLIME_COUNT)
     private val faces = IntArray(SLIME_COUNT)
@@ -91,7 +80,7 @@ internal class SlimeRig(
         return List(SLIME_COUNT) { k ->
             val skin = Cast[k]
             val bodyArgb = argb(skin.body)
-            val jelly = if (candy) candy(g, k, bodyArgb) else jelly(g, k, bodyArgb, argb(lerp(skin.body, Color.White, 0.3f)))
+            val jelly = jelly(g, k, bodyArgb, argb(lerp(skin.body, Color.White, 0.3f)))
             val faceMat = g.material(JSONObject().apply {
                 put("name", "face_$k")
                 put("alphaMode", "BLEND")
@@ -130,18 +119,6 @@ internal class SlimeRig(
         })
     })
 
-    /** The same jelly without refraction: tinted, a little see-through, glossy, glowing from within. */
-    private fun candy(g: Glb, k: Int, bodyArgb: Long) = g.material(JSONObject().apply {
-        put("name", "candy_$k")
-        put("alphaMode", "BLEND")
-        put("emissiveFactor", JSONArray(linearRgb3(bodyArgb).let { c -> List(3) { c.getDouble(it) * 0.12 } }))
-        put("pbrMetallicRoughness", JSONObject().apply {
-            put("baseColorFactor", linearRgb(bodyArgb, 0.9f))
-            put("metallicFactor", 0.0)
-            put("roughnessFactor", 0.08)
-        })
-    })
-
     /** Finds the slimes in the loaded [asset] and dresses them. */
     fun bind(asset: FilamentAsset) {
         for (k in 0 until SLIME_COUNT) {
@@ -149,25 +126,8 @@ internal class SlimeRig(
             bodies[k] = asset.getFirstEntityByName("body_$k")
             faces[k] = asset.getFirstEntityByName("face_$k")
             materialOf(faces[k])?.setParameter("baseColorMap", faceTextures[k], sampler)
-            shadows(bodies[k], cast = !candy, receive = false)
+            shadows(bodies[k], cast = true, receive = false)
             shadows(faces[k], cast = false, receive = false)
-            if (candy) {
-                // Body first, then the face painted on it, both see-through.
-                priority(bodies[k], 5)
-                priority(faces[k], 6)
-                val ri = if (bodies[k] == 0) 0 else rm.getInstance(bodies[k])
-                if (clear != null && ri != 0) {
-                    // A little deeper than the skin, and enough of it through the middle, so pale Mochi
-                    // and Chanh still read as pink and yellow over the app's light glass.
-                    val body = lerp(Cast[k].body, Cast[k].deep, 0.55f)
-                    val mi = clear.createInstance()
-                    mi.setParameter("tint", Colors.RgbType.SRGB, body.red, body.green, body.blue)
-                    mi.setParameter("clarity", 0.24f)
-                    mi.setParameter("glow", 0.3f)
-                    rm.setMaterialInstanceAt(ri, 0, mi)
-                    clearInstances += mi
-                }
-            }
             faceKeys[k] = -1L
         }
         closet.attach(roots)
@@ -180,11 +140,6 @@ internal class SlimeRig(
         if (r == 0) return
         rm.setCastShadows(r, cast)
         rm.setReceiveShadows(r, receive)
-    }
-
-    private fun priority(entity: Int, p: Int) {
-        val r = if (entity == 0) 0 else rm.getInstance(entity)
-        if (r != 0) rm.setPriority(r, p)
     }
 
     fun hide(k: Int) {
@@ -303,7 +258,6 @@ internal class SlimeRig(
     /** Destroys the outfits and face textures (the caller destroys the slimes' own asset). */
     fun destroy() {
         closet.close()
-        clearInstances.forEach { engine.destroyMaterialInstance(it) }
         faceTextures.forEach { engine.destroyTexture(it) }
     }
 

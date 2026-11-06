@@ -38,8 +38,5 @@ data class ColorPaletteScreenActions(
     val onSetGlassBackgroundBlur: (Float) -> Unit,
     val onSetGlassBackgroundDim: (Float) -> Unit,
     val onPickGlassImage: (Uri) -> Unit,
-    val onSetRoamingSlimes: (Boolean) -> Unit,
-    val onSetRoamingSlimeCount: (Int) -> Unit,
-    val onSetSlimeNightNap: (Boolean) -> Unit,
     val onSetStartIntro: (Boolean) -> Unit,
 )

@@ -113,12 +113,6 @@
     <string name="settings_check_update">Kiểm tra cập nhật</string>
     <string name="settings_beta_updates">Nhận bản thử nghiệm</string>
     <string name="settings_beta_updates_summary">Nhận bản thử trước mọi người. Cần được duyệt làm beta tester (Cài đặt → Tài khoản). Có thể còn lỗi.</string>
-    <string name="settings_slimes">Slime đi dạo</string>
-    <string name="settings_slimes_summary">Cho mấy bé slime trong thẻ trạng thái chạy chơi khắp các trang</string>
-    <string name="settings_slime_count">Số slime mỗi trang</string>
-    <string name="settings_slime_count_random">Ngẫu nhiên (1–4)</string>
-    <string name="settings_slime_night">Ngủ khi trời tối</string>
-    <string name="settings_slime_night_summary">Từ 22h đến 6h chúng đi chậm, hay ngáp và ngủ gục trên mép thẻ</string>
     <string name="settings_start_intro">Intro khi mở app</string>
     <string name="settings_start_intro_summary">Logo Inner Veterans chạy trong lúc trang chủ khởi động, hết intro là slime đã chạy sẵn. Chạm để bỏ qua</string>
     <string name="settings_check_update_summary">Tự động kiểm tra cập nhật khi mở ứng dụng.</string>

@@ -2,7 +2,6 @@ package cam.caesar.vn.ui.screen.home.arena
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
-import cam.caesar.vn.ui.slime.SlimeHome
 import java.util.Random
 import kotlin.math.abs
 import kotlin.math.cos
@@ -99,7 +98,7 @@ internal class ArenaRuntime(var current: Int) {
             val period = 3.4f + k * 0.37f
             val blinkT = wrap(now + k * 1.7f, period)
             p.blink = if (blinkT < 0.14f) sin(blinkT / 0.14f * PI_F) else 0f
-            if (enterStart >= 0f && !SlimeHome.hasLeft) {
+            if (enterStart >= 0f) {
                 val e = progress(now - enterStart, k * 0.14f, 0.9f)
                 p.lift += (1f - easeOutBounce(e)) * s.h * 1.1f
                 if (e > 0.6f && e < 1f) p.jiggle = (1f - e) / 0.4f
@@ -151,31 +150,7 @@ internal class ArenaRuntime(var current: Int) {
                 }
             }
         }
-        // Whoever is out roaming the other pages is not in the box; whoever just came back in
-        // through the door walks from it to their place.
-        val homeNow = SlimeHome.clock()
-        for (k in 0 until SLIME_COUNT) {
-            val p = poses[k]
-            if (!SlimeHome.inside[k]) {
-                p.visible = false
-                continue
-            }
-            val e = (homeNow - SlimeHome.cameIn[k]) / 1.1f
-            if (e in 0f..1f) {
-                // From just inside the door (where it stands on screen) to its place.
-                val z = Box.GLASS - 1.0f
-                val doorX = s.center + (s.w - s.r * SlimeHome.DOOR_IN - s.center) / s.viewScale(z)
-                p.travel(k, doorX, z, h.x[k], h.z[k], e, s)
-            }
-        }
         for (p in poses) perspective(p, s)
-    }
-
-    /** The box's own show waits while they are out (or the glass is still mending). */
-    fun hold(now: Float) {
-        show = null
-        lastShowEnd = now
-        if (enterStart < 0f) enterStart = now
     }
 
     /** Points overlay anchors at where the 3D camera shows this slime. */

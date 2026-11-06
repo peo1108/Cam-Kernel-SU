@@ -9,7 +9,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.TextLayoutResult
-import cam.caesar.vn.ui.slime.SlimeHome
 import java.util.Random
 import kotlin.math.abs
 import kotlin.math.cos

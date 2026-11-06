@@ -64,9 +64,6 @@ fun ColorPaletteScreen() {
         onSetGlassBackgroundBlur = viewModel::setGlassBackgroundBlur,
         onSetGlassBackgroundDim = viewModel::setGlassBackgroundDim,
         onPickGlassImage = viewModel::importGlassImage,
-        onSetRoamingSlimes = viewModel::setRoamingSlimes,
-        onSetRoamingSlimeCount = viewModel::setRoamingSlimeCount,
-        onSetSlimeNightNap = viewModel::setSlimeNightNap,
         onSetStartIntro = {
             viewModel.setStartIntro(it)
             activity?.let { a -> IntroSplash.apply(a, it) }

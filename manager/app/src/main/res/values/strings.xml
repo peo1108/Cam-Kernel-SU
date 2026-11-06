@@ -143,12 +143,6 @@
     <string name="settings_check_update">Check for updates</string>
     <string name="settings_beta_updates">Beta updates</string>
     <string name="settings_beta_updates_summary">Get test builds before everyone. Needs approval as a beta tester (Settings → Account). They may have bugs.</string>
-    <string name="settings_slimes">Roaming slimes</string>
-    <string name="settings_slimes_summary">Let the slimes from the status card roam the other pages</string>
-    <string name="settings_slime_count">Slimes per page</string>
-    <string name="settings_slime_count_random">Random (1–4)</string>
-    <string name="settings_slime_night">Nap at night</string>
-    <string name="settings_slime_night_summary">From 22:00 to 6:00 they slow down, yawn and doze off on the cards</string>
     <string name="settings_start_intro">Intro on launch</string>
     <string name="settings_start_intro_summary">The Inner Veterans logo plays while the home page starts, so the slimes are already running when it opens. Tap to skip</string>
     <string name="settings_check_update_summary">Automatically check for updates when opening the app.</string>

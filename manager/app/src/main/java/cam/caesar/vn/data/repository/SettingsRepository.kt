@@ -39,9 +39,6 @@ interface SettingsRepository {
     var suLogFilters: Set<String>?
     var autoJailbreak: Boolean
     var useSoftReboot: Boolean
-    var roamingSlimes: Boolean
-    var roamingSlimeCount: Int
-    var slimeNightNap: Boolean
     /** the Inner Veterans intro over the home page while it starts up, on a launcher start */
     var startIntro: Boolean
     var conflictDetection: Boolean

@@ -100,9 +100,6 @@ class SettingsViewModel(
             val isDefaultUmountModules = repo.isDefaultUmountModules()
             val autoJailbreak = repo.autoJailbreak
             val useSoftReboot = repo.useSoftReboot
-            val roamingSlimes = repo.roamingSlimes
-            val roamingSlimeCount = repo.roamingSlimeCount
-            val slimeNightNap = repo.slimeNightNap
             val startIntro = repo.startIntro
             val isLateLoadMode = Cam.isLateLoadMode
 
@@ -148,9 +145,6 @@ class SettingsViewModel(
                     isLkmMode = isLkmMode,
                     autoJailbreak = autoJailbreak,
                     useSoftReboot = useSoftReboot,
-                    roamingSlimes = roamingSlimes,
-                    roamingSlimeCount = roamingSlimeCount,
-                    slimeNightNap = slimeNightNap,
                     startIntro = startIntro,
                     isLateLoadMode = isLateLoadMode,
                 )
@@ -375,21 +369,6 @@ class SettingsViewModel(
     fun setUseSoftReboot(enabled: Boolean) {
         repo.useSoftReboot = enabled
         _uiState.update { it.copy(useSoftReboot = enabled) }
-    }
-
-    fun setRoamingSlimes(enabled: Boolean) {
-        repo.roamingSlimes = enabled
-        _uiState.update { it.copy(roamingSlimes = enabled) }
-    }
-
-    fun setRoamingSlimeCount(count: Int) {
-        repo.roamingSlimeCount = count
-        _uiState.update { it.copy(roamingSlimeCount = count) }
-    }
-
-    fun setSlimeNightNap(enabled: Boolean) {
-        repo.slimeNightNap = enabled
-        _uiState.update { it.copy(slimeNightNap = enabled) }
     }
 
     fun setStartIntro(enabled: Boolean) {

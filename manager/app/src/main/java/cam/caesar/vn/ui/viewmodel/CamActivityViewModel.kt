@@ -57,9 +57,6 @@ class CamActivityViewModel(
             glassBackgroundBlur = settingRepo.glassBackgroundBlur,
             glassBackgroundDim = settingRepo.glassBackgroundDim,
             glassImageVersion = settingRepo.glassImageVersion,
-            roamingSlimes = settingRepo.roamingSlimes,
-            roamingSlimeCount = settingRepo.roamingSlimeCount,
-            slimeNightNap = settingRepo.slimeNightNap,
         )
     }
 
@@ -82,9 +79,6 @@ class CamActivityViewModel(
             "enable_navigation_badge",
             "enable_swipe_dismiss",
             "pager_interception_mode",
-            "roaming_slimes",
-            "roaming_slime_count",
-            "slime_night_nap",
         )
     }
 }

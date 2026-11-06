@@ -15,7 +15,6 @@ import cam.caesar.vn.ui.component.listdetail.panePiece
 import cam.caesar.vn.ui.component.liquid.lens
 import cam.caesar.vn.ui.component.liquid.vibrancy
 import cam.caesar.vn.ui.component.pagerise.pageRiseCard
-import cam.caesar.vn.ui.slime.slimeSurface
 import cam.caesar.vn.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
@@ -52,7 +51,7 @@ fun GlassCard(
     )
     // cards fly out of the tapped element while their page grows, and out of the picked row in a
     // detail beside a list, and rise when their tab is tapped (moves only: glass must not scale)
-    val glassModifier = modifier.pageRiseCard().expandPiece().panePiece().slimeSurface().glassMaterial(RoundedCornerShape(cornerRadius), tint)
+    val glassModifier = modifier.pageRiseCard().expandPiece().panePiece().glassMaterial(RoundedCornerShape(cornerRadius), tint)
     val haptic = LocalHapticFeedback.current
     if (onClick == null && onLongPress == null) {
         Card(

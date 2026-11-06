@@ -68,11 +68,6 @@ data class SettingsUiState(
     // Soft Reboot
     val useSoftReboot: Boolean = false,
 
-    // Roaming slimes
-    val roamingSlimes: Boolean = true,
-    val roamingSlimeCount: Int = 0,
-    val slimeNightNap: Boolean = true,
-
     // Start intro
     val startIntro: Boolean = true,
 )

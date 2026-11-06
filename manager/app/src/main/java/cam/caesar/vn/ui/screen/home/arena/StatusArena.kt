@@ -46,8 +46,6 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -82,10 +80,6 @@ import cam.caesar.vn.ui.component.pagerise.pageRiseCard
 import cam.caesar.vn.ui.intro.IntroGate
 import cam.caesar.vn.ui.screen.home.arena.three.Arena3D
 import cam.caesar.vn.ui.screen.home.arena.three.PanoramaMap
-import cam.caesar.vn.ui.slime.SlimeHome
-import cam.caesar.vn.ui.slime.drawHomeGlass
-import cam.caesar.vn.ui.slime.roamCostume
-import cam.caesar.vn.ui.slime.slimeSurface
 import cam.caesar.vn.ui.theme.AppFontFamily
 import top.yukonga.miuix.kmp.basic.Text
 import cam.caesar.vn.ui.util.rememberBackgroundRelease
@@ -144,11 +138,10 @@ fun StatusArena(
         var last = -1L
         while (true) {
             withFrameNanos { nanos ->
-                roamCostume = languages[runtime.current].costume
                 if (!reduceMotion) {
                     if (last >= 0L) clock += ((nanos - last) / 1_000_000_000f).coerceAtMost(0.05f)
                     last = nanos
-                    if (SlimeHome.busy()) runtime.hold(clock) else runtime.tick(clock, languages, haptic)
+                    runtime.tick(clock, languages, haptic)
                 }
                 val s = runtime.stage
                 if (arena3d != null && s != null) {
@@ -174,11 +167,6 @@ fun StatusArena(
             .pageRiseCard()
             .fillMaxWidth()
             .height(260.dp)
-            .slimeSurface()
-            .onGloballyPositioned { coords ->
-                val p = coords.positionInRoot()
-                SlimeHome.cardRect = androidx.compose.ui.geometry.Rect(p.x, p.y, p.x + coords.size.width, p.y + coords.size.height)
-            }
             .clip(shape)
             .glassMaterial(shape, GlassDefaults.cardTint())
             .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.7f), Color.White.copy(alpha = 0.15f))), shape)
@@ -489,15 +477,6 @@ fun StatusArena(
                         if (sceneMix > 0f) drawLensFlare(Offset(languages[nxt].light.x * size.width, languages[nxt].light.y * size.height), languages[nxt].light.color, sceneMix)
                         drawRect(vignette)
                         if (arena3d != null) drawGlassFront(now, px) else drawRect(sheen)
-                        // Their home: where each one stands (to burst out from), the broken glass, the door.
-                        SlimeHome.cardRect?.let { card ->
-                            for (k in 0 until SLIME_COUNT) {
-                                SlimeHome.boxPos[k] = card.topLeft + rt.poses[k].base(stage.groundY)
-                                SlimeHome.boxUnit[k] = stage.r * rt.poses[k].viewScale
-                            }
-                        }
-                        SlimeHome.doorR = stage.r
-                        drawHomeGlass(stage.r, px)
                         val grainShift = floor(now * 24f).toInt()
                         withTransform({ translate(-hash(grainShift) * 128f, -hash(grainShift + 31) * 128f) }) {
                             drawRect(grain, Offset.Zero, Size(size.width + 128f, size.height + 128f), alpha = 0.22f)

@@ -6,7 +6,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 - Remote: `origin` = `peo1108/Cam-Kernel-SU`, `upstream` = `tiann/KernelSU`
 - Nhánh làm việc: `main`. Đợt UI/UX gần nhất nằm trong commit `47a57e48` (bỏ Material, thẻ 3D, slime, quản lý app). Tài liệu đồng bộ lần cuối 2026-10-13, đối chiếu với `fe4b7b7f` (đã merge upstream tới `0c0fdb96`, merge commit `8a8058d9`).
 - Đánh giá tổng thể, điểm số và việc nên làm tiếp: [PROJECT_REVIEW.md](PROJECT_REVIEW.md).
-- Mục 3 liệt kê file, mục 4 là quy trình kéo upstream, mục 9 là bản đồ phần slime/3D để sửa cho đúng chỗ, mục 10 là cách tạo lại file vật liệu `roam_jelly.filamat`, **mục 11 là đợt đổi tên sang Cam** (đọc trước khi merge upstream), **mục 12 là trang Kiểm tra ẩn root** (cách nó chạy, cách cập nhật rule có chữ ký).
+- Mục 3 liệt kê file, mục 4 là quy trình kéo upstream, mục 9 là bản đồ phần slime/3D để sửa cho đúng chỗ (mục 10 đã bỏ cùng slime đi dạo), **mục 11 là đợt đổi tên sang Cam** (đọc trước khi merge upstream), **mục 12 là trang Kiểm tra ẩn root** (cách nó chạy, cách cập nhật rule có chữ ký).
 - **Từ 2026-10-09 mọi tên đã đổi** (mục 11): `me.weishu.kernelsu` → `cam.caesar.vn`, `Ksu`/`Natives`/`KsuService`/`MainActivity` → `Cam`/`CamNative`/`CamRootService`/`CamActivity`, `ksud` → `camd` (`userspace/camd`), `/data/adb/ksu` → `/data/adb/cam`, `kernelsu.ko` → `camsu.ko`. Mục 1 và 3 đã đổi sang tên mới (2026-10-12); mục 2 giữ tên cũ như trong commit, tra bảng đối chiếu ở mục 11.
 
 ## 1. Tóm tắt thay đổi
@@ -103,6 +103,7 @@ Tài liệu này ghi lại mọi chỗ Cam Kernel SU khác với upstream (`tian
 | 88 | **Một nhánh, tắt Dependabot** (2026-11-04): repo chỉ còn `main` và `module-repo` (nhánh dữ liệu của `module-repo.yml`, trang web và feed đọc nó); không tạo nhánh tính năng hay `merge-upstream-*`, merge upstream thẳng vào `main` (mục 4). Xoá `.github/dependabot.yml`, đóng 4 PR của bot | Cam muốn repo chỉ có một nhánh; Dependabot mở một nhánh cho mỗi hệ sinh thái mỗi tuần. Bản nâng thư viện vẫn tới qua mỗi lần merge upstream. Cập nhật bảo mật tự động của GitHub đang tắt (`automated-security-fixes`), nên không còn gì tạo nhánh. Upstream sửa `dependabot.yml` thì khi merge giữ file đã xoá |
 | 89 | **Máy chủ chỉ cách chuyển máy cho app trước khi đổi gói** (2026-11-04, `site/api/routes/device.mjs`, test trong `site/api/test/business.test.mjs`): Manager gửi `User-Agent: CamSU/<versionCode>`; mã dưới `33183` (`FIRST_RENAMED_CODE`, bản đầu tiên là `cam.caesar.vn`) là app `cam.su.kernel`. `/api/ota/releases` trả cho app đó các bản của chính nó như cũ, còn trong các bản đã đổi gói (APK `_<code>-release.apk` từ `33183`) chỉ giữ bản ổn định mới nhất và bản beta mới nhất, ghi chú của chúng mở đầu bằng `MOVE_NOTICE` (bốn bước của mục 11). `/api/ota/status` thêm `MOVE_NOTICE` vào ghi chú của bản đã đổi gói mà app cũ chào bán truy cập sớm. App mới và app không gửi mã thì nhận như trước | OTA của app cũ từ chối APK khác tên gói (`UpdateInstaller.verify`), nên nó sẽ chào một bản cập nhật không cài được rồi báo "File tải về không phải bản cập nhật của app này" mà không nói phải làm gì. Hộp thoại cập nhật của app cũ hiện ghi chú (markdown) trước khi tải, nên hướng dẫn nằm ngay đó. Khi `1.2.3` mở cho mọi thành viên, app cũ chỉ thấy bản đó. Muốn đổi lời thì sửa `MOVE_NOTICE` rồi chạy `site/scripts/deploy-api.sh` |
 | 90 | **Scanner tên upstream đọc theo định dạng** (2026-11-05, sửa dòng 85; `scripts/check_apk_strings.py`, 59 test trong `scripts/test_check_apk_strings.py`, `build-manager.yml`, `apk-names.yml`): APK/ZIP đọc tên entry (local và central directory), comment, APK Signing Block, từng entry (cả archive lồng) và mọi byte không record nào chiếm (trước, giữa, sau archive); DEX (phiên bản 035-040; 041 gộp nhiều DEX, báo không đọc được) đọc từng chuỗi của string pool (code và dữ liệu mảng là số: đọc như text thì cứ khoảng sáu bản build lại có một bản ghép ra một tên ba chữ, đo bằng tên mồi trên APK `33201`); XML nhị phân và `resources.arsc` đọc string pool UTF-8/UTF-16, tên package, thư viện và overlayable; ELF đọc bảng chuỗi (`.dynstr`: tên JNI, `DT_NEEDED`) từng chuỗi, mọi byte khác theo đoạn text, code thì chỉ đoạn từ 8 ký tự (x86 nhúng chuỗi 8 byte làm hằng số trong lệnh; sát NUL thì lệnh ghép ra đoạn 4 ký tự quá thường); PNG/WebP/JPEG/GIF đọc mọi thứ trừ dữ liệu điểm ảnh đã nén, chunk nén của PNG (`zTXt`, `iTXt`, `iCCP`) được giải nén (âm thanh, texture chưa có reader: nếu có ngày dữ liệu nén của chúng ghép ra tên thì viết thêm reader); font (cả TTC) đọc từng tên của bảng `name` và Name/String INDEX của CFF, mọi bảng khác trừ outline, metric, layout; file khác đọc nguyên nếu là text (UTF-8, UTF-16 có BOM, 8-bit như CP1252), ZIP có byte đứng trước vẫn được mở; file nhị phân không rõ định dạng thì bỏ đoạn text nằm giữa dữ liệu trông như đã nén ở cả hai phía (zstd, mã hoá, media: `|b+E)ksU` cũ), sát dữ liệu nén một phía vẫn đọc. Đoạn text trong dữ liệu nhị phân: ASCII, UTF-8 hay UTF-16 (ngoài ASCII chỉ nhận chữ Latin kể cả tiếng Việt, dấu và dấu câu: số đọc như UTF-16 rơi vào CJK một phần ba số lần) từ 8 ký tự, hoặc từ 4 ký tự sát một NUL (con trỏ hay offset dưới 16 MB chỉ ghép được 3 ký tự: con trỏ tới `0x55534b` là `KSU\0`). Tên nằm trong một khối base64 (khoá, bảng nhúng trong DEX, hash trong tên lambda: không có luật này thì cứ mỗi tên ba chữ có 1,8 chỗ khớp nhầm trên APK `33201`) bị bỏ qua: từ 20 ký tự chữ, số, `+` (dấu `/` tách nên đường dẫn và tên kiểu DEX thành từng đoạn), có số, mỗi loại chữ hoa và thường ít nhất một phần mười, dưới 60% chữ thường nằm trong cụm từ 3 chữ và dưới một nửa chữ hoa mở đầu một cụm chữ thường (tên ghép từ các từ hay camelCase như `getKsuV2ApiForUid0`; base64 ngẫu nhiên: một phần ba và một phần sáu). File có magic của một định dạng (hay entry, archive hỏng) mà không đọc được thì báo, job đỏ, không crash. Stream deflate thô từ 4 KB mở đầu bằng block Huffman (và file gzip/zlib cỡ nào cũng vậy, header gzip đọc tên file và comment, byte sau member đầu đọc như file con) được giải nén rồi đọc như file con; chỉ bỏ qua stream giải nén ra file ELF (payload rust-embed của camd: 8 `.ko`, `bootctl`, `busybox`, `caminit`, `waitsys`, tìm đủ và không có stream nào khác trên APK `33201`; libflate chỉ ghi block Huffman động, một test giữ cho payload vẫn là deflate (`assets.rs` không có `#[compression]`): zstd sẽ bị đọc như text; byte ngẫu nhiên đôi khi đọc ra một block stored dài bao nhiêu cũng được), trừ chỗ stream giữ nguyên byte (điểm bắt đầu lệch vài byte vì header Huffman cố định tự đồng bộ thì lấy offset ra đúng magic ELF): tên ở đó có trong dữ liệu đã giải nén cùng 8 byte trước hoặc sau nó, byte nén ngẫu nhiên thì không. Mẫu khớp `ksu` mọi kiểu hoa thường ở đầu từ (trừ `k` trước một từ tiếng Anh bắt đầu bằng "su": `kSuper`, `Ksupport/v4/app` là byte độ dài 75/107 trước `Super`, `support`), sau `lib` hay `L` (tên kiểu DEX), ở chỗ camelCase (`isKsuEnabled`), sau chữ hoa (`ENABLEKSU`), và `ksu_`/`ksud`/`ksuinit`/`ksuctl`... ở bất cứ đâu (Rust xếp literal liền nhau: `imageksu_config`); `KernelSU` dính literal sau (`KernelSUunmarked`); `kernel_sucompat`, `KernelSUNo` (literal dính sau); không khớp `checksum`, `LockSupport`, `zygisksu`, từ tiếng Anh bắt đầu bằng "su" sau kernel (`kernelsupport`, `KernelSUPPORT`, `kernel_supported`, `KERNEL_SUSPEND`, `kernel_sum`, `KernelSuccess`). Điều kiện "bản build có APK ký" tính một lần (`generate-key.outputs.signed`), job repack chỉ chạy khi có; cert của bản build PR đổi thành `CN=Cam PR Build`. Sửa script thì `apk-names.yml` quét APK của run Build Manager mới nhất trên main, cả run đỏ (không build lại cả chuỗi; tách khỏi `test.yml` vì `release.yml` gọi nó không có quyền `actions`). APK `33201`: 0 chỗ, 3,9 s; APK `33199` (bản từng đỏ vì `|b+E)ksU`): 0; APK 1.2.2: 516 chỗ, gồm đủ 392 chỗ bản cũ thấy; APK `33013`: bản cũ thấy thêm 6 chỗ nhầm (`kSuper calls`, `KSuspendFunction0`, hash `...46ksuWMPM` trong tên lambda...) | Bản grep byte cũ không đọc được UTF-16 (scheme `ksu` trong manifest lọt qua), bỏ qua `isKsuEnabled`, `libksud.so` và chuỗi DEX ngắn, không thấy tên sát dữ liệu nén; ngưỡng entropy không phủ hết phần nén (build vẫn có thể đỏ ngẫu nhiên) và byte độ dài của DEX ghép thành `kSuper` làm chặn nhầm Release |
+| 91 | **Bỏ slime đi dạo** (2026-11-06; xoá `ui/slime/`, `three/Roam3D.kt`, `assets/roam_jelly.filamat`, chế độ `candy` của `three/SlimeRig.kt`; sửa `CamActivity.kt`, `GlassCard.kt`, `arena/StatusArena.kt`, `ArenaRuntime.kt`, cài đặt và trang Chủ đề, baseline profile): slime chỉ còn trong hộp kính ở Trang chủ, không phá kính ra ngoài nữa; hộp chạy show liên tục, không còn chờ slime về. Ba cài đặt (bật, số con mỗi trang, ngủ đêm) và chuỗi của chúng bỏ theo. Mục 9 và 10 sửa theo | Review giao diện 2026-11-06 trên máy ảo: slime đè lên chữ và nút (icon ADB Root ở Cài đặt, dòng prop ở trang bootloader, nút tìm kiếm, nút + của Module), bong bóng thoại bị cắt ở mép, ở chế độ tối gần như vô hình; bật sẵn cho mọi người, tốn GPU trên mọi trang. Cam chọn bỏ hẳn |
 
 ## 2. Lịch sử commit
 
@@ -278,14 +279,13 @@ Ký hiệu: **[mới]** file của Cam, upstream không có, không bao giờ co
 ### Manager: thẻ trạng thái 3D và slime
 Cam tự viết toàn bộ phần này, upstream không có file nào tương ứng nên **không conflict**, trừ 3 chỗ móc vào file của upstream (ghi bên dưới). Bản đồ chi tiết ở mục 9.
 - [mới] `ui/screen/home/arena/` (thẻ trạng thái, 2D + logic cảnh): `StatusArena.kt` (cửa vào, vòng lặp khung hình), `ArenaShow.kt` (dựng một show: `Show`, chỗ đáp, `travel`), `ArenaRuntime.kt` (chạy show: dáng từng pha, lúc rảnh), `ArenaStage.kt`, `ArenaSlime.kt` (vẽ slime 2D, dùng khi máy không chạy được Filament), `ArenaScenes/Decor/Costumes/Props/Fx/Math.kt`, `ArenaIntros{,2,3}.kt` (9 cảnh mở màn), `ArenaVomit.kt`, `ArenaFeast.kt` (ăn chữ + hóc), `ArenaFormations.kt` (các kiểu xếp hàng).
-- [mới] `ui/screen/home/arena/three/` (Filament): `Arena3D.kt` (hộp kính 3D), `SlimeRig.kt` (**mô hình slime dùng chung** cho hộp và cho lớp đi dạo), `Roam3D.kt` (lớp 3D trong suốt phủ cả cửa sổ), `Closet.kt` + `Wardrobe.kt` + `Tailor.kt` (36 bộ đồ), `Glb.kt`, `Shapes3D.kt`, `Morphs.kt`, `Room.kt`, `Grounds.kt`.
-- [mới] `ui/slime/`: `RoamWorld.kt` (bộ não + vật lý), `RoamPose.kt` (dáng mỗi khung hình theo việc đang làm), `RoamSocial.kt` (hai con chơi với nhau), `SlimeLayer.kt` (host Compose, xử lý chạm, cảm biến lắc), `SlimeHome.kt` (trạng thái hộp: ai ở trong, kính vỡ, cửa, vá kính), `SlimeSurfaces.kt` (`Modifier.slimeSurface()`: thẻ nào đăng ký làm chỗ đứng cho slime).
-- [mới] `assets/roam_jelly.filamat` (vật liệu thạch cho lớp đi dạo, biên dịch sẵn; cách tạo lại ở mục 10), `ui/component/motion/CardEntrance.kt` (thẻ trượt vào khi mở trang), `ui/util/EngineCarry.kt` (giữ engine 3D qua lần tạo lại activity, dòng 81).
-- [sửa] 4 chỗ móc vào file có sẵn, **phải giữ khi merge**:
-  - `ui/CamActivity.kt`: bọc `navDisplay()` trong `SlimeLayer(…)`, báo vị trí vuốt của pager (`SlimeHome.pagerPos`) để slime phá kính ngay khi bắt đầu vuốt khỏi Home. Pager của `MainScreen` gọi qua `pagerHost` (`movableContentOf`) ở cả ba nhánh thanh điều hướng (2026-10-30, dòng 73): gọi thẳng `pagerContent(…)` như upstream thì khi xoay, trang bị dựng lại và hai engine 3D bị tạo lại, crash.
+- [mới] `ui/screen/home/arena/three/` (Filament): `Arena3D.kt` (hộp kính 3D), `SlimeRig.kt` (mô hình slime trong hộp), `Closet.kt` + `Wardrobe.kt` + `Tailor.kt` (36 bộ đồ), `Glb.kt`, `Shapes3D.kt`, `Morphs.kt`, `Room.kt`, `Grounds.kt`.
+- [đã bỏ 2026-11-06, dòng 91] Slime đi dạo: `ui/slime/` (`RoamWorld`, `RoamPose`, `RoamSocial`, `SlimeLayer`, `SlimeHome`, `SlimeSurfaces`), `three/Roam3D.kt`, `assets/roam_jelly.filamat`, chế độ thạch `candy` của `SlimeRig`, ba cài đặt ở trang Chủ đề.
+- [mới] `ui/component/motion/CardEntrance.kt` (thẻ trượt vào khi mở trang), `ui/util/EngineCarry.kt` (giữ engine 3D qua lần tạo lại activity, dòng 81).
+- [sửa] 3 chỗ móc vào file có sẵn, **phải giữ khi merge**:
+  - `ui/CamActivity.kt`: pager của `MainScreen` gọi qua `pagerHost` (`movableContentOf`) ở cả ba nhánh thanh điều hướng (2026-10-30, dòng 73): gọi thẳng `pagerContent(…)` như upstream thì khi xoay, trang bị dựng lại và engine 3D bị tạo lại, crash.
   - `AndroidManifest.xml`: `CamActivity` có `android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|fontWeightAdjustment|locale|layoutDirection|keyboard|keyboardHidden|navigation|mcc|mnc"` (2026-10-30 tới 2026-11-01, dòng 73, 80, 82). Bỏ cờ nào thì đổi đúng thứ đó (xoay, dark mode, cỡ chữ, Bold text…) lại tạo lại activity. Nền cửa sổ theo chế độ sáng/tối của app (`applyWindowBackground` trong `CamActivity`, gọi từ Compose).
-  - `StatusArena.kt`, `slime/SlimeLayer.kt` (2026-11-01, dòng 81): engine lấy từ `Arena3D.carry.take()` / `Roam3D.carry.take()` trước khi tạo mới, và lúc rời màn hình gọi `carry.letGo(engine, activity)` thay cho `destroy()`. Những gì vẫn tạo lại activity (Bold text, đổi màu hình nền/overlay, SIM, `recreate()` của công tắc predictive back) nhờ đó trao engine cho activity mới; tạo engine mới ngay sau khi huỷ trong cùng tiến trình là crash (mục 7).
-  - `ui/component/glass/GlassCard.kt`: `modifier.slimeSurface().glassMaterial(…)` (mỗi thẻ kính là một chỗ đứng).
+  - `StatusArena.kt` (2026-11-01, dòng 81): engine lấy từ `Arena3D.carry.take()` trước khi tạo mới, và lúc rời màn hình gọi `carry.letGo(engine, activity)` thay cho `destroy()`. Những gì vẫn tạo lại activity (Bold text, đổi màu hình nền/overlay, SIM, `recreate()` của công tắc predictive back) nhờ đó trao engine cho activity mới; tạo engine mới ngay sau khi huỷ trong cùng tiến trình là crash (mục 7).
   - `ui/screen/home/HomeMiuix.kt`: gọi `StatusArena(…)` thay cho thẻ trạng thái của upstream.
 - [sửa] Dependency: `gradle/libs.versions.toml` (`filament = "1.77.1"` + `filament-android`, `filament-gltfio`, `filament-utils`), `app/build.gradle.kts` (3 dòng `implementation`), `app/proguard-rules.pro` (`-keep class com.google.android.filament.** { *; }`).
 
@@ -345,8 +345,8 @@ Dòng 74 (2026-10-30). Upstream không có, chỉ móc vào các trang có sẵn
 - Test: `test/.../hiding/AppViewProbeTest.kt`, `test/.../hiding/AttrTimingTest.kt`, `test/.../hiding/ModuleScanTest.kt`, `test/.../ui/screen/hidingcheck/HidingCheckCompareTest.kt`, `test/.../data/repository/HidingRulesRepositoryTest.kt` (kiểm chữ ký trên chính file trong `assets/`).
 
 ### Manager: cài đặt, mặc định, font
-- [sửa] `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt`: thêm 3 khoá `roaming_slimes` (mặc định bật), `roaming_slime_count` (0 = ngẫu nhiên 1-4; hoặc 1..4), `slime_night_nap` (bật). **Đổi mặc định**: `enable_predictive_back` = `true`, `module_description_max_lines` = `5`. Kèm `SettingsUiState.kt`, `CamActivityUiState.kt`, `CamActivityViewModel.kt` (có danh sách `observedKeys`, thêm khoá mới vào đó), `SettingsViewModel.kt`.
-- [sửa] Giao diện ba công tắc slime nằm cuối trang **Chủ đề**: `colorpalette/ColorPaletteScreenMiuix.kt`, `ColorPaletteScreen.kt`, `ColorPaletteUiState.kt` (không nằm ở trang Cài đặt).
+- [sửa] `data/repository/SettingsRepository.kt`, `SettingsRepositoryImpl.kt`: ba khoá slime đi dạo (`roaming_slimes`, `roaming_slime_count`, `slime_night_nap`) đã bỏ 2026-11-06 (dòng 91); giá trị cũ nằm lại trong prefs, không ai đọc. **Đổi mặc định**: `enable_predictive_back` = `true`, `module_description_max_lines` = `5`. Kèm `SettingsUiState.kt`, `CamActivityUiState.kt`, `CamActivityViewModel.kt` (có danh sách `observedKeys`, thêm khoá mới vào đó), `SettingsViewModel.kt`.
+- [sửa] Cuối trang **Chủ đề** (`colorpalette/ColorPaletteScreenMiuix.kt`) còn công tắc intro; ba công tắc slime đi dạo đã bỏ.
 - [mới] Font: `res/font/baloo2_{regular,medium,semibold,bold}.ttf`, `assets/licenses/Baloo2-OFL.txt`; [sửa] `ui/theme/Type.kt` (`AppFontFamily`), `ui/theme/Theme.kt`, `ui/theme/MiuixTheme.kt`.
 
 ### Dọn dẹp (2026-10-12)
@@ -434,8 +434,7 @@ Manager:
 - **File có `Cam.xxx`**: nhận thay đổi của upstream (script đổi `Ksu.` → `Cam.`, `Natives.` → `CamNative.`), rồi đổi mọi lời gọi `CamNative.<hàm>` từ UI thành `Cam.<hàm>`. Upstream thêm hàm mới vào `Natives` thì làm theo "Nếu upstream thêm hàm mới" bên dưới.
 - **File `*Miuix.kt`**: nhận thay đổi của upstream, rồi đổi lại component sang bản kính theo bảng ở mục 3. Màn hình hoặc component mới của upstream cũng phải đổi theo bảng đó; quên `Scaffold(containerColor = Color.Transparent)` thì trang che mất hình nền.
 - **Upstream sửa hoặc thêm file Material** (`UiMode.kt`, `MaterialTheme.kt`, `ui/component/material/*`, mọi `*Material.kt`): git báo conflict "modified/deleted" → `git rm <file>`, không port. Màn hình mới của upstream thường đi kèm bộ ba `XxxMaterial.kt` + `XxxMiuix.kt` + `XxxScreen.kt` (chọn bản theo `LocalUiMode`): giữ bản Miuix, trong `XxxScreen.kt` gọi thẳng `XxxMiuix(...)`, xoá `XxxMaterial.kt`, bỏ import `LocalUiMode` / `UiMode`. Nếu upstream thêm tham số vào cả hai bản thì chỉ cần giữ tham số ở bản Miuix.
-- **`ui/CamActivity.kt`** (upstream: `ui/MainActivity.kt`): route mới upstream thêm vào `NavDisplay` phải bọc `GlassPage(key) { … }` (truyền route của entry, `it` hoặc `key`) như các `entry<…>` khác; thiếu route thì trang không nở ra từ chỗ bấm (dòng 70). Giữ `transition = expandTransition` của `NavDisplay`. Giữ khối nạp sẵn nền (`GlassBackgroundCache.preload`), `LocalEnableBlur provides true`, **khối `SlimeLayer(…)` bọc `navDisplay()`** và đoạn `LaunchedEffect` báo `SlimeHome.pagerPos`. Không còn `LocalUiMode` / `UiMode`.
-- **`ui/component/glass/GlassCard.kt`**: phải còn `.slimeSurface()` trước `.glassMaterial(…)`, không thì slime không có chỗ đứng trên thẻ.
+- **`ui/CamActivity.kt`** (upstream: `ui/MainActivity.kt`): route mới upstream thêm vào `NavDisplay` phải bọc `GlassPage(key) { … }` (truyền route của entry, `it` hoặc `key`) như các `entry<…>` khác; thiếu route thì trang không nở ra từ chỗ bấm (dòng 70). Giữ `transition = expandTransition` của `NavDisplay`. Giữ khối nạp sẵn nền (`GlassBackgroundCache.preload`) và `LocalEnableBlur provides true` (khối `SlimeLayer(…)` và `SlimeHome.pagerPos` đã bỏ cùng slime đi dạo, dòng 91). Không còn `LocalUiMode` / `UiMode`.
 - **`ui/screen/home/HomeMiuix.kt`**: giữ lời gọi `StatusArena(…)`. Upstream thêm trường dữ liệu mới vào thẻ trạng thái thì lấy phần dữ liệu, không lấy phần giao diện.
 - **`data/repository/SettingsRepositoryImpl.kt`, `SettingsUiState.kt`, `MainActivityUiState.kt`**: giữ mặc định của Cam (`enable_predictive_back` true, `module_description_max_lines` 5) và 3 khoá slime.
 - **`ui/screen/appprofile/*`, `superuser/SuperUserMiuix.kt`**: giữ 3 thẻ quản lý app, `onOpenSystemInfo` và mục menu "Cài lại app hệ thống đã gỡ".
@@ -445,7 +444,7 @@ Manager:
 - **`res/values*/strings.xml`**: nhận chuỗi mới của upstream, giữ `seed_*`, `glass_background*`, `settings_slime*`, `app_*`. Merge có thể **đưa lại** các chuỗi Cam đã xoá (`home_learn_kernelsu*`, `home_support_*`, `settings_ui_mode*`): xoá lại cho sạch, không bắt buộc.
 - **`ui/webui/file/*`, `ui/util/SulogHelper.kt`, `downloadBoot` trong `CamCli.kt`**: mọi `SuFile` đi qua `rootFile()`, lệnh chạy qua `withNewRootShell` (dòng 72). Upstream thêm `SuFile(path)`, `SuFileInputStream.open(path)`, `SuRandomAccessFile.open(path, ...)` hay `Shell.getShell()` thì đổi theo, không thì mất root khi tắt su compat. Kiểm: `rg -n 'SuFile\(|Shell\.getShell|Stream\.open\(path|RandomAccessFile\.open\(path' manager/app/src/main/java`, chỉ được ra `rootFile`, chỗ có `shell = ` và `suFile.shell`. `CamIO` là `class`, mỗi `WebViewInterface` một bản (upstream `KsuIO` là `object`), các interface nhận nó qua constructor (`io.openInputStreams`, không phải `CamIO.openInputStreams`); `BlobDownloadHandler` cũng mỗi `WebUIDownloadInterface` một bản (dòng 80). Upstream thêm chỗ dùng `KsuIO.` thì đổi sang bản của WebUI đó, không thì đóng một WebUI lại đóng stream của WebUI khác.
 - **`ui/webui/BlobDownloadHandler.kt`, `assets/webview/download.js`, `saveToDownloads` trong `WebViewInterface.kt`**: Cam bỏ URL nội bộ `blob-download.kernelsu.internal` vì đường đó không lưu được file (dòng 72). Upstream sửa chuyện này theo cách khác thì thử lại bằng blob trên 10 MB trước khi nhận.
-- **`ui/util/DownloadService.kt`, `saveToDownloads`**: giữ `dropStaleDownloadRows()` ngay trước `insert` (`DownloadRows.kt` là file của Cam). **`three/Arena3D.kt`, `Roam3D.kt`**: giữ `createSlimeEngine()`, không gọi `Engine.create()` thẳng.
+- **`ui/util/DownloadService.kt`, `saveToDownloads`**: giữ `dropStaleDownloadRows()` ngay trước `insert` (`DownloadRows.kt` là file của Cam). **`three/Arena3D.kt`**: giữ `createSlimeEngine()`, không gọi `Engine.create()` thẳng.
 
 CI:
 - **`.github/workflows/build-manager.yml`**: giữ dòng `workflow_dispatch:`. **`release.yml`**: giữ `permissions: contents: write`, trigger `cam-v*`, job `changelog` và `body_path`; upstream đưa lại `generate_release_notes` hay tag `v*` thì bỏ đi (mỗi release là một OTA cho máy người dùng).
@@ -494,9 +493,8 @@ rg -n "Scaffold\(" manager/app/src/main/java --glob "*Miuix.kt" -A1 | rg -v "con
 git ls-files manager/app/src/main | rg "/[A-Za-z]+Material\.kt$" | rg -v GlassMaterial
 rg -n "LocalUiMode|UiMode\b" manager/app/src/main/java
 
-# 7. Filament và vật liệu còn đủ (phải ra kết quả ở cả ba file, và file .filamat phải tồn tại)
+# 7. Filament còn đủ (phải ra kết quả ở cả ba file)
 rg -n "filament" manager/gradle/libs.versions.toml manager/app/build.gradle.kts manager/app/proguard-rules.pro
-ls manager/app/src/main/assets/roam_jelly.filamat
 
 # 8. Rule ẩn root còn khớp chữ ký (mục 12). Fail = ai đó sửa rule mà không ký lại
 cd manager && ./gradlew :app:testDebugUnitTest --tests "cam.caesar.vn.data.repository.HidingRulesRepositoryTest" && cd ..
@@ -562,7 +560,6 @@ Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã d
 | Build kernel từ `git archive` (không có `.git`) | `kernelsu.ko` báo version 16 → Manager coi là kernel quá cũ | Build từ thư mục có `.git` (git clone) |
 | Chạy `git` của WSL trên repo `/mnt/c/...` | Làm hỏng junction `cpp/uapi` | Chỉ dùng git của Windows cho repo này; trong WSL chỉ dùng git trên bản clone riêng |
 | `cargo ndk` không cài được trên Windows (thiếu `dlltool`) | | Build Rust trong WSL với clang Android + sysroot NDK |
-| Nâng `filament` trong `libs.versions.toml` | `assets/roam_jelly.filamat` được biên dịch bằng đúng phiên bản 1.77.1; khác phiên bản thì Filament có thể từ chối nạp (lỗi bắt được thì lớp đi dạo rơi về vẽ 2D, nhưng cũng có thể app thoát; chưa thử) | Sau khi nâng, tạo lại file theo mục 10 rồi mở app, vào Superuser xem slime có hiện không |
 | `gradlew.bat` chạy trong thư mục có dấu (`dự án đã done`) | `Unable to access jarfile ...gradle-wrapper.jar` (cả `./gradlew` trong Git Bash) | Ổ `K:` là `subst` của repo: PowerShell `Push-Location K:\manager; & K:\manager\gradlew.bat :app:assembleDebug` |
 | `adb pull/push /data/...` trong Git Bash | Git Bash đổi `/data/...` thành `C:/Program Files/Git/data/...` | `MSYS_NO_PATHCONV=1 adb ...` |
 | `git mv` thư mục báo `Permission denied` | Shell (hoặc IDE) đang đứng trong thư mục đó, Windows khoá nó | `cd` ra ngoài rồi chạy lại |
@@ -570,7 +567,6 @@ Muốn build trên máy thay vì CI (chỉ 2 KMI): mục 5, "Lệnh build đã d
 | `manager/app/src/main/jniLibs/arm64-v8a/libcamd.so` mất hoặc hỏng | File bị gitignore, không `git checkout` lại được. Lấy camd bằng `adb exec-out "su -c 'cat /data/adb/camd'"` khi Shell chưa có root thì file thành dòng chữ `su: inaccessible or not found` (đã xảy ra 2026-10-15) | Build lại từ commit: `wsl -u root -- bash "/mnt/c/.../scripts/build_camd.sh" [ref]` (WSL, NDK r28c ở `/root/ndk`, khoảng 3 phút). Hoặc lấy bản của Manager đang cài: `scripts/build_camd.sh --from-device` (Git Bash, adb, không cần root). Script và Gradle đều từ chối file không phải ELF; bản lấy từ máy chỉ qua được `CheckCamdSource` của bản release khi cùng mã nguồn |
 | `gh run list` / `gh run watch` trong repo này | `gh` chọn nhầm repo `tiann/KernelSU` (remote `upstream`) | Luôn thêm `-R peo1108/Cam-Kernel-SU` |
 | `cargo test` của camd | 2 test `lkm_image` / `lkm_image_btf` fail | Đã fail từ trước đợt đổi tên (thiếu `.ko` android12 cục bộ, BTF), không phải lỗi mới |
-| Mở bản release xong thấy slime ngoài hộp biến mất, chỉ còn vẽ 2D phẳng | `Roam3D.createOrNull()` trả `null` (Filament không khởi tạo được, hoặc thiếu `roam_jelly.filamat`) | Xem `logcat` có dòng `Filament`; kiểm tra file `.filamat` còn trong `assets/` |
 
 ### Lệnh build đã dùng (WSL, máy của Cam)
 
@@ -642,7 +638,7 @@ Kiểm tra nhanh camd không cần script (WSL, như trong `AGENTS.md`): trong `
 - **Dây chuyền chữ ký APK cũ còn trong CI:** `build-manager.yml` / `build-lkm.yml` / `ddk-lkm.yml` vẫn tính `expected_size` / `expected_hash` và truyền xuống, nhưng kernel của Cam không còn đọc chúng (mục 1, dòng 1). Vô hại, chỉ là mã chết. **Giữ nguyên, có chủ đích:** đã kiểm lại 2026-10-13, upstream vẫn dùng chúng (cả ba workflow và `KSU_EXPECTED_*` trong `kernel/Kbuild` của họ), nên gỡ ra chỉ tạo conflict ở mỗi lần upstream sửa các dòng đó.
 - **Thư mục `sfs/` (207 MB: zip kernel SUSFS, ảnh boot, log), `IMG_7454.PNG`, `logo mẫu/`, `note.txt`** là file riêng của Cam, đã vào `.gitignore` (2026-10-10). Vẫn nên add từng file (mục 4, vì junction `cpp/uapi`). SUSFS đang tạm dừng.
 - **Xoay máy trong vài giây đầu sau khi mở app** đôi khi crash (SIGSEGV trong `libfilament-jni.so`, từ `IBLPrefilterContext.EquirectangularToCubemap` ở `Arena3D.buildIbl`, main thread): 1/3 lần xoay trên TB323FU, có hay không có intro đều vậy (thấy lúc thử dòng 68, 2026-10-16). **Đã sửa 2026-10-30 (dòng 73)**: xoay không còn tạo lại activity nên không tạo lại engine; đo trên máy ảo, chưa đo lại trên TB323FU.
-- **Quay lại app sau hơn 10 giây ở nền vẫn có thể crash** cùng kiểu (2026-10-30, mục 2): `rememberBackgroundRelease` huỷ hai engine Filament khi app nằm nền 10 s (`BACKGROUND_RELEASE_MS`) và tạo lại khi quay về. Trên máy ảo, slime đi dạo bật: 2 crash trong 3 lần quay về, cả hai lượt thử; tắt slime đi dạo thì không thấy. Lần thử 2026-10-15 trên TB323FU (5 vòng) không crash. Nguyên nhân giống dòng 73, chưa sửa. **Dùng một Engine cho cả `Arena3D` lẫn `Roam3D` không sửa được** (thử 2026-10-31, mục 2: Engine dùng chung, kể cả giữ suốt tiến trình, vẫn crash ở `EquirectangularToCubemap` khi hai view 3D được dựng lại); google/filament#10584 nói về chuyện khác (EBR kẹt và bộ nhớ tăng khi một trong hai Engine ngừng vẽ). Cùng nguyên nhân: công tắc predictive back trong trang màu sắc gọi `activity?.recreate()`, nên bật slime đi dạo rồi đổi công tắc đó thì crash; đổi dark mode, cỡ chữ, cỡ hiển thị thì không còn (dòng 80).
+- **Quay lại app sau hơn 10 giây ở nền vẫn có thể crash** cùng kiểu (2026-10-30, mục 2): `rememberBackgroundRelease` huỷ hai engine Filament khi app nằm nền 10 s (`BACKGROUND_RELEASE_MS`) và tạo lại khi quay về. Trên máy ảo, slime đi dạo bật: 2 crash trong 3 lần quay về, cả hai lượt thử; tắt slime đi dạo thì không thấy. Slime đi dạo đã bỏ (2026-11-06, dòng 91), nên chỉ còn một engine: mục này có lẽ đã hết, chưa thử lại. Lần thử 2026-10-15 trên TB323FU (5 vòng) không crash. Nguyên nhân giống dòng 73, chưa sửa. **Dùng một Engine cho cả `Arena3D` lẫn `Roam3D` không sửa được** (thử 2026-10-31, mục 2: Engine dùng chung, kể cả giữ suốt tiến trình, vẫn crash ở `EquirectangularToCubemap` khi hai view 3D được dựng lại); google/filament#10584 nói về chuyện khác (EBR kẹt và bộ nhớ tăng khi một trong hai Engine ngừng vẽ). Cùng nguyên nhân: công tắc predictive back trong trang màu sắc gọi `activity?.recreate()`, nên bật slime đi dạo rồi đổi công tắc đó thì crash (trước khi bỏ slime đi dạo); đổi dark mode, cỡ chữ, cỡ hiển thị thì không còn (dòng 80).
 - **Phát hiện xung đột** đọc cả file `.replace` lẫn xattr `trusted.overlay.opaque` (2026-10-14) nhưng không biết module nào "thắng" (tuỳ thứ tự mount của metamodule, mà repo này không kèm metamodule nào).
 
 ## 8. Phát hành bản mới (GitHub Actions)
@@ -682,11 +678,6 @@ Bốn nhân vật: **Mochi** (hồng, hách dịch), **Bơ** (xanh lá to, hay n
 | Bộ đồ 3D (36 bộ) | `three/Wardrobe.kt` (định nghĩa), `Tailor.kt` (dựng hình), `Closet.kt` (treo lên từng slime, bật/tắt theo pose) |
 | Hình dáng thạch, tay co duỗi, khuôn mặt | `three/Shapes3D.kt`, `Morphs.kt`; mặt vẽ lại mỗi khi biểu cảm đổi trong `SlimeRig.paintFace` |
 | Phòng kính 3D, ánh sáng, khử răng cưa | `three/Arena3D.kt` (đọc kỹ các comment ở `init`), `Room.kt`, `Grounds.kt` |
-| Slime đi dạo: đi, nhảy, rơi, trèo tường, phản ứng khi chạm | `slime/RoamWorld.kt` (dáng: `RoamPose.kt`) |
-| Hai con chơi với nhau (đập tay, cưỡi Bơ, chơi khăm, rượt, đánh nhau) | `slime/RoamSocial.kt` |
-| Phá kính / cửa / vá kính; slime vào lại hộp | `slime/SlimeHome.kt` (trạng thái + vẽ kính), `RoamWorld.breakOut()` / `comeHome()`, `ArenaRuntime.updatePoses` (đi từ cửa vào chỗ), `StatusArena.kt` (báo vị trí trong hộp, vẽ kính) |
-| Chạm / giữ / lắc, chấm laser, ngủ đêm, số lượng mỗi trang | `slime/SlimeLayer.kt` (cử chỉ, cảm biến), `RoamWorld.shoo/laserAt/shake/night`, cài đặt ở mục 3 |
-| Màu và độ trong của thạch bên ngoài | `three/SlimeRig.bind` (`tint`, `clarity`, `glow`), đèn trong `three/Roam3D.kt`; công thức vật liệu ở mục 10 |
 | Nền "Hầm chỉ huy" (dòng 69): ánh sáng kim loại, sự kiện, xoay tab | `ui/bunker/` (nhịp: `BunkerMotion.kt`; vẽ: `BunkerScene.kt`; tín hiệu từ app: `BunkerSignals.kt`) |
 | Intro logo khi mở app (dòng 68) | nhịp, mảnh, luật mở màn: `ui/intro/IntroTimeline.kt`; vẽ: `IntroScene.kt`, `IntroFx.kt`; thread và `SurfaceView`: `IntroPlayer.kt`; khi nào slime "ấm": `Arena3D.warm` → `IntroGate` (báo từ `StatusArena`) |
 
@@ -694,65 +685,11 @@ Những điều rút ra khi làm, đừng làm lại sai:
 - **Đừng bật lại SSR (phản xạ màn hình) và SSAO** trong `Arena3D`: SSR là nguyên nhân những khối vuông 8 px trên thân slime ("vỡ vỡ"). Hiện đang dùng MSAA 4x + FXAA, độ nhám thạch 0.03, bóng VSM 1024.
 - Vật liệu có `alphaMode = BLEND` **không được dùng sheen** (Filament báo lỗi "sheenColorIndex" và thoát); bộ đồ vải chỉ dùng sheen khi đặc.
 - `getEntitiesByPrefix` của gltfio không hoạt động như mong đợi: `Closet` tìm từng mảnh bằng tên chính xác (`fit_<theme>_<slot>_<i>`).
-- `Roam3D` và `Arena3D` mỗi cái là **một engine Filament riêng**, cùng dùng `SlimeRig`. Trong `Roam3D.destroy()`, `rig.destroy()` nằm **sau** khi huỷ asset vì nó huỷ các material instance của thạch mà asset còn đang dùng; giữ nguyên thứ tự đó.
-- Kéo slime khi `RoamMode.Held`: `SlimeLayer` đón touch ở `PointerEventPass.Initial` và chỉ `consume()` khi trúng slime hoặc đang là laser.
+- Slime chỉ còn trong hộp (lớp đi dạo bỏ 2026-11-06, dòng 91): đừng thêm lại thứ gì vẽ đè lên nội dung các trang khác.
 
-## 10. Tạo lại `roam_jelly.filamat`
+## 10. (Đã bỏ) `roam_jelly.filamat`
 
-File này là vật liệu "thạch trong" cho lớp slime đi dạo, biên dịch sẵn nên APK không phải mang theo bộ biên dịch (`libfilamat-jni.so` khoảng 9 MB mỗi ABI). Cần tạo lại khi: nâng phiên bản `filament`, hoặc muốn đổi công thức vật liệu. **Đổi màu / độ trong / độ sáng thì không cần**: ba thông số `tint`, `clarity`, `glow` đặt lúc chạy trong `SlimeRig.bind`.
-
-Cách đã dùng (chỉ sửa tạm trong working tree, không commit, rồi gỡ hết):
-1. Thêm dependency tạm vào `app/build.gradle.kts`: `implementation("com.google.android.filament:filamat-android:<đúng phiên bản filament>")`. Bản `filamat-android-lite` **không có** trên Maven.
-2. Thêm file tạm dưới đây và gọi `MaterialForge.forge(context)` ở chỗ chạy lúc `SlimeLayer` dựng (ví dụ ngay trong `remember { … }` đang tạo `Roam3D`).
-3. Chạy bản release trên máy (**màn hình phải sáng**, vì code chỉ chạy khi `SlimeLayer` được dựng), rồi kéo file ra:
-   `adb pull /sdcard/Android/data/cam.caesar.vn/files/roam_jelly.filamat manager/app/src/main/assets/roam_jelly.filamat`
-4. **Xoá** file tạm, lời gọi và dependency. Build lại, mở app, vào Superuser xem slime ngoài hộp.
-
-```kotlin
-// TẠM THỜI: chỉ để sinh roam_jelly.filamat. Không commit.
-object MaterialForge {
-    fun forge(context: Context) {
-        Thread {
-            MaterialBuilder.init()
-            val pkg = MaterialBuilder()
-                .name("roam_jelly")
-                .shading(MaterialBuilder.Shading.LIT)
-                .blending(MaterialBuilder.BlendingMode.TRANSPARENT)
-                .transparencyMode(MaterialBuilder.TransparencyMode.TWO_PASSES_ONE_SIDE)
-                .uniformParameter(MaterialBuilder.UniformType.FLOAT3, "tint")
-                .uniformParameter(MaterialBuilder.UniformType.FLOAT, "clarity")
-                .uniformParameter(MaterialBuilder.UniformType.FLOAT, "glow")
-                .specularAntiAliasing(true)
-                .platform(MaterialBuilder.Platform.MOBILE)
-                .targetApi(MaterialBuilder.TargetApi.OPENGL)
-                .optimization(MaterialBuilder.Optimization.PERFORMANCE)
-                .material(
-                    """
-                    void material(inout MaterialInputs material) {
-                        prepareMaterial(material);
-                        float NoV = shading_NoV;
-                        // Trong ở giữa, đậm dần ra rìa như thạch thật.
-                        float rim = pow(1.0 - NoV, 2.2);
-                        float a = mix(materialParams.clarity, 0.94, rim);
-                        vec3 tint = materialParams.tint;
-                        material.baseColor = vec4(tint * a, a);
-                        material.metallic = 0.0;
-                        material.roughness = 0.05;
-                        material.reflectance = 0.75;
-                        // Phát sáng nhẹ từ bên trong, mạnh nhất ở giữa.
-                        material.emissive = vec4(tint * materialParams.glow * (0.3 + 0.7 * NoV * NoV), 0.0);
-                    }
-                    """.trimIndent()
-                )
-                .build()
-            val buf = pkg.buffer
-            val bytes = ByteArray(buf.remaining()).also { buf.get(it) }
-            File(context.getExternalFilesDir(null), "roam_jelly.filamat").writeBytes(bytes)
-            MaterialBuilder.shutdown()
-        }.start()
-    }
-}
-```
+Vật liệu thạch của lớp slime đi dạo. Lớp đó bỏ ngày 2026-11-06 (dòng 91), file và cách tạo lại bỏ theo; cách cũ còn trong lịch sử git trước commit đó.
 
 ## 11. Đổi tên sang Cam (2026-10-09)
 

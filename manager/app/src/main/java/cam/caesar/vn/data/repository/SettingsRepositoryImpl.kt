@@ -197,19 +197,6 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean(KEY_USE_SOFT_REBOOT, false)
         set(value) = prefs.edit { putBoolean(KEY_USE_SOFT_REBOOT, value) }
 
-    override var roamingSlimes: Boolean
-        get() = prefs.getBoolean("roaming_slimes", true)
-        set(value) = prefs.edit { putBoolean("roaming_slimes", value) }
-
-    /** 0: a random 1 to 4 on each page, otherwise exactly that many. */
-    override var roamingSlimeCount: Int
-        get() = prefs.getInt("roaming_slime_count", 0).coerceIn(0, 4)
-        set(value) = prefs.edit { putInt("roaming_slime_count", value.coerceIn(0, 4)) }
-
-    override var slimeNightNap: Boolean
-        get() = prefs.getBoolean("slime_night_nap", true)
-        set(value) = prefs.edit { putBoolean("slime_night_nap", value) }
-
     override var startIntro: Boolean
         get() = prefs.getBoolean("start_intro", true)
         set(value) = prefs.edit { putBoolean("start_intro", value) }

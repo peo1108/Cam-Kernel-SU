@@ -4,8 +4,8 @@ import android.os.SystemClock
 
 /**
  * What the app tells the bunker background, on the main thread: a list is being pulled to
- * refresh, root was granted or a module installed. Plain fields read while drawing, like
- * [cam.caesar.vn.ui.slime.SlimeHome]; times are on [clock].
+ * refresh, root was granted or a module installed. Plain fields read while drawing; times are on
+ * [clock].
  */
 internal object BunkerSignals {
     /** Seconds, shared by the signals and the drawing. */

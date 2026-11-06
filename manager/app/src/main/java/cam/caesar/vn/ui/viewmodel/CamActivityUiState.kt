@@ -19,7 +19,4 @@ data class CamActivityUiState(
     val glassBackgroundBlur: Float = 0f,
     val glassBackgroundDim: Float = 0.2f,
     val glassImageVersion: Long = 0L,
-    val roamingSlimes: Boolean = true,
-    val roamingSlimeCount: Int = 0,
-    val slimeNightNap: Boolean = true,
 )

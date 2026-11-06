@@ -5,9 +5,8 @@ import android.os.Handler
 import android.os.Looper
 
 /**
- * Hands a 3D engine (the status card's, the roaming slimes') from an activity being recreated to
- * the one that replaces it. Freeing both Filament engines and building them again in the same
- * process at once crashes natively (row 73 of docs/CAM_CHANGES.md). The manifest keeps most
+ * Hands the status card's 3D engine from an activity being recreated to the one that replaces
+ * it. Freeing a Filament engine and building it again in the same process at once crashed natively (row 73 of docs/CAM_CHANGES.md). The manifest keeps most
  * changes in the same activity, but not all: a wallpaper colour or overlay change, a new SIM,
  * bold text, recreate(). One that nobody takes within [BACKGROUND_RELEASE_MS] is freed, as it
  * would be in the background. Main thread only.

@@ -79,7 +79,7 @@ internal class Arena3D private constructor() {
     private val sampler = TextureSampler(TextureSampler.MinFilter.LINEAR, TextureSampler.MagFilter.LINEAR, TextureSampler.WrapMode.CLAMP_TO_EDGE)
     private val tiling = TextureSampler(TextureSampler.MinFilter.LINEAR_MIPMAP_LINEAR, TextureSampler.MagFilter.LINEAR, TextureSampler.WrapMode.REPEAT)
 
-    private val rig = SlimeRig(engine, assetLoader, resourceLoader, scene, candy = false)
+    private val rig = SlimeRig(engine, assetLoader, resourceLoader, scene)
 
     private var walls = 0
     private var floor = 0

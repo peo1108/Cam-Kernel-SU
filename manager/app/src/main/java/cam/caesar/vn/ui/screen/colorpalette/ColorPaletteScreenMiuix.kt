@@ -39,14 +39,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuOpen
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.CallToAction
 import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.DesignServices
-import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.ViewSidebar
@@ -500,56 +497,6 @@ fun ColorPaletteScreenMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        GlassSwitchPreference(
-                            title = stringResource(id = R.string.settings_slimes),
-                            summary = stringResource(id = R.string.settings_slimes_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Rounded.Pets,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_slimes),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            checked = uiState.roamingSlimes,
-                            onCheckedChange = actions.onSetRoamingSlimes,
-                        )
-                        AnimatedVisibility(visible = uiState.roamingSlimes) {
-                            Column {
-                                val slimeCountItems = listOf(
-                                    stringResource(id = R.string.settings_slime_count_random),
-                                    "1", "2", "3", "4",
-                                )
-                                GlassDropdownPreference(
-                                    title = stringResource(id = R.string.settings_slime_count),
-                                    items = slimeCountItems,
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Groups,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.settings_slime_count),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    selectedIndex = uiState.roamingSlimeCount,
-                                    onSelectedIndexChange = actions.onSetRoamingSlimeCount
-                                )
-                                GlassSwitchPreference(
-                                    title = stringResource(id = R.string.settings_slime_night),
-                                    summary = stringResource(id = R.string.settings_slime_night_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Bedtime,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.settings_slime_night),
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    checked = uiState.slimeNightNap,
-                                    onCheckedChange = actions.onSetSlimeNightNap,
-                                )
-                            }
-                        }
                         GlassSwitchPreference(
                             title = stringResource(id = R.string.settings_start_intro),
                             summary = stringResource(id = R.string.settings_start_intro_summary),

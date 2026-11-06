@@ -177,7 +177,7 @@ fun SettingPagerMiuix(
                         CamIsValid {
                             GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_module_check_update),
-                                summary = stringResource(id = R.string.settings_check_update_summary),
+                                summary = stringResource(id = R.string.settings_module_check_update_summary),
                                 startAction = {
                                     Icon(
                                         Icons.Rounded.SystemUpdateAlt,

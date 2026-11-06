@@ -16,6 +16,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ### Sửa lỗi
 - Superuser: thẻ hồ sơ mở ngay trong danh sách không còn hiện trạng thái cũ sau khi sửa ở trang hồ sơ đầy đủ rồi quay lại
 - Tab Tệp: ngăn kéo không còn bị thanh điều hướng che
+- Cài đặt: mục "Kiểm tra cập nhật module" có mô tả riêng (trước đó trùng với mô tả của mục cập nhật app)
 ### Lưu ý
 - Bản này không đổi cách kernel chạy (chỉ nhận mã của bản gốc mà Cam không dùng). Nếu app gợi ý cài lại LKM thì làm hay không đều được
 

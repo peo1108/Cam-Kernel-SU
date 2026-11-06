@@ -2,6 +2,24 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
+## 1.2.4 - 2026-11-07
+- Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v27; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt
+### Thay đổi
+- Y700 Gen5: ROM gốc của Lenovo đặt sẵn cỡ bộ đệm log (`persist.logd.size.*`), và Chunqiu Native Check báo "Found property" vì tưởng module ghi vào, kể cả trên máy không root. Cam đặt rỗng các giá trị này một lần khi máy khởi động xong; bộ đệm log vẫn như cũ. Đã thử trên Y700: Chunqiu chỉ còn báo gỡ lỗi USB, Duck Detector và Luna không đổi gì. Ai tự chỉnh cỡ bộ đệm log trong Tuỳ chọn nhà phát triển sẽ bị đặt lại mỗi lần khởi động
+- Rule ẩn root v27: theo Duck Detector tới bản nightly 4/11 (8b365ba9). Đã quét trên Y700: không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi như trước
+- Bỏ slime đi dạo: slime chỉ còn trong hộp kính ở Trang chủ, không còn đè lên chữ và nút ở các trang khác
+- Tablet xoay ngang: Trang chủ 2 cột, Tính năng và Thư viện module xếp 2 thẻ một hàng, trang Kiểm tra ẩn root nằm giữa màn hình; Hồ sơ ứng dụng đưa thẻ kiểm tra ẩn root sang cột hồ sơ
+- Thẻ Tính năng có vấn đề (xung đột, module nguy hiểm, bootloader còn lộ, kiểm tra ẩn root có lộ) hiện dòng mô tả màu đỏ; Trang chủ báo "!" đỏ khi bootloader còn lộ
+- Thẻ ẩn root ở Trang chủ có nút Kiểm tra ngay. Thẻ thông tin chỉ còn phiên bản Manager và kernel; model, fingerprint, seccomp nằm trong "Xem thêm thông tin máy"
+- Ngày giờ ở Thư viện module và tab Tệp, dung lượng tệp theo định dạng của máy (tiếng Việt: 30/10/26 16:51, 48,0 MB)
+- Chữ tiếng Việt: "umount" thành "gỡ module", nhãn ở Superuser và Hồ sơ ứng dụng dịch hết, mục bị khoá ở Cài đặt ghi lý do; nhãn nhỏ to hơn cho dễ đọc; thẻ cảnh báo ở chế độ sáng đậm màu hơn
+- Trang Thông tin để link của Cam trước, link của dự án gốc ghi rõ là dự án gốc
+### Sửa lỗi
+- Superuser: thẻ hồ sơ mở ngay trong danh sách không còn hiện trạng thái cũ sau khi sửa ở trang hồ sơ đầy đủ rồi quay lại
+- Tab Tệp: ngăn kéo không còn bị thanh điều hướng che
+### Lưu ý
+- Bản này không đổi cách kernel chạy (chỉ nhận mã của bản gốc mà Cam không dùng). Nếu app gợi ý cài lại LKM thì làm hay không đều được
+
 ## 1.2.3 - 2026-11-04
 - App đổi tên thành Cam, là một app mới nên không tự cập nhật được: tải APK ở caesarvn.xyz, cài tay rồi làm theo phần Lưu ý. Ngoài ra sửa một lỗi hiếm có thể làm máy khởi động lại lúc bật ẩn SELinux, cài .xapk không còn làm mất OBB đang dùng, sửa hồ sơ app không còn khựng
 ### Thay đổi

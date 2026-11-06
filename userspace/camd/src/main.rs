@@ -60,6 +60,7 @@ mod profile;
 mod resetprop;
 #[cfg(target_os = "android")]
 mod restorecon;
+mod rom_props;
 mod seed;
 #[cfg(target_os = "android")]
 mod sepolicy;

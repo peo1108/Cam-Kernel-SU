@@ -192,7 +192,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.Wallpaper,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_monet),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -232,7 +232,7 @@ fun ColorPaletteScreenMiuix(
                                         Icon(
                                             Icons.Rounded.Colorize,
                                             modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = stringResource(id = R.string.settings_key_color),
+                                            contentDescription = null,
                                             tint = colorScheme.onBackground
                                         )
                                     },
@@ -253,7 +253,7 @@ fun ColorPaletteScreenMiuix(
                                                 Icon(
                                                     Icons.Rounded.Style,
                                                     modifier = Modifier.padding(end = 6.dp),
-                                                    contentDescription = stringResource(id = R.string.settings_color_style),
+                                                    contentDescription = null,
                                                     tint = colorScheme.onBackground
                                                 )
                                             },
@@ -271,7 +271,7 @@ fun ColorPaletteScreenMiuix(
                                                 Icon(
                                                     Icons.Rounded.DesignServices,
                                                     modifier = Modifier.padding(end = 6.dp),
-                                                    contentDescription = stringResource(id = R.string.settings_color_spec),
+                                                    contentDescription = null,
                                                     tint = colorScheme.onBackground
                                                 )
                                             },
@@ -303,7 +303,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.CallToAction,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_floating_bottom_bar),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -320,7 +320,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.ViewSidebar,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(R.string.settings_nav_bar_position),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -340,7 +340,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.Pin,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_navigation_badge),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -364,7 +364,7 @@ fun ColorPaletteScreenMiuix(
                                     Icon(
                                         Icons.AutoMirrored.Rounded.MenuOpen,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_enable_predictive_back),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -381,7 +381,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.Swipe,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_enable_swipe_dismiss),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground,
                                 )
                             },
@@ -399,7 +399,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.ViewCarousel,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_pager_gesture_mode),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground,
                                 )
                             },
@@ -415,7 +415,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.AspectRatio,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_page_scale),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -465,7 +465,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.Description,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_module_description_max_lines),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -504,7 +504,7 @@ fun ColorPaletteScreenMiuix(
                                 Icon(
                                     Icons.Rounded.AutoAwesome,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_start_intro),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },

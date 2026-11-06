@@ -133,6 +133,7 @@ class HomeViewModel(
             // as the hiding check page offers the switch: camd answers for itself, empty without it
             bootloaderAvailable = bootloader.props.isNotEmpty() || bootloader.enabled,
             rulesVersion = HidingRulesRepository().current().version,
+            bootloaderLeaks = bootloader.leaks,
         )
     }
 

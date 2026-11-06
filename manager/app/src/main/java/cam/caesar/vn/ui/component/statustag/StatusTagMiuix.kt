@@ -27,10 +27,11 @@ fun StatusTagMiuix(
             )
     ) {
         Text(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             text = label,
             color = contentColor,
-            fontSize = 9.sp,
+            // 9sp was hard to read on a tablet at arm's length
+            fontSize = 11.sp,
             fontWeight = FontWeight(750),
             maxLines = 1,
             softWrap = false

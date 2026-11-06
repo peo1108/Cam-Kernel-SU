@@ -18,21 +18,36 @@ import cam.caesar.vn.ui.screen.appprofile.rememberAppProfileEditor
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.preference.ArrowPreference
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import cam.caesar.vn.ui.screen.appprofile.AppProfileEditor
 
 /**
- * The app profile editor shown inside an expanded SuperUser card. Edits are written immediately;
- * the list tags (ROOT, CUSTOM, ...) refresh once, through [onEdited], when the card closes and the
- * writes made in it are done.
+ * The app profile editor shown inside an expanded SuperUser card. Edits are written immediately
+ * and the row's tags (ROOT, CUSTOM, ...) follow each write through [onSaved] (that uid alone, the
+ * list keeps its order); the whole list refreshes once, through [onEdited], when the card closes
+ * and the writes made in it are done. Coming back to the page (from the full App Profile, where
+ * the same profile may have changed) reads the profile from the kernel again.
  */
 @Composable
 fun InlineAppProfile(
     group: GroupedApps,
     onOpenFullProfile: () -> Unit,
     onEdited: () -> Unit,
+    onSaved: () -> Unit = {},
 ) {
     val edited = remember { booleanArrayOf(false) }
     val latestOnEdited by rememberUpdatedState(onEdited)
-    val editor = rememberAppProfileEditor(group, onSaved = { edited[0] = true })
+    val latestOnSaved by rememberUpdatedState(onSaved)
+    // a new editor (read from the kernel) each time the page comes back, never on the first resume
+    var generation by remember { mutableIntStateOf(0) }
+    val left = remember { booleanArrayOf(false) }
+    LifecycleResumeEffect(Unit) {
+        if (left[0]) generation++
+        onPauseOrDispose { left[0] = true }
+    }
     DisposableEffect(Unit) {
         onDispose {
             ProfileWrites.scope.launch {
@@ -42,6 +57,17 @@ fun InlineAppProfile(
         }
     }
 
+    key(generation) {
+        val editor = rememberAppProfileEditor(group, onSaved = {
+            edited[0] = true
+            latestOnSaved()
+        })
+        InlineEditorBody(group, editor, onOpenFullProfile)
+    }
+}
+
+@Composable
+private fun InlineEditorBody(group: GroupedApps, editor: AppProfileEditor, onOpenFullProfile: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
         AppProfileEditorBody(

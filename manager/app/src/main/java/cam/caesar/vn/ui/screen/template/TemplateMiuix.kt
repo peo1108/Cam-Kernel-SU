@@ -320,14 +320,14 @@ private fun TemplateItem(
                 Spacer(modifier = Modifier.weight(1f))
                 if (template.local) {
                     Text(
-                        text = "LOCAL",
+                        text = stringResource(R.string.template_local),
                         color = colorScheme.onTertiaryContainer,
                         fontWeight = FontWeight(750),
                         style = MiuixTheme.textStyles.footnote1
                     )
                 } else {
                     Text(
-                        text = "REMOTE",
+                        text = stringResource(R.string.template_remote),
                         color = colorScheme.onSurfaceSecondary,
                         fontWeight = FontWeight(750),
                         style = MiuixTheme.textStyles.footnote1
@@ -336,7 +336,7 @@ private fun TemplateItem(
             }
 
             Text(
-                text = "${template.id}${if (template.author.isEmpty()) "" else " by @${template.author}"}",
+                text = if (template.author.isEmpty()) template.id else stringResource(R.string.template_id_by, template.id, template.author),
                 modifier = Modifier.padding(top = 1.dp),
                 fontSize = 12.sp,
                 fontWeight = FontWeight(550),

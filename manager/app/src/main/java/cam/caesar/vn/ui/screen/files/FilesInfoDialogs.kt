@@ -44,11 +44,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-private val fullDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
 
 @Composable
 internal fun PropertiesDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) -> Unit) {
@@ -80,7 +76,7 @@ internal fun PropertiesDialog(vm: FilesViewModel, onDialog: (FilesDialogState?) 
                 else -> "${FileFormat.size(e.size)} (${e.size})"
             },
         )
-        PropRow(R.string.files_prop_modified, fullDate.format(Date(e.mtime)))
+        PropRow(R.string.files_prop_modified, FileFormat.fullDate(e.mtime))
         Spacer(Modifier.height(6.dp))
         PropRow(R.string.files_prop_perms, "${FileFormat.permissions(e.mode)}(${FileFormat.octal(e.mode).trimStart('0').padStart(3, '0')})")
         PropRow(R.string.files_prop_owner, "${e.owner} (${e.uid})")

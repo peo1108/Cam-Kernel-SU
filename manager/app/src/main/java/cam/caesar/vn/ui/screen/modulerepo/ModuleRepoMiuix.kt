@@ -139,6 +139,8 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import cam.caesar.vn.ui.component.expand.expandClick
 import cam.caesar.vn.ui.component.expand.expandSource
+import androidx.compose.foundation.layout.BoxWithConstraints
+import cam.caesar.vn.data.model.RepoModule
 
 // the card a module's detail page grows out of (expandSource key)
 private fun repoSourceKey(moduleId: String) = "repo/$moduleId"
@@ -318,7 +320,7 @@ fun ModuleRepoScreenMiuix(
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Icon(
                                                     imageVector = MiuixIcons.TopDownloads,
-                                                    contentDescription = "stars",
+                                                    contentDescription = stringResource(R.string.module_repo_stars),
                                                     tint = colorScheme.onSurfaceVariantSummary,
                                                     modifier = Modifier.size(16.dp)
                                                 )
@@ -429,7 +431,8 @@ fun ModuleRepoScreenMiuix(
                             }
                         }
                     } else {
-                        Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
+                        BoxWithConstraints(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
+                            val columns = if (maxWidth >= REPO_TWO_COLUMNS) 2 else 1
                             LazyColumn(
                                 state = lazyListState,
                                 modifier = Modifier
@@ -444,105 +447,18 @@ fun ModuleRepoScreenMiuix(
                                 ),
                                 overscrollEffect = null,
                             ) {
-                                items(items = state.modules, key = { it.moduleId }, contentType = { "module" }) { module ->
-                                    val moduleAuthor = stringResource(id = R.string.module_author)
-
-                                    GlassListCard(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp)
-                                            .padding(bottom = 12.dp)
-                                            .expandSource(repoSourceKey(module.moduleId)),
-                                        insideMargin = PaddingValues(16.dp),
-                                        showIndication = true,
-                                        onClick = expandClick(repoSourceKey(module.moduleId)) { actions.onOpenRepoDetail(module) }) {
-                                        Column {
-                                            if (module.moduleName.isNotEmpty()) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(
-                                                        text = module.moduleName,
-                                                        fontSize = 17.sp,
-                                                        fontWeight = FontWeight(550),
-                                                        color = colorScheme.onSurface
-                                                    )
-                                                    if (module.metamodule) {
-                                                        Text(
-                                                            text = "META",
-                                                            fontSize = 12.sp,
-                                                            color = metaTint,
-                                                            modifier = Modifier
-                                                                .padding(start = 6.dp)
-                                                                .clip(RoundedCornerShape(6.dp))
-                                                                .background(metaBg)
-                                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                                            fontWeight = FontWeight(750),
-                                                            maxLines = 1
-                                                        )
-                                                    }
-                                                }
+                                if (columns == 1) {
+                                    items(items = state.modules, key = { it.moduleId }, contentType = { "module" }) { module ->
+                                        RepoModuleCard(module, metaTint, metaBg, actions.onOpenRepoDetail, Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+                                    }
+                                } else {
+                                    // a tablet held sideways: two cards a row instead of one stretched one
+                                    items(items = state.modules.chunked(2), key = { it.first().moduleId }, contentType = { "modules" }) { pair ->
+                                        Row(Modifier.padding(horizontal = 6.dp)) {
+                                            pair.forEach { module ->
+                                                RepoModuleCard(module, metaTint, metaBg, actions.onOpenRepoDetail, Modifier.weight(1f).padding(horizontal = 6.dp))
                                             }
-                                            if (module.moduleId.isNotEmpty()) {
-                                                Text(
-                                                    text = "ID: ${module.moduleId}",
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight(550),
-                                                    color = colorScheme.onSurfaceVariantSummary,
-                                                )
-                                            }
-                                            Text(
-                                                text = "$moduleAuthor: ${module.authors}",
-                                                fontSize = 12.sp,
-                                                modifier = Modifier.padding(bottom = 1.dp),
-                                                fontWeight = FontWeight(550),
-                                                color = colorScheme.onSurfaceVariantSummary,
-                                            )
-                                            if (module.summary.isNotEmpty()) {
-                                                Text(
-                                                    text = module.summary,
-                                                    fontSize = 14.sp,
-                                                    color = colorScheme.onSurfaceVariantSummary,
-                                                    modifier = Modifier.padding(top = 2.dp),
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    maxLines = 4,
-                                                )
-                                            }
-                                            HorizontalDivider(
-                                                modifier = Modifier.padding(vertical = 8.dp),
-                                                thickness = 0.5.dp,
-                                                color = colorScheme.outline.copy(alpha = 0.5f)
-                                            )
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Row {
-                                                    if (module.stargazerCount > 0) {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(
-                                                                imageVector = MiuixIcons.TopDownloads,
-                                                                contentDescription = "stars",
-                                                                tint = colorScheme.onSurfaceVariantSummary,
-                                                                modifier = Modifier.size(16.dp)
-                                                            )
-                                                            Text(
-                                                                text = module.stargazerCount.toString(),
-                                                                fontSize = 12.sp,
-                                                                color = colorScheme.onSurfaceVariantSummary,
-                                                                modifier = Modifier.padding(start = 4.dp)
-                                                            )
-                                                        }
-                                                    }
-                                                    Spacer(Modifier.weight(1f))
-                                                    if (module.latestReleaseTime.isNotEmpty()) {
-                                                        Text(
-                                                            text = module.latestReleaseTime,
-                                                            fontSize = 12.sp,
-                                                            color = colorScheme.onSurfaceVariantSummary,
-                                                            textAlign = TextAlign.End
-                                                        )
-                                                    }
-                                                }
-                                            }
+                                            if (pair.size == 1) Spacer(Modifier.weight(1f))
                                         }
                                     }
                                 }
@@ -704,7 +620,7 @@ fun ReleasesPage(
                                     )
                                 }
                                 Text(
-                                    text = rel.publishedAt,
+                                    text = repoDate(rel.publishedAt),
                                     fontSize = 12.sp,
                                     color = colorScheme.onSurfaceVariantSummary,
                                     modifier = Modifier
@@ -1187,6 +1103,117 @@ fun ModuleRepoDetailScreenMiuix(
                         uriHandler = uriHandler,
                         sourceUrl = state.sourceUrl,
                     )
+                }
+            }
+        }
+    }
+}
+
+/** Wide enough for two library cards a row. */
+private val REPO_TWO_COLUMNS = 840.dp
+
+@Composable
+private fun RepoModuleCard(
+    module: RepoModule,
+    metaTint: Color,
+    metaBg: Color,
+    onOpen: (RepoModule) -> Unit,
+    modifier: Modifier,
+) {
+    val moduleAuthor = stringResource(id = R.string.module_author)
+
+    GlassListCard(
+        modifier = modifier
+            .padding(bottom = 12.dp)
+            .expandSource(repoSourceKey(module.moduleId)),
+        insideMargin = PaddingValues(16.dp),
+        showIndication = true,
+        onClick = expandClick(repoSourceKey(module.moduleId)) { onOpen(module) }) {
+        Column {
+            if (module.moduleName.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = module.moduleName,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight(550),
+                        color = colorScheme.onSurface
+                    )
+                    if (module.metamodule) {
+                        Text(
+                            text = "META",
+                            fontSize = 12.sp,
+                            color = metaTint,
+                            modifier = Modifier
+                                .padding(start = 6.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(metaBg)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            fontWeight = FontWeight(750),
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+            if (module.moduleId.isNotEmpty()) {
+                Text(
+                    text = "ID: ${module.moduleId}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight(550),
+                    color = colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            Text(
+                text = "$moduleAuthor: ${module.authors}",
+                fontSize = 12.sp,
+                modifier = Modifier.padding(bottom = 1.dp),
+                fontWeight = FontWeight(550),
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+            if (module.summary.isNotEmpty()) {
+                Text(
+                    text = module.summary,
+                    fontSize = 14.sp,
+                    color = colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(top = 2.dp),
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 4,
+                )
+            }
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                thickness = 0.5.dp,
+                color = colorScheme.outline.copy(alpha = 0.5f)
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row {
+                    if (module.stargazerCount > 0) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = MiuixIcons.TopDownloads,
+                                contentDescription = stringResource(R.string.module_repo_stars),
+                                tint = colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = module.stargazerCount.toString(),
+                                fontSize = 12.sp,
+                                color = colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    if (module.latestReleaseTime.isNotEmpty()) {
+                        Text(
+                            text = repoDate(module.latestReleaseTime),
+                            fontSize = 12.sp,
+                            color = colorScheme.onSurfaceVariantSummary,
+                            textAlign = TextAlign.End
+                        )
+                    }
                 }
             }
         }

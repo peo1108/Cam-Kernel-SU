@@ -94,10 +94,22 @@ data class PanelNav(
 }
 
 object FileFormat {
-    private val shortDate = java.text.SimpleDateFormat("yy-MM-dd HH:mm", Locale.ROOT)
+    private var shortDate: Pair<Locale, java.text.DateFormat>? = null
+    private var fullDate: Pair<Locale, java.text.DateFormat>? = null
 
-    /** A row's date. Main thread only. */
-    fun date(time: Long): String = shortDate.format(java.util.Date(time))
+    private fun format(cache: Pair<Locale, java.text.DateFormat>?, style: Int, store: (Pair<Locale, java.text.DateFormat>) -> Unit): java.text.DateFormat {
+        val locale = Locale.getDefault()
+        cache?.takeIf { it.first == locale }?.let { return it.second }
+        return java.text.DateFormat.getDateTimeInstance(style, style, locale).also { store(locale to it) }
+    }
+
+    /** A row's date, as the phone writes dates (03/11/26 16:51 in Vietnamese). Main thread only. */
+    fun date(time: Long): String =
+        format(shortDate, java.text.DateFormat.SHORT) { shortDate = it }.format(java.util.Date(time))
+
+    /** Date and time to the second, for the properties dialog. Main thread only. */
+    fun fullDate(time: Long): String =
+        format(fullDate, java.text.DateFormat.MEDIUM) { fullDate = it }.format(java.util.Date(time))
 
     /** "/data/adb" → [("/", "/"), ("data", "/data"), ("adb", "/data/adb")] */
     fun breadcrumb(path: String): List<Pair<String, String>> {
@@ -110,7 +122,8 @@ object FileFormat {
         return crumbs
     }
 
-    fun size(bytes: Long): String {
+    /** A size as people read it, with the phone's decimal mark (1,5 MB in Vietnamese). */
+    fun size(bytes: Long, locale: Locale = Locale.getDefault()): String {
         if (bytes < 1024) return "$bytes B"
         val units = listOf("KB", "MB", "GB", "TB")
         var value = bytes / 1024.0
@@ -119,7 +132,7 @@ object FileFormat {
             value /= 1024
             unit++
         }
-        return if (value >= 100) "${value.toLong()} ${units[unit]}" else String.format(Locale.ROOT, "%.1f %s", value, units[unit])
+        return if (value >= 100) "${value.toLong()} ${units[unit]}" else String.format(locale, "%.1f %s", value, units[unit])
     }
 
     /** `ls -l` style: "drwxr-x--x", with s/S and t/T for setuid, setgid and sticky. */

@@ -533,7 +533,7 @@ private fun ModuleListPane(
                                     Icon(
                                         imageVector = MiuixIcons.Download,
                                         tint = colorScheme.onSurface,
-                                        contentDescription = null
+                                        contentDescription = stringResource(R.string.module_repos)
                                     )
                                 }
                             }
@@ -669,11 +669,20 @@ private fun ModuleListPane(
                             // The refresh indicator doubles as the first-load hint;
                             // only announce emptiness once loading has finished.
                             if (uiState.hasLoaded) {
-                                Text(
-                                    stringResource(R.string.module_empty),
-                                    textAlign = TextAlign.Center,
-                                    color = Color.Gray,
-                                )
+                                // nothing installed yet: the library is where modules come from
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        stringResource(R.string.module_empty),
+                                        textAlign = TextAlign.Center,
+                                        color = colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    TextButton(
+                                        text = stringResource(R.string.module_empty_open_repo),
+                                        onClick = actions.onOpenRepo,
+                                        colors = ButtonDefaults.textButtonColorsPrimary(),
+                                        modifier = Modifier.padding(top = 12.dp),
+                                    )
+                                }
                             }
                         }
                     } else {

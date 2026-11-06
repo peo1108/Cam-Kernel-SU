@@ -103,6 +103,8 @@ data class HidingSummary(
     /** false when the ROM has no bootloader property to hide (the switch is not offered) */
     val bootloaderAvailable: Boolean,
     val rulesVersion: Int,
+    /** bootloader properties apps can still read the truth from, the switch on or not */
+    val bootloaderLeaks: Int = 0,
 )
 
 @Immutable
@@ -119,4 +121,6 @@ data class HomeActions(
     val onReenableOtherModules: () -> Unit = {},
     val onDismissBootGuard: () -> Unit = {},
     val onOpenHidingCheck: () -> Unit = {},
+    /** opens the hiding check and starts a check at once */
+    val onScanHiding: () -> Unit = {},
 )

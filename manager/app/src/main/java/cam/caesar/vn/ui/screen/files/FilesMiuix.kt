@@ -267,7 +267,7 @@ fun FilesPagerMiuix(
             }
         }
 
-        FilesDrawer(visible = drawer, state = state, vm = vm, onClose = { drawer = false })
+        FilesDrawer(visible = drawer, state = state, vm = vm, bottomPadding = bottomInnerPadding, onClose = { drawer = false })
     }
 
     FilesDialogs(state, vm, dialog, onDialog = { dialog = it })
@@ -567,7 +567,8 @@ private fun FileRow(entry: FileEntry, selected: Boolean, onOpen: () -> Unit, onM
 }
 
 private fun kindColor(kind: FileKind): Color = when (kind) {
-    FileKind.FOLDER -> Color(0xFF37474F)
+    // amber, as folders look elsewhere; dark enough for the white glyph (3.3:1)
+    FileKind.FOLDER -> Color(0xFFC27C0E)
     FileKind.ARCHIVE -> Color(0xFF8D6E63)
     FileKind.APK -> Color(0xFF43A047)
     FileKind.IMAGE -> Color(0xFFAB47BC)
@@ -694,7 +695,7 @@ private fun ToolButton(icon: ImageVector, label: Int, enabled: Boolean = true, o
 
 /** MT's left drawer: local roots with usage bars, then bookmarks. */
 @Composable
-private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewModel, onClose: () -> Unit) {
+private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewModel, bottomPadding: Dp, onClose: () -> Unit) {
     AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
         Box(
             modifier = Modifier
@@ -714,7 +715,8 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                 .fillMaxHeight()
                 .width(300.dp)
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start))
-                .padding(8.dp)
+                // ends above the floating bar instead of under it
+                .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 8.dp + bottomPadding)
                 // the glass alone samples a busy file list under it; keep the drawer readable
                 .background(colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(24.dp)),
             insideMargin = PaddingValues(vertical = 8.dp),
@@ -764,6 +766,7 @@ private fun FilesDrawer(visible: Boolean, state: FilesUiState, vm: FilesViewMode
                         Icons.Rounded.Bookmark,
                         FsPath.name(path).ifEmpty { "/" },
                         path,
+                        subtitleIsPath = true,
                         onClick = { go(path) },
                         onLongClick = { vm.removeBookmark(path) },
                     )
@@ -817,6 +820,8 @@ private fun DrawerItem(
     title: String,
     subtitle: String?,
     progress: Float? = null,
+    /** a path keeps its end (the name) when cut; a description keeps its start and gets two lines */
+    subtitleIsPath: Boolean = false,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -850,7 +855,15 @@ private fun DrawerItem(
                     Box(Modifier.fillMaxWidth(it).fillMaxHeight().background(colorScheme.primary))
                 }
             }
-            subtitle?.let { Text(it, fontSize = 11.sp, color = colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.StartEllipsis) }
+            subtitle?.let {
+                Text(
+                    it,
+                    fontSize = 11.sp,
+                    color = colorScheme.onSurfaceVariantSummary,
+                    maxLines = if (subtitleIsPath) 1 else 2,
+                    overflow = if (subtitleIsPath) TextOverflow.StartEllipsis else TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

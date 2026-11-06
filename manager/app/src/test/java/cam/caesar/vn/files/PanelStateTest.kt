@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 class PanelStateTest {
 
@@ -82,11 +83,13 @@ class PanelStateTest {
 
     @Test
     fun sizes() {
-        assertEquals("0 B", FileFormat.size(0))
-        assertEquals("1023 B", FileFormat.size(1023))
-        assertEquals("1.0 KB", FileFormat.size(1024))
-        assertEquals("1.5 MB", FileFormat.size(1572864))
-        assertEquals("512 MB", FileFormat.size(512L * 1024 * 1024))
+        assertEquals("0 B", FileFormat.size(0, Locale.US))
+        assertEquals("1023 B", FileFormat.size(1023, Locale.US))
+        assertEquals("1.0 KB", FileFormat.size(1024, Locale.US))
+        assertEquals("1.5 MB", FileFormat.size(1572864, Locale.US))
+        assertEquals("512 MB", FileFormat.size(512L * 1024 * 1024, Locale.US))
+        // Vietnamese writes a decimal comma
+        assertEquals("1,5 MB", FileFormat.size(1572864, Locale.forLanguageTag("vi-VN")))
     }
 
     @Test

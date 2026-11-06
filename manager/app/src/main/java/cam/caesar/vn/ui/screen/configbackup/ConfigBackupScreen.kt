@@ -324,6 +324,8 @@ fun ConfigBackupScreen() {
 private fun ActionsCard(working: Boolean, onBackup: () -> Unit, onRestore: () -> Unit) {
     GlassCard(modifier = Modifier.padding(top = 12.dp).fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // titled like the module card below it
+            Text(stringResource(R.string.config_backup_card_title), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text(stringResource(R.string.config_backup_summary), color = colorScheme.onSurfaceVariantSummary)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextButton(

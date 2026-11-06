@@ -108,6 +108,8 @@ import cam.caesar.vn.ui.component.expand.expandClick
 import cam.caesar.vn.ui.component.expand.expandSource
 import java.text.DateFormat
 import java.util.Date
+import androidx.compose.foundation.layout.BoxWithConstraints
+import cam.caesar.vn.ui.util.CamLinks
 
 // the status arena the install page grows out of (expandSource key)
 private const val SOURCE_INSTALL = "home/install"
@@ -193,22 +195,40 @@ fun HomePagerMiuix(
                         if (state.showBootGuardNotice) {
                             BootGuardNotice(state = state, actions = actions)
                         }
-                        StatusCard(
-                            state = state,
-                            actions = actions,
-                            active = isCurrentPage,
-                        )
-                        state.hiding?.let { hiding ->
-                            HidingCard(hiding = hiding, onClick = actions.onOpenHidingCheck)
+                        val status = @Composable {
+                            StatusCard(
+                                state = state,
+                                actions = actions,
+                                active = isCurrentPage,
+                            )
+                            state.hiding?.let { hiding ->
+                                HidingCard(hiding = hiding, onClick = actions.onOpenHidingCheck, onScan = actions.onScanHiding)
+                            }
                         }
-                        InfoCard(
-                            systemInfo = state.systemInfo,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        SupportLinks(
-                            onOpenUrl = actions.onOpenUrl,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        val about = @Composable {
+                            InfoCard(
+                                systemInfo = state.systemInfo,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            SupportLinks(
+                                onOpenUrl = actions.onOpenUrl,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            if (maxWidth >= HOME_TWO_COLUMNS) {
+                                // a tablet held sideways: the status beside the device, not one long column
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Column(Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(12.dp)) { status() }
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) { about() }
+                                }
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    status()
+                                    about()
+                                }
+                            }
+                        }
                         Spacer(
                             Modifier.height(
                                 bottomInnerPadding + if (!Cam.isFullFeatured())
@@ -221,6 +241,9 @@ fun HomePagerMiuix(
         }
     }
 }
+
+/** Wide enough for the status and the device side by side. */
+private val HOME_TWO_COLUMNS = 840.dp
 
 @Composable
 private fun WhatsNewDialog(
@@ -487,6 +510,7 @@ private const val SOURCE_HIDING = "home/hiding"
 private fun HidingCard(
     hiding: HidingSummary,
     onClick: () -> Unit,
+    onScan: () -> Unit,
 ) {
     val dates = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
     val time = hiding.scanTime
@@ -547,7 +571,12 @@ private fun HidingCard(
                     SwitchTag(stringResource(R.string.settings_kernel_umount), hiding.kernelUmount)
                     SwitchTag(stringResource(R.string.home_hiding_selinux), hiding.selinuxHide)
                     if (hiding.bootloaderAvailable) {
-                        SwitchTag(stringResource(R.string.home_hiding_bootloader), hiding.hideBootloader)
+                        // on, but apps still read the truth: not a tick
+                        SwitchTag(
+                            stringResource(R.string.home_hiding_bootloader),
+                            hiding.hideBootloader,
+                            warn = hiding.bootloaderLeaks > 0,
+                        )
                     }
                     StatusTag(
                         label = stringResource(R.string.home_hiding_rules, hiding.rulesVersion),
@@ -556,22 +585,36 @@ private fun HidingCard(
                     )
                 }
             }
+            // the check itself, without a detour through the page first
+            TextButton(
+                text = stringResource(if (time == null) R.string.home_hiding_scan_first else R.string.home_hiding_scan_again),
+                onClick = onScan,
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
     }
 }
 
-/** One of the hiding switches: filled and ticked while on, faint and crossed while off. */
+/**
+ * One of the hiding switches: filled and ticked while on, faint and crossed while off; [warn]
+ * when it is on but something it covers still shows.
+ */
 @Composable
-private fun SwitchTag(label: String, on: Boolean) {
+private fun SwitchTag(label: String, on: Boolean, warn: Boolean = false) {
     StatusTag(
-        label = "${if (on) "✓" else "✕"} $label",
-        backgroundColor = if (on) colorScheme.primary.copy(alpha = 0.8f) else colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f),
-        contentColor = if (on) colorScheme.onPrimary else colorScheme.onSurfaceVariantSummary,
+        label = "${if (warn) "!" else if (on) "✓" else "✕"} $label",
+        backgroundColor = when {
+            warn -> colorScheme.error.copy(alpha = 0.85f)
+            on -> colorScheme.primary.copy(alpha = 0.8f)
+            else -> colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f)
+        },
+        contentColor = if (on || warn) colorScheme.onPrimary else colorScheme.onSurfaceVariantSummary,
     )
 }
 
-private const val DONATE_URL = "https://t.me/MDM_Cam"
-private const val CONTACT_URL = "https://t.me/milk_1108"
+private const val DONATE_URL = CamLinks.DONATE
+private const val CONTACT_URL = CamLinks.CONTACT
 
 @Composable
 private fun SupportLinks(
@@ -591,7 +634,7 @@ private fun SupportLinks(
             startAction = {
                 Icon(
                     imageVector = Icons.Filled.VolunteerActivism,
-                    contentDescription = stringResource(R.string.home_donate_title),
+                    contentDescription = null,
                     modifier = Modifier.padding(end = 6.dp),
                     tint = colorScheme.onBackground,
                 )
@@ -604,7 +647,7 @@ private fun SupportLinks(
             startAction = {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = stringResource(R.string.home_contact_title),
+                    contentDescription = null,
                     modifier = Modifier.padding(end = 6.dp),
                     tint = colorScheme.onBackground,
                 )
@@ -634,7 +677,7 @@ private fun InfoCard(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = title,
+                contentDescription = null,
                 modifier = Modifier
                     .padding(end = 12.dp)
                     .size(24.dp),
@@ -671,49 +714,62 @@ private fun InfoCard(
         else -> stringResource(R.string.seccomp_status_unknown)
     }
 
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                InfoText(
-                    icon = Icons.Filled.Tag,
-                    title = stringResource(R.string.home_manager_version),
-                    content = systemInfo.managerVersion,
-                )
-                InfoText(
-                    icon = Icons.Filled.DeveloperBoard,
-                    title = stringResource(R.string.home_kernel),
-                    content = systemInfo.kernelVersion,
-                )
-                InfoText(
-                    icon = Icons.Filled.Smartphone,
-                    title = stringResource(R.string.home_device_model),
-                    content = systemInfo.deviceModel,
-                )
-                InfoText(
-                    icon = Icons.Filled.Fingerprint,
-                    title = stringResource(R.string.home_fingerprint),
-                    content = systemInfo.fingerprint,
-                    bottomPadding = 0.dp,
-                )
-            }
-        }
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
+    // What a customer needs at a glance: the versions, and SELinux only when it is not enforcing
+    // (then it is a warning). The rest is for support and folds away.
+    var showDetails by rememberSaveable { mutableStateOf(false) }
+    val selinuxOff = systemInfo.selinuxStatus != "Enforcing"
+    GlassCard(modifier = modifier) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            InfoText(
+                icon = Icons.Filled.Tag,
+                title = stringResource(R.string.home_manager_version),
+                content = systemInfo.managerVersion,
+            )
+            InfoText(
+                icon = Icons.Filled.DeveloperBoard,
+                title = stringResource(R.string.home_kernel),
+                content = systemInfo.kernelVersion,
+                bottomPadding = if (showDetails || selinuxOff) 24.dp else 0.dp,
+            )
+            if (selinuxOff || showDetails) {
                 InfoText(
                     icon = Icons.Filled.Security,
                     title = stringResource(R.string.home_selinux_status),
                     content = selinuxDisplay,
-                )
-                InfoText(
-                    icon = Icons.Filled.FilterList,
-                    title = stringResource(R.string.home_seccomp_status),
-                    content = seccompDisplay,
-                    bottomPadding = 0.dp,
+                    bottomPadding = if (showDetails) 24.dp else 0.dp,
                 )
             }
+            AnimatedVisibility(
+                visible = showDetails,
+                enter = fadeIn() + expandVertically(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column {
+                    InfoText(
+                        icon = Icons.Filled.Smartphone,
+                        title = stringResource(R.string.home_device_model),
+                        content = systemInfo.deviceModel,
+                    )
+                    InfoText(
+                        icon = Icons.Filled.Fingerprint,
+                        title = stringResource(R.string.home_fingerprint),
+                        content = systemInfo.fingerprint,
+                    )
+                    InfoText(
+                        icon = Icons.Filled.FilterList,
+                        title = stringResource(R.string.home_seccomp_status),
+                        content = seccompDisplay,
+                        bottomPadding = 0.dp,
+                    )
+                }
+            }
+            TextButton(
+                text = stringResource(if (showDetails) R.string.home_info_less else R.string.home_info_more),
+                onClick = { showDetails = !showDetails },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
         }
     }
 }

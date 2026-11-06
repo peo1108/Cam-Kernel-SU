@@ -1141,4 +1141,27 @@
     <string name="module_install_count">Install %1$d modules</string>
     <string name="module_install_remove">Remove from the list</string>
     <string name="module_install_done">Done</string>
+    <string name="features_bootloader_on_leaks">On, but %d item(s) still reveal it</string>
+    <string name="features_bootloader_enable">Rewrite bootloader properties</string>
+    <string name="home_hiding_scan_first">Check now</string>
+    <string name="home_hiding_scan_again">Check again</string>
+    <string name="home_info_more">More device info</string>
+    <string name="home_info_less">Less</string>
+    <string name="module_empty_open_repo">Open the module library</string>
+    <string name="module_repo_stars">Stars</string>
+    <string name="su_tag_root">ROOT</string>
+    <string name="su_tag_umount">UMOUNT</string>
+    <string name="su_tag_custom">CUSTOM</string>
+    <string name="su_tag_user">USER %d</string>
+    <string name="about_cam_links"><![CDATA[Website of Cam: %1$s<br/>Contact Cam on %2$s]]></string>
+    <string name="about_upstream_links"><![CDATA[Cam is built on an open source project: its source on %1$s<br/>The %2$s channel of that project]]></string>
+    <string name="profile_none">None</string>
+    <string name="profile_app_version">Version %1$s (%2$d)</string>
+    <string name="template_local">LOCAL</string>
+    <string name="template_remote">REMOTE</string>
+    <string name="template_id_by">%1$s by @%2$s</string>
+    <string name="settings_soft_reboot_late_load">Always on in Jailbreak mode: a full reboot would drop root</string>
+    <string name="settings_auto_jailbreak_installed">Only for Jailbreak mode. Cam is installed on this device, so it is not needed</string>
+    <string name="settings_uninstall_late_load">Nothing to uninstall in Jailbreak mode: Cam is gone after a reboot</string>
+    <string name="config_backup_card_title">Configuration</string>
 </resources>

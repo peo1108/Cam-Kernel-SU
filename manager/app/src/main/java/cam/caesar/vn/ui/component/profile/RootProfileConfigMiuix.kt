@@ -233,7 +233,7 @@ private fun GroupsPanel(
     )
 
     val tag = if (selected.isEmpty()) {
-        "None"
+        stringResource(R.string.profile_none)
     } else {
         selected.joinToString(separator = ",", transform = { it.display })
     }
@@ -339,7 +339,7 @@ private fun RootProfileFlagPanel(
     )
 
     val tag = if (selected.isEmpty()) {
-        "None"
+        stringResource(R.string.profile_none)
     } else {
         selected.joinToString(separator = ",", transform = { it.display })
     }
@@ -425,7 +425,7 @@ private fun CapsPanel(
     )
 
     val tag = if (selected.isEmpty()) {
-        "None"
+        stringResource(R.string.profile_none)
     } else {
         selected.joinToString(separator = ",", transform = { it.display })
     }

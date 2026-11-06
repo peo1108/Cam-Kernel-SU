@@ -79,6 +79,9 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
 
 /** Items shown per finding; the rest are only counted. */
 private const val ITEMS_SHOWN = 6
@@ -129,7 +132,11 @@ fun HidingCheckScreenMiuix(
         popupHost = { },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     ) { innerPadding ->
-        Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
+        BoxWithConstraints(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
+            // A tablet held sideways: the cards (and their full width buttons) keep a readable
+            // width in the middle; the list still scrolls from anywhere across the screen.
+            val side = ((maxWidth - HIDING_MAX_WIDTH) / 2).coerceAtLeast(0.dp)
+            val layoutDirection = LocalLayoutDirection.current
             LazyColumn(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -137,7 +144,12 @@ fun HidingCheckScreenMiuix(
                     .scrollEndHaptic()
                     .overScrollVertical()
                     .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = innerPadding,
+                contentPadding = PaddingValues(
+                    start = innerPadding.calculateStartPadding(layoutDirection) + side,
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(layoutDirection) + side,
+                    bottom = innerPadding.calculateBottomPadding(),
+                ),
                 overscrollEffect = null
             ) {
                 item { OverviewCard(state, actions) { dates.format(Date(it)) } }
@@ -585,3 +597,6 @@ private fun FixSwitch(
 internal fun RowIcon(icon: ImageVector, tint: Color) {
     Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.padding(end = 6.dp))
 }
+
+/** How wide the check gets on a tablet held sideways. */
+private val HIDING_MAX_WIDTH = 760.dp

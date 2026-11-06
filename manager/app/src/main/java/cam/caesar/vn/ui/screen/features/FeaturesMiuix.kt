@@ -75,6 +75,10 @@ import java.text.DateFormat
 import java.util.Date
 import cam.caesar.vn.ui.component.expand.expandClick
 import cam.caesar.vn.ui.component.expand.expandSource
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 
 @Composable
 fun FeaturesPagerMiuix(
@@ -101,8 +105,11 @@ fun FeaturesPagerMiuix(
         popupHost = { },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal).add(LocalNavSideInsets.current),
     ) { innerPadding ->
-        Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
-            LazyColumn(
+        BoxWithConstraints(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
+            // a tablet held sideways gets two columns of cards instead of one stretched list
+            val columns = if (maxWidth >= FEATURES_TWO_COLUMNS) 2 else 1
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Fixed(columns),
                 modifier = Modifier
                     .fillMaxHeight()
                     .scrollEndHaptic()
@@ -111,18 +118,21 @@ fun FeaturesPagerMiuix(
                 contentPadding = innerPadding,
                 overscrollEffect = null,
             ) {
-                item { Spacer(Modifier.height(12.dp)) }
+                item(span = StaggeredGridItemSpan.FullLine) { Spacer(Modifier.height(12.dp)) }
                 item { BootGuardCard(state, actions) }
                 item { ConflictCard(state, actions) }
                 item { RiskCard(state, actions) }
                 item { HideBootloaderCard(state, actions) }
                 item { HidingCheckEntry(state, actions) }
                 item { WirelessAdbCard(state, actions) }
-                item { Spacer(Modifier.height(bottomInnerPadding)) }
+                item(span = StaggeredGridItemSpan.FullLine) { Spacer(Modifier.height(bottomInnerPadding)) }
             }
         }
     }
 }
+
+/** Wide enough for two columns of feature cards. */
+private val FEATURES_TWO_COLUMNS = 840.dp
 
 @Composable
 private fun BootGuardCard(state: FeaturesUiState, actions: FeaturesActions) {
@@ -190,6 +200,7 @@ private fun ConflictCard(state: FeaturesUiState, actions: FeaturesActions) {
             conflicts.isEmpty() -> stringResource(R.string.features_conflicts_none)
             else -> stringResource(R.string.features_conflicts_count, conflicts.size)
         },
+        alert = state.conflictDetection && conflicts.isNotEmpty(),
         expanded = expanded,
         onToggle = { expanded = !expanded },
     ) {
@@ -255,6 +266,7 @@ private fun RiskCard(state: FeaturesUiState, actions: FeaturesActions) {
             !state.riskBlock -> stringResource(R.string.features_risk_warn_only)
             else -> stringResource(R.string.features_risk_on, state.riskEntries)
         },
+        alert = flagged.isNotEmpty(),
         expanded = expanded,
         onToggle = { expanded = !expanded },
     ) {
@@ -298,15 +310,18 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
         icon = Icons.Rounded.VisibilityOff,
         title = stringResource(R.string.features_bootloader),
         summary = when {
+            // on, yet the properties still tell: they change at the next boot, or the ROM resists
+            status.leaks > 0 && status.enabled -> stringResource(R.string.features_bootloader_on_leaks, status.leaks)
             status.leaks > 0 -> stringResource(R.string.features_bootloader_leaks, status.leaks)
             status.enabled -> stringResource(R.string.features_bootloader_on)
             else -> stringResource(R.string.features_bootloader_clean)
         },
+        alert = status.leaks > 0,
         expanded = expanded,
         onToggle = { expanded = !expanded },
     ) {
         GlassSwitchPreference(
-            title = stringResource(R.string.features_bootloader),
+            title = stringResource(R.string.features_bootloader_enable),
             summary = stringResource(R.string.features_bootloader_enable_summary),
             checked = status.enabled,
             onCheckedChange = actions.onSetHideBootloader,
@@ -370,6 +385,7 @@ private fun HidingCheckEntry(state: FeaturesUiState, actions: FeaturesActions) {
         icon = Icons.Rounded.Shield,
         title = stringResource(R.string.audit_title),
         summary = if (time == null) status else "$status · ${dates.format(Date(time))}",
+        alert = time != null && state.hidingLeaks > 0,
         expanded = false,
         onToggle = expandClick(SOURCE_HIDING_CHECK, actions.onOpenHidingCheck),
         modifier = Modifier.expandSource(SOURCE_HIDING_CHECK),

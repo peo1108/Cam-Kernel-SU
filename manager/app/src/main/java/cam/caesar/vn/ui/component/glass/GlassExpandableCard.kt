@@ -50,6 +50,8 @@ fun GlassExpandableCard(
     expanded: Boolean,
     onToggle: () -> Unit,
     enabled: Boolean = true,
+    /** the summary reports a problem: shown in the error colour */
+    alert: Boolean = false,
     header: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
@@ -77,7 +79,7 @@ fun GlassExpandableCard(
                 Column(Modifier.weight(1f)) {
                     Text(text = title, fontWeight = FontWeight(550), color = colorScheme.onSurface)
                     if (summary != null) {
-                        Text(text = summary, fontSize = 12.sp, color = colorScheme.onSurfaceVariantSummary, maxLines = 1)
+                        Text(text = summary, fontSize = 12.sp, color = if (alert) colorScheme.error else colorScheme.onSurfaceVariantSummary, maxLines = 1)
                     }
                 }
                 if (enabled) {

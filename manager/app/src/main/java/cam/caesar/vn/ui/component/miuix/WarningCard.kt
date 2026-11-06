@@ -78,8 +78,15 @@ private fun WarningLevel.contentColor(): Color = when {
         WarningLevel.Notice -> colorScheme.onTertiaryContainer
     }
 
-    else -> when (this) {
+    isInDarkTheme() -> when (this) {
         WarningLevel.Error -> Color(0xFFF72727)
         WarningLevel.Notice -> Color(0xFFF5A623)
+    }
+
+    // darker on the pale cards of the light theme: the bright red and amber read at 3.2:1 and
+    // 1.8:1 there, these at 5.3:1 and 5.7:1
+    else -> when (this) {
+        WarningLevel.Error -> Color(0xFFB3261E)
+        WarningLevel.Notice -> Color(0xFF8A5300)
     }
 }

@@ -132,7 +132,7 @@ fun SettingPagerMiuix(
                                 Icon(
                                     Icons.Rounded.AccountCircle,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.account_title),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -152,7 +152,7 @@ fun SettingPagerMiuix(
                                 Icon(
                                     Icons.Rounded.SystemUpdate,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_check_update),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -166,7 +166,7 @@ fun SettingPagerMiuix(
                                 Icon(
                                     Icons.Rounded.Science,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_beta_updates),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -182,7 +182,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.SystemUpdateAlt,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_check_update),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -205,7 +205,7 @@ fun SettingPagerMiuix(
                                 Icon(
                                     Icons.Rounded.Palette,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_theme),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -228,7 +228,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.Description,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = profileTemplate,
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -243,7 +243,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.SettingsBackupRestore,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = configBackup,
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -278,7 +278,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.AdminPanelSettings,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_sucompat),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -300,7 +300,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.LayersClear,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_kernel_umount),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -322,7 +322,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.Security,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_selinux_hide),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -344,7 +344,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.AutoMirrored.Rounded.Article,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_sulog),
+                                        contentDescription = null,
                                         tint = if (uiState.sulogStatus == "supported") colorScheme.onBackground else colorScheme.disabledOnSecondaryVariant
                                     )
                                 },
@@ -366,7 +366,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.Adb,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_adb_root),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -388,7 +388,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.VerifiedUser,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_shell_su_adb_only),
+                                        contentDescription = null,
                                         tint = if (uiState.shellSuAdbOnlyStatus == "supported") colorScheme.onBackground else colorScheme.disabledOnSecondaryVariant
                                     )
                                 },
@@ -398,12 +398,13 @@ fun SettingPagerMiuix(
                             )
                             GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_soft_reboot),
-                                summary = stringResource(id = R.string.settings_soft_reboot_summary),
+                                // greyed out without a word left people guessing why
+                                summary = stringResource(id = if (uiState.isLateLoadMode) R.string.settings_soft_reboot_late_load else R.string.settings_soft_reboot_summary),
                                 startAction = {
                                     Icon(
                                         Icons.Rounded.RestartAlt,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_soft_reboot),
+                                        contentDescription = null,
                                         tint = if (uiState.isLateLoadMode) colorScheme.disabledOnSecondaryVariant else colorScheme.onBackground
                                     )
                                 },
@@ -425,7 +426,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.AutoMirrored.Rounded.Rule,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_umount_modules_default),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -440,7 +441,7 @@ fun SettingPagerMiuix(
                                     Icon(
                                         Icons.Rounded.DeveloperMode,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.enable_web_debugging),
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground
                                     )
                                 },
@@ -449,12 +450,12 @@ fun SettingPagerMiuix(
                             )
                             GlassSwitchPreference(
                                 title = stringResource(id = R.string.settings_auto_jailbreak),
-                                summary = stringResource(id = R.string.settings_auto_jailbreak_summary),
+                                summary = stringResource(id = if (uiState.isLateLoadMode) R.string.settings_auto_jailbreak_summary else R.string.settings_auto_jailbreak_installed),
                                 startAction = {
                                     Icon(
                                         Icons.Rounded.FlashOn,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_auto_jailbreak),
+                                        contentDescription = null,
                                         tint = if (uiState.isLateLoadMode) colorScheme.onBackground else colorScheme.disabledOnSecondaryVariant
                                     )
                                 },
@@ -474,12 +475,13 @@ fun SettingPagerMiuix(
                             val uninstall = stringResource(id = R.string.settings_uninstall)
                             ArrowPreference(
                                 title = uninstall,
+                                summary = if (uiState.isLateLoadMode) stringResource(id = R.string.settings_uninstall_late_load) else null,
                                 enabled = !uiState.isLateLoadMode,
                                 startAction = {
                                     Icon(
                                         Icons.Rounded.Delete,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = uninstall,
+                                        contentDescription = null,
                                         tint = colorScheme.onBackground,
                                     )
                                 },
@@ -503,7 +505,7 @@ fun SettingPagerMiuix(
                                 Icon(
                                     Icons.Rounded.BugReport,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.send_log),
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },
@@ -522,7 +524,7 @@ fun SettingPagerMiuix(
                                 Icon(
                                     Icons.Rounded.Info,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = about,
+                                    contentDescription = null,
                                     tint = colorScheme.onBackground
                                 )
                             },

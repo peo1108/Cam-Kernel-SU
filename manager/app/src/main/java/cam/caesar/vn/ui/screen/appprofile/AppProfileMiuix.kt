@@ -322,7 +322,7 @@ private fun AppProfileHeader(
                         )
                     } else if (!isUidGroup) {
                         Text(
-                            text = "$appVersionName ($appVersionCode)",
+                            text = stringResource(R.string.profile_app_version, appVersionName, appVersionCode),
                             fontSize = 12.sp,
                             color = colorScheme.onSurfaceVariantSummary,
                             fontWeight = FontWeight.Medium,
@@ -629,10 +629,12 @@ fun AppProfilePaneMiuix(
                 )
                 if (state.isUidGroup) AffectedApps(state.appGroup.apps)
             }
-            val app = @Composable {
+            val hiding = @Composable {
                 if (!primary.special) {
                     HidingCheckEntry(allowSu = state.appGroup.anyAllowSu, onClick = actions.onCheckHiding)
                 }
+            }
+            val manage = @Composable {
                 if (!state.isUidGroup && !primary.special) {
                     AppManageCards(
                         packageInfo = primary.packageInfo,
@@ -645,14 +647,19 @@ fun AppProfilePaneMiuix(
             // each glass card comes out of the picked row on its own (PaneDetail)
             BoxWithConstraints {
                 if (maxWidth >= DetailTwoColumnWidth) {
+                    // the hiding check goes with the profile it checks, which also evens the columns
                     Row(verticalAlignment = Alignment.Top) {
-                        Column(Modifier.weight(1f)) { editor() }
-                        Column(Modifier.weight(1f)) { app() }
+                        Column(Modifier.weight(1f)) {
+                            editor()
+                            hiding()
+                        }
+                        Column(Modifier.weight(1f)) { manage() }
                     }
                 } else {
                     Column {
                         editor()
-                        app()
+                        hiding()
+                        manage()
                     }
                 }
             }

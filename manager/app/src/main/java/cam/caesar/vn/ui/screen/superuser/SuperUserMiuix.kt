@@ -543,6 +543,7 @@ private fun SuperUserList(
                                                 group = group,
                                                 onOpenFullProfile = expandClick(appSourceKey(group.uid)) { actions.onOpenProfile(group) },
                                                 onEdited = actions.onProfileEdited,
+                                                onSaved = { actions.onProfileEditedUid(group.uid) },
                                             )
                                         }
                                     },
@@ -641,18 +642,23 @@ private fun GroupItem(
     val isInDarkTheme = isInDarkTheme()
     val bg = colorScheme.secondaryContainer.copy(alpha = 0.8f)
     val rootBg = colorScheme.tertiaryContainer.copy(alpha = 0.6f)
-    val unmountBg = if (isInDarkTheme) Color.White.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.3f)
+    // dark enough behind the label to read it (it was white on a light grey)
+    val unmountBg = if (isInDarkTheme) Color.White.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.5f)
     val fg = colorScheme.onSecondaryContainer
     val rootFg = colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
-    val unmountFg = if (isInDarkTheme) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.8f)
+    val unmountFg = if (isInDarkTheme) Color.Black.copy(alpha = 0.8f) else Color.White
 
     val userId = group.uid / 100000
-    val tags = remember(group.anyAllowSu, group.shouldUmount, group.anyCustom, userId) {
+    val rootLabel = stringResource(R.string.su_tag_root)
+    val umountLabel = stringResource(R.string.su_tag_umount)
+    val customLabel = stringResource(R.string.su_tag_custom)
+    val userLabel = stringResource(R.string.su_tag_user, userId)
+    val tags = remember(group.anyAllowSu, group.shouldUmount, group.anyCustom, userId, umountLabel, isInDarkTheme) {
         buildList {
-            if (group.anyAllowSu) add(StatusMeta("ROOT", rootBg, rootFg))
-            if (group.shouldUmount) add(StatusMeta("UMOUNT", unmountBg, unmountFg))
-            if (group.anyCustom) add(StatusMeta("CUSTOM", bg, fg))
-            if (userId != 0) add(StatusMeta("USER $userId", bg, fg))
+            if (group.anyAllowSu) add(StatusMeta(rootLabel, rootBg, rootFg))
+            if (group.shouldUmount) add(StatusMeta(umountLabel, unmountBg, unmountFg))
+            if (group.anyCustom) add(StatusMeta(customLabel, bg, fg))
+            if (userId != 0) add(StatusMeta(userLabel, bg, fg))
         }
     }
     val haptic = LocalHapticFeedback.current

@@ -141,9 +141,9 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import cam.caesar.vn.ui.component.WarningLevel
 
 @Composable
 fun SulogScreenMiuix(
@@ -520,8 +520,10 @@ private fun SulogStatusSection(
             }
 
             "supported" if !state.isSulogEnabled -> {
+                // turning the log on is no danger: a notice, not the red of an error
                 WarningCard(
                     message = stringResource(R.string.sulog_disabled_title),
+                    level = WarningLevel.Notice,
                     action = {
                         TextButton(
                             text = stringResource(R.string.sulog_enable_action),
@@ -529,10 +531,7 @@ private fun SulogStatusSection(
                             minHeight = 28.dp,
                             cornerRadius = 50.dp,
                             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                color = if (isDynamicColor) colorScheme.onErrorContainer else colorScheme.error,
-                                textColor = colorScheme.onError,
-                            ),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
                         )
                     },
                 )

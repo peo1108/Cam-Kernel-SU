@@ -46,9 +46,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /** Delete: to the trash (kept 7 days) unless "for good" is ticked. */
 @Composable
@@ -66,7 +63,6 @@ internal fun DeleteDialog(sources: List<String>, vm: FilesViewModel, close: () -
     }
 }
 
-private val trashDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT)
 
 /** The trash: what was deleted in the last days, put back or removed for good. */
 @Composable
@@ -87,7 +83,7 @@ internal fun TrashDialog(vm: FilesViewModel) {
                     Column(Modifier.weight(1f)) {
                         Text(item.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
                         Text(
-                            "${FsPath.parent(item.original)} · ${trashDate.format(Date(item.deletedAt))} · ${FileFormat.size(item.size)}",
+                            "${FsPath.parent(item.original)} · ${FileFormat.date(item.deletedAt)} · ${FileFormat.size(item.size)}",
                             fontSize = 11.sp,
                             color = colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,

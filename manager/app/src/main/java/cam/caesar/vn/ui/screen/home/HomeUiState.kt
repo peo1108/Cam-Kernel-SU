@@ -121,6 +121,4 @@ data class HomeActions(
     val onReenableOtherModules: () -> Unit = {},
     val onDismissBootGuard: () -> Unit = {},
     val onOpenHidingCheck: () -> Unit = {},
-    /** opens the hiding check and starts a check at once */
-    val onScanHiding: () -> Unit = {},
 )

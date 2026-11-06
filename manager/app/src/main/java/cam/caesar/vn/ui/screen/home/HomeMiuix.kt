@@ -202,7 +202,7 @@ fun HomePagerMiuix(
                                 active = isCurrentPage,
                             )
                             state.hiding?.let { hiding ->
-                                HidingCard(hiding = hiding, onClick = actions.onOpenHidingCheck, onScan = actions.onScanHiding)
+                                HidingCard(hiding = hiding, onClick = actions.onOpenHidingCheck)
                             }
                         }
                         val about = @Composable {
@@ -510,7 +510,6 @@ private const val SOURCE_HIDING = "home/hiding"
 private fun HidingCard(
     hiding: HidingSummary,
     onClick: () -> Unit,
-    onScan: () -> Unit,
 ) {
     val dates = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
     val time = hiding.scanTime
@@ -585,13 +584,6 @@ private fun HidingCard(
                     )
                 }
             }
-            // the check itself, without a detour through the page first
-            TextButton(
-                text = stringResource(if (time == null) R.string.home_hiding_scan_first else R.string.home_hiding_scan_again),
-                onClick = onScan,
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-                modifier = Modifier.padding(start = 8.dp),
-            )
         }
     }
 }

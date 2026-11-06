@@ -116,7 +116,6 @@ fun HomePager(
         onReenableOtherModules = viewModel::reenableOtherModules,
         onDismissBootGuard = viewModel::dismissBootGuard,
         onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck()) },
-        onScanHiding = dropUnlessResumed { navigator.push(Route.HidingCheck(scanNow = true)) },
     )
 
     HomePagerMiuix(

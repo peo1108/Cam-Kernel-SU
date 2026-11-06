@@ -1145,8 +1145,6 @@
     <string name="features_bootloader_enable">Rewrite bootloader properties</string>
     <string name="home_hiding_scan_first">Check now</string>
     <string name="home_hiding_scan_again">Check again</string>
-    <string name="home_info_more">More device info</string>
-    <string name="home_info_less">Less</string>
     <string name="module_empty_open_repo">Open the module library</string>
     <string name="module_repo_stars">Stars</string>
     <string name="su_tag_root">ROOT</string>

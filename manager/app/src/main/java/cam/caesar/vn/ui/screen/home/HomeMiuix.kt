@@ -714,10 +714,6 @@ private fun InfoCard(
         else -> stringResource(R.string.seccomp_status_unknown)
     }
 
-    // What a customer needs at a glance: the versions, and SELinux only when it is not enforcing
-    // (then it is a warning). The rest is for support and folds away.
-    var showDetails by rememberSaveable { mutableStateOf(false) }
-    val selinuxOff = systemInfo.selinuxStatus != "Enforcing"
     GlassCard(modifier = modifier) {
         Column(modifier = Modifier.padding(16.dp)) {
             InfoText(
@@ -729,46 +725,27 @@ private fun InfoCard(
                 icon = Icons.Filled.DeveloperBoard,
                 title = stringResource(R.string.home_kernel),
                 content = systemInfo.kernelVersion,
-                bottomPadding = if (showDetails || selinuxOff) 24.dp else 0.dp,
             )
-            if (selinuxOff || showDetails) {
-                InfoText(
-                    icon = Icons.Filled.Security,
-                    title = stringResource(R.string.home_selinux_status),
-                    content = selinuxDisplay,
-                    bottomPadding = if (showDetails) 24.dp else 0.dp,
-                )
-            }
-            AnimatedVisibility(
-                visible = showDetails,
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                Column {
-                    InfoText(
-                        icon = Icons.Filled.Smartphone,
-                        title = stringResource(R.string.home_device_model),
-                        content = systemInfo.deviceModel,
-                    )
-                    InfoText(
-                        icon = Icons.Filled.Fingerprint,
-                        title = stringResource(R.string.home_fingerprint),
-                        content = systemInfo.fingerprint,
-                    )
-                    InfoText(
-                        icon = Icons.Filled.FilterList,
-                        title = stringResource(R.string.home_seccomp_status),
-                        content = seccompDisplay,
-                        bottomPadding = 0.dp,
-                    )
-                }
-            }
-            TextButton(
-                text = stringResource(if (showDetails) R.string.home_info_less else R.string.home_info_more),
-                onClick = { showDetails = !showDetails },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+            InfoText(
+                icon = Icons.Filled.Security,
+                title = stringResource(R.string.home_selinux_status),
+                content = selinuxDisplay,
+            )
+            InfoText(
+                icon = Icons.Filled.Smartphone,
+                title = stringResource(R.string.home_device_model),
+                content = systemInfo.deviceModel,
+            )
+            InfoText(
+                icon = Icons.Filled.Fingerprint,
+                title = stringResource(R.string.home_fingerprint),
+                content = systemInfo.fingerprint,
+            )
+            InfoText(
+                icon = Icons.Filled.FilterList,
+                title = stringResource(R.string.home_seccomp_status),
+                content = seccompDisplay,
+                bottomPadding = 0.dp,
             )
         }
     }

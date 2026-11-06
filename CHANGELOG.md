@@ -10,7 +10,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Bỏ slime đi dạo: slime chỉ còn trong hộp kính ở Trang chủ, không còn đè lên chữ và nút ở các trang khác
 - Tablet xoay ngang: Trang chủ 2 cột, Tính năng và Thư viện module xếp 2 thẻ một hàng, trang Kiểm tra ẩn root nằm giữa màn hình; Hồ sơ ứng dụng đưa thẻ kiểm tra ẩn root sang cột hồ sơ
 - Thẻ Tính năng có vấn đề (xung đột, module nguy hiểm, bootloader còn lộ, kiểm tra ẩn root có lộ) hiện dòng mô tả màu đỏ; Trang chủ báo "!" đỏ khi bootloader còn lộ
-- Thẻ ẩn root ở Trang chủ có nút Kiểm tra ngay. Thẻ thông tin chỉ còn phiên bản Manager và kernel; model, fingerprint, seccomp nằm trong "Xem thêm thông tin máy"
+- Thẻ ẩn root ở Trang chủ có nút Kiểm tra ngay
 - Ngày giờ ở Thư viện module và tab Tệp, dung lượng tệp theo định dạng của máy (tiếng Việt: 30/10/26 16:51, 48,0 MB)
 - Chữ tiếng Việt: "umount" thành "gỡ module", nhãn ở Superuser và Hồ sơ ứng dụng dịch hết, mục bị khoá ở Cài đặt ghi lý do; nhãn nhỏ to hơn cho dễ đọc; thẻ cảnh báo ở chế độ sáng đậm màu hơn
 - Trang Thông tin để link của Cam trước, link của dự án gốc ghi rõ là dự án gốc

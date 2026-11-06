@@ -1129,8 +1129,6 @@
     <string name="features_bootloader_enable">Sửa prop bootloader</string>
     <string name="home_hiding_scan_first">Kiểm tra ngay</string>
     <string name="home_hiding_scan_again">Kiểm tra lại</string>
-    <string name="home_info_more">Xem thêm thông tin máy</string>
-    <string name="home_info_less">Thu gọn</string>
     <string name="module_empty_open_repo">Mở Thư viện module</string>
     <string name="module_repo_stars">Lượt sao</string>
     <string name="su_tag_root">ROOT</string>

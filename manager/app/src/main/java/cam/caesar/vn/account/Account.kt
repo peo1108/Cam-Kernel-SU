@@ -147,6 +147,26 @@ object Account {
         }
     }
 
+    /**
+     * Sends a problem report to Cam (site/api/routes/report.mjs); gives back its code ("R7K2Q9X"),
+     * which the customer passes on so Cam finds it. Errors are [OrderException] with the server's
+     * code: "sign_in" (not linked, or unlinked from the website), "slow_down" (6 an hour), ...
+     */
+    suspend fun sendReport(report: ProblemReport): Result<String> = withContext(Dispatchers.IO) {
+        if (!isLinked()) return@withContext Result.failure(OrderException("sign_in"))
+        runCatching {
+            val (code, text) = call("POST", "/api/reports", report.toJson(), auth = true)
+            when (code) {
+                200 -> parseReportCode(text) ?: throw IOException("bad answer")
+                401 -> {
+                    forget()
+                    throw OrderException("sign_in")
+                }
+                else -> throw OrderException(errorCode(text) ?: "http_$code")
+            }
+        }
+    }
+
     suspend fun unlink(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             if (isLinked()) runCatching { call("POST", "/api/devices/self/unlink", auth = true) }

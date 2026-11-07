@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.LayersClear
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
@@ -92,6 +93,7 @@ fun SettingPagerMiuix(
     val loadingDialog = rememberLoadingDialog()
     val showUninstallDialog = rememberSaveable { mutableStateOf(false) }
     val showSendLogDialog = rememberSaveable { mutableStateOf(false) }
+    val showReportDialog = rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -515,6 +517,25 @@ fun SettingPagerMiuix(
                             show = showSendLogDialog.value,
                             onDismissRequest = { showSendLogDialog.value = false },
                             loadingDialog = loadingDialog
+                        )
+                        // Cam: the report goes to caesarvn.xyz for Cam to read (ProblemReportDialog.kt)
+                        ArrowPreference(
+                            title = stringResource(id = R.string.report_title),
+                            summary = stringResource(id = R.string.report_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.SupportAgent,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = null,
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = { showReportDialog.value = true },
+                        )
+                        ProblemReportDialog(
+                            show = showReportDialog.value,
+                            onDismissRequest = { showReportDialog.value = false },
+                            onOpenAccount = actions.onOpenAccount,
                         )
                         val about = stringResource(id = R.string.about)
                         ArrowPreference(

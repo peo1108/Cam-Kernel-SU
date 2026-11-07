@@ -617,6 +617,11 @@ fun MainScreen(
     LaunchedEffect(updateRequested) {
         if (updateRequested) mainPagerState.animateToPage(0)
     }
+    // Another app's "Open with": the Files tab shows the file (it clears the request).
+    val fileRequested by cam.caesar.vn.ui.viewmodel.FilesSignal.openRequest.collectAsState()
+    LaunchedEffect(fileRequested) {
+        if (fileRequested != null) mainPagerState.animateToPage(BottomBarDestination.Files.ordinal)
+    }
     MainScreenBackHandler(mainPagerState, navController)
 
     // shared by the Superuser and Module pages; back and switching tabs close it first

@@ -197,6 +197,26 @@ class FilesViewModel : ViewModel() {
         }
     }
 
+    /**
+     * A file another app opened with Cam ([FilesSignal]): the active panel goes to its folder.
+     * Returns the panel and the file to open, or null (a message says why) when it is not there.
+     */
+    suspend fun reveal(path: String): Pair<Int, FileEntry>? {
+        val entry = try {
+            CamFileClient.stat(path)
+        } catch (e: FsException) {
+            _uiState.update { it.copy(message = FilesMessage.Failed(e.errno, path)) }
+            return null
+        }
+        if (entry == null || entry.isDir) {
+            _uiState.update { it.copy(message = FilesMessage.Failed(Errno.ENOENT, path)) }
+            return null
+        }
+        val panel = _uiState.value.active
+        navigate(panel, FsPath.parent(path))
+        return panel to entry
+    }
+
     /** Into an archive as if it were a folder. */
     fun browseArchive(panel: Int, entry: FileEntry) = navigate(panel, Archives.join(entry.path, ""))
 

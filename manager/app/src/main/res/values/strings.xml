@@ -966,6 +966,7 @@
     <string name="files_error_link_target">Link target</string>
     <string name="files_tool_checksum">Checksum (MD5/SHA)</string>
     <string name="files_no_app">No app can open this</string>
+    <string name="files_open_incoming_failed">Cam could not read this file</string>
     <string name="files_op_extract">Extracting</string>
     <string name="files_op_compress">Compressing</string>
     <string name="files_op_backup">Backing up a partition</string>

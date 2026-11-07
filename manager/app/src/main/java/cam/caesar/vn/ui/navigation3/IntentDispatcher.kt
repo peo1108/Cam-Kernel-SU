@@ -19,8 +19,11 @@ import cam.caesar.vn.Cam
 import cam.caesar.vn.R
 import cam.caesar.vn.data.repository.SettingsRepositoryImpl
 import cam.caesar.vn.camApp
+import cam.caesar.vn.files.IncomingFile
 import cam.caesar.vn.hiding.ModuleScanNotifier
 import cam.caesar.vn.ui.component.dialog.rememberConfirmDialog
+import cam.caesar.vn.ui.component.dialog.rememberLoadingDialog
+import cam.caesar.vn.ui.viewmodel.FilesSignal
 import cam.caesar.vn.ui.screen.flash.FlashIt
 import cam.caesar.vn.ui.util.DownloadService
 import cam.caesar.vn.ui.util.getFileName
@@ -79,6 +82,9 @@ private sealed interface PendingAction {
 
     /** Open the root hiding check and run it — triggered by the module scan notification. */
     data object OpenHidingCheck : PendingAction
+
+    /** Open any other file in the Files tab — another app's "Open with" (Telegram, like MT Manager). */
+    data class OpenFile(val uri: Uri) : PendingAction
 }
 
 private sealed interface CamDeepLink {
@@ -97,6 +103,8 @@ private fun buildInternalWebUiUri(moduleId: String): Uri {
 fun getDisplayName(uri: Uri): String {
     return uri.getFileName(camApp) ?: uri.lastPathSegment ?: "Unknown"
 }
+
+private val ZIP_MIME_TYPES = setOf("application/zip", "application/x-zip-compressed", "application/x-zip")
 
 /**
  * Resolve an intent snapshot into a [PendingAction].
@@ -124,12 +132,17 @@ private fun resolveIntent(intent: Intent): PendingAction? {
 
     // File manager: open ZIP
     val viewUri = intent.data
-    if (viewUri != null && viewUri.scheme == "content" && intent.type == "application/zip") {
+    if (viewUri != null && viewUri.scheme == "content" && intent.type in ZIP_MIME_TYPES) {
         return PendingAction.InstallModule(
             uri = viewUri,
             displayName = getDisplayName(viewUri),
             requiresConfirmation = true,
         )
+    }
+
+    // File manager: open anything else in the Files tab
+    if (intent.action == Intent.ACTION_VIEW && viewUri != null && (viewUri.scheme == "content" || viewUri.scheme == "file")) {
+        return PendingAction.OpenFile(viewUri)
     }
 
     // Check deep links
@@ -173,6 +186,7 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
         },
         onDismiss = { pendingZipInstall = null }
     )
+    val loadingDialog = rememberLoadingDialog()
 
     CollectIntentChannel(intentChannel) { intent ->
         if (!isManager) return@CollectIntentChannel
@@ -210,6 +224,16 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
 
             PendingAction.OpenHidingCheck -> {
                 navigator.push(Route.HidingCheck(scanNow = true))
+            }
+
+            is PendingAction.OpenFile -> {
+                // a copy can take a moment (a large file in another app's private folder)
+                val path = loadingDialog.withLoading { IncomingFile.resolve(context, action.uri) }
+                if (path == null) {
+                    CamToast.show(context, resources.getString(R.string.files_open_incoming_failed))
+                } else {
+                    FilesSignal.open(path)
+                }
             }
         }
     }

@@ -951,6 +951,7 @@
     <string name="files_error_link_target">Đích liên kết</string>
     <string name="files_tool_checksum">Checksum (MD5/SHA)</string>
     <string name="files_no_app">Không có ứng dụng nào mở được</string>
+    <string name="files_open_incoming_failed">Cam không đọc được tệp này</string>
     <string name="files_op_extract">Đang giải nén</string>
     <string name="files_op_compress">Đang nén</string>
     <string name="files_op_backup">Đang sao lưu phân vùng</string>

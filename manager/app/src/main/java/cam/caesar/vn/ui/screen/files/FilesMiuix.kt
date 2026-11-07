@@ -133,6 +133,8 @@ import cam.caesar.vn.ui.theme.LocalEnableBlur
 import cam.caesar.vn.ui.util.BlurredBar
 import cam.caesar.vn.ui.util.rememberBlurBackdrop
 import cam.caesar.vn.ui.util.shouldShowTwoFilePanels
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cam.caesar.vn.ui.viewmodel.FilesSignal
 import cam.caesar.vn.ui.viewmodel.FilesUiState
 import cam.caesar.vn.ui.viewmodel.FilesViewModel
 import cam.caesar.vn.ui.viewmodel.PanelUi
@@ -191,6 +193,22 @@ fun FilesPagerMiuix(
     val wide = shouldShowTwoFilePanels()
     var dialog by remember { mutableStateOf<FilesDialogState?>(null) }
     var drawer by remember { mutableStateOf(false) }
+
+    // Another app's "Open with" (MT): its folder, then what tapping the file does. Pictures and
+    // media get their menu instead of being sent straight back out to another app.
+    val openRequest by FilesSignal.openRequest.collectAsStateWithLifecycle()
+    LaunchedEffect(openRequest) {
+        val path = openRequest ?: return@LaunchedEffect
+        FilesSignal.consume()
+        val (panel, entry) = vm.reveal(path) ?: return@LaunchedEffect
+        when {
+            FileKinds.of(entry) == FileKind.APK -> dialog = FilesDialogState.ApkOpen(panel, entry)
+            Archives.canBrowse(entry.name) -> vm.browseArchive(panel, entry)
+            FileKinds.of(entry) == FileKind.TEXT -> vm.edit(entry)
+            FileKinds.of(entry) == FileKind.OTHER || FileKinds.of(entry) == FileKind.DISK_IMAGE -> dialog = FilesDialogState.OpenAs(entry)
+            else -> dialog = FilesDialogState.Menu(panel, entry)
+        }
+    }
     // composed after FilesPager's handler, so it wins while the drawer is open
     BackHandler(enabled = drawer) { drawer = false }
 

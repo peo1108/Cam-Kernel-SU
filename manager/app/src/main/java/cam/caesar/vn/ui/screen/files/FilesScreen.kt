@@ -2,6 +2,7 @@ package cam.caesar.vn.ui.screen.files
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -99,8 +100,14 @@ fun FilesPager(
 
 private fun startChooser(context: Context, intent: Intent) {
     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    // Cam opens any file itself now ("Open with" from other apps): never offer it back to itself
+    val self = arrayOf(ComponentName(context, cam.caesar.vn.ui.CamActivity::class.java))
     try {
-        context.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        context.startActivity(
+            Intent.createChooser(intent, null)
+                .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, self)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
+        )
     } catch (_: ActivityNotFoundException) {
         Toast.makeText(context, R.string.files_no_app, Toast.LENGTH_SHORT).show()
     }

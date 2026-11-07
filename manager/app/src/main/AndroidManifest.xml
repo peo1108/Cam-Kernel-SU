@@ -70,9 +70,30 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:mimeType="application/zip"
-                    android:scheme="content" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-zip" />
+            </intent-filter>
+            <!-- "Open with" for any file (Telegram, like MT Manager): the Files tab opens it,
+                 IntentDispatcher -> files/IncomingFile.kt. ZIPs still ask to install a module.
+                 File types only, not */*: that also takes vnd.android.document/root and
+                 /directory, and the system Files app would ask "Open with" for a folder. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/*" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="font/*" />
+                <data android:mimeType="model/*" />
+                <data android:mimeType="chemical/*" />
             </intent-filter>
             <!-- cam:// only. Root checkers (Luna 1.4.4.6) resolve VIEW ksu://action and
                  ksu://webui to find KernelSU managers: an app with just those filters is listed

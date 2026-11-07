@@ -24,6 +24,8 @@ on:
       - 'scripts/test_changelog_section.py'
       - 'scripts/check_apk_strings.py'
       - 'scripts/test_check_apk_strings.py'
+      - 'scripts/device_detector_scan.py'
+      - 'scripts/test_device_detector_scan.py'
       - 'site/api/**'
   pull_request:
     branches: [ "main", "dev" ]
@@ -42,6 +44,8 @@ on:
       - 'scripts/test_changelog_section.py'
       - 'scripts/check_apk_strings.py'
       - 'scripts/test_check_apk_strings.py'
+      - 'scripts/device_detector_scan.py'
+      - 'scripts/test_device_detector_scan.py'
       - 'site/api/**'
   workflow_dispatch:
   # release.yml runs every test before it publishes an OTA update
@@ -61,6 +65,9 @@ jobs:
 
       - name: APK name scanner tests
         run: python3 -m unittest scripts/test_check_apk_strings.py -v
+
+      - name: Detector scan tests
+        run: python3 -m unittest scripts/test_device_detector_scan.py -v
 
   # caesarvn.xyz API (site/api): accounts, payments and the SePay webhook, devices, OTA, 2FA.
   site-api:

@@ -13,6 +13,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Ngày giờ ở Thư viện module và tab Tệp, dung lượng tệp theo định dạng của máy (tiếng Việt: 30/10/26 16:51, 48,0 MB)
 - Chữ tiếng Việt: nhãn ở Superuser và Hồ sơ ứng dụng dịch hết, mục bị khoá ở Cài đặt ghi lý do; nhãn nhỏ to hơn cho dễ đọc; thẻ cảnh báo ở chế độ sáng đậm màu hơn
 - Trang Thông tin để link của Cam trước, link của dự án gốc ghi rõ là dự án gốc
+- Cài đặt → "Báo lỗi cho Cam": ghi lỗi gặp phải (không bắt buộc), app gom thông tin máy, Cam và log trong khoảng 10–30 giây rồi gửi cho Cam, và hiện một mã để nhắn Cam. Không gửi danh sách app. Cần liên kết tài khoản trước
 ### Sửa lỗi
 - Superuser: thẻ hồ sơ mở ngay trong danh sách không còn hiện trạng thái cũ sau khi sửa ở trang hồ sơ đầy đủ rồi quay lại
 - Tab Tệp: ngăn kéo không còn bị thanh điều hướng che

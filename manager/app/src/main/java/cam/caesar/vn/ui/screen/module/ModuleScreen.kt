@@ -9,11 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.Dp
@@ -31,7 +29,6 @@ import cam.caesar.vn.ui.navigation3.Route
 import cam.caesar.vn.ui.screen.flash.FlashIt
 import cam.caesar.vn.ui.util.download
 import cam.caesar.vn.ui.util.module.Shortcut
-import cam.caesar.vn.ui.viewmodel.ModuleListSignal
 import cam.caesar.vn.ui.viewmodel.ModuleViewModel
 import cam.caesar.vn.ui.webui.WebUIActivity
 
@@ -59,24 +56,20 @@ fun ModulePager(
     val latestIsCurrentPage by rememberUpdatedState(isCurrentPage)
     val initialResumeHandled = rememberSaveable { mutableStateOf(false) }
 
-    val listSignal by ModuleListSignal.version.collectAsStateWithLifecycle()
-    LaunchedEffect(listSignal) {
-        if (listSignal > 0 && viewModel.uiState.value.hasLoaded) viewModel.fetchModuleList(resort = false)
-    }
-
-    var hasActivated by rememberSaveable { mutableStateOf(false) }
     val searchQuery = mainSearchQueryFor(isCurrentPage)
     LaunchedEffect(searchQuery) { viewModel.updateSearchText(searchQuery) }
 
     LaunchedEffect(isCurrentPage) {
         if (isCurrentPage) {
-            if (!hasActivated) {
-                hasActivated = true
+            // once per view model: after the process was killed it starts empty and needs this again
+            if (!viewModel.pageActivated) {
+                viewModel.markPageActivated()
                 viewModel.refreshEnvironmentState()
                 viewModel.initializePreferences()
                 val state = viewModel.uiState.value
                 if (!state.hasLoaded && !state.isRefreshing) {
-                    viewModel.fetchModuleList()
+                    // the startup preload did not run (no root yet when the app opened): check here
+                    viewModel.fetchModuleList(checkUpdate = true)
                 }
                 if (Build.VERSION.SDK_INT >= 33) {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -90,9 +83,11 @@ fun ModulePager(
     LifecycleResumeEffect(Unit) {
         if (initialResumeHandled.value && latestIsCurrentPage) {
             val state = viewModel.uiState.value
-            if (!state.isRefreshing) {
+            // a flash or action may have changed modules while a fetch ran: fetch again, and
+            // fetchModuleList checks updates for it (isNeedRefresh)
+            if (!state.isRefreshing || viewModel.isNeedRefresh) {
                 viewModel.fetchModuleList(
-                    checkUpdate = !state.hasLoaded || viewModel.isNeedRefresh,
+                    checkUpdate = !state.hasLoaded,
                     resort = !state.hasLoaded,
                 )
             }

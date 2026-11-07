@@ -2,6 +2,7 @@ package cam.caesar.vn.data.repository
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.edit
@@ -16,6 +17,9 @@ import cam.caesar.vn.ui.util.execCamd
 import cam.caesar.vn.ui.util.getFeaturePersistValue
 import cam.caesar.vn.ui.util.getFeatureValue
 import cam.caesar.vn.ui.util.getFeatureStatus
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import java.security.SecureRandom
 
 private const val SETTINGS_PREFS = "settings"
@@ -30,6 +34,7 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     private companion object {
         private const val INTENT_TOKEN_KEY = "intent_token"
+        private const val KEY_CHECK_MODULE_UPDATE = "module_check_update"
         private val secureRandom = SecureRandom()
     }
 
@@ -47,8 +52,19 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) = prefs.edit { putBoolean("beta_updates", value) }
 
     override var checkModuleUpdate: Boolean
-        get() = prefs.getBoolean("module_check_update", true)
-        set(value) = prefs.edit { putBoolean("module_check_update", value) }
+        get() = prefs.getBoolean(KEY_CHECK_MODULE_UPDATE, true)
+        set(value) = prefs.edit { putBoolean(KEY_CHECK_MODULE_UPDATE, value) }
+
+    override val checkModuleUpdateChanges: Flow<Boolean>
+        get() = callbackFlow {
+            // SharedPreferences keeps listeners weakly: this flow holds it while collected
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                // null: the whole file was cleared
+                if (key == null || key == KEY_CHECK_MODULE_UPDATE) trySend(checkModuleUpdate)
+            }
+            prefs.registerOnSharedPreferenceChangeListener(listener)
+            awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+        }
 
     // newest Manager versionCode already announced by a notification
     override var notifiedVersionCode: Long

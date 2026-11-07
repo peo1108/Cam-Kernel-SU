@@ -16,7 +16,9 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ### Sửa lỗi
 - Superuser: thẻ hồ sơ mở ngay trong danh sách không còn hiện trạng thái cũ sau khi sửa ở trang hồ sơ đầy đủ rồi quay lại
 - Tab Tệp: ngăn kéo không còn bị thanh điều hướng che
-- Cài đặt: mục "Kiểm tra cập nhật module" có mô tả riêng (trước đó trùng với mô tả của mục cập nhật app)
+- Cài đặt: mục "Kiểm tra cập nhật module" có mô tả riêng (trước đó trùng với mô tả của mục cập nhật app), và bật/tắt có hiệu lực ngay, không cần mở lại app. Tắt thì số cập nhật trên thanh điều hướng và nút cập nhật của module cũng ẩn đi
+- Module: một lần kiểm tra cập nhật bị ngắt giữa chừng (mở trang khác, bật/tắt module lúc đang làm mới) không còn làm module đó không bao giờ được kiểm tra lại; sau khi cập nhật một module, nút mời cập nhật đúng bản vừa cài không còn ở lại; quay về từ một trang khác không còn xếp lại danh sách module
+- Kiểm tra ẩn root: Kernel umount, Ẩn SELinux và Ẩn bootloader chỉ đổi khi gạt công tắc, chạm nhầm vào hàng không còn bật/tắt
 ### Lưu ý
 - Bản này không đổi cách kernel chạy (chỉ nhận mã của bản gốc mà Cam không dùng). Nếu app gợi ý cài lại LKM thì làm hay không đều được
 

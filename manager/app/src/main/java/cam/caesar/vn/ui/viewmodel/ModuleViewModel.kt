@@ -6,19 +6,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import cam.caesar.vn.Cam
@@ -26,7 +23,6 @@ import cam.caesar.vn.R
 import cam.caesar.vn.data.model.Module
 import cam.caesar.vn.data.model.ModuleUpdateInfo
 import cam.caesar.vn.data.model.RepoModule
-import cam.caesar.vn.data.model.libraryUpdate
 import cam.caesar.vn.data.repository.ModuleRepoRepositoryImpl
 import cam.caesar.vn.data.repository.ModuleRepository
 import cam.caesar.vn.data.repository.ModuleRepositoryImpl
@@ -62,19 +58,6 @@ class ModuleViewModel(
         private const val TAG = "ModuleViewModel"
     }
 
-    private data class ModuleUpdateSignature(
-        val updateJson: String,
-        val versionCode: Int,
-        val enabled: Boolean,
-        val update: Boolean,
-        val remove: Boolean
-    )
-
-    private data class ModuleUpdateCache(
-        val signature: ModuleUpdateSignature,
-        val info: ModuleUpdateInfo
-    )
-
     private val _uiState = MutableStateFlow(ModuleUiState())
     val uiState: StateFlow<ModuleUiState> = _uiState.asStateFlow()
 
@@ -82,28 +65,71 @@ class ModuleViewModel(
     private val _moduleEvent = Channel<ModuleEffect>(Channel.BUFFERED)
     val moduleEvent: Flow<ModuleEffect> = _moduleEvent.receiveAsFlow()
 
-    private val updateInfoMutex = Mutex()
-    private var updateInfoCache: MutableMap<String, ModuleUpdateCache> = mutableMapOf()
-    private val updateInfoInFlight = mutableSetOf<String>()
+    private var libraryCache: Pair<Long, List<RepoModule>>? = null
+
+    private val updateChecker = ModuleUpdateChecker(
+        isEnabled = { settingsRepo.checkModuleUpdate },
+        checkModule = { module -> checkUpdate(module) },
+        fetchLibrary = { libraryModules() },
+    )
     private val searchQuery = MutableStateFlow("")
 
     private var fetchJob: Job? = null
+    /** bumped by each [fetchModuleList]; only the newest fetch may end the refresh */
+    private var fetchGeneration = 0
+    /** a fetch asked to check updates and none has finished doing so (one may have been cancelled) */
+    private var pendingUpdateCheck = false
 
     var isNeedRefresh = false
         private set
 
+    /**
+     * The startup preload (MainScreen) and the Module page's first activation ran for this view
+     * model. Kept here, not in saved composition state: they must run again when the process was
+     * killed and this view model starts empty, and not when MainScreen comes back from a page.
+     */
+    var startupPreloadDone = false
+        private set
+    var pageActivated = false
+        private set
+
     init {
         viewModelScope.launchSearchQueryCollector(searchQuery, ::applySearchText)
+        viewModelScope.launch {
+            updateChecker.results.collect { results ->
+                _uiState.update { if (it.updateInfo == results) it else it.copy(updateInfo = results) }
+            }
+        }
+        // the switch in Settings (or a config restore): off drops the results at once, on checks
+        viewModelScope.launch {
+            settingsRepo.checkModuleUpdateChanges.collectLatest { enabled ->
+                val state = _uiState.value
+                if (!enabled || state.hasLoaded) updateChecker.sync(state.modules)
+            }
+        }
+        // another page changed modules or the conflict options
+        viewModelScope.launch {
+            ModuleListSignal.version.drop(1).collect {
+                if (_uiState.value.hasLoaded) fetchModuleList(resort = false)
+            }
+        }
     }
 
     fun markNeedRefresh() {
         isNeedRefresh = true
     }
 
+    fun markStartupPreloadDone() {
+        startupPreloadDone = true
+    }
+
+    fun markPageActivated() {
+        pageActivated = true
+    }
+
     fun initializePreferences() {
         _uiState.update {
             it.copy(
-                checkModuleUpdate = settingsRepo.checkModuleUpdate,
                 sortEnabledFirst = settingsRepo.moduleSortEnabledFirst,
                 sortActionFirst = settingsRepo.moduleSortActionFirst,
             )
@@ -254,12 +280,16 @@ class ModuleViewModel(
             }
             // Trigger recalculation of moduleList
             updateModuleList(resort)
-            isNeedRefresh = false
         }
     }
 
     fun fetchModuleList(checkUpdate: Boolean = false, resort: Boolean = true) {
+        // A fetch this one replaces may have been asked to check updates, and a flash or action
+        // (isNeedRefresh) can change versions: keep that check, it is not lost with the old job.
+        if (checkUpdate || isNeedRefresh) pendingUpdateCheck = true
+        isNeedRefresh = false
         fetchJob?.cancel()
+        val generation = ++fetchGeneration
         _uiState.update { it.copy(isRefreshing = true) }
         fetchJob = viewModelScope.launch {
             try {
@@ -267,91 +297,23 @@ class ModuleViewModel(
 
                 loadModuleList(resort)
 
-                if (checkUpdate) syncModuleUpdateInfo(_uiState.value.modules)
+                if (pendingUpdateCheck) {
+                    syncModuleUpdateInfo(_uiState.value.modules)
+                    pendingUpdateCheck = false
+                }
 
                 Log.i(TAG, "load cost: ${SystemClock.elapsedRealtime() - start}, modules: ${_uiState.value.modules}")
             } finally {
-                _uiState.update { it.copy(isRefreshing = false, hasLoaded = true) }
+                // a job cancelled by a newer fetch must not end that one's refresh
+                if (generation == fetchGeneration) {
+                    _uiState.update { it.copy(isRefreshing = false, hasLoaded = true) }
+                }
             }
         }
     }
 
-    private fun Module.toSignature(): ModuleUpdateSignature {
-        return ModuleUpdateSignature(
-            updateJson = updateJson,
-            versionCode = versionCode,
-            enabled = enabled,
-            update = update,
-            remove = remove
-        )
-    }
-
-    suspend fun syncModuleUpdateInfo(modules: List<Module>) {
-        if (!_uiState.value.checkModuleUpdate) return
-
-        val modulesToFetch = mutableListOf<Triple<String, Module, ModuleUpdateSignature>>()
-        val removedIds = mutableSetOf<String>()
-
-        updateInfoMutex.withLock {
-            val ids = modules.map { it.id }.toSet()
-            updateInfoCache.keys.filter { it !in ids }.forEach { removedId ->
-                removedIds += removedId
-                updateInfoCache.remove(removedId)
-                updateInfoInFlight.remove(removedId)
-            }
-
-            modules.forEach { module ->
-                val signature = module.toSignature()
-                val cached = updateInfoCache[module.id]
-                if ((cached == null || cached.signature != signature) && updateInfoInFlight.add(module.id)) {
-                    modulesToFetch += Triple(module.id, module, signature)
-                }
-            }
-        }
-
-        // Cam's module library, read once for the whole list: a newer release there is an update too
-        val library = if (modulesToFetch.isEmpty()) emptyList() else libraryModules()
-
-        val fetchedEntries = coroutineScope {
-            modulesToFetch.map { (id, module, signature) ->
-                async {
-                    val info = withTimeoutOrNull(5_000L.milliseconds) {
-                        withContext(Dispatchers.IO) { checkUpdate(module) }
-                    }?.takeIf { it != ModuleUpdateInfo.Empty }
-                        ?: libraryUpdate(module, library)
-                        ?: ModuleUpdateInfo.Empty
-                    id to ModuleUpdateCache(signature, info)
-                }
-            }.awaitAll()
-        }
-
-        val changedEntries = mutableListOf<Pair<String, ModuleUpdateInfo>>()
-        updateInfoMutex.withLock {
-            fetchedEntries.forEach { (id, entry) ->
-                val existing = updateInfoCache[id]
-                if (existing == null || existing.signature != entry.signature || existing.info != entry.info) {
-                    updateInfoCache[id] = entry
-                    changedEntries += id to entry.info
-                }
-                updateInfoInFlight.remove(id)
-            }
-        }
-
-        if (removedIds.isEmpty() && changedEntries.isEmpty()) {
-            return
-        }
-
-        withContext(Dispatchers.Main) {
-            _uiState.update { state ->
-                val newMap = state.updateInfo.toMutableMap()
-                removedIds.forEach { newMap.remove(it) }
-                changedEntries.forEach { (id, info) ->
-                    newMap[id] = info
-                }
-                state.copy(updateInfo = newMap)
-            }
-        }
-    }
+    /** Checks [modules] for updates (unless the setting is off: then the results are dropped). */
+    suspend fun syncModuleUpdateInfo(modules: List<Module>) = updateChecker.sync(modules)
 
     fun requestUpdateConfirmation(module: Module, updateInfo: ModuleUpdateInfo) {
         viewModelScope.launch {
@@ -485,10 +447,13 @@ class ModuleViewModel(
                 }
 
                 if (changelog.isBlank()) {
+                    // an error page (404, 500) is not a changelog: fall back like an empty one
                     changelog = runCatching {
                         camApp.okhttpClient.newCall(
                             Request.Builder().url(changelogUrl).build()
-                        ).execute().body.string()
+                        ).execute().use { response ->
+                            if (response.isSuccessful) response.body.string() else ""
+                        }
                     }.getOrDefault("")
                 }
             }
@@ -521,8 +486,6 @@ class ModuleViewModel(
             confirm = res.getString(R.string.module_update),
         )
     }
-
-    private var libraryCache: Pair<Long, List<RepoModule>>? = null
 
     /** The library's modules, fetched at most every [LIBRARY_TTL_MS]; empty when it cannot be read. */
     private suspend fun libraryModules(): List<RepoModule> {

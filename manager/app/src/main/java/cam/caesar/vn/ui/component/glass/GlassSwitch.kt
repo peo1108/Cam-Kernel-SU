@@ -155,7 +155,10 @@ private fun SettleTo(checked: Boolean, shown: Boolean, set: (Boolean) -> Unit) {
     }
 }
 
-/** Drop-in for miuix SwitchPreference with the iOS switch; the whole row toggles it, at once. */
+/**
+ * Drop-in for miuix SwitchPreference with the iOS switch; the whole row toggles it, at once,
+ * unless [rowToggles] is false: then only the switch does, for a setting a stray tap must not flip.
+ */
 @Composable
 fun GlassSwitchPreference(
     title: String,
@@ -165,6 +168,7 @@ fun GlassSwitchPreference(
     summary: String? = null,
     startAction: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
+    rowToggles: Boolean = true,
 ) {
     var shown by remember { mutableStateOf(checked) }
     SettleTo(checked, shown) { shown = it }
@@ -178,7 +182,7 @@ fun GlassSwitchPreference(
         summary = summary,
         startAction = startAction,
         endActions = { GlassSwitch(checked = shown, onCheckedChange = toggle, enabled = enabled) },
-        onClick = { if (enabled) toggle(!shown) },
+        onClick = if (rowToggles) ({ if (enabled) toggle(!shown) }) else null,
         enabled = enabled,
     )
 }

@@ -50,7 +50,6 @@ data class ModuleUiState(
     val searchResults: List<Module> = emptyList(),
     val sortEnabledFirst: Boolean = false,
     val sortActionFirst: Boolean = false,
-    val checkModuleUpdate: Boolean = true,
     val isSafeMode: Boolean = false,
     val magiskInstalled: Boolean = false,
     val confirmDialogState: ModuleConfirmDialogState? = null,

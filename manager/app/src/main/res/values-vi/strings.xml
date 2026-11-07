@@ -154,7 +154,7 @@
     <string name="action">Khởi chạy</string>
     <string name="log_saved">Đã lưu nhật ký</string>
     <string name="settings_module_check_update">Kiểm tra cập nhật module</string>
-    <string name="settings_module_check_update_summary">Tự động kiểm tra cập nhật module khi mở ứng dụng.</string>
+    <string name="settings_module_check_update_summary">Tìm phiên bản mới của các module đã cài khi mở ứng dụng và khi làm mới danh sách module. Tắt thì không kiểm tra và không hiện cập nhật nào.</string>
     <string name="install_upload_lkm_file">Sử dụng file LKM cục bộ</string>
     <string name="install_only_support_ko_file">Chỉ hỗ trợ các file .ko</string>
     <string name="settings_sucompat">Lệnh SU cổ điển</string>

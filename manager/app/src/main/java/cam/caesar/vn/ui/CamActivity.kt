@@ -530,9 +530,8 @@ fun MainScreen(
             .distinctUntilChanged()
     }.collectAsStateWithLifecycle(0)
 
-    var startupPreloadStarted by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(isFullFeatured) {
-        if (!isFullFeatured || startupPreloadStarted) {
+        if (!isFullFeatured || moduleViewModel.startupPreloadDone) {
             return@LaunchedEffect
         }
 
@@ -554,7 +553,7 @@ fun MainScreen(
             }
         }
 
-        startupPreloadStarted = true
+        moduleViewModel.markStartupPreloadDone()
     }
 
     // Loading the app list just for a badge is too expensive; read the kernel allowlist instead.

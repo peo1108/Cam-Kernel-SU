@@ -590,6 +590,8 @@ private fun FixSwitch(
         enabled = fix.available,
         checked = fix.enabled,
         onCheckedChange = { actions.onSetFix(name, it) },
+        // this page opens from the Home card by a tap: only the switch itself changes a fix
+        rowToggles = false,
     )
 }
 

@@ -1,9 +1,14 @@
 package cam.caesar.vn.data.repository
 
+import kotlinx.coroutines.flow.Flow
+
 interface SettingsRepository {
     var checkUpdate: Boolean
     var betaUpdates: Boolean
     var checkModuleUpdate: Boolean
+
+    /** [checkModuleUpdate] after each change, whoever wrote it (Settings, a config restore). */
+    val checkModuleUpdateChanges: Flow<Boolean>
     var notifiedVersionCode: Long
     var lastSeenVersion: String?
     var askedNotificationPermission: Boolean

@@ -34,6 +34,7 @@ export default function adminRoutes(app) {
         unmatched_payments: one("SELECT count(*) FROM payments WHERE status IN ('unmatched', 'underpaid', 'duplicate', 'refunded')"),
         pending_requests: one("SELECT count(*) FROM source_requests WHERE status = 'pending'"),
         pending_testers: one("SELECT count(*) FROM tester_requests WHERE status = 'pending'"),
+        new_reports: one("SELECT count(*) FROM reports WHERE status = 'new'"),
         testers: one(`SELECT count(DISTINCT email) FROM grants WHERE kind = 'tester' AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)`, now),
         // As a regular member sees them; betas listed too (they open only for testers).
         releases: app.releaseStates({ member: true, early: new Set(), admin: false, all: true }),

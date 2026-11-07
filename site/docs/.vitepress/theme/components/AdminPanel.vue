@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // /quan-tri: Cam's panel (role admin). Grants and revokes membership and early access by hand,
-// locks accounts, unlinks devices, confirms orders, reviews source requests, shows the audit log.
+// locks accounts, unlinks devices, confirms orders, reviews source requests, reads the problem
+// reports the Manager sends (routes/report.mjs), shows the audit log.
 // API: /api/admin/* in site/api/server.mjs.
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ApiError, api, day, errorText, vnd, when } from '../api'
 
-type Tab = 'overview' | 'users' | 'grants' | 'orders' | 'payments' | 'testers' | 'requests' | 'settings' | 'audit'
+type Tab = 'overview' | 'users' | 'grants' | 'orders' | 'payments' | 'testers' | 'reports' | 'requests' | 'settings' | 'audit'
 const TABS: [Tab, string][] = [
   ['overview', 'Tổng quan'],
   ['users', 'Thành viên'],
@@ -13,6 +14,7 @@ const TABS: [Tab, string][] = [
   ['orders', 'Đơn hàng'],
   ['payments', 'Giao dịch'],
   ['testers', 'Beta tester'],
+  ['reports', 'Báo cáo'],
   ['requests', 'Mã nguồn'],
   ['settings', 'Cài đặt'],
   ['audit', 'Nhật ký'],
@@ -37,6 +39,9 @@ const requests = ref<any[]>([])
 const auditLog = ref<any[]>([])
 const payments = ref<any[]>([])
 const testers = ref<any[]>([])
+const reports = ref<any[]>([])
+const reportQ = ref('')
+const report = ref<any>(null)
 const payStatus = ref('unmatched')
 const settings = reactive<any>({})
 
@@ -76,6 +81,7 @@ async function load(t: Tab = tab.value) {
   if (t === 'requests') requests.value = await api('GET', '/api/admin/requests')
   if (t === 'audit') auditLog.value = await api('GET', '/api/admin/audit')
   if (t === 'testers') testers.value = await api('GET', '/api/admin/testers')
+  if (t === 'reports') reports.value = await api('GET', `/api/admin/reports?q=${encodeURIComponent(reportQ.value)}`)
   if (t === 'payments') payments.value = await api('GET', `/api/admin/payments?status=${payStatus.value}`)
   if (t === 'settings') Object.assign(settings, await api('GET', '/api/admin/settings'))
 }
@@ -288,6 +294,110 @@ function reviewTester(x: any, status: 'approved' | 'rejected') {
   }, status === 'approved' ? 'Đã duyệt tester.' : 'Đã từ chối.')
 }
 
+/* ----- problem reports ----- */
+
+// Sections the Manager sends (account/ProblemReport.kt), in reading order; unknown ones come after.
+const SECTIONS: [string, string][] = [
+  ['basic', 'Máy và phiên bản'],
+  ['hiding_audit', 'Kiểm tra ẩn root (camd hiding-audit)'],
+  ['features', 'Tính năng kernel'],
+  ['boot_guard', 'Boot guard'],
+  ['hide_bootloader', 'Ẩn bootloader'],
+  ['modules', 'Module'],
+  ['props', 'Thuộc tính hệ thống'],
+  ['cam_log', 'Log của camd (/data/adb/cam/log)'],
+  ['pstore', 'pstore (log kernel của lần chạy trước)'],
+  ['dmesg', 'dmesg (cuối)'],
+  ['logcat_crash', 'logcat crash'],
+  ['logcat', 'logcat (cuối)'],
+  ['mounts', 'mountinfo của init'],
+]
+const OPEN_SECTIONS = new Set(['basic', 'hiding_audit'])
+const REPORT_STATUS: Record<string, [string, string]> = { new: ['Mới', 'bad'], seen: ['Đã xem', 'muted'], done: ['Xong', 'ok'] }
+
+/** camd prints some sections as one-line JSON (hiding-audit): indented, it can be read. */
+function readable(text: string) {
+  if (!/^\s*[{[]/.test(text)) return text
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2)
+  } catch {
+    return text
+  }
+}
+
+const reportSections = computed<[string, string, string][]>(() => {
+  const all = Object.fromEntries(Object.entries(report.value?.sections ?? {}).map(([k, v]) => [k, readable(v as string)]))
+  const known = SECTIONS.filter(([k]) => k in all).map(([k, label]) => [k, label, all[k]] as [string, string, string])
+  const rest = Object.keys(all)
+    .filter((k) => !SECTIONS.some(([s]) => s === k))
+    .map((k) => [k, k, all[k]] as [string, string, string])
+  return [...known, ...rest]
+})
+
+const kb = (n: number) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(n < 10240 ? 1 : 0)} KB`)
+
+async function openReport(code: string) {
+  await run(async () => {
+    report.value = await api('GET', `/api/admin/reports/${code}`)
+    if (report.value.status === 'new') {
+      await api('POST', `/api/admin/reports/${code}`, { status: 'seen' })
+      report.value.status = 'seen'
+      const row = reports.value.find((x) => x.code === code)
+      if (row) row.status = 'seen'
+      if (overview.value?.new_reports) overview.value.new_reports--
+    }
+  })
+}
+
+function setReport(status?: string, askNote = false) {
+  const x = report.value
+  let note: string | null | undefined
+  if (askNote) {
+    note = prompt(`Ghi chú cho ${x.code}:`, x.admin_note ?? '')
+    if (note === null) return
+  }
+  run(async () => {
+    await api('POST', `/api/admin/reports/${x.code}`, { status, note })
+    if (status) x.status = status
+    if (note !== undefined) x.admin_note = note
+    await load('reports')
+  }, 'Đã lưu.')
+}
+
+/** The account that sent the open report (its sheet would open under this one: close this first). */
+function reportOwner() {
+  const id = report.value.user_id
+  report.value = null
+  openUser(id)
+}
+
+function deleteReport() {
+  const x = report.value
+  if (!confirm(`Xoá hẳn báo cáo ${x.code} của ${x.email}?`)) return
+  run(async () => {
+    await api('DELETE', `/api/admin/reports/${x.code}`)
+    report.value = null
+    await load('reports')
+  }, 'Đã xoá.')
+}
+
+/** The whole report as one text file, sections in reading order. */
+function downloadReport() {
+  const x = report.value
+  const head = [
+    `Báo cáo ${x.code} · ${x.email} · ${x.device || ''} · ${new Date(x.created_at).toLocaleString('vi-VN')}`,
+    ...Object.entries(x.meta || {}).map(([k, v]) => `${k}: ${v}`),
+    x.note ? `\nGhi chú của khách:\n${x.note}` : '',
+  ].join('\n')
+  const body = reportSections.value.map(([k, label, text]) => `\n\n===== ${label} (${k}) =====\n${text}`).join('')
+  const url = URL.createObjectURL(new Blob([head + body + '\n'], { type: 'text/plain;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `cam-report-${x.code}.txt`
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 /* ----- labels ----- */
 
 const ACTIONS: Record<string, string> = {
@@ -316,6 +426,10 @@ const ACTIONS: Record<string, string> = {
   totp_on: 'Bật 2FA',
   totp_off: 'Tắt 2FA',
   totp_reset: 'Reset 2FA',
+  report_new: 'Báo cáo: đánh dấu mới',
+  report_seen: 'Báo cáo: đã xem',
+  report_done: 'Báo cáo: xong',
+  report_delete: 'Xoá báo cáo',
 }
 const STATUS: Record<string, string> = { pending: 'Chờ', paid: 'Đã trả', expired: 'Hết hạn', refunded: 'Đã hoàn', approved: 'Đã duyệt', rejected: 'Từ chối' }
 const PAY: Record<string, string> = { unmatched: 'Không khớp', matched: 'Đã khớp', underpaid: 'Thiếu tiền', duplicate: 'Trả trùng', refunded: 'Đơn đã hoàn', ignored: 'Bỏ qua' }
@@ -357,6 +471,7 @@ onMounted(async () => {
           <b v-if="k === 'orders' && overview?.pending_orders" class="dot-count">{{ overview.pending_orders }}</b>
           <b v-if="k === 'requests' && overview?.pending_requests" class="dot-count">{{ overview.pending_requests }}</b>
           <b v-if="k === 'testers' && overview?.pending_testers" class="dot-count">{{ overview.pending_testers }}</b>
+          <b v-if="k === 'reports' && overview?.new_reports" class="dot-count">{{ overview.new_reports }}</b>
         </button>
       </div>
     </header>
@@ -386,6 +501,7 @@ onMounted(async () => {
         <button class="stat lg lg-press" @click="run(() => load('orders'))"><small>Đơn chờ</small><b class="lg-display">{{ overview.pending_orders }}</b></button>
         <button class="stat lg lg-press" @click="run(() => load('requests'))"><small>Yêu cầu mã nguồn chờ</small><b class="lg-display">{{ overview.pending_requests }}</b></button>
         <button class="stat lg lg-press" :class="{ alert: overview.unmatched_payments }" @click="run(() => load('payments'))"><small>Giao dịch cần xem</small><b class="lg-display">{{ overview.unmatched_payments }}</b></button>
+        <button class="stat lg lg-press" :class="{ alert: overview.new_reports }" @click="run(() => load('reports'))"><small>Báo cáo lỗi chưa xem</small><b class="lg-display">{{ overview.new_reports }}</b></button>
       </section>
       <section v-if="tab === 'overview' && overview" class="panel lg">
         <h2 class="lg-display">Tình trạng hệ thống</h2>
@@ -608,6 +724,34 @@ onMounted(async () => {
         </div>
       </section>
 
+      <!-- problem reports -->
+      <section v-if="tab === 'reports'" class="panel lg">
+        <h2 class="lg-display">Báo cáo lỗi</h2>
+        <p class="hint">Khách gửi từ app (Cài đặt → Báo lỗi cho Cam) rồi nhắn mã báo cáo. Giữ 180 ngày, mỗi tài khoản 20 báo cáo mới nhất.</p>
+        <form class="bar" @submit.prevent="run(() => load('reports'))">
+          <input v-model="reportQ" type="search" placeholder="Mã, email, thiết bị, ghi chú" />
+          <button class="mini" type="submit">Tìm</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mã</th><th>Email</th><th>Thiết bị</th><th>Cam</th><th>Ghi chú</th><th>Gửi lúc</th><th>Cỡ</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              <tr v-for="x in reports" :key="x.code" class="click" @click="openReport(x.code)">
+                <td class="cam-mono">{{ x.code }}</td>
+                <td>{{ x.email }}</td>
+                <td>{{ x.device || x.meta.model || '—' }}</td>
+                <td class="muted">{{ x.meta.cam || x.app_code || '—' }}</td>
+                <td class="muted detail">{{ x.note || '' }}</td>
+                <td>{{ when(x.created_at) }}</td>
+                <td class="muted">{{ kb(x.size) }}</td>
+                <td><span class="cam-chip" :class="REPORT_STATUS[x.status]?.[1]">{{ REPORT_STATUS[x.status]?.[0] ?? x.status }}</span></td>
+              </tr>
+              <tr v-if="!reports.length"><td colspan="8" class="muted">Chưa có báo cáo.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- source requests -->
       <section v-if="tab === 'requests'" class="panel lg">
         <p class="hint">Duyệt xong thì mời tài khoản GitHub của họ vào repo với quyền Read.</p>
@@ -738,6 +882,48 @@ onMounted(async () => {
       </div>
     </Transition>
 
+    <!-- one problem report -->
+    <Transition name="sheet">
+      <div v-if="report" class="veil" @click.self="report = null">
+        <aside class="sheet wide lg lg-dialog" role="dialog" aria-modal="true">
+          <header class="sheet-head">
+            <div>
+              <h2 class="lg-display"><span class="cam-mono">{{ report.code }}</span></h2>
+              <p class="muted">
+                <a href="#" @click.prevent="reportOwner">{{ report.email }}</a>
+                · {{ report.device || 'thiết bị' }} · {{ when(report.created_at) }} · {{ kb(report.size) }}
+              </p>
+            </div>
+            <button class="close" aria-label="Đóng" @click="report = null">✕</button>
+          </header>
+
+          <div class="chips">
+            <span class="cam-chip" :class="REPORT_STATUS[report.status]?.[1]">{{ REPORT_STATUS[report.status]?.[0] ?? report.status }}</span>
+            <span v-for="(v, k) in report.meta" :key="k" class="cam-chip muted">{{ k }}: {{ v }}</span>
+          </div>
+
+          <template v-if="report.note">
+            <h3>Khách ghi</h3>
+            <p class="report-note">{{ report.note }}</p>
+          </template>
+          <p v-if="report.admin_note" class="muted">Ghi chú của Cam: {{ report.admin_note }}</p>
+
+          <div class="btns report-btns">
+            <button v-if="report.status !== 'done'" class="mini" @click="setReport('done')">Xong</button>
+            <button v-else class="mini" @click="setReport('seen')">Mở lại</button>
+            <button class="mini" @click="setReport(undefined, true)">Ghi chú</button>
+            <button class="mini" @click="downloadReport">Tải .txt</button>
+            <button class="mini bad" @click="deleteReport">Xoá</button>
+          </div>
+
+          <details v-for="[k, label, text] in reportSections" :key="`${report.code}-${k}`" class="report-sec" :open="OPEN_SECTIONS.has(k)">
+            <summary>{{ label }} <span class="muted">{{ kb(text.length) }}</span></summary>
+            <pre>{{ text || '(trống)' }}</pre>
+          </details>
+        </aside>
+      </div>
+    </Transition>
+
     <Transition name="toast">
       <div v-if="toast" class="toast lg" :class="{ bad: toast.bad }">{{ toast.text }}</div>
     </Transition>
@@ -858,6 +1044,9 @@ a:hover { text-decoration: underline; }
 .veil {
   position: fixed;
   inset: 0;
+  /* a page wider than the screen (the nav bar at 768-950 px) widens what fixed boxes fill on
+     Chrome for Android; vw stays the screen's width, so the sheets keep to the screen */
+  max-width: 100vw;
   z-index: 90;
   display: flex;
   justify-content: flex-end;
@@ -872,6 +1061,23 @@ a:hover { text-decoration: underline; }
   padding: 24px 22px 40px;
   --lg-r: 28px 0 0 28px;
   border-radius: 28px 0 0 28px;
+}
+.sheet.wide { width: min(980px, 100%); }
+.report-note { white-space: pre-wrap; margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(var(--lg-ink), 0.05); }
+.report-btns { margin: 16px 0 6px; }
+.report-sec { margin-top: 10px; border-top: 1px solid var(--vp-c-divider); padding-top: 8px; }
+.report-sec summary { cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 0; }
+.report-sec pre {
+  margin: 8px 0 0;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: rgba(var(--lg-ink), 0.05);
 }
 .sheet-head { display: flex; justify-content: space-between; gap: 12px; }
 .sheet-head h2 { font-size: 22px; font-weight: 800; margin: 0; overflow-wrap: anywhere; }

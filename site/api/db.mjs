@@ -151,6 +151,25 @@ const MIGRATIONS = [
     created_at INTEGER NOT NULL
   );
   `,
+  // 5: problem reports from the Manager (routes/report.mjs). body is the gzipped JSON of the
+  // sections, size its length before gzip.
+  `
+  CREATE TABLE reports (
+    id INTEGER PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_name TEXT,
+    app_code INTEGER NOT NULL DEFAULT 0,
+    meta TEXT,
+    note TEXT,
+    body BLOB NOT NULL,
+    size INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'new',
+    admin_note TEXT
+  );
+  CREATE INDEX reports_user ON reports(user_id);
+  `,
 ]
 
 export function openDb(file) {

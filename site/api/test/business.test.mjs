@@ -451,3 +451,69 @@ test('beta testers: members ask, Cam approves, testers get every release at once
   const after = await (await fetch(base + '/api/ota/releases', { headers: dev })).json()
   assert.deepEqual(after.map((r) => r.tag_name), ['cam-v1.1.2', 'cam-v1.1.1'])
 })
+
+test('problem reports: the app sends one with its device token, only admins read it', async (t) => {
+  const { app, base } = await start(t)
+  const admin = await adminClient(app, base)
+  const c = client(base)
+  await c('POST', '/api/auth/register', { email: 'r@x.io', password: 'password1' })
+  const pair = await (await fetch(base + '/api/devices/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Lenovo TB323FU' }) })).json()
+  await c('POST', '/api/devices/confirm', { code: pair.code })
+  const { token } = await (await fetch(`${base}/api/devices/poll?id=${pair.id}`)).json()
+  // The Manager: Bearer token, no cookie, no Origin.
+  const send = (body, headers = {}) =>
+    fetch(base + '/api/reports', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'CamSU/33240', ...headers },
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+    }).then(async (r) => ({ status: r.status, body: await r.json() }))
+
+  const report = {
+    meta: { model: 'Lenovo TB323FU', cam: '1.2.5 (33240)', lkm: '33240', junk: 'dropped' },
+    note: 'Máy khởi động lại\nkhi bật ẩn SELinux',
+    sections: { basic: 'Model: TB323FU\nSDK: 36', logcat: 'line 1\n\tline 2\u0000end' },
+  }
+  const sent = await send(report)
+  assert.equal(sent.status, 200)
+  assert.match(sent.body.code, /^R[A-HJ-NP-Z2-9]{6}$/)
+
+  // Not from a browser session, not without signing in, nothing malformed or too big.
+  assert.equal((await c('POST', '/api/reports', report)).status, 403)
+  assert.equal((await fetch(base + '/api/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(report) })).status, 401)
+  assert.equal((await send({ sections: {} })).status, 400)
+  assert.equal((await send({ sections: { 'Bad Name': 'x' } })).status, 400)
+  assert.equal((await send({ sections: { basic: 5 } })).status, 400)
+  assert.equal((await send({ sections: { logcat: 'x'.repeat(512 * 1024 + 1) } })).status, 413)
+  assert.equal((await send('{"sections":{"a":"' + 'x'.repeat(2 * 1024 * 1024) + '"}}')).status, 413)
+
+  // Cam reads it in /quan-tri; the customer cannot.
+  assert.equal((await c('GET', '/api/admin/reports')).status, 403)
+  assert.equal((await admin('GET', '/api/admin/overview')).body.new_reports, 1)
+  const list = (await admin('GET', '/api/admin/reports')).body
+  assert.equal(list.length, 1)
+  assert.equal(list[0].email, 'r@x.io')
+  assert.equal(list[0].device, 'Lenovo TB323FU')
+  assert.equal(list[0].app_code, 33240)
+  assert.deepEqual(list[0].meta, { model: 'Lenovo TB323FU', cam: '1.2.5 (33240)', lkm: '33240' })
+  assert.equal(list[0].note, 'Máy khởi động lại\nkhi bật ẩn SELinux', 'the note keeps its line break')
+  assert.equal(list[0].sections, undefined, 'the list leaves the sections out')
+  const one = (await admin('GET', `/api/admin/reports/${sent.body.code.toLowerCase()}`)).body
+  assert.deepEqual(one.sections, { basic: 'Model: TB323FU\nSDK: 36', logcat: 'line 1\n\tline 2 end' })
+
+  assert.equal((await admin('POST', `/api/admin/reports/${sent.body.code}`, { status: 'done', note: 'đã gọi lại' })).status, 200)
+  assert.equal((await admin('GET', '/api/admin/overview')).body.new_reports, 0)
+  assert.equal((await admin('GET', '/api/admin/reports?q=r@x.io')).body[0].admin_note, 'đã gọi lại')
+  assert.equal((await admin('DELETE', `/api/admin/reports/${sent.body.code}`)).status, 200)
+  assert.equal((await admin('GET', `/api/admin/reports/${sent.body.code}`)).status, 404)
+
+  // The newest 20 per account are kept; at most 6 an hour.
+  const { id } = app.db.prepare("SELECT id FROM users WHERE email = 'r@x.io'").get()
+  const old = app.db.prepare("INSERT INTO reports(code, user_id, body, size, created_at) VALUES (?, ?, x'00', 1, ?)")
+  for (let i = 0; i < 25; i++) old.run(`ROLD${String(i).padStart(3, '0')}`, id, Date.now() - 1000 * (i + 1))
+  assert.equal((await send(report)).status, 200)
+  const kept = app.db.prepare('SELECT code FROM reports WHERE user_id = ? ORDER BY created_at DESC').all(id)
+  assert.equal(kept.length, 20)
+  assert.ok(!kept.some((x) => x.code === 'ROLD024'), 'the oldest went first')
+  for (let i = 0; i < 4; i++) assert.equal((await send(report)).status, 200)
+  assert.equal((await send(report)).status, 429)
+})

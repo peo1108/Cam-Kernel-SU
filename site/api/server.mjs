@@ -18,6 +18,7 @@ import memberRoutes from './routes/member.mjs'
 import payRoutes from './routes/pay.mjs'
 import deviceRoutes from './routes/device.mjs'
 import adminRoutes from './routes/admin.mjs'
+import reportRoutes from './routes/report.mjs'
 
 export function config(env = process.env) {
   const dataDir = env.DATA_DIR || '/var/lib/cam-site-api'
@@ -147,6 +148,7 @@ export function createApp(cfg = config()) {
   payRoutes(app)
   deviceRoutes(app)
   adminRoutes(app)
+  reportRoutes(app)
 
   /* ----- dispatch ----- */
 
@@ -191,7 +193,8 @@ export function createApp(cfg = config()) {
           const viaCookie = !bearer && !!ctx.cookies[SESSION_COOKIE]
           if (origin ? origin !== cfg.origin : viaCookie) fail(403, 'bad_origin')
         }
-        if (!m.route.opts.raw) ctx.body = await readJson(req)
+        // opts.limit: a route that takes more than the 16 KiB default (problem reports)
+        if (!m.route.opts.raw) ctx.body = await readJson(req, m.route.opts.limit)
       }
       const out = await m.route.handler(ctx)
       if (res.headersSent) return

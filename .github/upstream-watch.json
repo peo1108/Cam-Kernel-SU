@@ -1,0 +1,14 @@
+{
+  "_comment": "Last commit Cam has read, per project upstream-watch.yml follows. Set 'seen' to the newest sha after reading what the open issue lists; the issue then closes itself on the next run. KernelSU has no pin: what main has merged decides (git ancestry). Duck Detector is followed by duck-watch.yml (duckDetector in hiding-rules.json).",
+  "teesimulator": {
+    "repo": "JingMatrix/TEESimulator",
+    "branch": "dev",
+    "seen": "06f9f2ee11b86c5144a1f345f70f8fb23cae4493"
+  },
+  "chunqiu": {
+    "repo": "mingzun09/Chunqiu-Detector-Problem-solution",
+    "branch": "main",
+    "path": "language/answer_zh.md",
+    "seen": "c1163e9ba0714071223348c1f6db2341772f2bc7"
+  }
+}

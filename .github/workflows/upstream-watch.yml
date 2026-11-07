@@ -1,0 +1,52 @@
+name: Upstream Watch
+
+# Once a day, look for what is new in the projects Cam follows besides Duck Detector (that one is
+# duck-watch.yml): KernelSU commits main has not merged, TEESimulator commits after the one Cam
+# read, and changes to Chunqiu's check list. scripts/upstream_watch.sh decides what is new; this
+# job keeps one issue per project (label upstream-<project>): opened when something is new,
+# updated on later runs, closed by itself once there is nothing left (KernelSU merged, or the
+# "seen" pin in .github/upstream-watch.json moved to the newest commit). Nothing here merges or
+# changes code. docs/CAM_CHANGES.md row 97.
+
+on:
+  schedule:
+    - cron: '43 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [kernelsu, teesimulator, chunqiu]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # kernelsu compares histories; trees are enough for that, blobs are not needed
+          fetch-depth: ${{ matrix.source == 'kernelsu' && '0' || '1' }}
+          filter: ${{ matrix.source == 'kernelsu' && 'blob:none' || '' }}
+      - name: Look for what is new
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          bash scripts/upstream_watch.sh "$SOURCE" out
+
+          label="upstream-$SOURCE"
+          gh label create "$label" --color 1D76DB --description "New in a project Cam follows" 2>/dev/null || true
+          open=$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')
+          if [ -s out/title ]; then
+            if [ -n "$open" ]; then
+              gh issue edit "$open" --title "$(cat out/title)" --body-file out/body.md
+            else
+              gh issue create --title "$(cat out/title)" --label "$label" --body-file out/body.md
+            fi
+          elif [ -n "$open" ]; then
+            gh issue close "$open" --comment "Nothing new is left for $SOURCE (run $GITHUB_RUN_ID)."
+          fi

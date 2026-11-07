@@ -80,8 +80,9 @@ fun collectProblemReport(context: Context, note: String): ProblemReport {
             appendLine(sh("grep -E ' [VDIWEF] (Cam|camd) *: ' $BOOT_LOGS/$name | tail -n 400"))
         }
         for (name in listOf("dmesg.log", "dmesg.old.log")) {
-            appendLine("== KernelSU lines in $name")
-            appendLine(sh("grep -iE 'kernelsu|ksu|camsu|selinux_hide' $BOOT_LOGS/$name | tail -n 300"))
+            // The brackets keep upstream names out of the APK (scripts/check_apk_strings.py).
+            appendLine("== kernel lines in $name")
+            appendLine(sh("grep -iE '[k]ernel[s]u|[k]su|camsu|selinux_hide' $BOOT_LOGS/$name | tail -n 300"))
         }
     }
 

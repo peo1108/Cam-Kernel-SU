@@ -297,6 +297,13 @@ pub fn on_services() {
 
     info!("on_services triggered!");
     run_stage("service", ScriptWait::NoWait);
+
+    // keystore2 is up by now; start the attestation inject/push loop if the feature is on.
+    match crate::attest::start() {
+        crate::attest::Started::Running => info!("attest: inject/push loop started"),
+        crate::attest::Started::NoConfig => info!("attest: enabled, waiting for push.json"),
+        crate::attest::Started::Disabled => {}
+    }
 }
 
 /// Ok(true) for the first call of this boot; post-fs-data removes the marker.

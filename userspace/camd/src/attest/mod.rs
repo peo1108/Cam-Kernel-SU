@@ -30,14 +30,38 @@ fn write_flag(flag: &Path, enabled: bool) -> io::Result<()> {
     }
 }
 
+/// What [`start`](android::start) decided to do, so callers can log it and tests can assert it.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Started {
+    /// The feature flag is off: no inject, no push.
+    Disabled,
+    /// Enabled, but no resolved `push.json` exists yet: the interceptor stays inert.
+    NoConfig,
+    /// Enabled and a config exists: the inject/push background loop was started.
+    Running,
+}
+
+/// Decide what `start` should do from the two facts it depends on. Pure, so it is host-tested while
+/// the thread it gates is not.
+const fn startup_decision(enabled: bool, push_exists: bool) -> Started {
+    if !enabled {
+        Started::Disabled
+    } else if !push_exists {
+        Started::NoConfig
+    } else {
+        Started::Running
+    }
+}
+
 #[cfg(target_os = "android")]
 mod android {
     use super::control::{self, ControlClient};
-    use super::{flag_is_set, inject, write_flag};
+    use super::{Started, flag_is_set, inject, startup_decision, write_flag};
     use crate::defs;
     use anyhow::{Context, Result};
-    use log::info;
+    use log::{info, warn};
     use std::path::Path;
+    use std::time::{Duration, SystemTime};
 
     /// Whether the attestation feature is enabled (the flag file is present).
     pub fn is_enabled() -> bool {
@@ -93,13 +117,102 @@ mod android {
     }
 
     /// Inject the interceptor into the live keystore2 once, printing the pid as JSON. The manual
-    /// counterpart to the boot-time watch loop (M2-4), used by M2-5 to prove injection on device.
+    /// counterpart to the boot-time watch loop, used by M2-5 to prove injection on device.
     pub fn inject_once() -> Result<()> {
         let pid = inject::keystore2_pid().context("keystore2 process not found")?;
         inject::run_inject(pid)?;
         info!("attest: injected interceptor into keystore2 pid={pid}");
         println!("{}", serde_json::json!({ "injected": true, "pid": pid }));
         Ok(())
+    }
+
+    /// Start the boot-time inject + push background loop when the feature is enabled and a config
+    /// exists. Returns the decision so the caller can log it; the loop itself runs on its own thread
+    /// and never blocks boot. Safe no-op when disabled or unconfigured (the interceptor stays inert).
+    pub fn start() -> Started {
+        let decision = startup_decision(is_enabled(), Path::new(defs::ATTEST_PUSH).exists());
+        if decision == Started::Running {
+            let spawned = std::thread::Builder::new()
+                .name("attest".to_owned())
+                .spawn(run_loop);
+            if let Err(e) = spawned {
+                warn!("attest: could not start background loop: {e}");
+            }
+        }
+        decision
+    }
+
+    /// The background loop: keep the interceptor injected across keystore2 restarts, push the config
+    /// after each fresh inject, and re-push when `push.json` changes.
+    fn run_loop() {
+        info!("attest: background loop started");
+        let mut epoch: u64 = 1;
+        let mut injected_pid: i32 = -1;
+        let mut last_push_mtime = file_mtime(defs::ATTEST_PUSH);
+        loop {
+            match inject::keystore2_pid() {
+                // A new (or first) keystore2: inject, then push once it checks in.
+                Some(pid) if pid != injected_pid => match inject::run_inject(pid) {
+                    Ok(()) => {
+                        info!("attest: injected keystore2 pid={pid}");
+                        injected_pid = pid;
+                        if push_config(&mut epoch).is_ok() {
+                            last_push_mtime = file_mtime(defs::ATTEST_PUSH);
+                        }
+                    }
+                    Err(e) => warn!("attest: inject pid={pid} failed: {e:#}"),
+                },
+                // Same keystore2 still alive: re-push only if the resolved config changed.
+                Some(_) => {
+                    let now = file_mtime(defs::ATTEST_PUSH);
+                    if now != last_push_mtime {
+                        info!("attest: push.json changed; re-pushing");
+                        if push_config(&mut epoch).is_ok() {
+                            last_push_mtime = now;
+                        }
+                    }
+                }
+                // keystore2 gone: forget the pid so it is re-injected when it returns.
+                None => injected_pid = -1,
+            }
+            std::thread::sleep(Duration::from_secs(2));
+        }
+    }
+
+    /// Load the resolved config, connect (retrying while the interceptor binds its socket), push it,
+    /// and advance the epoch on success.
+    fn push_config(epoch: &mut u64) -> Result<()> {
+        let config = control::load_push_with_epoch(Path::new(defs::ATTEST_PUSH), *epoch)?;
+        let mut last_err = None;
+        for _ in 0..12 {
+            match ControlClient::connect(Path::new(defs::TEESIM_CTL)) {
+                Ok((mut client, hello)) => {
+                    info!(
+                        "attest: control hello hook={} api={}",
+                        hello.hook, hello.android_api
+                    );
+                    let ack = client.push(&config)?;
+                    info!(
+                        "attest: pushed epoch={} applied={} failed={}",
+                        ack.epoch, ack.profiles_applied, ack.profiles_failed
+                    );
+                    *epoch += 1;
+                    return Ok(());
+                }
+                Err(e) => {
+                    last_err = Some(e);
+                    std::thread::sleep(Duration::from_millis(500));
+                }
+            }
+        }
+        let e = last_err.unwrap_or_else(|| anyhow::anyhow!("control socket never appeared"));
+        warn!("attest: push failed: {e:#}");
+        Err(e)
+    }
+
+    /// The modified time of `path`, or `None` if it cannot be read — used to detect config edits.
+    fn file_mtime(path: &str) -> Option<SystemTime> {
+        std::fs::metadata(path).and_then(|m| m.modified()).ok()
     }
 }
 
@@ -108,7 +221,15 @@ pub use android::*;
 
 #[cfg(test)]
 mod tests {
-    use super::{flag_is_set, write_flag};
+    use super::{Started, flag_is_set, startup_decision, write_flag};
+
+    #[test]
+    fn startup_decision_gates_on_flag_and_config() {
+        assert_eq!(startup_decision(false, false), Started::Disabled);
+        assert_eq!(startup_decision(false, true), Started::Disabled);
+        assert_eq!(startup_decision(true, false), Started::NoConfig);
+        assert_eq!(startup_decision(true, true), Started::Running);
+    }
 
     #[test]
     fn write_flag_toggles_presence() {

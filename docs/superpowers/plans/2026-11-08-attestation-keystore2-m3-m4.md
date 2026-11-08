@@ -12,6 +12,23 @@
 
 **Builds on:** `docs/superpowers/plans/2026-11-08-attestation-keystore2-m1-m2.md` (DONE + verified on the emulator). camd already has `attest {enable,disable,status,push,ping,inject,daemon}`, the control client, the resident daemon, and reads `/data/adb/cam/attest/{push.json,boot.json}`. M2-5 proved the plumbing with a HAND-BUILT push.json + dummy keybox; M3 produces those files for real from the Manager.
 
+## Status — resume here (as of 2026-11-09)
+
+**DONE (on `main`, commits `363ac99b`, `845ae2b8`, `21def93a`, `115a30e6`; all unit-tested):**
+- **M3-1** — harvest the full root of trust (`KeyAttestation.kt` extended + `attest/Harvester.kt`; `HarvestRecord.toBootInfoJson()`/`toJson()`/`fromJson()`).
+- **M3-2** — resolve apps → push config (`attest/Resolver.kt` `resolvePush(...)` + `attest/PatchLevel.kt`).
+- **M3-3** — keybox parse + revocation (`attest/KeyboxStore.kt`; `parseKeybox`, `KeyboxStatus`, `Keybox.statusAgainst/toB64`; fixture `src/test/resources/keybox_valid.xml`).
+- **M4-1** — persist SELinux (`attest/mod.rs` `ATTEST_SEPOLICY` + `apply_attest_sepolicy()` from `attest::start()`).
+
+**REMAINING (suggested order):** M3-4 → M3-5 → M4-2 → M4-3 (all buildable without the user) → **M3-6 UI** (user reviews the look) → **M3-7 / M4-4 STRONG** (needs the user's real, non-revoked keybox). The per-task detail is below; each remaining task keeps its TDD steps.
+
+**Resume environment notes:**
+- WSL toolchain for the native build is set up: NDK `/root/ndk/android-ndk-r28c`, Android SDK `/root/android-sdk` (aidl build-tools 36), cmake/ninja via apt. Build the teesim core with `scripts/build_teesim.sh` (or the one-off CMake used in M1-2: clone to `/root/teesim`, `cmake -S … -DANDROID_ABI=…`), or let CI `teesim.yml` do it. x86_64 artifacts last built to `/root/teesim/{inject,libteesim_keymint.so}` (stripped).
+- Manager builds from `K:\manager` (the subst drive; recreate if gone). `libcamd.so` for x86_64 + arm64 is staged in `manager/app/src/main/jniLibs/<abi>/` (gitignored); rebuild + re-stage if lost (the camd build env is in `scripts/build_camd.sh` / the M1-2 ledger). Unit tests: `K:\manager> .\gradlew.bat :app:testDebugUnitTest`.
+- Emulator M2-5 procedure (for M3-7): `scripts/emu_y700.sh start`; adb at `$LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe -s emulator-5554`; MSYS_NO_PATHCONV=1 on every adb call; push camd + teesim artifacts to `/data/adb/cam/{bin,lib}`; the one SELinux rule needed is now auto-applied by M4-1. A dummy keybox proves the pipeline; a real keybox is needed for actual STRONG.
+- Ledger: `.superpowers/sdd/2026-11-08-attestation-keystore2-m3-m4/progress.md` (and the M1-M2 one) — read on resume, trust it + `git log` over memory.
+- **The STRONG acceptance test (M3-7 Step 4, M4-4) is blocked until the user supplies a valid keybox.** Do not fake it.
+
 ## Global Constraints
 
 - **Keybox is user-provided** (spec §1): the Manager imports/validates/revocation-checks it; Cam never ships one. An absent/invalid/revoked keybox ⇒ the profile is skipped and its apps fall through to real hardware (the feature is inert, never a hazard).

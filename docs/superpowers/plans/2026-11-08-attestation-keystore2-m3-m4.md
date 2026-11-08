@@ -14,13 +14,17 @@
 
 ## Status — resume here (as of 2026-11-09)
 
-**DONE (on `main`, commits `363ac99b`, `845ae2b8`, `21def93a`, `115a30e6`; all unit-tested):**
-- **M3-1** — harvest the full root of trust (`KeyAttestation.kt` extended + `attest/Harvester.kt`; `HarvestRecord.toBootInfoJson()`/`toJson()`/`fromJson()`).
-- **M3-2** — resolve apps → push config (`attest/Resolver.kt` `resolvePush(...)` + `attest/PatchLevel.kt`).
-- **M3-3** — keybox parse + revocation (`attest/KeyboxStore.kt`; `parseKeybox`, `KeyboxStatus`, `Keybox.statusAgainst/toB64`; fixture `src/test/resources/keybox_valid.xml`).
-- **M4-1** — persist SELinux (`attest/mod.rs` `ATTEST_SEPOLICY` + `apply_attest_sepolicy()` from `attest::start()`).
+**DONE (on `main`; all unit-tested):**
+- **M3-1** `363ac99b` — harvest the full root of trust (`KeyAttestation.kt` + `attest/Harvester.kt`).
+- **M3-2** `845ae2b8` — resolve apps → push config (`attest/Resolver.kt` + `attest/PatchLevel.kt`).
+- **M3-3** `21def93a` — keybox parse + revocation (`attest/KeyboxStore.kt` + fixture).
+- **M3-4** `69f81181` — ship the interceptor artifacts in jniLibs (packaging; deploy moved to M3-5).
+- **M3-5** `d79b9b63` — root service `writeAttestConfig`/`setAttestEnabled`/`attestStatus`/`deployTeesim` + `attest/AttestWriter.kt` (atomic) + `AttestRepository`.
+- **M4-1** `115a30e6` — persist SELinux (`attest/mod.rs` `ATTEST_SEPOLICY` + `apply_attest_sepolicy()`).
+- **M4-2** `b9003e72` — re-attest (`attest/ReAttest.kt` `installedTargets` + `purgeTargetAttestKeys`; restart-keystore2 approach).
+- **M4-3** `bd6c6a9b` — boot-prop (`hide_bootloader::apply()` from attest) + docs (CAM_CHANGES row 102).
 
-**REMAINING (suggested order):** M3-4 → M3-5 → M4-2 → M4-3 (all buildable without the user) → **M3-6 UI** (user reviews the look) → **M3-7 / M4-4 STRONG** (needs the user's real, non-revoked keybox). The per-task detail is below; each remaining task keeps its TDD steps.
+**REMAINING:** **M3-6 UI** (`ui/screen/attest/`; user reviews the look) → **M3-7 / M4-4 STRONG** (needs the user's real, non-revoked keybox). Everything else is done. Before M3-7: rebuild camd (changed in M4-1/M4-3) + re-stage `libcamd.so` in jniLibs. The per-task detail is below; each remaining task keeps its TDD steps.
 
 **Resume environment notes:**
 - WSL toolchain for the native build is set up: NDK `/root/ndk/android-ndk-r28c`, Android SDK `/root/android-sdk` (aidl build-tools 36), cmake/ninja via apt. Build the teesim core with `scripts/build_teesim.sh` (or the one-off CMake used in M1-2: clone to `/root/teesim`, `cmake -S … -DANDROID_ABI=…`), or let CI `teesim.yml` do it. x86_64 artifacts last built to `/root/teesim/{inject,libteesim_keymint.so}` (stripped).

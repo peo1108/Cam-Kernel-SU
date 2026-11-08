@@ -30,6 +30,8 @@ mod android {
     pub const ATTEST_DIR: &str = concatcp!(WORKING_DIR, "attest/");
     pub const ATTEST_PUSH: &str = concatcp!(ATTEST_DIR, "push.json");
     pub const TEESIM_CTL: &str = "/data/misc/keystore/.teesim-ctl";
+    pub const TEESIM_LIB: &str = concatcp!(LIBRARY_DIR, "libteesim_keymint.so");
+    pub const TEESIM_INJECT: &str = concatcp!(BINARY_DIR, "inject");
     /// the installed copy of a module, kept when an update replaces it
     pub const MODULE_BACKUP_DIR: &str = concatcp!(WORKING_DIR, "module_backup/");
 

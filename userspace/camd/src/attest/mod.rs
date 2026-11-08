@@ -8,6 +8,7 @@
 //! Pure, host-testable helpers live at module top level; the Android runtime is in `mod android`.
 
 mod control;
+mod inject;
 
 use std::io;
 use std::path::Path;
@@ -32,9 +33,9 @@ fn write_flag(flag: &Path, enabled: bool) -> io::Result<()> {
 #[cfg(target_os = "android")]
 mod android {
     use super::control::{self, ControlClient};
-    use super::{flag_is_set, write_flag};
+    use super::{flag_is_set, inject, write_flag};
     use crate::defs;
-    use anyhow::Result;
+    use anyhow::{Context, Result};
     use log::info;
     use std::path::Path;
 
@@ -88,6 +89,16 @@ mod android {
         info!("attest: connected hook={}", hello.hook);
         let pong = client.ping(epoch)?;
         println!("{}", serde_json::json!({ "pong": pong }));
+        Ok(())
+    }
+
+    /// Inject the interceptor into the live keystore2 once, printing the pid as JSON. The manual
+    /// counterpart to the boot-time watch loop (M2-4), used by M2-5 to prove injection on device.
+    pub fn inject_once() -> Result<()> {
+        let pid = inject::keystore2_pid().context("keystore2 process not found")?;
+        inject::run_inject(pid)?;
+        info!("attest: injected interceptor into keystore2 pid={pid}");
+        println!("{}", serde_json::json!({ "injected": true, "pid": pid }));
         Ok(())
     }
 }

@@ -359,6 +359,9 @@ enum Attest {
         #[arg(long, default_value_t = 0)]
         epoch: u64,
     },
+
+    /// Inject the interceptor into the live keystore2 once
+    Inject,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -707,6 +710,7 @@ pub fn run() -> Result<()> {
             Attest::Disable => crate::attest::set_enabled(false),
             Attest::Push { epoch, file } => crate::attest::push_once(epoch, file.as_deref()),
             Attest::Ping { epoch } => crate::attest::ping_once(epoch),
+            Attest::Inject => crate::attest::inject_once(),
         },
         Commands::BootGuard { command } => match command {
             BootGuard::Status => module::boot_guard_status(),

@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.2.5 - 2026-11-07
+## 1.2.5 - 2026-11-08
 - Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v28; trang Kiểm tra ẩn root đo thêm timing App Zygote như Duck Detector; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt
 ### Thay đổi
 - Y700 Gen5: ROM gốc của Lenovo đặt sẵn cỡ bộ đệm log (`persist.logd.size.*`), và Chunqiu Native Check báo "Found property" vì tưởng module ghi vào, kể cả trên máy không root. Cam đặt rỗng các giá trị này một lần khi máy khởi động xong; bộ đệm log vẫn như cũ. Đã thử trên Y700: Chunqiu chỉ còn báo gỡ lỗi USB, Duck Detector và Luna không đổi gì. Ai tự chỉnh cỡ bộ đệm log trong Tuỳ chọn nhà phát triển sẽ bị đặt lại mỗi lần khởi động

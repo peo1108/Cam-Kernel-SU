@@ -121,6 +121,25 @@ class BusyTest(unittest.TestCase):
         self.assertFalse(scan.busy(["System compromised", "Online Check"], chunqiu.busy))
         self.assertFalse(scan.busy(["anything"], []))
 
+    def test_luna_is_busy_until_its_verdict(self):
+        luna = scan.DETECTORS[1]
+        for card in ["2/8 BootLoader | 2/8 **", "8/8 Farm Fingerprint | 8/8 ********"]:
+            self.assertTrue(scan.busy([card], luna.busy), card)
+        self.assertFalse(scan.busy(["Trust Phone | 8/8 ******** | Thanks", "GitHub"], luna.busy))
+
+    def test_duck_frame_is_noise(self):
+        duck = scan.DETECTORS[0]
+        for line in ["Trang chủ", "Cài đặt", "ALPHA", "Telegram", "Duck Detector"]:
+            self.assertTrue(scan._noisy(line, duck.noise), line)
+        self.assertFalse(scan._noisy("ADB Runtime | ADB enabled | Warning", duck.noise))
+
+    def test_duck_info_and_clear_cards_are_quiet(self):
+        duck = scan.DETECTORS[0]
+        for card in ["SU | No root indicators | Info", "Mount | No suspicious mount-layer signal | Clear"]:
+            self.assertTrue(scan.busy([card], duck.quiet), card)
+        for card in ["ADB Runtime | ADB enabled | Warning", "Mount | 2 signals | Danger", "0 | Danger | 2 | Warning | 20 | Ready | 0 | Pending"]:
+            self.assertFalse(scan.busy([card], duck.quiet), card)
+
 
 class CompareTest(unittest.TestCase):
     def test_merge_keeps_order_and_drops_repeats(self):

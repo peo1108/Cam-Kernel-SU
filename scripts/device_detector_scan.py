@@ -10,7 +10,8 @@ screen stops changing, scroll through the result and read every card (a clickabl
 compared with the baseline of that device model (scripts/detector_baselines/<model>.json): a card
 that is new or gone is a change, and the exit status is 1. --save writes this scan as the new
 baseline (after a scan judged clean by hand). Nothing is tapped but the launcher and the "later"
-buttons of update dialogs; nothing on the device changes.
+buttons of update dialogs; nothing on the device changes (the detectors turn auto-rotate on when
+they start: the rotation settings are put back afterwards).
 
 Needs adb (on PATH, or the Android SDK's platform-tools). The device must be unlocked with the
 screen on. Run from Git Bash with python -X utf8 (Vietnamese and Chinese labels).
@@ -46,6 +47,8 @@ class Detector:
     noise: list[str] = field(default_factory=list)
     # a card matching one of these means the scan is still running, however still the screen is
     busy: list[str] = field(default_factory=list)
+    # cards left out of the result: verdicts that say nothing is wrong
+    quiet: list[str] = field(default_factory=list)
 
 
 # Every line matching one of these is left out of a card, for every detector.
@@ -60,10 +63,29 @@ DETECTORS = [
         "duck",
         "Duck Detector",
         package="com.eltavine.duckdetector",
-        noise=[r"^Tap to export full report$", r"^Chạm để xuất báo cáo", r"^\d{4}\.\d{2}\.\d{2}-[0-9a-f]+"],
+        noise=[
+            r"^Tap to export full report$",
+            r"^Chạm để xuất báo cáo",
+            r"^\d{4}\.\d{2}\.\d{2}-[0-9a-f]+",
+            # the app's frame, read or not depending on the layout the rotation gives
+            r"^(Trang chủ|Cài đặt|Home|Settings|ALPHA|Telegram|Duck Detector)$",
+        ],
         busy=[r"\b[1-9]\d* \| Pending\b"],  # the summary counts probes not finished yet
+        # the list below the warnings is read only when the swipe gets that far; a probe that
+        # turns Warning or Danger is a new card, and the counts card changes too
+        quiet=[r"\| (Info|Clear)$"],
     ),
-    Detector("luna", "Luna", package_pattern=r"(?i)luna", min_wait=45, max_wait=120, noise=[r"^Luna [\d.]+$"]),
+    Detector(
+        "luna",
+        "Luna",
+        package_pattern=r"(?i)luna",
+        min_wait=45,
+        max_wait=120,
+        noise=[r"^Luna [\d.]+$"],
+        # while scanning it shows one category at a time ("2/8 BootLoader"), then the verdict
+        # ("Trust Phone | 8/8")
+        busy=[r"^\d+/\d+ \S"],
+    ),
     Detector(
         "chunqiu",
         "Chunqiu Native Check",
@@ -215,8 +237,21 @@ class Device:
         m = re.search(r"(\d+)x(\d+)", lines[-1])
         return (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
 
+    ROTATION = ("accelerometer_rotation", "user_rotation")
+
+    def rotation(self) -> dict[str, str]:
+        return {k: self.sh(f"settings get system {k}").strip() for k in self.ROTATION}
+
+    def set_rotation(self, saved: dict[str, str]) -> None:
+        # the detectors rewrite these when they start (auto-rotate on, portrait)
+        for k, v in saved.items():
+            if v and v != "null":
+                self.sh(f"settings put system {k} {v}")
+
     def cleanup(self) -> None:
+        # uiautomator leaves an empty dalvik-cache behind; rmdir keeps it if anything else is in it
         self.sh("rm -f /data/local/tmp/cam_detector_ui.xml")
+        self.sh("rmdir /data/local/tmp/dalvik-cache/arm64 /data/local/tmp/dalvik-cache 2>/dev/null")
 
 
 def resolve(d: Detector, packages: list[str]) -> str | None:
@@ -272,7 +307,7 @@ def scan(dev: Device, d: Detector, package: str) -> list[str]:
         seen = more
         if quiet == 2:
             break
-    return seen
+    return [c for c in seen if not busy([c], d.quiet)]
 
 
 def version_of(dev: Device, package: str) -> str:
@@ -296,6 +331,23 @@ def main() -> int:
     want = set(args.only.split(",")) if args.only else None
 
     print(f"device {dev.serial} ({model}), baseline {path.name}{'' if baseline else ' (none yet)'}")
+    rotation = dev.rotation()
+    try:
+        changed, result = scan_all(dev, packages, want, baseline)
+    finally:
+        dev.set_rotation(rotation)
+        dev.cleanup()
+
+    if args.save:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"\nbaseline saved: {path}")
+    elif changed:
+        print("\nchanged: read the + and - cards; when the new state is right, run again with --save")
+    return 1 if changed and not args.save else 0
+
+
+def scan_all(dev: Device, packages: list[str], want: set[str] | None, baseline: dict) -> tuple[bool, dict]:
     changed = False
     result = dict(baseline)
     for d in DETECTORS:
@@ -332,15 +384,7 @@ def main() -> int:
             else:
                 print(f"   same as the baseline ({len(now)} cards)")
         result[d.key] = {"package": package, "version": version, "saved": time.strftime("%Y-%m-%d"), "cards": now}
-    dev.cleanup()
-
-    if args.save:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"\nbaseline saved: {path}")
-    elif changed:
-        print("\nchanged: read the + and - cards; when the new state is right, run again with --save")
-    return 1 if changed and not args.save else 0
+    return changed, result
 
 
 if __name__ == "__main__":

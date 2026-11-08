@@ -362,6 +362,10 @@ enum Attest {
 
     /// Inject the interceptor into the live keystore2 once
     Inject,
+
+    /// Run the resident inject/push daemon (internal; spawned by the service stage)
+    #[command(hide = true)]
+    Daemon,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -711,6 +715,7 @@ pub fn run() -> Result<()> {
             Attest::Push { epoch, file } => crate::attest::push_once(epoch, file.as_deref()),
             Attest::Ping { epoch } => crate::attest::ping_once(epoch),
             Attest::Inject => crate::attest::inject_once(),
+            Attest::Daemon => crate::attest::daemon_main(),
         },
         Commands::BootGuard { command } => match command {
             BootGuard::Status => module::boot_guard_status(),

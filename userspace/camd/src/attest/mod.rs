@@ -53,14 +53,57 @@ const fn startup_decision(enabled: bool, push_exists: bool) -> Started {
     }
 }
 
+/// One iteration's decision for the daemon loop.
+#[derive(Debug, PartialEq, Eq)]
+enum Action {
+    /// keystore2 is gone: forget the injected/pushed pids.
+    Reset,
+    /// A new (or first) keystore2: inject the interceptor.
+    Inject,
+    /// Injected into this keystore2 but not yet pushed to it, or the config changed: push.
+    Push,
+    /// Steady state: nothing to do.
+    Nothing,
+}
+
+/// Decide the loop's next action from what it can observe. `pushed_pid` is the keystore2 pid the
+/// config was last successfully pushed to (-1 = none), so a fresh inject whose first push failed
+/// keeps retrying the push every tick instead of waiting for a config edit (the re-push bug).
+const fn next_action(
+    current: Option<i32>,
+    injected_pid: i32,
+    pushed_pid: i32,
+    push_changed: bool,
+) -> Action {
+    match current {
+        None => Action::Reset,
+        Some(pid) if pid != injected_pid => Action::Inject,
+        Some(pid) if pid != pushed_pid => Action::Push,
+        Some(_) if push_changed => Action::Push,
+        Some(_) => Action::Nothing,
+    }
+}
+
+/// Loop sleep in seconds: short normally, backed off after repeated failures so a wedged keystore2
+/// (e.g. SELinux blocking ptrace) is not hammered with ptrace attaches every couple of seconds.
+const fn backoff_secs(failures: u32) -> u64 {
+    if failures > 3 { 30 } else { 2 }
+}
+
 #[cfg(target_os = "android")]
 mod android {
     use super::control::{self, ControlClient};
-    use super::{Started, flag_is_set, inject, startup_decision, write_flag};
-    use crate::defs;
+    use super::{
+        Action, Started, backoff_secs, flag_is_set, inject, next_action, startup_decision,
+        write_flag,
+    };
+    use crate::{defs, utils};
     use anyhow::{Context, Result};
     use log::{info, warn};
+    use std::os::fd::AsRawFd;
+    use std::os::unix::process::CommandExt;
     use std::path::Path;
+    use std::process::{Command, Stdio};
     use std::time::{Duration, SystemTime};
 
     /// Whether the attestation feature is enabled (the flag file is present).
@@ -126,56 +169,106 @@ mod android {
         Ok(())
     }
 
-    /// Start the boot-time inject + push background loop when the feature is enabled and a config
-    /// exists. Returns the decision so the caller can log it; the loop itself runs on its own thread
-    /// and never blocks boot. Safe no-op when disabled or unconfigured (the interceptor stays inert).
+    /// Start the boot-time inject + push loop when the feature is enabled and a config exists.
+    /// Returns the decision so the caller can log it. The loop runs in a DAEMONIZED resident process,
+    /// not a thread: the `camd services` process that calls this is a one-shot init `exec`, so a
+    /// thread would die the instant it returns. Safe no-op when disabled or unconfigured.
     pub fn start() -> Started {
         let decision = startup_decision(is_enabled(), Path::new(defs::ATTEST_PUSH).exists());
         if decision == Started::Running {
-            let spawned = std::thread::Builder::new()
-                .name("attest".to_owned())
-                .spawn(run_loop);
+            let spawned = spawn_daemon();
             if let Err(e) = spawned {
-                warn!("attest: could not start background loop: {e}");
+                warn!("attest: could not start daemon: {e:#}");
             }
         }
         decision
     }
 
-    /// The background loop: keep the interceptor injected across keystore2 restarts, push the config
-    /// after each fresh inject, and re-push when `push.json` changes.
+    /// Fork into the background and exec a resident `attest daemon` process (mirrors `spawn_sulogd`).
+    fn spawn_daemon() -> Result<()> {
+        if utils::create_daemon(true)? {
+            let err = Command::new("/proc/self/exe")
+                .arg("attest")
+                .arg("daemon")
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .current_dir("/")
+                .exec();
+            log::error!("attest: failed to exec daemon: {err}");
+            unsafe { libc::_exit(1) };
+        }
+        Ok(())
+    }
+
+    /// The resident daemon entry (the `attest daemon` subcommand). Holds a singleton `flock` so a
+    /// second daemon — e.g. after a soft reboot re-runs the service stage — exits instead of
+    /// double-injecting keystore2 (which the interceptor must never be).
+    pub fn daemon_main() -> Result<()> {
+        // `lock` is held for the whole process lifetime (run_loop never returns); the fd closing on
+        // exit releases it.
+        let lock = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(false)
+            .open(defs::ATTEST_LOCK)
+            .with_context(|| format!("open {}", defs::ATTEST_LOCK))?;
+        if unsafe { libc::flock(lock.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            info!("attest: another attest daemon is already running; exiting");
+            return Ok(());
+        }
+        run_loop();
+        Ok(())
+    }
+
+    /// The daemon loop: keep the interceptor injected across keystore2 restarts, push after every
+    /// fresh inject (retrying until it lands, not only on a config edit), and re-push when `push.json`
+    /// changes. Backs off when inject or push keeps failing so a wedged keystore2 is not hammered.
     fn run_loop() {
-        info!("attest: background loop started");
+        info!("attest: daemon loop started");
         let mut epoch: u64 = 1;
         let mut injected_pid: i32 = -1;
+        let mut pushed_pid: i32 = -1;
         let mut last_push_mtime = file_mtime(defs::ATTEST_PUSH);
+        let mut failures: u32 = 0;
         loop {
-            match inject::keystore2_pid() {
-                // A new (or first) keystore2: inject, then push once it checks in.
-                Some(pid) if pid != injected_pid => match inject::run_inject(pid) {
-                    Ok(()) => {
-                        info!("attest: injected keystore2 pid={pid}");
-                        injected_pid = pid;
-                        if push_config(&mut epoch).is_ok() {
-                            last_push_mtime = file_mtime(defs::ATTEST_PUSH);
+            let current = inject::keystore2_pid();
+            // Captured before the push loads the file, so an edit during a push still trips next tick.
+            let push_mtime = file_mtime(defs::ATTEST_PUSH);
+            let push_changed = push_mtime != last_push_mtime;
+            match next_action(current, injected_pid, pushed_pid, push_changed) {
+                Action::Reset => {
+                    injected_pid = -1;
+                    pushed_pid = -1;
+                    failures = 0;
+                }
+                Action::Inject => {
+                    let pid = current.unwrap_or(-1);
+                    match inject::run_inject(pid) {
+                        Ok(()) => {
+                            info!("attest: injected keystore2 pid={pid}");
+                            injected_pid = pid;
+                            pushed_pid = -1; // force a push to the fresh keystore2
+                            failures = 0;
                         }
-                    }
-                    Err(e) => warn!("attest: inject pid={pid} failed: {e:#}"),
-                },
-                // Same keystore2 still alive: re-push only if the resolved config changed.
-                Some(_) => {
-                    let now = file_mtime(defs::ATTEST_PUSH);
-                    if now != last_push_mtime {
-                        info!("attest: push.json changed; re-pushing");
-                        if push_config(&mut epoch).is_ok() {
-                            last_push_mtime = now;
+                        Err(e) => {
+                            warn!("attest: inject pid={pid} failed: {e:#}");
+                            failures += 1;
                         }
                     }
                 }
-                // keystore2 gone: forget the pid so it is re-injected when it returns.
-                None => injected_pid = -1,
+                Action::Push => match push_config(&mut epoch) {
+                    Ok(()) => {
+                        pushed_pid = current.unwrap_or(-1);
+                        last_push_mtime = push_mtime;
+                        failures = 0;
+                    }
+                    // push_config logs the reason; just back off here.
+                    Err(_) => failures += 1,
+                },
+                Action::Nothing => failures = 0,
             }
-            std::thread::sleep(Duration::from_secs(2));
+            std::thread::sleep(Duration::from_secs(backoff_secs(failures)));
         }
     }
 
@@ -221,7 +314,32 @@ pub use android::*;
 
 #[cfg(test)]
 mod tests {
-    use super::{Started, flag_is_set, startup_decision, write_flag};
+    use super::{
+        Action, Started, backoff_secs, flag_is_set, next_action, startup_decision, write_flag,
+    };
+
+    #[test]
+    fn next_action_covers_the_lifecycle() {
+        // keystore2 gone → reset.
+        assert_eq!(next_action(None, 5, 5, false), Action::Reset);
+        // first keystore2 (nothing injected yet) → inject.
+        assert_eq!(next_action(Some(5), -1, -1, false), Action::Inject);
+        // keystore2 restarted (pid changed) → inject the new one.
+        assert_eq!(next_action(Some(7), 5, 5, false), Action::Inject);
+        // injected but the first push has not landed yet → push (not Nothing: the re-push bug).
+        assert_eq!(next_action(Some(5), 5, -1, false), Action::Push);
+        // config edited since the last push → push.
+        assert_eq!(next_action(Some(5), 5, 5, true), Action::Push);
+        // steady state → nothing.
+        assert_eq!(next_action(Some(5), 5, 5, false), Action::Nothing);
+    }
+
+    #[test]
+    fn backoff_grows_after_repeated_failures() {
+        assert_eq!(backoff_secs(0), 2);
+        assert_eq!(backoff_secs(3), 2);
+        assert_eq!(backoff_secs(4), 30);
+    }
 
     #[test]
     fn startup_decision_gates_on_flag_and_config() {

@@ -62,16 +62,54 @@ class KeyAttestationTest {
     @Test
     fun parsesRootOfTrustFromTeeList() {
         val desc = keyDescription(sw = otherTags(), tee = cat(otherTags(), rootOfTrust(locked = false, state = 2)))
-        val expected = AttestationInfo(securityLevel = 1, deviceLocked = false, verifiedBootState = 2)
-        assertEquals(expected, parseKeyDescription(desc))
+        val info = parseKeyDescription(desc)!!
+        assertEquals(1, info.securityLevel)
+        assertEquals(false, info.deviceLocked)
+        assertEquals(2, info.verifiedBootState)
         // X509Certificate.getExtensionValue wraps the extension in an OCTET STRING
-        assertEquals(expected, parseKeyDescription(oct(desc)))
+        assertEquals(2, parseKeyDescription(oct(desc))?.verifiedBootState)
     }
 
     @Test
     fun fallsBackToSoftwareList() {
-        val desc = keyDescription(sw = rootOfTrust(locked = true, state = 0), tee = otherTags(), securityLevel = 0)
-        assertEquals(AttestationInfo(securityLevel = 0, deviceLocked = true, verifiedBootState = 0), parseKeyDescription(desc))
+        val info = parseKeyDescription(
+            keyDescription(sw = rootOfTrust(locked = true, state = 0), tee = otherTags(), securityLevel = 0),
+        )!!
+        assertEquals(0, info.securityLevel)
+        assertEquals(true, info.deviceLocked)
+        assertEquals(0, info.verifiedBootState)
+    }
+
+    private fun rootOfTrustFull(locked: Boolean, state: Int, key: ByteArray, hash: ByteArray) =
+        tlv(tag(0xBF, 0x85, 0x40), seq(oct(key), bool(locked), enum(state), oct(hash)))
+
+    /** [724] EXPLICIT OCTET STRING MODULE_HASH: 724 = 0x85 0x54 in base 128. */
+    private fun moduleHash(b: ByteArray) = tlv(tag(0xBF, 0x85, 0x54), oct(b))
+
+    private fun b64(b: ByteArray) = java.util.Base64.getEncoder().encodeToString(b)
+
+    @Test
+    fun parsesVerifiedBootKeyHashAndVersion() {
+        val key = ByteArray(32) { it.toByte() }
+        val hash = ByteArray(32) { (it + 100).toByte() }
+        val desc = keyDescription(sw = otherTags(), tee = cat(otherTags(), rootOfTrustFull(false, 2, key, hash)))
+        val info = parseKeyDescription(desc)!!
+        assertEquals(300, info.attestationVersion)
+        assertEquals(b64(key), info.verifiedBootKeyB64)
+        assertEquals(b64(hash), info.verifiedBootHashB64)
+    }
+
+    @Test
+    fun parsesModuleHashWhenPresent() {
+        val mh = ByteArray(32) { (it + 7).toByte() }
+        val tee = cat(moduleHash(mh), rootOfTrust(locked = true, state = 0))
+        assertEquals(b64(mh), parseKeyDescription(keyDescription(sw = otherTags(), tee = tee))?.moduleHashB64)
+    }
+
+    @Test
+    fun moduleHashAbsentIsNull() {
+        val desc = keyDescription(sw = otherTags(), tee = cat(otherTags(), rootOfTrust(locked = true, state = 0)))
+        assertNull(parseKeyDescription(desc)?.moduleHashB64)
     }
 
     @Test

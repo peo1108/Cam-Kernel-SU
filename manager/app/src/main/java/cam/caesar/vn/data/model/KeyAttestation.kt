@@ -22,6 +22,12 @@ data class AttestationInfo(
     val osPatchLevel: Int? = null,
     val vendorPatchLevel: Int? = null,
     val bootPatchLevel: Int? = null,
+    // Harvest fields (base64): the verified-boot key/hash bytes and the A16 module hash feed the
+    // TA's root of trust; attestationVersion is the KeyMint HAL version (100/200/300/400).
+    val attestationVersion: Int? = null,
+    val verifiedBootKeyB64: String? = null,
+    val verifiedBootHashB64: String? = null,
+    val moduleHashB64: String? = null,
 )
 
 private const val TAG_ROOT_OF_TRUST = 704
@@ -29,6 +35,7 @@ private const val TAG_OS_VERSION = 705
 private const val TAG_OS_PATCH_LEVEL = 706
 private const val TAG_VENDOR_PATCH_LEVEL = 718
 private const val TAG_BOOT_PATCH_LEVEL = 719
+private const val TAG_MODULE_HASH = 724
 
 /** A DER element: [start] until [end] is its content. */
 private class Tlv(val tagClass: Int, val tag: Int, val bytes: ByteArray, val start: Int, val end: Int) {
@@ -92,18 +99,23 @@ fun parseKeyDescription(extension: ByteArray): AttestationInfo? = runCatching {
     }
     require(top.tagClass == 0 && top.tag == 16) { "not a SEQUENCE" }
     val fields = top.children()
+    val attestationVersion = fields[0].intValue()
     val securityLevel = fields[1].intValue()
     val softwareEnforced = fields[6]
     val hardwareEnforced = fields[7]
     val explicit = hardwareEnforced.findContextTag(TAG_ROOT_OF_TRUST)
         ?: softwareEnforced.findContextTag(TAG_ROOT_OF_TRUST)
         ?: return@runCatching null
+    // RootOfTrust ::= SEQUENCE { [0] verifiedBootKey, [1] deviceLocked, [2] state, [3] verifiedBootHash }
     val rootOfTrust = explicit.children().first().children()
     // Patch levels live in the same AuthorizationList, usually the hardware-enforced one.
     // Each is [n] EXPLICIT INTEGER, so unwrap the context tag to its INTEGER child.
     fun patchInt(number: Int): Int? =
         (hardwareEnforced.findContextTag(number) ?: softwareEnforced.findContextTag(number))
             ?.children()?.firstOrNull()?.intValue()
+    fun octTag(number: Int): String? =
+        (hardwareEnforced.findContextTag(number) ?: softwareEnforced.findContextTag(number))
+            ?.children()?.firstOrNull()?.content?.let(::base64)
     AttestationInfo(
         securityLevel = securityLevel,
         deviceLocked = rootOfTrust[1].intValue() != 0,
@@ -112,8 +124,14 @@ fun parseKeyDescription(extension: ByteArray): AttestationInfo? = runCatching {
         osPatchLevel = patchInt(TAG_OS_PATCH_LEVEL),
         vendorPatchLevel = patchInt(TAG_VENDOR_PATCH_LEVEL),
         bootPatchLevel = patchInt(TAG_BOOT_PATCH_LEVEL),
+        attestationVersion = attestationVersion,
+        verifiedBootKeyB64 = base64(rootOfTrust[0].content),
+        verifiedBootHashB64 = rootOfTrust.getOrNull(3)?.let { base64(it.content) },
+        moduleHashB64 = octTag(TAG_MODULE_HASH),
     )
 }.getOrNull()
+
+private fun base64(b: ByteArray): String = java.util.Base64.getEncoder().encodeToString(b)
 
 /** "16.0.0" from the encoded osVersion (major*10000 + minor*100 + sub). */
 fun formatOsVersion(encoded: Int): String =

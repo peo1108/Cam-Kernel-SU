@@ -3,10 +3,11 @@
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
 ## 1.2.5 - 2026-11-07
-- Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v27; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt
+- Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v28; trang Kiểm tra ẩn root đo thêm timing App Zygote như Duck Detector; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt
 ### Thay đổi
 - Y700 Gen5: ROM gốc của Lenovo đặt sẵn cỡ bộ đệm log (`persist.logd.size.*`), và Chunqiu Native Check báo "Found property" vì tưởng module ghi vào, kể cả trên máy không root. Cam đặt rỗng các giá trị này một lần khi máy khởi động xong; bộ đệm log vẫn như cũ. Đã thử trên Y700: Chunqiu chỉ còn báo gỡ lỗi USB, Duck Detector và Luna không đổi gì. Ai tự chỉnh cỡ bộ đệm log trong Tuỳ chọn nhà phát triển sẽ bị đặt lại mỗi lần khởi động
-- Rule ẩn root v27: theo Duck Detector tới bản nightly 4/11 (8b365ba9). Đã quét trên Y700: không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi như trước
+- Rule ẩn root v28: theo Duck Detector tới bản nightly 7/11 (d60597ca), bản này chỉ đổi phần build, không đổi phép đo nào. Đã quét trên Y700 bằng chính bản này: không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi như trước
+- Kiểm tra ẩn root: đo thêm phép đo thời gian trong App Zygote của Duck Detector (Duck báo SELinux Nguy hiểm khi một context sai bị từ chối chậm hơn bình thường). Trang đo phần ẩn SELinux cộng thêm so với kernel gốc trên từng nhân CPU, và hiện số đó ở mục "Đã ẩn tốt"; trên Y700 là 10–20 ns, giới hạn 50 ns. Mục này không còn trong danh sách "app này chưa có"
 - Bỏ slime đi dạo: slime chỉ còn trong hộp kính ở Trang chủ, không còn đè lên chữ và nút ở các trang khác
 - Tablet xoay ngang: Trang chủ 2 cột, Tính năng và Thư viện module xếp 2 thẻ một hàng, trang Kiểm tra ẩn root nằm giữa màn hình; Hồ sơ ứng dụng đưa thẻ kiểm tra ẩn root sang cột hồ sơ
 - Thẻ Tính năng có vấn đề (xung đột, module nguy hiểm, bootloader còn lộ, kiểm tra ẩn root có lộ) hiện dòng mô tả màu đỏ; Trang chủ báo "!" đỏ khi bootloader còn lộ

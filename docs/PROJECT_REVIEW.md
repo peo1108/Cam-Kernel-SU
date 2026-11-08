@@ -1,8 +1,62 @@
 # Đánh giá dự án Cam Kernel SU
 
-Chấm lại ngày 2026-10-15 trên `11d748ea` (2973 commit). Lần chấm trước: 2026-10-13 trên `fe4b7b7f`, được **7,9**. Số liệu bên dưới đo trực tiếp từ repo và trên máy; điểm là nhận định, thang 10, chấm theo hiện trạng chứ không theo kế hoạch.
+Chấm lại ngày 2026-11-08 trên `f5f1db57` (3228 commit) cộng timing App Zygote (dòng 101 của `CAM_CHANGES.md`). Các lần trước: 2026-10-15 trên `11d748ea` được **8,3**, 2026-10-13 được **7,9**. Số liệu đo trực tiếp từ repo và trên máy; điểm là nhận định, thang 10, chấm theo hiện trạng chứ không theo kế hoạch.
 
 Khách hàng gần như toàn bộ là người dùng riêng, chủ yếu Lenovo Y700 Gen5 (một ít Gen4): một lượt thử trên máy của Cam được coi là phủ khoảng 95% người dùng thật, nên mục "Kiểm chứng trên máy thật" chấm theo máy đó chứ không theo số dòng máy.
+
+## Chấm lại 2026-11-08: 8,4 / 10 (trước: 8,3)
+
+Từ lần chấm trước: ra 1.2.2, 1.2.3 (đổi gói sang `cam.caesar.vn`), các bản thử 1.2.5; tab Tệp mở được tệp từ app khác; khách gửi báo cáo lỗi từ app; theo dõi tự động KernelSU, TEESimulator, Chunqiu và Duck; quét bằng ba app kiểm tra root trước khi phát hành; máy quét tên upstream trong APK đọc theo định dạng; bỏ slime đi dạo; trang Kiểm tra đo thêm timing App Zygote của Duck, nên Duck chỉ còn heap residue là chưa có.
+
+| Phần | File | Dòng |
+|---|---|---|
+| `kernel/` (C, không tính `tests/`) | 142 | 23.401 |
+| `userspace/camd/src` (Rust) | 44 | 21.276 |
+| `userspace/caminit/src` (Rust) | 4 | 1.124 |
+| `manager/app/src/main/java` (Kotlin, Java) | 413 | 78.196 |
+| `manager/app/src/main/cpp` (JNI, probe) | 6 | 1.082 |
+| `site/api` (Node, không tính test) | 14 | 2.542 |
+
+| Test (2026-11-08) | Kết quả |
+|---|---|
+| Kernel `make -C kernel/tests` (WSL) | 32 + 18 đạt (ASan + UBSan) |
+| camd / caminit host test | 147 / 9 đạt; `cargo ndk` check và clippy sạch, `cargo fmt` sạch |
+| Manager `testDebugUnitTest` | 64 lớp, 444 đạt |
+| `site/api` | 23 đạt |
+| `scripts/test_check_apk_strings.py` | 59 đạt. APK CI của `f5f1db57`: 0 tên, 0 file không đọc được, 3,6 s. APK 1.2.2: 516 tên, phủ đủ 392 chỗ bản quét cũ (`957c448e`) tìm được. CI của `07e90811` và các lần push sau đều xanh, bước kiểm tên chạy trong mỗi lần build |
+| Trên TB323FU (Manager và LKM `33225`) | Timing App Zygote: bật ẩn SELinux 8 lượt, hook thêm 7,5–20,7 ns; tắt ẩn (đối chứng) mọi vòng ±9 ns. Bản release `33225`: 10/10 lần ra nền 12 s rồi quay lại không crash (cùng tiến trình); 8/8 lần mở nguội rồi xoay máy sau 1 s không crash, màn hình xoay thật mà activity không dựng lại. Sau đó máy được trả về đúng APK, camd và dữ liệu Manager như trước khi thử. `scripts/device_detector_scan.py`: Duck `d60597ca` 0 Danger, 2 Warning (gỡ lỗi USB), Luna Trust Phone 8/8, Chunqiu chỉ báo gỡ lỗi USB; mốc `TB323FU.json` lưu, hai lần quét sau khớp |
+
+| Hạng mục | Điểm | Trước | Lý do ngắn |
+|---|---|---|---|
+| Ý tưởng và phạm vi | 8,0 | 8,0 | Bỏ slime đi dạo gọn lại phần 3D; báo cáo lỗi và "Mở bằng Cam" phục vụ khách thật. Phạm vi ngoài root (tab Tệp, Widevine, 3D) vẫn lớn |
+| Kiến trúc | 8,5 | 8,5 | Ranh giới cũ giữ nguyên; phép đo mới nằm trong camd (phần thuần có test, phần Android trong `mod device`), Manager chỉ đọc `stats` |
+| Chất lượng code | 8,0 | 8,0 | File riêng của Cam lớn nhất 895 dòng (`ArenaDecor.kt`); hai file Miuix của upstream lên 1221 và 1265 dòng |
+| Kiểm thử | 9,0 | 8,5 | Số test gần gấp đôi (Manager 281 → 444, camd 109 → 147, kernel 29 → 50), thêm test cho script, quét ba app kiểm tra root so với mốc sạch; phép đo mới có đối chứng trên máy |
+| CI và phát hành | 8,5 | 8,5 | 18 workflow, kiểm tên upstream mỗi lần build, theo dõi upstream tự động. OTA chưa từng chạy từ đầu đến cuối; androidTest không chạy trên CI |
+| Tài liệu | 9,0 | 9,0 | `CAM_CHANGES.md` ghi từng thay đổi kèm số đo trên máy, cách đối chứng và chỗ dễ làm hỏng |
+| Bảo mật | 8,5 | 8,5 | Không đổi: ghim Manager theo chứng chỉ, rule ký ECDSA, audit `site/api` |
+| Khả năng merge upstream | 7,5 | 7,5 | Merge lần này tự xong; hai file Miuix lớn vẫn là chỗ tốn công |
+| Kiểm chứng trên máy thật | 8,0 | 8,0 | Crash Filament ở nền và khi xoay đã thử trên tablet. Vẫn chưa thử: OTA đầu cuối, cấp lại Widevine, thanh toán thật, mục lộ timing App Zygote trên kernel còn lỗi |
+| Vệ sinh repo | 8,5 | 8,5 | Không đổi; junction `cpp/uapi` vẫn hiện trong `git status` |
+
+Cách tính như cũ (kiến trúc, kiểm thử, bảo mật gấp đôi): (8,0 + 2×8,5 + 8,0 + 2×9,0 + 8,5 + 9,0 + 2×8,5 + 7,5 + 8,0 + 8,5) / 13 = 8,4.
+
+| Rủi ro còn mở | Mức | Tình trạng |
+|---|---|---|
+| Khách chuyển từ app `cam.su.kernel` sang Cam (1.2.3 mở cho thành viên thường khoảng 24/11) | Cao | Bốn bước nằm trong ghi chú cập nhật app cũ hiện; chưa thấy trên app cũ thật. Khách kẹt có thể gửi báo cáo lỗi từ app (dòng 98) |
+| OTA chưa từng chạy từ đầu đến cuối trên gói `cam.caesar.vn` | Trung bình | Cam cài bản mới bằng tay, nên máy của Cam không chứng minh được OTA |
+| Kích thước `/sys/fs/selinux/policy` (policy đã vá) app nào cũng `stat` được | Thấp–Trung bình | Giới hạn đã biết (dòng 71); app cần bảng kích thước theo firmware mới dùng được. Hướng sửa đã ghi |
+| Timing App Zygote chưa từng báo lộ trên máy | Thấp | Đối chứng chỉ chứng minh phép đo về 0 khi không có hook; kết luận có test với số đo của kernel cũ |
+| Cấp lại Widevine, thanh toán thật | Thấp | Chưa thử; Widevine có sao lưu và tự khôi phục, thanh toán có test phía server |
+| Heap residue của Duck | Thấp | Duck chưa bật rule nào |
+
+Việc nên làm tiếp, theo thứ tự:
+
+1. **Ra bản thử 1.2.5 kế tiếp** có timing App Zygote. Quét ba app trên tablet đã sạch hôm nay với bản đang cài; cài bản mới rồi quét lại cho khớp mốc.
+2. **Theo dõi khách chuyển sang Cam** từ khoảng 24/11, đọc báo cáo lỗi khách gửi.
+3. **Một lượt OTA thật:** gắn tag beta, cho tablet nhận và cài qua OTA, ghi vào mục 6 của `CAM_CHANGES.md`.
+4. **Sửa lộ kích thước policy** (dòng 71): với uid ≥ 10000 trả kích thước của bản dự phòng.
+5. Cấp lại Widevine trên một máy chịu được rủi ro.
 
 ## Cập nhật 2026-11-04: bản 1.2.3 (`9008a90d`, 3201 commit)
 
@@ -38,7 +92,9 @@ Rủi ro mới hoặc đổi:
 | ZUI giữ khoá `<gói>\|<quyền>` trong `settings global` của app đã gỡ, app nào cũng đọc được | Thấp | Đã xoá trên tablet các khoá của `me.weishu.kernelsu`, `org.probe.*` và gói test; máy khách từng cài app root khác có thể còn |
 | OTA thật từ đầu đến cuối trên gói mới, thông báo `cam_boot_guard` mới | Thấp | Chưa thử |
 
-## Điểm tổng: 8,3 / 10 (trước: 7,9)
+## Lần chấm 2026-10-15: 8,3 / 10 (trước: 7,9)
+
+Phần này và các phần dưới là của lần chấm 2026-10-15 (số liệu và rủi ro lúc đó), giữ để so.
 
 Tăng nhờ một ngày dọn và kiểm chứng: thử trên máy những tính năng chưa từng chạy thật (shell adb-only, Widevine, tài khoản, OTA), test trên máy cho root service và AIDL, sửa một lỗ hổng chiếm quyền thành viên trên `site/api`, nhả bộ nhớ 3D khi app nằm nền, sửa một crash có sẵn ở thẻ trạng thái. Mục Bảo mật tính 8,5 khi bản API mới đã được deploy (việc làm bằng tay, xem cuối trang).
 

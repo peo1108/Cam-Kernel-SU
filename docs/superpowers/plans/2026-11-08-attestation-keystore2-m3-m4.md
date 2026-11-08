@@ -25,7 +25,19 @@
 - **M4-3** `bd6c6a9b` — boot-prop (`hide_bootloader::apply()` from attest) + docs (CAM_CHANGES row 102).
 - **M3-6** `2c607c7a` — the attestation screen (`ui/screen/attest/AttestScreen.kt` + `AttestMiuix.kt`, `attest/AttestUiState.kt` + `AttestViewModel.kt`; Route.Attest + CamActivity entry; a TextButton in the Features bootloader card opens it; strings en+vi). Compiles + full suite green; the LOOK still wants a visual review on device.
 
-**REMAINING:** only **M3-7 / M4-4 STRONG** (needs the user's real, non-revoked keybox). Everything buildable-without-the-keybox is done. Before M3-7: rebuild camd (changed in M4-1/M4-3) + re-stage `libcamd.so` in jniLibs; the UI could use a visual pass. The per-task detail is below; each remaining task keeps its TDD steps.
+**REMAINING:** only the **M3-7 Step 4 / M4-4 STRONG verdict + regression** — now **TABLET-GATED**, not keybox-gated (the keybox arrived and is validated). Before M3-7 was: rebuild camd (changed in M4-1/M4-3) + re-stage `libcamd.so` — DONE (both ABIs at HEAD id `824fd62f`).
+
+### 2026-11-09 — real keybox supplied, emulator mechanism proven
+
+The user supplied a real keybox (`keybox test/keybox.xml`, gitignored-by-intent — **never commit it**; a OnePlus `@Suxiaomingpd` EC keybox).
+
+- **Keybox validated (offline):** openssl verifies the chain to root `Key Attestation CA1`; the leaf private key matches the leaf cert; all 4 serials are ABSENT from Google's 1771-entry attestation status (revocation) list → **not revoked**. Leaf valid `2026-11-01..2026-11-13` → **expires 2026-11-13** (~4-day window). Google's server-side leaked-keybox blocklist is not in the public list and can only be confirmed by a live Play Integrity call.
+- **Build:** camd rebuilt for both ABIs to HEAD (`824fd62f`), re-staged in jniLibs; Manager debug APK built + `:app:testDebugUnitTest` green; `checkDebugCamdSource` passes.
+- **M3-7 emulator (`sdk_gphone64_x86_64`, A16, GMS+Play, TCP internet; tablet offline):** drove the real pipeline via on-device camd — real `push.json` (real `keyboxB64` + uid 10172 `com.android.vending`), 5 `ATTEST_SEPOLICY` rules applied, `attest inject` → `attest push` returned `profilesApplied:1, profilesFailed:0`. logcat: the EC keybox parsed and the **keybox's own Google chain** (leaf `72f157fe~` O=TEE → Droid CA3 → Droid CA2 → Key Attestation CA1) was staged, TA `ready level=TEE/StrongBox attestation_version=300 locked=true vb_state=Verified`, `applied config profiles=1/1`, keystore2 **stable**. The STRONG **mechanism** works with the real keybox (dummy gave `applied=0`). Emulator restored clean afterwards.
+- **Still pending (tablet):** M3-7 Step 4 is an authoritative `MEETS_STRONG_INTEGRITY` Play Integrity verdict with the Manager's real harvest (the emulator can't give it — emulator profile; hand-built bootInfo had empty verifiedBootKey + zero patch levels), and **M4-4** (`device_bootguard_test.sh` ~15 reboots + `device_detector_scan.py`). Run both before the 2026-11-13 keybox expiry.
+- **UI clarity pass (uncommitted, user to visually optimize later):** `AttestMiuix.kt` reordered to numbered steps (intro + experimental warning → keybox → targets → configure+result → gated enable → check), `strings.xml` en+vi additions, `AttestViewModel` clears a stale configure message on re-import.
+
+The per-task detail is below; each remaining task keeps its TDD steps.
 
 **Resume environment notes:**
 - WSL toolchain for the native build is set up: NDK `/root/ndk/android-ndk-r28c`, Android SDK `/root/android-sdk` (aidl build-tools 36), cmake/ninja via apt. Build the teesim core with `scripts/build_teesim.sh` (or the one-off CMake used in M1-2: clone to `/root/teesim`, `cmake -S … -DANDROID_ABI=…`), or let CI `teesim.yml` do it. x86_64 artifacts last built to `/root/teesim/{inject,libteesim_keymint.so}` (stripped).

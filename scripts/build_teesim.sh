@@ -30,7 +30,7 @@ API="${API:-29}"
 # Resolve the NDK: honour the standard env vars, else the newest installed under the SDK.
 NDK="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
 if [ -z "$NDK" ]; then
-  NDK="$(ls -d "$ANDROID_HOME"/ndk/* 2>/dev/null | sort -V | tail -1 || true)"
+  NDK="$(find "$ANDROID_HOME/ndk" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -1 || true)"
 fi
 [ -n "$NDK" ] && [ -d "$NDK" ] || { echo "ERROR: NDK not found; set ANDROID_NDK_HOME" >&2; exit 1; }
 echo "build_teesim: NDK=$NDK  API=$API  ABIS=$ABIS"

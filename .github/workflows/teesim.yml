@@ -1,0 +1,75 @@
+name: Build teesim native core
+
+# Builds the vendored TEESimulator native core (inject + libteesim_keymint.so) for the keystore2
+# attestation feature. ubuntu-latest ships the Android SDK (build-tools, cmake) and we add the NDK;
+# scripts/build_teesim.sh fetches the native/teesim sub-submodules (lsplt, keymint, interfaces,
+# frameworks-native, boringssl) at build time. See
+# docs/superpowers/specs/2026-11-08-attestation-keystore2-design.md.
+
+on:
+  push:
+    branches: [ "main", "dev", "ci" ]
+    paths:
+      - '.github/workflows/teesim.yml'
+      - 'scripts/build_teesim.sh'
+      - 'native/teesim'
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - '.github/workflows/teesim.yml'
+      - 'scripts/build_teesim.sh'
+      - 'native/teesim'
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-teesim:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with the native/teesim submodule)
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Install the newest aidl build-tools (>= 35, for the local-binder fallback)
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0" >/dev/null
+
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r29
+
+      - name: Setup Rust (Android targets + cargo-ndk)
+        run: |
+          rustup update stable
+          rustup target add aarch64-linux-android x86_64-linux-android
+          cargo install cargo-ndk --locked
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/teesim/rust
+          cache-targets: false
+
+      - name: Build the native core
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: bash scripts/build_teesim.sh
+
+      - name: Check the artifacts are the expected ELF
+        run: |
+          for abi in arm64-v8a x86_64; do
+            for f in inject libteesim_keymint.so; do
+              test -f "native/teesim/out/$abi/$f" || { echo "missing $abi/$f" >&2; exit 1; }
+              file "native/teesim/out/$abi/$f"
+            done
+          done
+          # The interceptor must export exactly `entry` (the exports.map hides the rest).
+          readelf --dyn-syms native/teesim/out/arm64-v8a/libteesim_keymint.so | grep -qw entry
+
+      - name: Upload teesim native artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: teesim-native
+          path: native/teesim/out/**

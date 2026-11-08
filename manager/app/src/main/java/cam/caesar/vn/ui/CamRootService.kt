@@ -11,7 +11,11 @@ import com.topjohnwu.superuser.ipc.RootService
 import cam.caesar.vn.ICamRootService
 import cam.caesar.vn.CamRootClient
 import cam.caesar.vn.CamNative
+import cam.caesar.vn.attest.AttestPaths
+import cam.caesar.vn.attest.atomicWrite
+import org.json.JSONObject
 import rikka.parcelablelist.ParcelableListSlice
+import java.io.File
 
 /**
  * @author weishu
@@ -118,5 +122,49 @@ class CamRootService : RootService() {
         override fun setSelinuxHideEnabled(enabled: Boolean): Int = CamNative.setSelinuxHideEnabled(enabled)
 
         override fun getSuperuserCount(): Int = CamNative.getSuperuserCount()
+
+        override fun writeAttestConfig(bootJson: String, pushJson: String): Boolean {
+            File(AttestPaths.DIR).mkdirs()
+            val boot = atomicWrite(File(AttestPaths.BOOT_JSON)) { it.writeText(bootJson) }
+            val push = atomicWrite(File(AttestPaths.PUSH_JSON)) { it.writeText(pushJson) }
+            return boot && push
+        }
+
+        override fun setAttestEnabled(enabled: Boolean): Boolean = try {
+            val flag = File(AttestPaths.FLAG)
+            if (enabled) flag.writeText("") else flag.delete()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "setAttestEnabled failed", e)
+            false
+        }
+
+        override fun attestStatus(): String = JSONObject().apply {
+            put("enabled", File(AttestPaths.FLAG).exists())
+            put("libDeployed", File(AttestPaths.LIB).exists())
+            put("injectDeployed", File(AttestPaths.INJECT).exists())
+            put("pushConfigured", File(AttestPaths.PUSH_JSON).exists())
+        }.toString()
+
+        /** Copy the packaged interceptor + loader from the app's native lib dir to /data/adb/cam. */
+        override fun deployTeesim(): Boolean = try {
+            val src = applicationInfo.nativeLibraryDir
+            File("/data/adb/cam/lib").mkdirs()
+            File("/data/adb/cam/bin").mkdirs()
+            File(src, AttestPaths.LIB_ASSET).copyTo(File(AttestPaths.LIB), overwrite = true)
+            File(src, AttestPaths.INJECT_ASSET).copyTo(File(AttestPaths.INJECT), overwrite = true)
+            exec("chmod", "0600", AttestPaths.LIB)
+            exec("chmod", "0700", AttestPaths.INJECT)
+            exec("restorecon", "-R", "/data/adb/cam/lib", "/data/adb/cam/bin")
+            File(AttestPaths.LIB).exists() && File(AttestPaths.INJECT).exists()
+        } catch (e: Exception) {
+            Log.e(TAG, "deployTeesim failed", e)
+            false
+        }
+
+        private fun exec(vararg cmd: String) {
+            runCatching { Runtime.getRuntime().exec(cmd).waitFor() }
+                .onFailure { Log.w(TAG, "exec ${cmd.joinToString(" ")} failed", it) }
+        }
     }
 }

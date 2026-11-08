@@ -35,4 +35,10 @@ interface ICamRootService {
     int setSelinuxHideEnabled(boolean enabled);
 
     int getSuperuserCount();
+
+    // keystore2 attestation (tier 2): the Manager is the brain; these run as root.
+    boolean writeAttestConfig(String bootJson, String pushJson);
+    boolean setAttestEnabled(boolean enabled);
+    String attestStatus();
+    boolean deployTeesim();
 }

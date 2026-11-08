@@ -70,6 +70,12 @@ object Cam {
     fun isSelinuxHideEnabled(): Boolean = call(false) { it.isSelinuxHideEnabled }
     fun setSelinuxHideEnabled(enabled: Boolean): Int = call(-1) { it.setSelinuxHideEnabled(enabled) }
 
+    fun writeAttestConfig(bootJson: String, pushJson: String): Boolean =
+        call(false) { it.writeAttestConfig(bootJson, pushJson) }
+    fun setAttestEnabled(enabled: Boolean): Boolean = call(false) { it.setAttestEnabled(enabled) }
+    fun attestStatus(): String = call("{}") { it.attestStatus() }
+    fun deployTeesim(): Boolean = call(false) { it.deployTeesim() }
+
     fun getSuperuserCount(): Int = call(0) { it.superuserCount }
 
     fun getUserName(uid: Int): String? = CamNative.getUserName(uid)

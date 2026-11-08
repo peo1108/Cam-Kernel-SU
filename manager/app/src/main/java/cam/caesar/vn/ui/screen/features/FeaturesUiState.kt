@@ -69,6 +69,7 @@ data class FeaturesActions(
     val onSetHideBootloader: (Boolean) -> Unit,
     val onCheckAttestation: () -> Unit,
     val onOpenHidingCheck: () -> Unit,
+    val onOpenAttest: () -> Unit,
     val onSetWirelessAdb: (Boolean) -> Unit,
     /** minutes, one of [cam.caesar.vn.adb.WirelessAdb.TIMEOUTS] */
     val onSetAdbTimeout: (Int) -> Unit,

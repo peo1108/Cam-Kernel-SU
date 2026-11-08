@@ -517,6 +517,28 @@
     <string name="features_attestation_check">Check attestation</string>
     <string name="features_attestation_checking">Checking…</string>
     <string name="features_attestation_unreadable">Could not read the attestation certificate</string>
+
+    <!-- keystore2 attestation (tier 2) -->
+    <string name="attest_open">Fake attestation (keystore2)…</string>
+    <string name="attest_title">Keystore2 attestation</string>
+    <string name="attest_section_feature">Feature</string>
+    <string name="attest_enable">Enable attestation simulation</string>
+    <string name="attest_enable_summary">Targeted apps attest with your keybox as locked/Verified. Takes effect on the next boot.</string>
+    <string name="attest_status">Status</string>
+    <string name="attest_status_off">Off</string>
+    <string name="attest_status_on">On, configured</string>
+    <string name="attest_status_on_unconfigured">On, but not configured yet</string>
+    <string name="attest_section_keybox">Keybox</string>
+    <string name="attest_keybox">Keybox</string>
+    <string name="attest_import_keybox">Import keybox…</string>
+    <string name="attest_keybox_none">None loaded</string>
+    <string name="attest_keybox_valid">Loaded, valid</string>
+    <string name="attest_keybox_revoked">Loaded — WARNING: revoked by Google</string>
+    <string name="attest_keybox_invalid">Invalid keybox</string>
+    <string name="attest_section_targets">Target apps</string>
+    <string name="attest_configure">Configure &amp; deploy</string>
+    <string name="attest_configuring">Configuring…</string>
+    <string name="attest_section_check">Check</string>
     <string name="features_attestation_level">Security level: %s</string>
     <string name="features_attestation_software">Software</string>
     <string name="features_attestation_locked">Bootloader locked: %s</string>

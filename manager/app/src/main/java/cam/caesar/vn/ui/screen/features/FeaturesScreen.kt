@@ -53,6 +53,7 @@ fun FeaturesPager(
         onSetHideBootloader = viewModel::setHideBootloader,
         onCheckAttestation = viewModel::checkAttestation,
         onOpenHidingCheck = dropUnlessResumed { navigator.push(Route.HidingCheck()) },
+        onOpenAttest = dropUnlessResumed { navigator.push(Route.Attest) },
         onSetWirelessAdb = viewModel::setWirelessAdb,
         onSetAdbTimeout = viewModel::setAdbTimeout,
     )

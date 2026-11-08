@@ -505,6 +505,28 @@
     <string name="features_attestation_check">Kiểm tra attestation</string>
     <string name="features_attestation_checking">Đang kiểm tra…</string>
     <string name="features_attestation_unreadable">Không đọc được chứng chỉ attestation</string>
+
+    <!-- keystore2 attestation (tier 2) -->
+    <string name="attest_open">Giả attestation (keystore2)…</string>
+    <string name="attest_title">Attestation keystore2</string>
+    <string name="attest_section_feature">Tính năng</string>
+    <string name="attest_enable">Bật giả attestation</string>
+    <string name="attest_enable_summary">App đích attest bằng keybox của bạn, báo khoá/Verified. Có hiệu lực ở lần khởi động sau.</string>
+    <string name="attest_status">Trạng thái</string>
+    <string name="attest_status_off">Tắt</string>
+    <string name="attest_status_on">Bật, đã cấu hình</string>
+    <string name="attest_status_on_unconfigured">Bật, nhưng chưa cấu hình</string>
+    <string name="attest_section_keybox">Keybox</string>
+    <string name="attest_keybox">Keybox</string>
+    <string name="attest_import_keybox">Nạp keybox…</string>
+    <string name="attest_keybox_none">Chưa nạp</string>
+    <string name="attest_keybox_valid">Đã nạp, hợp lệ</string>
+    <string name="attest_keybox_revoked">Đã nạp — CẢNH BÁO: đã bị Google thu hồi</string>
+    <string name="attest_keybox_invalid">Keybox không hợp lệ</string>
+    <string name="attest_section_targets">App đích</string>
+    <string name="attest_configure">Cấu hình &amp; triển khai</string>
+    <string name="attest_configuring">Đang cấu hình…</string>
+    <string name="attest_section_check">Kiểm tra</string>
     <string name="features_attestation_level">Mức bảo mật: %s</string>
     <string name="features_attestation_software">Phần mềm</string>
     <string name="features_attestation_locked">Bootloader đã khóa: %s</string>

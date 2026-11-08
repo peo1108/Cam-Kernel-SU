@@ -343,6 +343,13 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
+        TextButton(
+            text = stringResource(R.string.attest_open),
+            onClick = actions.onOpenAttest,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
     }
 }
 

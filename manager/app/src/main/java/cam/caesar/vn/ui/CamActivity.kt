@@ -134,6 +134,7 @@ import cam.caesar.vn.ui.navigation3.rememberNavigator
 import cam.caesar.vn.ui.screen.about.AboutScreen
 import cam.caesar.vn.ui.screen.account.AccountScreen
 import cam.caesar.vn.ui.screen.appprofile.AppProfileScreen
+import cam.caesar.vn.ui.screen.attest.AttestScreen
 import cam.caesar.vn.ui.screen.hidingcheck.HidingCheckScreen
 import cam.caesar.vn.ui.screen.colorpalette.ColorPaletteScreen
 import cam.caesar.vn.ui.screen.executemoduleaction.ExecuteModuleActionScreen
@@ -372,6 +373,7 @@ class CamActivity : ComponentActivity() {
                             entry<Route.HidingCheck>(swipeDismiss = swipeDismiss) { key ->
                                 GlassPage(key) { HidingCheckScreen(key.uid.takeIf { it != Route.HidingCheck.DEVICE }, key.scanNow) }
                             }
+                            entry<Route.Attest>(swipeDismiss = swipeDismiss) { GlassPage(it) { AttestScreen() } }
                             entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { GlassPage(it) { ModuleRepoScreen() } }
                             // no swipe to close: a stray swipe while typing must not drop the edits
                             entry<Route.TextEditor>(swipeDismiss = NavSwipeDirection.None) { key -> GlassPage(key) { TextEditorScreen(key.path, key.line) } }

@@ -23,8 +23,9 @@
 - **M4-1** `115a30e6` — persist SELinux (`attest/mod.rs` `ATTEST_SEPOLICY` + `apply_attest_sepolicy()`).
 - **M4-2** `b9003e72` — re-attest (`attest/ReAttest.kt` `installedTargets` + `purgeTargetAttestKeys`; restart-keystore2 approach).
 - **M4-3** `bd6c6a9b` — boot-prop (`hide_bootloader::apply()` from attest) + docs (CAM_CHANGES row 102).
+- **M3-6** `2c607c7a` — the attestation screen (`ui/screen/attest/AttestScreen.kt` + `AttestMiuix.kt`, `attest/AttestUiState.kt` + `AttestViewModel.kt`; Route.Attest + CamActivity entry; a TextButton in the Features bootloader card opens it; strings en+vi). Compiles + full suite green; the LOOK still wants a visual review on device.
 
-**REMAINING:** **M3-6 UI** (`ui/screen/attest/`; user reviews the look) → **M3-7 / M4-4 STRONG** (needs the user's real, non-revoked keybox). Everything else is done. Before M3-7: rebuild camd (changed in M4-1/M4-3) + re-stage `libcamd.so` in jniLibs. The per-task detail is below; each remaining task keeps its TDD steps.
+**REMAINING:** only **M3-7 / M4-4 STRONG** (needs the user's real, non-revoked keybox). Everything buildable-without-the-keybox is done. Before M3-7: rebuild camd (changed in M4-1/M4-3) + re-stage `libcamd.so` in jniLibs; the UI could use a visual pass. The per-task detail is below; each remaining task keeps its TDD steps.
 
 **Resume environment notes:**
 - WSL toolchain for the native build is set up: NDK `/root/ndk/android-ndk-r28c`, Android SDK `/root/android-sdk` (aidl build-tools 36), cmake/ninja via apt. Build the teesim core with `scripts/build_teesim.sh` (or the one-off CMake used in M1-2: clone to `/root/teesim`, `cmake -S … -DANDROID_ABI=…`), or let CI `teesim.yml` do it. x86_64 artifacts last built to `/root/teesim/{inject,libteesim_keymint.so}` (stripped).

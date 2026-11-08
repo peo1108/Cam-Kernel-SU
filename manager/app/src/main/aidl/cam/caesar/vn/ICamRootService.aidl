@@ -41,4 +41,5 @@ interface ICamRootService {
     boolean setAttestEnabled(boolean enabled);
     String attestStatus();
     boolean deployTeesim();
+    int purgeTargetAttestKeys(in int[] uids);
 }

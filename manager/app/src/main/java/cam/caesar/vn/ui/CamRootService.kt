@@ -162,6 +162,14 @@ class CamRootService : RootService() {
             false
         }
 
+        override fun purgeTargetAttestKeys(uids: IntArray): Int {
+            if (uids.isEmpty()) return 0
+            // Restart keystore2: the daemon re-injects it and the targets re-attest through the TA on
+            // next use. Conservative (no per-key deletion), so an unrelated app's keys are untouched.
+            exec("sh", "-c", "kill \$(pidof keystore2)")
+            return uids.size
+        }
+
         private fun exec(vararg cmd: String) {
             runCatching { Runtime.getRuntime().exec(cmd).waitFor() }
                 .onFailure { Log.w(TAG, "exec ${cmd.joinToString(" ")} failed", it) }

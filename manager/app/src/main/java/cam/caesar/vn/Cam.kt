@@ -75,6 +75,7 @@ object Cam {
     fun setAttestEnabled(enabled: Boolean): Boolean = call(false) { it.setAttestEnabled(enabled) }
     fun attestStatus(): String = call("{}") { it.attestStatus() }
     fun deployTeesim(): Boolean = call(false) { it.deployTeesim() }
+    fun purgeTargetAttestKeys(uids: IntArray): Int = call(0) { it.purgeTargetAttestKeys(uids) }
 
     fun getSuperuserCount(): Int = call(0) { it.superuserCount }
 

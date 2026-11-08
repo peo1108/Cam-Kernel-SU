@@ -42,8 +42,11 @@ class AttrTimingTest {
 
     @Test
     fun rulesCarryPendingChecks() {
-        val shipped = HidingRules.parse(java.io.File("src/main/assets/hiding-rules.json").readText())!!
-        assertEquals(listOf("heap residue", "App Zygote attr/current timing"), shipped.duckPending)
+        val file = java.io.File("src/main/assets/hiding-rules.json").readText()
+        val shipped = HidingRules.parse(file)!!
+        // the file still names the App Zygote timing for older apps; this one runs it (camd)
+        assertTrue(file.contains("\"App Zygote attr/current timing\""))
+        assertEquals(listOf("heap residue"), shipped.duckPending)
         // a copy written back keeps them; rules from before version 3 have none
         assertEquals(shipped, HidingRules.parse(shipped.toJson()))
         val old = shipped.toJson().replace(Regex(",\"duckPending\":\\[[^]]*]"), "")

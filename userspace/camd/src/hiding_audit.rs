@@ -137,6 +137,9 @@ pub struct Snapshot {
     pub selinux_enforcing: Option<bool>,
     /// Duck Detector's AVC lookup probe ([`crate::avc_lookup`]); None when it did not answer
     pub avc_lookup: Option<crate::avc_lookup::Reading>,
+    /// Duck Detector's App Zygote timing through the hook against past it
+    /// ([`crate::zygote_timing`]); None when SELinux hiding is off or the probe did not answer
+    pub zygote_timing: Option<crate::zygote_timing::Reading>,
     /// [`Adbd`] read at the start and at the end of the snapshot
     pub adbd: Vec<Adbd>,
     /// [`adbd_files`], looked for only when [`adbd_hidden`]
@@ -639,6 +642,22 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
         );
     }
 
+    // Duck Detector reads a positive A-B median in its App Zygote as Danger; the hook may not
+    // push A-B up over the stock path (it did by 110-260 ns before 2026-10-23).
+    if let Some(crate::zygote_timing::Verdict::Shifted(cpus)) = s
+        .zygote_timing
+        .as_ref()
+        .map(crate::zygote_timing::Reading::verdict)
+    {
+        push(
+            &mut out,
+            "selinuxZygoteTiming",
+            Level::Leak,
+            crate::zygote_timing::Reading::describe(&cpus),
+            None,
+        );
+    }
+
     // Like Duck Detector: the USB function in use (sys.usb.state, not the sys.usb.config asked
     // for, which ZUI leaves at `adb` after debugging is turned off), USB debugging kept on
     // (persist.sys.usb.config, Duck's System Properties), and a running adbd, which wireless
@@ -706,6 +725,17 @@ pub fn stats(s: &Snapshot) -> Value {
             use crate::avc_lookup::Reading;
             stats["avcLookupsA"] = json!(Reading::rate_percent(&reading.a, reading.writes));
             stats["avcLookupsB"] = json!(Reading::rate_percent(&reading.b, reading.writes));
+        }
+    }
+    // zygoteTiming: 1 when the timing reached a verdict, 0 when it did not; with a clean one,
+    // the largest shift the hook added to A-B, ns, rounded (0 when the hook made A relatively
+    // faster on every CPU: the page says "adds N ns").
+    if let Some(reading) = &s.zygote_timing {
+        use crate::zygote_timing::Verdict;
+        let verdict = reading.verdict();
+        stats["zygoteTiming"] = json!(i32::from(verdict != Verdict::Inconclusive));
+        if let Verdict::Clean(worst) = verdict {
+            stats["zygoteTimingShiftNs"] = json!(worst.round().max(0.0) as i64);
         }
     }
     stats
@@ -862,13 +892,14 @@ mod device {
         let first = adbd();
         let bootconfig = std::fs::read_to_string("/proc/bootconfig").unwrap_or_default();
         let cmdline = std::fs::read_to_string("/proc/cmdline").unwrap_or_default();
+        let selinux_hide = feature(FeatureId::SelinuxHide);
         let mut snapshot = Snapshot {
             props: resetprop::list_props().unwrap_or_default(),
             hide_bootloader: hide_bootloader::is_enabled(),
             boot_args: hide_bootloader::parse_boot_args(&bootconfig, &cmdline),
             mountinfo: super::read_text("/proc/1/mountinfo").unwrap_or_default(),
             kernel_umount: feature(FeatureId::KernelUmount),
-            selinux_hide: feature(FeatureId::SelinuxHide),
+            selinux_hide,
             app_maps: mapped(&pids(is_app_uid), &rules.map_markers),
             modules: crate::module::enabled_module_ids(),
             existing: rules
@@ -882,6 +913,13 @@ mod device {
                 .map(|v| v.trim() != "0"),
             avc_lookup: crate::avc_lookup::device::collect()
                 .and_then(|report| crate::avc_lookup::Reading::from_json(&report)),
+            // the hook it times is only there while hiding runs
+            zygote_timing: if selinux_hide == Some(true) {
+                crate::zygote_timing::device::collect()
+                    .and_then(|report| crate::zygote_timing::Reading::from_json(&report))
+            } else {
+                None
+            },
             // after the AVC probe, which puts time between the two readings
             adbd: vec![first, adbd()],
             adbd_files: Vec::new(),
@@ -1521,6 +1559,50 @@ mod tests {
         });
         assert!(audit(&s).is_empty());
         assert_eq!(stats(&s)["avcLookup"], 0);
+    }
+
+    #[test]
+    fn a_hook_that_shifts_zygote_timing_is_a_leak() {
+        use crate::zygote_timing::{CpuSample, Reading};
+        let reading = |shift: f64, quads: [f64; 4]| Reading {
+            state: "collected".to_owned(),
+            cpus: vec![CpuSample {
+                cpu: 4,
+                stock_ns: 50.0,
+                hook_ns: 50.0 + shift,
+                quads: quads.to_vec(),
+            }],
+        };
+        let mut s = snapshot();
+        assert!(stats(&s).get("zygoteTiming").is_none());
+
+        // what the fixed hook adds on a TB323FU
+        s.zygote_timing = Some(reading(12.4, [10.0, 14.0, 12.0, 13.6]));
+        assert!(audit(&s).is_empty());
+        assert_eq!(stats(&s)["zygoteTiming"], 1);
+        assert_eq!(stats(&s)["zygoteTimingShiftNs"], 12);
+        // A relatively faster through the hook: clean, and shown as nothing added
+        s.zygote_timing = Some(reading(-18.0, [-20.0, -16.0, -18.0, -18.0]));
+        assert!(audit(&s).is_empty());
+        assert_eq!(stats(&s)["zygoteTimingShiftNs"], 0);
+
+        // the hook before 2026-10-23
+        s.zygote_timing = Some(reading(180.0, [170.0, 190.0, 175.0, 185.0]));
+        let found = audit(&s);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].id, "selinuxZygoteTiming");
+        assert_eq!(found[0].level, Level::Leak);
+        assert_eq!(
+            found[0].items,
+            ["CPU 4: A-B +180 ns over stock (limit 50 ns)"]
+        );
+        assert_eq!(stats(&s)["zygoteTiming"], 1);
+        assert!(stats(&s).get("zygoteTimingShiftNs").is_none());
+
+        // over the limit in two quads only: no verdict, no finding, not passed
+        s.zygote_timing = Some(reading(100.0, [200.0, 200.0, 0.0, 0.0]));
+        assert!(audit(&s).is_empty());
+        assert_eq!(stats(&s)["zygoteTiming"], 0);
     }
 
     #[test]

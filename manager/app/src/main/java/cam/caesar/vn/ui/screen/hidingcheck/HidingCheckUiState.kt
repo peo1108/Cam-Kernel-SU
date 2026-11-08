@@ -17,9 +17,12 @@ data class CheckedFinding(
     val newItems: Set<String>,
 )
 
-/** A check that ran and found nothing; [rootCount] is what camd saw for comparison, when it counts. */
+/**
+ * A check that ran and found nothing; [rootCount] is what camd saw for comparison, when it counts,
+ * and [shiftNs] what the SELinux hide hook adds to Duck's App Zygote timing.
+ */
 @Immutable
-data class PassedCheck(val id: String, val rootCount: Int? = null)
+data class PassedCheck(val id: String, val rootCount: Int? = null, val shiftNs: Int? = null)
 
 /** A KernelSU feature or camd setting the page can switch, as the audit names it in [HidingAudit.Finding.fix]. */
 @Immutable
@@ -166,10 +169,15 @@ data class HidingCheckUiState(
                 if (stats["appNative"] == 1) add("appHooked")
                 if (stats["appAttrTiming"] == 1) add("appAttrTiming")
                 if (stats["avcLookup"] == 1) add("selinuxAvcLookups")
+                if (stats["zygoteTiming"] == 1) add("selinuxZygoteTiming")
                 if (stats["profileChecked"] == 1 && "defaultProfileUmount" !in found) add("profileUmount")
             }.distinct()
             return ran.filter { it !in found }.map { id ->
-                PassedCheck(id, if (id == "appMounts") stats["rootModuleMounts"] else null)
+                PassedCheck(
+                    id,
+                    rootCount = if (id == "appMounts") stats["rootModuleMounts"] else null,
+                    shiftNs = if (id == "selinuxZygoteTiming") stats["zygoteTimingShiftNs"] else null,
+                )
             }
         }
     }

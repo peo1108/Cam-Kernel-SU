@@ -83,6 +83,17 @@ class HidingCheckCompareTest {
     }
 
     @Test
+    fun zygoteTimingPassesWithTheShift() {
+        val ran = audit().copy(stats = mapOf("zygoteTiming" to 1, "zygoteTimingShiftNs" to 12))
+        assertEquals(listOf(PassedCheck("selinuxZygoteTiming", shiftNs = 12)), HidingCheckUiState.passed(ran, emptySet()))
+        // no verdict (noisy CPU), or the hook shifted A-B: not passed
+        assertEquals(emptyList<PassedCheck>(), HidingCheckUiState.passed(audit().copy(stats = mapOf("zygoteTiming" to 0)), emptySet()))
+        val shifted = audit(finding("selinuxZygoteTiming", "CPU 0: A-B +180 ns over stock (limit 50 ns)"))
+            .copy(stats = mapOf("zygoteTiming" to 1))
+        assertEquals(emptyList<PassedCheck>(), HidingCheckUiState.passed(shifted, emptySet()))
+    }
+
+    @Test
     fun mergedAuditsKeepEveryStat() {
         val merged = audit(finding("maps", "a")).copy(stats = mapOf("rootModuleMounts" to 2)) +
                 audit().copy(stats = mapOf("appView" to 1))

@@ -34,6 +34,7 @@ fun findingTitleRes(id: String): Int? = when (id) {
     "appHooked" -> R.string.audit_app_hooked
     "appAttrTiming" -> R.string.audit_app_attr_timing
     "selinuxAvcLookups" -> R.string.audit_selinux_avc_lookups
+    "selinuxZygoteTiming" -> R.string.audit_selinux_zygote_timing
     "profileUmount" -> R.string.audit_profile_umount
     "defaultProfileUmount" -> R.string.audit_default_profile_umount
     else -> null
@@ -47,6 +48,7 @@ internal fun fixLabel(finding: HidingAudit.Finding, fixOn: Boolean): Int = when 
     finding.id == "appHooked" -> R.string.hiding_fix_hooked
     finding.id == "appAttrTiming" -> R.string.hiding_fix_attr_timing
     finding.id == "selinuxAvcLookups" -> R.string.hiding_fix_avc_lookups
+    finding.id == "selinuxZygoteTiming" -> R.string.hiding_fix_zygote_timing
     finding.fix == null -> adviceRes(finding) ?: R.string.audit_fix_none
     else -> fixLabel(finding.fix)
 }
@@ -88,6 +90,7 @@ internal fun passedTitle(id: String): Int = when (id) {
     "appHooked" -> R.string.hiding_ok_app_hooked
     "appAttrTiming" -> R.string.hiding_ok_app_attr_timing
     "selinuxAvcLookups" -> R.string.hiding_ok_selinux_avc_lookups
+    "selinuxZygoteTiming" -> R.string.hiding_ok_selinux_zygote_timing
     else -> R.string.hiding_ok_profile_umount
 }
 

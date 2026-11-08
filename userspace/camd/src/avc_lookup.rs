@@ -258,11 +258,11 @@ pub mod device {
     /// A normal run takes well under a second; slow cores and a hooked handler get headroom.
     const DEADLINE: Duration = Duration::from_secs(3);
 
-    fn errno() -> i32 {
+    pub fn errno() -> i32 {
         std::io::Error::last_os_error().raw_os_error().unwrap_or(0)
     }
 
-    fn read_text(path: &str) -> Result<String, i32> {
+    pub fn read_text(path: &str) -> Result<String, i32> {
         let mut text = String::new();
         File::open(path)
             .and_then(|mut f| f.read_to_string(&mut text))
@@ -271,7 +271,7 @@ pub mod device {
     }
 
     /// The calling thread's context, without selinux_getprocattr's trailing NUL or newline.
-    fn read_identity() -> Result<String, i32> {
+    pub fn read_identity() -> Result<String, i32> {
         let text = read_text(ATTR)?;
         let context = text.trim_end_matches(['\n', '\0']).to_owned();
         if context.is_empty() {
@@ -282,7 +282,7 @@ pub mod device {
     }
 
     /// AOSP seapp_contexts gives app_zygote MLS categories from the app uid; accept them.
-    fn is_carrier(context: &str) -> bool {
+    pub fn is_carrier(context: &str) -> bool {
         context.strip_prefix(CARRIER).is_some_and(|rest| {
             rest.is_empty()
                 || rest

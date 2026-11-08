@@ -42,6 +42,13 @@ data class HidingRules(
         .toString()
 
     companion object {
+        /**
+         * [duckPending] names this app runs itself. The rules keep listing them for older apps,
+         * which share the signed file and do not run them (camd's App Zygote timing,
+         * docs/CAM_CHANGES.md row 101).
+         */
+        val PORTED = setOf("App Zygote attr/current timing")
+
         fun parse(json: String): HidingRules? = runCatching {
             val obj = JSONObject(json)
             val props = obj.getJSONObject("safeProps")
@@ -54,7 +61,7 @@ data class HidingRules(
                 mapMarkers = strings(obj.getJSONArray("mapMarkers")).map(String::lowercase),
                 suPaths = strings(obj.getJSONArray("suPaths")),
                 safeProps = props.keys().asSequence().associateWith { props.getString(it) },
-                duckPending = obj.optJSONArray("duckPending")?.let(::strings).orEmpty(),
+                duckPending = obj.optJSONArray("duckPending")?.let(::strings).orEmpty().filter { it !in PORTED },
                 moduleRisks = ModuleRisk.parseList(obj.optJSONArray("moduleRisks")),
                 duckDetectorAt = obj.optString("duckDetectorAt"),
             )

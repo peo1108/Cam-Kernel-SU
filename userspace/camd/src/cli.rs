@@ -257,6 +257,14 @@ enum Debug {
         #[arg(long, hide = true)]
         child: bool,
     },
+
+    /// Time Duck Detector's App Zygote attr/current payloads through the SELinux hide hook and
+    /// past it, and say whether the hook shifts A-B
+    ZygoteTiming {
+        /// Run the timing in this process (it becomes app_zygote; camd starts it itself)
+        #[arg(long, hide = true)]
+        child: bool,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -890,6 +898,14 @@ pub fn run() -> Result<()> {
                     crate::avc_lookup::device::child();
                 } else {
                     crate::avc_lookup::device::run();
+                }
+                Ok(())
+            }
+            Debug::ZygoteTiming { child } => {
+                if child {
+                    crate::zygote_timing::device::child();
+                } else {
+                    crate::zygote_timing::device::run();
                 }
                 Ok(())
             }

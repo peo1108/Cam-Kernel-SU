@@ -174,7 +174,8 @@ fun HidingCheckScreenMiuix(
                             state.passed.forEach { check ->
                                 BasicComponent(
                                     title = stringResource(passedTitle(check.id)),
-                                    summary = check.rootCount?.takeIf { it > 0 }?.let { stringResource(R.string.hiding_ok_root_count, it) },
+                                    summary = check.rootCount?.takeIf { it > 0 }?.let { stringResource(R.string.hiding_ok_root_count, it) }
+                                        ?: check.shiftNs?.let { stringResource(R.string.hiding_ok_zygote_timing_shift, it) },
                                     startAction = { RowIcon(Icons.Rounded.CheckCircle, colorScheme.primary) },
                                 )
                             }

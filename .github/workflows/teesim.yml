@@ -59,14 +59,21 @@ jobs:
 
       - name: Check the artifacts are the expected ELF
         run: |
+          set -euo pipefail
+          declare -A MACH=( [arm64-v8a]="AArch64" [x86_64]="X86-64" )
           for abi in arm64-v8a x86_64; do
             for f in inject libteesim_keymint.so; do
-              test -f "native/teesim/out/$abi/$f" || { echo "missing $abi/$f" >&2; exit 1; }
-              file "native/teesim/out/$abi/$f"
+              p="native/teesim/out/$abi/$f"
+              test -f "$p" || { echo "missing $p" >&2; exit 1; }
+              # The artifact's ELF machine must match its ABI dir (a wrong-arch .so crash-loops keystore2).
+              readelf -h "$p" | grep -q "Machine:.*${MACH[$abi]}" \
+                || { echo "FAIL: $p is not ${MACH[$abi]}"; readelf -h "$p" | grep Machine; exit 1; }
             done
+            # The interceptor must export exactly `entry` (the exports.map hides everything else).
+            readelf --dyn-syms "native/teesim/out/$abi/libteesim_keymint.so" | grep -qw entry \
+              || { echo "FAIL: $abi libteesim_keymint.so does not export entry"; exit 1; }
           done
-          # The interceptor must export exactly `entry` (the exports.map hides the rest).
-          readelf --dyn-syms native/teesim/out/arm64-v8a/libteesim_keymint.so | grep -qw entry
+          echo "all teesim artifacts verified"
 
       - name: Upload teesim native artifacts
         uses: actions/upload-artifact@v7

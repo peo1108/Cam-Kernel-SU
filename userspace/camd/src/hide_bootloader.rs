@@ -122,9 +122,15 @@ mod android {
 
     /// Rewrite the properties that give the bootloader away, when the feature is on.
     pub fn apply_if_enabled() {
-        if !is_enabled() {
-            return;
+        if is_enabled() {
+            apply();
         }
+    }
+
+    /// Rewrite the revealing properties now, regardless of the flag. Used by `apply_if_enabled` and by
+    /// the attestation feature: its attested locked/Verified root of trust must agree with the live
+    /// props a detector also reads. A no-op on a genuinely locked device (nothing to rewrite).
+    pub fn apply() {
         let props = match resetprop::list_props() {
             Ok(props) => props,
             Err(e) => {

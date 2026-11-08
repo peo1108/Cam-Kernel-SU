@@ -189,6 +189,9 @@ mod android {
         let decision = startup_decision(is_enabled(), Path::new(defs::ATTEST_PUSH).exists());
         if decision == Started::Running {
             apply_attest_sepolicy();
+            // The attested locked/Verified root of trust must agree with the live bootloader props a
+            // detector also reads; a no-op on a genuinely locked device (Cam's EFISP targets).
+            crate::hide_bootloader::apply();
             let spawned = spawn_daemon();
             if let Err(e) = spawned {
                 warn!("attest: could not start daemon: {e:#}");

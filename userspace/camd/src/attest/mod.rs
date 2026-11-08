@@ -7,6 +7,8 @@
 //!
 //! Pure, host-testable helpers live at module top level; the Android runtime is in `mod android`.
 
+mod control;
+
 use std::io;
 use std::path::Path;
 
@@ -29,9 +31,11 @@ fn write_flag(flag: &Path, enabled: bool) -> io::Result<()> {
 
 #[cfg(target_os = "android")]
 mod android {
+    use super::control::{self, ControlClient};
     use super::{flag_is_set, write_flag};
     use crate::defs;
     use anyhow::Result;
+    use log::info;
     use std::path::Path;
 
     /// Whether the attestation feature is enabled (the flag file is present).
@@ -48,6 +52,43 @@ mod android {
     /// Print the feature's state as JSON (the inject/push status is added in M2-4).
     pub fn status() {
         println!("{}", serde_json::json!({ "enabled": is_enabled() }));
+    }
+
+    /// Connect to the interceptor and push one resolved config, then print the ack as JSON. `file`
+    /// defaults to [`defs::ATTEST_PUSH`]. This is the manual path M2-5 uses to drive a hand-built
+    /// push on device; the boot-time background loop (M2-4) does the same thing automatically.
+    pub fn push_once(epoch: u64, file: Option<&Path>) -> Result<()> {
+        let path = file.unwrap_or_else(|| Path::new(defs::ATTEST_PUSH));
+        let config = control::load_push_with_epoch(path, epoch)?;
+        let (mut client, hello) = ControlClient::connect(Path::new(defs::TEESIM_CTL))?;
+        info!(
+            "attest: connected hook={} api={} keystorePid={}",
+            hello.hook, hello.android_api, hello.keystore_pid
+        );
+        let ack = client.push(&config)?;
+        info!(
+            "attest: ack epoch={} ok={} applied={} failed={}",
+            ack.epoch, ack.ok, ack.profiles_applied, ack.profiles_failed
+        );
+        println!(
+            "{}",
+            serde_json::json!({
+                "ok": ack.ok,
+                "epoch": ack.epoch,
+                "profilesApplied": ack.profiles_applied,
+                "profilesFailed": ack.profiles_failed,
+            })
+        );
+        Ok(())
+    }
+
+    /// Ping the interceptor's control socket and print the echoed epoch — a liveness probe.
+    pub fn ping_once(epoch: u64) -> Result<()> {
+        let (mut client, hello) = ControlClient::connect(Path::new(defs::TEESIM_CTL))?;
+        info!("attest: connected hook={}", hello.hook);
+        let pong = client.ping(epoch)?;
+        println!("{}", serde_json::json!({ "pong": pong }));
+        Ok(())
     }
 }
 

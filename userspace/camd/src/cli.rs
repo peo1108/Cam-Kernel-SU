@@ -343,6 +343,22 @@ enum Attest {
 
     /// Turn it off
     Disable,
+
+    /// Connect to the interceptor and push the resolved config (default: the cached push.json)
+    Push {
+        /// Epoch to stamp the push with (monotonic; higher wins)
+        #[arg(long, default_value_t = 0)]
+        epoch: u64,
+        /// Push this file instead of the cached one
+        #[arg(long)]
+        file: Option<std::path::PathBuf>,
+    },
+
+    /// Ping the interceptor's control socket and print the echoed epoch
+    Ping {
+        #[arg(long, default_value_t = 0)]
+        epoch: u64,
+    },
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -689,6 +705,8 @@ pub fn run() -> Result<()> {
             }
             Attest::Enable => crate::attest::set_enabled(true),
             Attest::Disable => crate::attest::set_enabled(false),
+            Attest::Push { epoch, file } => crate::attest::push_once(epoch, file.as_deref()),
+            Attest::Ping { epoch } => crate::attest::ping_once(epoch),
         },
         Commands::BootGuard { command } => match command {
             BootGuard::Status => module::boot_guard_status(),

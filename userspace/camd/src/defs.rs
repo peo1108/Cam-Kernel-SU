@@ -21,10 +21,15 @@ mod android {
     pub const SERVICES_STARTED_PATH: &str = concatcp!(WORKING_DIR, ".services_started");
     pub const HIDE_BOOTLOADER_FLAG: &str = concatcp!(WORKING_DIR, ".hide_bootloader");
 
-    // keystore2 attestation (tier 2): the enable flag. The data dir, cached harvest / resolved push,
-    // vendored interceptor artifacts and control-socket path are added where first consumed (M2-2..4).
-    // See docs/superpowers/specs/2026-11-08-attestation-keystore2-design.md.
+    // keystore2 attestation (tier 2). Flag + the Manager-written resolved push, and the native
+    // control socket the interceptor binds inside keystore2's own 0700 data dir (bit-exact with
+    // native/teesim's common/control.cpp). The harvest cache and interceptor artifact paths are
+    // added where first consumed (M2-3..4). See
+    // docs/superpowers/specs/2026-11-08-attestation-keystore2-design.md.
     pub const ATTEST_FLAG: &str = concatcp!(WORKING_DIR, ".attest_sim");
+    pub const ATTEST_DIR: &str = concatcp!(WORKING_DIR, "attest/");
+    pub const ATTEST_PUSH: &str = concatcp!(ATTEST_DIR, "push.json");
+    pub const TEESIM_CTL: &str = "/data/misc/keystore/.teesim-ctl";
     /// the installed copy of a module, kept when an update replaces it
     pub const MODULE_BACKUP_DIR: &str = concatcp!(WORKING_DIR, "module_backup/");
 

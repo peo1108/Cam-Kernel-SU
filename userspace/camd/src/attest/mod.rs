@@ -90,6 +90,18 @@ const fn backoff_secs(failures: u32) -> u64 {
     if failures > 3 { 30 } else { 2 }
 }
 
+/// The SELinux rules the interceptor needs, applied live when the feature starts. The first — keystore
+/// reading the injected `.so` from /data/adb — is the one M2-5 proved strictly required on Android 16;
+/// the rest cover the staging fallback and the control-socket bind for stricter devices. Best-effort:
+/// a device that already allows one just no-ops it.
+const ATTEST_SEPOLICY: &[&str] = &[
+    "allow keystore adb_data_file file { read open getattr map execute }",
+    "allow keystore shell_data_file dir { search read open getattr }",
+    "allow keystore shell_data_file file { read open getattr map execute }",
+    "allow keystore keystore_data_file sock_file { create bind unlink read write open getattr setattr }",
+    "allow keystore self unix_stream_socket { create bind listen accept getopt setopt read write shutdown }",
+];
+
 #[cfg(target_os = "android")]
 mod android {
     use super::control::{self, ControlClient};
@@ -176,12 +188,23 @@ mod android {
     pub fn start() -> Started {
         let decision = startup_decision(is_enabled(), Path::new(defs::ATTEST_PUSH).exists());
         if decision == Started::Running {
+            apply_attest_sepolicy();
             let spawned = spawn_daemon();
             if let Err(e) = spawned {
                 warn!("attest: could not start daemon: {e:#}");
             }
         }
         decision
+    }
+
+    /// Apply the interceptor's SELinux rules live (best-effort), so the daemon can inject the
+    /// interceptor and keystore can read it — persisted across reboots because `start` runs each boot.
+    fn apply_attest_sepolicy() {
+        for rule in super::ATTEST_SEPOLICY {
+            if let Err(e) = crate::sepolicy::live_patch(rule) {
+                warn!("attest: sepolicy '{rule}' failed: {e:#}");
+            }
+        }
     }
 
     /// Fork into the background and exec a resident `attest daemon` process (mirrors `spawn_sulogd`).
@@ -339,6 +362,16 @@ mod tests {
         assert_eq!(backoff_secs(0), 2);
         assert_eq!(backoff_secs(3), 2);
         assert_eq!(backoff_secs(4), 30);
+    }
+
+    #[test]
+    fn sepolicy_rules_let_keystore_read_the_interceptor() {
+        // The one rule M2-5 proved strictly required on Android 16.
+        assert!(super::ATTEST_SEPOLICY.iter().any(|r| {
+            r.contains("allow keystore adb_data_file file")
+                && r.contains("read")
+                && r.contains("execute")
+        }));
     }
 
     #[test]

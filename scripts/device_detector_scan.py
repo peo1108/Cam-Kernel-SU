@@ -44,6 +44,8 @@ class Detector:
     max_wait: int = 90
     # lines that change on every scan and say nothing (times, build stamps)
     noise: list[str] = field(default_factory=list)
+    # a card matching one of these means the scan is still running, however still the screen is
+    busy: list[str] = field(default_factory=list)
 
 
 # Every line matching one of these is left out of a card, for every detector.
@@ -59,9 +61,18 @@ DETECTORS = [
         "Duck Detector",
         package="com.eltavine.duckdetector",
         noise=[r"^Tap to export full report$", r"^Chạm để xuất báo cáo", r"^\d{4}\.\d{2}\.\d{2}-[0-9a-f]+"],
+        busy=[r"\b[1-9]\d* \| Pending\b"],  # the summary counts probes not finished yet
     ),
-    Detector("luna", "Luna", package_pattern=r"(?i)luna", min_wait=45, max_wait=120),
-    Detector("chunqiu", "Chunqiu Native Check", package_pattern=r"(?i)chunqiu|nativecheck|native\.check|eros"),
+    Detector("luna", "Luna", package_pattern=r"(?i)luna", min_wait=45, max_wait=120, noise=[r"^Luna [\d.]+$"]),
+    Detector(
+        "chunqiu",
+        "Chunqiu Native Check",
+        package_pattern=r"(?i)chunqiu|nativecheck|native\.check|eros",
+        noise=[r"^\d+(\.\d+){1,3}$"],  # its version in the header
+        # after the local checks it verifies online for a while, with the screen still
+        busy=[r"(?i)verifying online", r"(?i)^local checks complete"],
+        max_wait=150,
+    ),
 ]
 
 # Buttons that close an update or permission prompt without changing anything.
@@ -88,14 +99,39 @@ def _noisy(line: str, noise: list[str]) -> bool:
 
 def cards(xml: str, noise: list[str] | None = None) -> list[str]:
     """The cards on one screen, top to bottom: the text of each clickable block (without the text
-    of clickable blocks inside it) joined by " | ". Blocks cut by the edge of the scrolling area
-    are left out: they come back whole after a scroll."""
+    of clickable blocks inside it) joined by " | ", and the texts no clickable block holds,
+    joined per parent: Luna's verdict ("Trust Phone | 8/8") and Duck's counts ("0 | Danger | 2 |
+    Warning | ...") are plain text side by side, and a count means nothing apart from its label.
+    Blocks cut by the edge of the scrolling area are left out: they come back whole after a
+    scroll."""
     noise = noise or []
     root = ET.fromstring(xml)
     scrollers = [b for n in root.iter("node") if n.get("scrollable") == "true" and (b := _bounds(n))]
     area = max(scrollers, key=lambda b: (b[2] - b[0]) * (b[3] - b[1])) if scrollers else None
 
+    def cut(b: tuple[int, int, int, int]) -> bool:
+        # empty, or cut by the scrolling area's edge (or outside it: toolbars, the navigation bar)
+        if b[2] <= b[0] or b[3] <= b[1]:
+            return True
+        return bool(area and (b[1] < area[1] or b[3] > area[3] or b[1] == area[1] or b[3] == area[3]))
+
     found: list[tuple[int, int, str]] = []
+
+    def loose(parent: ET.Element) -> None:
+        # clickable blocks are cards of their own (below), with every text inside them
+        children = [c for c in parent if c.get("clickable") != "true"]
+        group = []
+        for child in children:
+            label, b = _label(child), _bounds(child)
+            if label and b and not cut(b) and not _noisy(label, noise):
+                group.append((b, label))
+        if group:
+            first = group[0][0]
+            found.append((first[1], first[0], " | ".join(label for _, label in group)))
+        for child in children:
+            loose(child)
+
+    loose(root)
 
     def texts(node: ET.Element) -> list[str]:
         out = []
@@ -112,15 +148,17 @@ def cards(xml: str, noise: list[str] | None = None) -> list[str]:
         if node.get("clickable") != "true":
             continue
         b = _bounds(node)
-        if not b or b[2] <= b[0] or b[3] <= b[1]:
-            continue
-        if area and (b[1] < area[1] or b[3] > area[3] or b[1] == area[1] or b[3] == area[3]):
-            # cut by the scrolling area's edge (or outside it: toolbars, the navigation bar)
+        if not b or cut(b):
             continue
         lines = [t for t in texts(node) if not _noisy(t, noise)]
         if lines:
             found.append((b[1], b[0], " | ".join(lines)))
     return [text for _, _, text in sorted(found)]
+
+
+def busy(screen: list[str], patterns: list[str]) -> bool:
+    """Whether a card says the scan is still running."""
+    return any(re.search(p, card) for p in patterns for card in screen)
 
 
 def merge(seen: list[str], screen: list[str]) -> list[str]:
@@ -205,7 +243,7 @@ def scan(dev: Device, d: Detector, package: str) -> list[str]:
     dev.sh(f"monkey -p {package} -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1")
     start = time.time()
     time.sleep(d.min_wait)
-    # settled: the same cards twice in a row
+    # settled: the same cards twice in a row, none of them saying the scan still runs
     last: list[str] | None = None
     while time.time() - start < d.max_wait:
         xml = dev.screen()
@@ -216,7 +254,7 @@ def scan(dev: Device, d: Detector, package: str) -> list[str]:
             now = cards(xml, d.noise)
         except ET.ParseError:
             now = []
-        if now and now == last:
+        if now and now == last and not busy(now, d.busy):
             break
         last = now
         time.sleep(3)

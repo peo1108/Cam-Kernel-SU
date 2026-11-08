@@ -1,0 +1,59 @@
+{
+  "duck": {
+    "package": "com.eltavine.duckdetector",
+    "version": "2026.11.07-d60597cac452",
+    "saved": "2026-11-08",
+    "cards": [
+      "ALPHA",
+      "Telegram",
+      "Duck Detector",
+      "Trang chủ | Trang chủ",
+      "Warning | Review ADB Runtime and System Properties next.",
+      "Cài đặt | Cài đặt",
+      "0 | Danger | 2 | Warning | 20 | Ready | 0 | Pending",
+      "ADB Runtime | Medium | ADB enabled | ADB is enabled or runtime activity was observed; no persistent hard runtime contradiction was confirmed.",
+      "System Properties | Medium | 1 property signal(s) need review | Cross-source drift, cross-property drift, or raw property-area residue suggests a review-worthy build or boot context, even if not every warning means active compromise.",
+      "ADB Runtime | ADB enabled | Warning"
+    ]
+  },
+  "luna": {
+    "package": "luna.safe.luna",
+    "version": "1.4.4.6",
+    "saved": "2026-11-08",
+    "cards": [
+      "Thanks",
+      "GitHub",
+      "Trust Phone | 8/8 ******** | Thanks"
+    ]
+  },
+  "chunqiu": {
+    "package": "com.chunqiunativecheck",
+    "version": "4.6.2",
+    "saved": "2026-11-08",
+    "cards": [
+      "Chunqiu Native Check-Eros",
+      "Switch to light mode",
+      "Re-scan",
+      "About",
+      "Notices",
+      "System compromised",
+      "The following detection items are abnormal; please verify environment integrity.",
+      "Detected Issues (1)",
+      "USB debugging enabled | Tap the title to view details | ANOMALY",
+      "System :",
+      "Device | LENOVO TB323FU",
+      "Android Version | 16",
+      "Kernel Version | 6.12.30-android16-5-g1750f757fabe-ab13938768-4k",
+      "Security Level | L1",
+      "Security patch",
+      "Updates & Help",
+      "Channels",
+      "QQ Group",
+      "Info | Disclaimer & Inspection Notice | Results are for reference only and do not represent any official third-party security certification. Banks, financial and game clients each use their own risk fingerprints and kernel-level countermeasures.",
+      "Key Info",
+      "Online Check",
+      "Settings",
+      "Home"
+    ]
+  }
+}

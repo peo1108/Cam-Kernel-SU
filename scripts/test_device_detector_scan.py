@@ -75,11 +75,51 @@ class CardsTest(unittest.TestCase):
         xml = "<hierarchy>" + node("[0,0][100,100]", "OK", clickable=True) + "</hierarchy>"
         self.assertEqual(scan.cards(xml), ["OK"])
 
+    def test_text_outside_clickable_blocks_is_a_card_per_parent(self):
+        # Luna 1.4.4.6 on a TB323FU: the verdict is plain text, only "Thanks" and "GitHub" are buttons
+        luna = "<hierarchy>" + node(
+            "[0,0][3040,1904]",
+            children=node(
+                "[0,91][3040,241]",
+                children=node("[56,134][270,197]", "Luna 1.4.4.6")
+                + node("[2797,110][2909,222]", "Thanks", clickable=True)
+                + node("[2909,110][3021,222]", "GitHub", clickable=True),
+            )
+            + node(
+                "[0,150][3040,1904]",
+                children=node("[1146,360][1894,533]", "Trust Phone")
+                + node("[1452,542][1588,623]", "8/8&#10;********")
+                + node("[1168,903][1872,1151]", "* LENOVO | Android 16&#10;Detection time: 2026/11/08 16:36")
+                + node("[1438,1193][1602,1257]", "Thanks"),
+            ),
+        ) + "</hierarchy>"
+        cards = scan.cards(luna, scan.DETECTORS[1].noise)
+        self.assertEqual(cards, ["Thanks", "GitHub", "Trust Phone | 8/8 ******** | Thanks"])
+        # Duck's counts stay next to their labels: swapped counts are a different card
+        tiles = "<hierarchy>" + node(
+            "[0,0][3040,1904]",
+            children=node("[345,879][869,911]", "Scanned at 2026-11-08 16:43:39 · Total time 14s")
+            + "".join(node(f"[{x},973][{x + 40},1070]", t) for x, t in [(600, "0"), (700, "Danger"), (1280, "2"), (1360, "Warning")]),
+        ) + "</hierarchy>"
+        self.assertEqual(scan.cards(tiles), ["0 | Danger | 2 | Warning"])
+        # text inside a clickable block stays in that block's card only
+        self.assertNotIn("Bootloader", scan.cards(SCREEN, scan.DETECTORS[0].noise))
+
     def test_common_noise(self):
         for line in ["Scanned 18:23", "2026-11-07", "Total time 14s", "Thời gian 3 giây", "耗时 2 秒", "12.5 ms"]:
             self.assertTrue(scan._noisy(line, []), line)
         for line in ["6 critical boot integrity signal(s)", "Trust Phone 8/8", "Found property(1)"]:
             self.assertFalse(scan._noisy(line, []), line)
+
+
+class BusyTest(unittest.TestCase):
+    def test_running_scans_are_not_settled(self):
+        duck, _, chunqiu = scan.DETECTORS
+        self.assertTrue(scan.busy(["0 | Danger | 2 | Warning | 18 | Ready | 2 | Pending"], duck.busy))
+        self.assertFalse(scan.busy(["0 | Danger | 2 | Warning | 20 | Ready | 0 | Pending"], duck.busy))
+        self.assertTrue(scan.busy(["Local checks complete; verifying online | Completed 160 / 160"], chunqiu.busy))
+        self.assertFalse(scan.busy(["System compromised", "Online Check"], chunqiu.busy))
+        self.assertFalse(scan.busy(["anything"], []))
 
 
 class CompareTest(unittest.TestCase):

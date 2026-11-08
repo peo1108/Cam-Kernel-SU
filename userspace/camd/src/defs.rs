@@ -20,6 +20,11 @@ mod android {
     /// boot_id of the boot that last ran the service stage
     pub const SERVICES_STARTED_PATH: &str = concatcp!(WORKING_DIR, ".services_started");
     pub const HIDE_BOOTLOADER_FLAG: &str = concatcp!(WORKING_DIR, ".hide_bootloader");
+
+    // keystore2 attestation (tier 2): the enable flag. The data dir, cached harvest / resolved push,
+    // vendored interceptor artifacts and control-socket path are added where first consumed (M2-2..4).
+    // See docs/superpowers/specs/2026-11-08-attestation-keystore2-design.md.
+    pub const ATTEST_FLAG: &str = concatcp!(WORKING_DIR, ".attest_sim");
     /// the installed copy of a module, kept when an update replaces it
     pub const MODULE_BACKUP_DIR: &str = concatcp!(WORKING_DIR, "module_backup/");
 

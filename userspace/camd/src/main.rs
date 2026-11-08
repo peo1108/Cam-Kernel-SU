@@ -16,6 +16,7 @@ mod hidden;
 
 mod allow;
 mod assets;
+mod attest;
 mod avc_lookup;
 mod boot_evidence;
 mod boot_guard;

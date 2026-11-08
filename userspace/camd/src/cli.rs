@@ -141,6 +141,12 @@ enum Commands {
         command: HideBootloader,
     },
 
+    /// keystore2 attestation simulation (tier 2)
+    Attest {
+        #[command(subcommand)]
+        command: Attest,
+    },
+
     /// Check what non-root apps can still see, as JSON
     HidingAudit {
         /// Turn on every suggested fix (kernel umount, SELinux hide, hide bootloader)
@@ -324,6 +330,18 @@ enum HideBootloader {
     Enable,
 
     /// Turn it off; the original values come back on the next boot
+    Disable,
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Attest {
+    /// Print the feature's state as JSON
+    Status,
+
+    /// Turn the attestation simulation on (takes effect on the next boot/inject)
+    Enable,
+
+    /// Turn it off
     Disable,
 }
 
@@ -663,6 +681,14 @@ pub fn run() -> Result<()> {
             HideBootloader::Status => crate::hide_bootloader::status(),
             HideBootloader::Enable => crate::hide_bootloader::set_enabled(true),
             HideBootloader::Disable => crate::hide_bootloader::set_enabled(false),
+        },
+        Commands::Attest { command } => match command {
+            Attest::Status => {
+                crate::attest::status();
+                Ok(())
+            }
+            Attest::Enable => crate::attest::set_enabled(true),
+            Attest::Disable => crate::attest::set_enabled(false),
         },
         Commands::BootGuard { command } => match command {
             BootGuard::Status => module::boot_guard_status(),

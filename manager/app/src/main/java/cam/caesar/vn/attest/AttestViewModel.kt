@@ -57,7 +57,7 @@ class AttestViewModel : ViewModel() {
                 }
             }
             keyboxB64 = b64
-            _uiState.update { it.copy(keybox = state) }
+            _uiState.update { it.copy(keybox = state, message = null) }
         }
     }
 

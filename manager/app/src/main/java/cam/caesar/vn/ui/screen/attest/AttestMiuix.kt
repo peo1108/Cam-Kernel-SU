@@ -104,13 +104,77 @@ fun AttestScreenMiuix(state: AttestUiState, actions: AttestActions) {
                 ),
                 overscrollEffect = null,
             ) {
+                // What the feature does + the experimental warning, read before anything else.
                 item {
-                    SmallTitle(text = stringResource(R.string.attest_section_feature))
                     GlassCard(modifier = cardModifier) {
+                        BasicComponent(
+                            title = stringResource(R.string.attest_intro_title),
+                            summary = stringResource(R.string.attest_intro_body),
+                        )
+                        BasicComponent(
+                            title = stringResource(R.string.attest_warning_title),
+                            summary = stringResource(R.string.attest_warning_body),
+                        )
+                    }
+                }
+
+                // Step 1 — import and revocation-check the keybox.
+                item {
+                    SmallTitle(text = stringResource(R.string.attest_step_keybox))
+                    GlassCard(modifier = cardModifier) {
+                        BasicComponent(
+                            title = stringResource(R.string.attest_keybox),
+                            summary = keyboxSummary(state.keybox),
+                        )
+                        BasicComponent(summary = stringResource(R.string.attest_keybox_hint))
+                        TextButton(
+                            text = stringResource(R.string.attest_import_keybox),
+                            onClick = actions.onImportKeybox,
+                            modifier = buttonModifier,
+                        )
+                    }
+                }
+
+                // Step 2 — which apps attest with the keybox.
+                item {
+                    SmallTitle(text = stringResource(R.string.attest_step_targets))
+                    GlassCard(modifier = cardModifier) {
+                        state.packages.forEach { BasicComponent(title = it) }
+                        BasicComponent(summary = stringResource(R.string.attest_targets_summary))
+                    }
+                }
+
+                // Step 3 — write the config and deploy the interceptor.
+                item {
+                    SmallTitle(text = stringResource(R.string.attest_step_configure))
+                    GlassCard(modifier = cardModifier) {
+                        BasicComponent(summary = stringResource(R.string.attest_configure_hint))
+                        configureResult(state.message)?.let {
+                            BasicComponent(summary = stringResource(it))
+                        }
+                        TextButton(
+                            text = stringResource(
+                                if (state.busy) R.string.attest_configuring else R.string.attest_configure,
+                            ),
+                            enabled = !state.busy && keyboxUsable(state.keybox),
+                            onClick = actions.onConfigure,
+                            modifier = buttonModifier,
+                        )
+                    }
+                }
+
+                // Step 4 — the toggle, gated until a keybox is loaded and configured.
+                item {
+                    SmallTitle(text = stringResource(R.string.attest_step_enable))
+                    GlassCard(modifier = cardModifier) {
+                        val canToggle = state.canEnable || state.enabled
                         GlassSwitchPreference(
                             title = stringResource(R.string.attest_enable),
-                            summary = stringResource(R.string.attest_enable_summary),
+                            summary = stringResource(
+                                if (canToggle) R.string.attest_enable_summary else R.string.attest_enable_blocked,
+                            ),
                             checked = state.enabled,
+                            enabled = canToggle,
                             onCheckedChange = actions.onSetEnabled,
                         )
                         BasicComponent(
@@ -120,41 +184,7 @@ fun AttestScreenMiuix(state: AttestUiState, actions: AttestActions) {
                     }
                 }
 
-                item {
-                    SmallTitle(text = stringResource(R.string.attest_section_keybox))
-                    GlassCard(modifier = cardModifier) {
-                        BasicComponent(
-                            title = stringResource(R.string.attest_keybox),
-                            summary = keyboxSummary(state.keybox),
-                        )
-                        TextButton(
-                            text = stringResource(R.string.attest_import_keybox),
-                            onClick = actions.onImportKeybox,
-                            modifier = buttonModifier,
-                        )
-                    }
-                }
-
-                item {
-                    SmallTitle(text = stringResource(R.string.attest_section_targets))
-                    GlassCard(modifier = cardModifier) {
-                        state.packages.forEach { BasicComponent(title = it) }
-                    }
-                }
-
-                item {
-                    GlassCard(modifier = cardModifier) {
-                        TextButton(
-                            text = stringResource(
-                                if (state.busy) R.string.attest_configuring else R.string.attest_configure,
-                            ),
-                            enabled = !state.busy && state.keybox != KeyboxState.NONE,
-                            onClick = actions.onConfigure,
-                            modifier = buttonModifier,
-                        )
-                    }
-                }
-
+                // Step 5 — show what an attested key actually reports now.
                 item {
                     SmallTitle(text = stringResource(R.string.attest_section_check))
                     GlassCard(modifier = cardModifier) {
@@ -193,3 +223,14 @@ private fun keyboxSummary(keybox: KeyboxState): String = stringResource(
         KeyboxState.INVALID -> R.string.attest_keybox_invalid
     },
 )
+
+/** A keybox the user may configure with: valid, or revoked (their call, warned). Not NONE/INVALID. */
+private fun keyboxUsable(keybox: KeyboxState): Boolean =
+    keybox == KeyboxState.VALID || keybox == KeyboxState.REVOKED
+
+/** The string for the last configure outcome, or null when there is nothing to show. */
+private fun configureResult(message: String?): Int? = when (message) {
+    "ok" -> R.string.attest_result_ok
+    "fail" -> R.string.attest_result_fail
+    else -> null
+}

@@ -20,3 +20,8 @@ __pycache__
 cam-signing-keys-*.enc
 # brainstorming companion mockups (superpowers)
 /.superpowers/
+# vendored teesim native core build artifacts (the submodule's own .gitignore
+# already hides /out, /build and **/target; these are a safety net for when the
+# submodule is de-initialised and the path is treated as plain files)
+/native/teesim/out/
+/native/teesim/build/

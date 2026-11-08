@@ -1,0 +1,3 @@
+[submodule "native/teesim"]
+	path = native/teesim
+	url = https://github.com/JingMatrix/TEESimulator

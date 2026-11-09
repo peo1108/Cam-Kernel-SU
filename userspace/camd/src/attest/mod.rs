@@ -102,6 +102,69 @@ const ATTEST_SEPOLICY: &[&str] = &[
     "allow keystore self unix_stream_socket { create bind listen accept getopt setopt read write shutdown }",
 ];
 
+/// The `ro.boot.vbmeta.*` properties to force so the live bootloader values an app reads agree with
+/// the attested RootOfTrust in `push.json`: `public_key_digest` <- `bootInfo.verifiedBootKey`,
+/// `digest` <- `bootInfo.verifiedBootHash`. A detector that compares the key attestation against
+/// these properties (e.g. Duck) would otherwise catch a mismatch — most importantly a locked,
+/// Verified certificate whose `public_key_digest` property is empty/zero on an unlocked device.
+///
+/// Only a usable value (decodes to 32 bytes, not all zero) is emitted; a missing, malformed or
+/// all-zero field is skipped so we never write a degenerate property. Pure, so it is host-tested.
+fn boot_vbmeta_props(push_json: &str) -> Vec<(&'static str, String)> {
+    let mut out = Vec::new();
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(push_json) else {
+        return out;
+    };
+    let boot = &value["bootInfo"];
+    for (prop, field) in [
+        ("ro.boot.vbmeta.public_key_digest", "verifiedBootKey"),
+        ("ro.boot.vbmeta.digest", "verifiedBootHash"),
+    ] {
+        let Some(bytes) = boot
+            .get(field)
+            .and_then(|v| v.as_str())
+            .and_then(b64_decode)
+        else {
+            continue;
+        };
+        if bytes.len() == 32 && bytes.iter().any(|&b| b != 0) {
+            out.push((prop, base16ct::lower::encode_string(&bytes)));
+        }
+    }
+    out
+}
+
+/// Decode standard (RFC 4648) base64, ignoring padding and surrounding whitespace. Returns `None`
+/// on any non-alphabet byte. The `bootInfo` key/hash are base64 (written by the Manager's harvest),
+/// but the properties they map to are hex, so camd decodes then re-encodes as hex.
+fn b64_decode(s: &str) -> Option<Vec<u8>> {
+    fn sextet(c: u8) -> Option<u32> {
+        match c {
+            b'A'..=b'Z' => Some(u32::from(c - b'A')),
+            b'a'..=b'z' => Some(u32::from(c - b'a' + 26)),
+            b'0'..=b'9' => Some(u32::from(c - b'0' + 52)),
+            b'+' => Some(62),
+            b'/' => Some(63),
+            _ => None,
+        }
+    }
+    let mut out = Vec::new();
+    let mut buf = 0u32;
+    let mut bits = 0u32;
+    for &c in s.trim().as_bytes() {
+        if c == b'=' || c == b'\n' || c == b'\r' {
+            continue;
+        }
+        buf = (buf << 6) | sextet(c)?;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((buf >> bits) as u8);
+        }
+    }
+    Some(out)
+}
+
 #[cfg(target_os = "android")]
 mod android {
     use super::control::{self, ControlClient};
@@ -192,12 +255,39 @@ mod android {
             // The attested locked/Verified root of trust must agree with the live bootloader props a
             // detector also reads; a no-op on a genuinely locked device (Cam's EFISP targets).
             crate::hide_bootloader::apply();
+            // Then force ro.boot.vbmeta.public_key_digest and .digest to the exact verified-boot
+            // key/hash we attest (from push.json), so the key attestation and the live properties
+            // agree even on an unlocked device. Runs last so it wins over hide_bootloader's own
+            // independently computed digest.
+            apply_vbmeta_props();
             let spawned = spawn_daemon();
             if let Err(e) = spawned {
                 warn!("attest: could not start daemon: {e:#}");
             }
         }
         decision
+    }
+
+    /// Force ro.boot.vbmeta.public_key_digest and .digest to match the attested verified-boot
+    /// key/hash in push.json (see [`super::boot_vbmeta_props`]). Best-effort: a missing config or a
+    /// degenerate field is simply skipped, leaving the property as the bootloader set it.
+    fn apply_vbmeta_props() {
+        let push = match std::fs::read_to_string(defs::ATTEST_PUSH) {
+            Ok(s) => s,
+            Err(e) => {
+                warn!(
+                    "attest: cannot read {} for vbmeta props: {e}",
+                    defs::ATTEST_PUSH
+                );
+                return;
+            }
+        };
+        for (prop, hex) in super::boot_vbmeta_props(&push) {
+            match crate::resetprop::set_prop(prop, &hex) {
+                Ok(()) => info!("attest: {prop} -> {hex}"),
+                Err(e) => warn!("attest: set {prop} failed: {e}"),
+            }
+        }
     }
 
     /// Apply the interceptor's SELinux rules live (best-effort), so the daemon can inject the
@@ -341,8 +431,78 @@ pub use android::*;
 #[cfg(test)]
 mod tests {
     use super::{
-        Action, Started, backoff_secs, flag_is_set, next_action, startup_decision, write_flag,
+        Action, Started, b64_decode, backoff_secs, boot_vbmeta_props, flag_is_set, next_action,
+        startup_decision, write_flag,
     };
+
+    /// Minimal standard base64 encoder, so the vbmeta-prop fixtures below are readable.
+    fn b64_encode(bytes: &[u8]) -> String {
+        const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut out = String::new();
+        for chunk in bytes.chunks(3) {
+            let b = [
+                chunk[0],
+                *chunk.get(1).unwrap_or(&0),
+                *chunk.get(2).unwrap_or(&0),
+            ];
+            let n = ((b[0] as u32) << 16) | ((b[1] as u32) << 8) | b[2] as u32;
+            out.push(A[((n >> 18) & 63) as usize] as char);
+            out.push(A[((n >> 12) & 63) as usize] as char);
+            out.push(if chunk.len() > 1 {
+                A[((n >> 6) & 63) as usize] as char
+            } else {
+                '='
+            });
+            out.push(if chunk.len() > 2 {
+                A[(n & 63) as usize] as char
+            } else {
+                '='
+            });
+        }
+        out
+    }
+
+    #[test]
+    fn b64_decode_roundtrips_and_rejects_garbage() {
+        assert_eq!(b64_decode("QUJD").as_deref(), Some(&b"ABC"[..]));
+        assert_eq!(
+            b64_decode(&b64_encode(&[0, 255, 16, 32])).unwrap(),
+            vec![0, 255, 16, 32]
+        );
+        assert_eq!(b64_decode("!!!"), None);
+    }
+
+    #[test]
+    fn boot_vbmeta_props_maps_32byte_bootinfo_to_hex() {
+        let json = serde_json::json!({
+            "bootInfo": {
+                "verifiedBootKey": b64_encode(&[0x11u8; 32]),
+                "verifiedBootHash": b64_encode(&[0x22u8; 32]),
+            }
+        })
+        .to_string();
+        assert_eq!(
+            boot_vbmeta_props(&json),
+            vec![
+                ("ro.boot.vbmeta.public_key_digest", "11".repeat(32)),
+                ("ro.boot.vbmeta.digest", "22".repeat(32)),
+            ]
+        );
+    }
+
+    #[test]
+    fn boot_vbmeta_props_skips_zero_short_and_missing() {
+        let json = serde_json::json!({
+            "bootInfo": {
+                "verifiedBootKey": b64_encode(&[0u8; 32]),   // all zero
+                "verifiedBootHash": b64_encode(&[0x11u8; 3]), // too short
+            }
+        })
+        .to_string();
+        assert!(boot_vbmeta_props(&json).is_empty());
+        assert!(boot_vbmeta_props("{}").is_empty());
+        assert!(boot_vbmeta_props("not json").is_empty());
+    }
 
     #[test]
     fn next_action_covers_the_lifecycle() {

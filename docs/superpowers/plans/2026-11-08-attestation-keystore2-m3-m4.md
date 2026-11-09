@@ -39,6 +39,18 @@ The user supplied a real keybox (`keybox test/keybox.xml`, gitignored-by-intent 
 
 The per-task detail is below; each remaining task keeps its TDD steps.
 
+### 2026-11-09 (later) — PARKED: no unlocked device available; debt to settle later
+
+The user has **no unlocked/bootloader-unlocked test device right now**, so the only remaining work (M3-7 Step 4 + M4-4, both tablet-gated) is **deferred** until one is available. Everything that does not need a real TEE device is DONE, committed, and verified (mechanism proven on the emulator with the real keybox). This section is the resume checklist.
+
+**Blocked on hardware, nothing to do until then:**
+- **M3-7 Step 4** — on the real device: install the debug APK → Manager attest screen → harvest (real `boot.json`) → import keybox → configure → enable → reboot → confirm Play Integrity returns `MEETS_STRONG_INTEGRITY` **and** the Manager "Kiểm tra attestation" shows the keybox's Google chain with locked / Verified / TEE (or StrongBox).
+- **M4-4 regression** — on the real device: full enable→STRONG→disable cycle, then `scripts/device_bootguard_test.sh` (attest on, ~15 self-stopping reboots) and `python -X utf8 scripts/device_detector_scan.py` (Duck / Luna / Chunqiu) no worse than `scripts/detector_baselines/`.
+
+**IMPORTANT — the current keybox will be dead by then:** `keybox test/keybox.xml` leaf expires **2026-11-13** (today is 2026-11-09). If the device becomes available after that date (very likely, since there is no device now), **that keybox is useless** — a fresh, non-revoked keybox is required. Re-run the offline validation on the new one first (chain → `Key Attestation CA1`, private key matches leaf, serials ABSENT from Google's attestation status list; see the 2026-11-09 block above for the exact checks). The pipeline/UI/mechanism do not need re-doing — only a live keybox + a real device.
+
+**What is already in place and does not expire:** camd both ABIs at HEAD `824fd62f` staged in jniLibs; the UI clarity pass (committed `bbe86de7`); the whole brain + daemon + sepolicy + boot-prop (M3-1..M3-6, M4-1..M4-3). On resume, only re-stage a fresh `libcamd.so`/teesim if jniLibs was cleaned, and rebuild the APK against the new keybox-free flow (the keybox is imported at runtime, never built in).
+
 **Resume environment notes:**
 - WSL toolchain for the native build is set up: NDK `/root/ndk/android-ndk-r28c`, Android SDK `/root/android-sdk` (aidl build-tools 36), cmake/ninja via apt. Build the teesim core with `scripts/build_teesim.sh` (or the one-off CMake used in M1-2: clone to `/root/teesim`, `cmake -S … -DANDROID_ABI=…`), or let CI `teesim.yml` do it. x86_64 artifacts last built to `/root/teesim/{inject,libteesim_keymint.so}` (stripped).
 - Manager builds from `K:\manager` (the subst drive; recreate if gone). `libcamd.so` for x86_64 + arm64 is staged in `manager/app/src/main/jniLibs/<abi>/` (gitignored); rebuild + re-stage if lost (the camd build env is in `scripts/build_camd.sh` / the M1-2 ledger). Unit tests: `K:\manager> .\gradlew.bat :app:testDebugUnitTest`.

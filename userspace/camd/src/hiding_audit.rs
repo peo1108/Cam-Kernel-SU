@@ -586,7 +586,9 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
         .map(|(name, value)| format!("{name}={value}"))
         .collect();
     if !boot_args.is_empty() {
-        push(&mut out, "bootArgs", Level::Leak, boot_args, None);
+        // apps cannot read /proc/bootconfig or /proc/cmdline (SELinux), so these only show from
+        // the root view: a warn, not a leak the way the rewritten ro.boot.* props would be.
+        push(&mut out, "bootArgs", Level::Warn, boot_args, None);
     }
 
     let lsposed: Vec<String> = s

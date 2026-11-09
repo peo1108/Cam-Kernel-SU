@@ -8,11 +8,12 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Giả attestation (thử nghiệm, mặc định tắt): Tính năng → Tự ẩn bootloader → "Giả attestation (keystore2)…". App đích (mặc định Google Play services và Play Store) nhận key attestation ký bằng keybox của bạn, báo máy đã khoá và Verified; app khác vẫn dùng phần cứng thật. Cam không kèm keybox: bạn tự nạp file keybox.xml, Cam kiểm tra chuỗi chứng chỉ, khoá riêng và danh sách thu hồi của Google, khoá riêng ở lại trên máy. Chỉ Android 12 trở lên. Có hiệu lực ở lần khởi động sau
 - Khi bật giả attestation, Cam luôn sửa prop bootloader (như bật "Sửa prop bootloader") để những gì app đọc khớp với chứng chỉ báo máy đã khoá
 - Trang attestation: tablet xoay ngang chia 2 cột; "Nạp keybox…" mở trình duyệt tệp của app (như cài module), nút thư mục vẫn mở trình chọn của hệ thống (Drive, USB)
+- Kiểm tra ẩn root: bootconfig / cmdline báo bootloader mở khoá giờ chỉ là cảnh báo, không còn tính là lộ. App thường không đọc được hai tệp này (SELinux chặn), chỉ root mới thấy; các prop bootloader mà app đọc được vẫn tính là lộ như trước
 ### Sửa lỗi
 - Trang chủ có thể treo rồi hiện "không phản hồi" khi mở Cam lúc một tiến trình phụ của app (chạy khi máy khởi động xong) đang bị Android đóng băng ở nền
 ### Lưu ý
 - Giả attestation mới chạy thử trên máy ảo với keybox thật (chuỗi chứng chỉ báo khoá/Verified, keystore2 ổn định), **chưa thử Play Integrity STRONG trên máy thật**. Chỉ bật khi có keybox còn hạn và chưa bị thu hồi. Tắt thì cần khởi động lại để máy về như cũ
-- Bản này không đổi kernel, không cần cài lại LKM. Đã quét trên Y700 bằng chính bản này (giả attestation tắt): Duck Detector, Luna, Chunqiu giống hệt trước
+- Bản này không đổi cách kernel chạy trên Y700 (chỉ nhận một sửa của bản gốc cho kernel 7.3 trở lên). Nếu app gợi ý cài lại LKM thì làm hay không đều được. Duck Detector, Luna, Chunqiu trên Y700 giống hệt trước (quét bằng beta.1, giả attestation tắt); beta.2 quét lại bằng Duck Detector trên máy ảo, kết quả giống beta.1
 
 ## 1.2.5 - 2026-11-08
 - Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v28; trang Kiểm tra ẩn root đo thêm timing App Zygote như Duck Detector; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt

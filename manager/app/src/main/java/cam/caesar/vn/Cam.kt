@@ -2,6 +2,8 @@ package cam.caesar.vn
 
 import android.os.RemoteException
 import android.util.Log
+import cam.caesar.vn.attest.BootFallback
+import org.json.JSONObject
 
 /**
  * UI-side access to the kernel. Every call goes through [CamRootClient] (uid 0),
@@ -76,6 +78,16 @@ object Cam {
     fun attestStatus(): String = call("{}") { it.attestStatus() }
     fun deployTeesim(): Boolean = call(false) { it.deployTeesim() }
     fun purgeTargetAttestKeys(uids: IntArray): Int = call(0) { it.purgeTargetAttestKeys(uids) }
+
+    /** The real ro.boot.vbmeta.* stand-ins for the harvest; empty fields become null. */
+    fun vbmetaBootProps(): BootFallback = call(BootFallback(null, null)) {
+        JSONObject(it.vbmetaBootProps()).let { o ->
+            BootFallback(
+                publicKeyDigestHex = o.optString("publicKeyDigest").ifBlank { null },
+                digestHex = o.optString("digest").ifBlank { null },
+            )
+        }
+    }
 
     fun getSuperuserCount(): Int = call(0) { it.superuserCount }
 

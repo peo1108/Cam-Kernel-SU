@@ -170,6 +170,32 @@ class CamRootService : RootService() {
             return uids.size
         }
 
+        /**
+         * The real ro.boot.vbmeta.* values (hex) the harvest stands in with when the TEE reports an
+         * all-zero verified-boot key/hash. `digest` prefers camd's own computed vbmeta digest
+         * (`camd hide-bootloader status`, from the partitions) over the live, spoofable property;
+         * `publicKeyDigest` is read straight from the property. Both run as root here, where the
+         * boot properties and partitions are readable.
+         */
+        override fun vbmetaBootProps(): String = JSONObject().apply {
+            put("publicKeyDigest", readProp("ro.boot.vbmeta.public_key_digest"))
+            put("digest", computedVbmetaDigest().ifBlank { readProp("ro.boot.vbmeta.digest") })
+        }.toString()
+
+        /** `getprop <name>`, trimmed; "" on any failure. */
+        private fun readProp(name: String): String = runCatching {
+            Runtime.getRuntime().exec(arrayOf("getprop", name)).inputStream
+                .bufferedReader().use { it.readText() }.trim()
+        }.getOrDefault("")
+
+        /** camd's computed AVB vbmeta digest (hex) from the on-device partitions, or "" if it fails. */
+        private fun computedVbmetaDigest(): String = runCatching {
+            val camd = File(applicationInfo.nativeLibraryDir, "libcamd.so").absolutePath
+            val out = Runtime.getRuntime().exec(arrayOf(camd, "hide-bootloader", "status"))
+                .inputStream.bufferedReader().use { it.readText() }
+            JSONObject(out).optString("computedVbmetaDigest")
+        }.getOrDefault("")
+
         private fun exec(vararg cmd: String) {
             runCatching { Runtime.getRuntime().exec(cmd).waitFor() }
                 .onFailure { Log.w(TAG, "exec ${cmd.joinToString(" ")} failed", it) }

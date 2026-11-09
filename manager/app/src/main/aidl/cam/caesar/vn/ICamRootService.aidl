@@ -42,4 +42,7 @@ interface ICamRootService {
     String attestStatus();
     boolean deployTeesim();
     int purgeTargetAttestKeys(in int[] uids);
+    // JSON {publicKeyDigest, digest} of the real ro.boot.vbmeta.* values (hex), read as root, for the
+    // harvest to stand in when the TEE reported an all-zero verified-boot key/hash (unlocked device).
+    String vbmetaBootProps();
 }

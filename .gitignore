@@ -18,6 +18,9 @@ __pycache__
 /vps.txt
 # encrypted signing key backups (scripts/backup_signing_keys.sh); keep them outside the repo
 cam-signing-keys-*.enc
+# attestation test keyboxes: supplied by the user at runtime, NEVER commit (leaked keybox = revoked)
+/keybox test/
+*.keybox
 # brainstorming companion mockups (superpowers)
 /.superpowers/
 # vendored teesim native core build artifacts (the submodule's own .gitignore

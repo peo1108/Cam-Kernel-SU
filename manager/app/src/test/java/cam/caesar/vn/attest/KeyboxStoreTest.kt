@@ -47,4 +47,14 @@ class KeyboxStoreTest {
         assertNull(parseKeybox("<not>a keybox</not>"))
         assertNull(parseKeybox("garbage"))
     }
+
+    @Test
+    fun aDoctypeIsRefusedWhateverTheParserSupports() {
+        // Android's parser cannot be told to refuse a DOCTYPE, so the string check must
+        val withDoctype = validXml().replaceFirst(
+            "<AndroidAttestation>",
+            "<!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/hosts\">]>\n<AndroidAttestation>",
+        )
+        assertNull(parseKeybox(withDoctype))
+    }
 }

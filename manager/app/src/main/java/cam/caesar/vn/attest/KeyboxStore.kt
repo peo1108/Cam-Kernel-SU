@@ -37,9 +37,12 @@ class Keybox internal constructor(val xml: String, val serials: List<String>) {
  * non-empty PrivateKey and a certificate chain of at least two parseable certs.
  */
 fun parseKeybox(xml: String): Keybox? = runCatching {
+    // A keybox is a user-supplied file and never has a DOCTYPE: refuse one outright (XXE). This is
+    // the guard on a device: Android's DocumentBuilderFactory throws on the Xerces feature below,
+    // which made every keybox "invalid" there while the JVM tests passed (emulator, 2026-11-09).
+    if (xml.contains("<!DOCTYPE", ignoreCase = true)) return@runCatching null
     val doc = DocumentBuilderFactory.newInstance().apply {
-        // A keybox is a user-supplied file; harden the parser against XXE.
-        setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+        runCatching { setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) }
         isExpandEntityReferences = false
     }.newDocumentBuilder().parse(ByteArrayInputStream(xml.toByteArray()))
 

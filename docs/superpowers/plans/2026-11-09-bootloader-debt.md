@@ -19,7 +19,20 @@ resume: plan đó + `git log` + memory `attestation-keystore2`.
 
 ## Danh sách nợ
 
-### N1 — hide-bootloader standalone chưa điền `ro.boot.vbmeta.public_key_digest` · [CODE, làm được ngay]
+### N1 — hide-bootloader standalone chưa điền `ro.boot.vbmeta.public_key_digest` · [XONG 2026-11-09, đã đo TB323FU]
+
+> **2026-11-09 — code + host test xong, đã đo trên TB323FU.** Chi tiết ở
+> `docs/superpowers/plans/done/2026-11-09-n1-vbmeta-public-key-digest.md`.
+> `vbmeta::public_key_digest` (thuần) + `computed_public_key_digest` (đọc top-level `vbmeta` only);
+> `fill_vbmeta_digest` → `fill_vbmeta_props`, luật chung ở hàm thuần `needs_fill`;
+> `status` in `computedVbmetaPublicKeyDigest`. 175 test xanh; `fmt`, `cargo ndk check/clippy` và clippy
+> host `-D warnings` sạch. Bản đầu đọc nhầm offset 80/88 (`public_key_metadata_*`) thay vì 64/72; đã
+> sửa, có test chặn.
+> **Trên TB323FU:** prop này **không tồn tại**, TEE attest `verifiedBootKey` = SHA-256 của key rỗng
+> (`e3b0c442…`) → N1 không đổi gì trên dòng máy này (đã thử bật/tắt: 758 prop giống hệt). camd đọc
+> header thật đúng (`7b34b551…`, khớp parser độc lập).
+> **Còn mở (không chặn):** công thức `sha256(key blob)` chưa có máy nào để so; cần một dòng máy khoá
+> có prop này.
 
 - Plan 2026-10-11 (Phần A, `docs/superpowers/plans/done/2026-10-11-bootloader-vbmeta-attestation.md`
   dòng 13) định điền **CẢ** `ro.boot.vbmeta.digest` **VÀ** `ro.boot.vbmeta.public_key_digest` bằng giá
@@ -46,6 +59,15 @@ resume: plan đó + `git log` + memory `attestation-keystore2`.
 - Verify (ghép với N3): sau khi bật attestation trên máy unlock → "Kiểm tra attestation" trong Manager
   hiện verifiedBootKey/Hash **khác 0**, và `getprop ro.boot.vbmeta.public_key_digest` **==** verifiedBootKey
   trong cert (và `.digest` == verifiedBootHash).
+- **Phát hiện khi đo N1 (2026-11-09):** một Y700 khoá thật **không có** prop
+  `public_key_digest` và attest `verifiedBootKey = e3b0c442…7852b855` (SHA-256 của key rỗng).
+  (a) **Đã sửa trước beta.3:** `attest::apply_vbmeta_props` gọi `set_prop` không kiểm prop có sẵn
+  → trên Y700 bật attestation sẽ **thêm** prop mà máy khoá thật không có (cert e3b0… không toàn 0
+  nên không bị lọc). Nay `boot_vbmeta_props(push, present)` chỉ ép prop đã có
+  (`resetprop::list_props`); test `boot_vbmeta_props_never_adds_an_absent_prop`.
+  (b) **Còn mở:** máy unlock → TEE trả key toàn 0 → `chooseBootKeyB64` (Harvester) không có prop
+  để lấy → dùng hằng `sha256("Cam/verified_boot_key")`, khác giá trị `e3b0…` mà mọi Y700 khoá thật
+  attest. Cân nhắc khi làm N2: dùng `e3b0…` làm fallback cho dòng máy không có prop.
 
 ### N3 — M3-7 Step 4: verdict STRONG thật · [DEVICE]
 
@@ -73,8 +95,8 @@ hình thức trên máy thật.
 
 ## Tóm tắt chặn
 
-- **Làm được ngay (không cần máy unlock):** N1 (code + host-test; cần một máy locked bất kỳ để chốt công
-  thức), N6 (UI).
+- **Làm được ngay (không cần máy unlock):** N1 (code + host-test; cần một máy locked bất kỳ để chốt
+  công thức) — **xong 2026-11-09, đã đo TB323FU** (dòng máy này không có prop), N6 (UI).
 - **Chờ MÁY UNLOCK + keybox còn hạn:** N2, N3, N4 (gắn với N5).
 
 ## Resume

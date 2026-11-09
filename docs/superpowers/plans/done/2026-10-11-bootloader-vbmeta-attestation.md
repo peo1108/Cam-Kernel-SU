@@ -2,6 +2,13 @@
 
 > **Trạng thái (2026-10-12): đã xong và đã phát hành.** Các ô `- [ ]` bên dưới không được tick trong lúc làm; đừng coi là việc còn dở. Hiện trạng thật: bản 3.0.9 (`CHANGELOG.md`), mục "Tự ẩn bootloader" của `docs/CAM_CHANGES.md`.
 
+> **Cập nhật 2026-11-09:** quyết định ở dòng 86–88 ("bỏ `public_key_digest`") **đã bị thay** bởi nợ N1
+> — xem `docs/superpowers/plans/done/2026-11-09-n1-vbmeta-public-key-digest.md`. Lý do: quyết định cũ
+> đúng cho TB323FU nhưng để hở đường standalone hide-bootloader trên máy unlock không bật attestation.
+> TB323FU vẫn không đổi gì: máy này **không có** prop `public_key_digest` (đo lại 2026-11-09) và camd
+> chỉ điền prop có sẵn mà trống/0.
+> Phần A còn lại (digest, footer, chain) vẫn đúng như mô tả.
+
 **Ngày:** 2026-10-11
 **Bối cảnh:** Học cách TEESimulator (`JingMatrix/TEESimulator`, `VbMeta.kt` / `DeviceProps.kt`) xử lý
 verified-boot và patch level, rồi làm lại gọn trong Cam. **Không** đụng keybox / giả chứng chỉ

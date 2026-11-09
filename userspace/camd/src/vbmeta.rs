@@ -9,6 +9,10 @@
 //! all-zero: the value is the device's own, computed here, never fabricated. A
 //! read or parse failure yields `None`, so the caller writes either the real
 //! digest or nothing (a wrong digest would be a tell of its own).
+//!
+//! Also computes `ro.boot.vbmeta.public_key_digest` (SHA-256 of the top-level struct's
+//! public key blob), filled under the same rule.
+#![cfg_attr(not(target_os = "android"), allow(dead_code))]
 
 const AVB_MAGIC: &[u8; 4] = b"AVB0";
 const FOOTER_MAGIC: &[u8; 4] = b"AVBf";
@@ -30,9 +34,13 @@ fn be_u64(buf: &[u8], off: usize) -> Option<u64> {
 
 /// The fields of AvbVBMetaImageHeader we need (all big-endian). The algorithm_type
 /// (offset 28) is not kept: `ro.boot.vbmeta.digest` is SHA-256 on Android devices.
+/// `public_key_{offset,size}` locate the blob inside the auxiliary block that
+/// `ro.boot.vbmeta.public_key_digest` is the hash of.
 struct Header {
     auth_size: u64,
     aux_size: u64,
+    public_key_offset: u64,
+    public_key_size: u64,
     descriptors_offset: u64,
     descriptors_size: u64,
 }
@@ -46,9 +54,43 @@ fn parse_header(blob: &[u8]) -> Option<Header> {
     Some(Header {
         auth_size: be_u64(blob, 12)?,
         aux_size: be_u64(blob, 20)?,
+        // public_key_offset at 64, public_key_size at 72 — both relative to the
+        // auxiliary block, which starts right after header + authentication block.
+        // (80/88 are public_key_metadata_{offset,size}: never read those here.)
+        public_key_offset: be_u64(blob, 64)?,
+        public_key_size: be_u64(blob, 72)?,
         descriptors_offset: be_u64(blob, 96)?,
         descriptors_size: be_u64(blob, 104)?,
     })
+}
+
+/// `ro.boot.vbmeta.public_key_digest` for a top-level vbmeta struct: the SHA-256 of the
+/// public key blob in the auxiliary block, hex-encoded (lowercase, no padding — the same
+/// shape the bootloader writes, and the shape `verifiedBootKey` carries in a certificate).
+///
+/// The hashed input is the key blob that `avb_vbmeta_image_verify` hands back as
+/// `out_public_key_data` (`aux + public_key_offset`, `public_key_size` bytes, in AVB's
+/// own `AvbRSAPublicKeyHeader` encoding, not DER) — never the descriptors and never the
+/// whole struct (that is `ro.boot.vbmeta.digest`). Not every bootloader exposes this:
+/// the TB323FU has no such property and attests SHA-256 of an empty key instead.
+///
+/// `None` when the struct is truncated, the key size is zero (a struct with no key of
+/// its own), or the blob falls outside the aux block.
+fn public_key_digest(blob: &[u8], h: &Header) -> Option<String> {
+    let key_size = usize::try_from(h.public_key_size).ok()?;
+    if key_size == 0 {
+        return None;
+    }
+    let aux_size = usize::try_from(h.aux_size).ok()?;
+    let key_offset = usize::try_from(h.public_key_offset).ok()?;
+    // The key must fit entirely inside the auxiliary block, or the struct is corrupt.
+    key_offset
+        .checked_add(key_size)
+        .filter(|end| *end <= aux_size)?;
+    let aux_start = HEADER_SIZE.checked_add(usize::try_from(h.auth_size).ok()?)?;
+    let start = aux_start.checked_add(key_offset)?;
+    let key = blob.get(start..start.checked_add(key_size)?)?;
+    Some(sha256::digest(key))
 }
 
 /// Total size of the vbmeta struct described by `h` (header + auth + aux).
@@ -128,7 +170,7 @@ mod android {
     use super::chain_partitions;
     use super::{
         AVB_MAGIC, FOOTER_SIZE, HEADER_SIZE, Header, MAX_PARTITIONS, parse_footer, parse_header,
-        struct_len,
+        public_key_digest, struct_len,
     };
     use std::collections::HashSet;
     use std::fs::File;
@@ -212,6 +254,17 @@ mod android {
         let mut count = 0usize;
         collect("vbmeta", &mut hashed, &mut seen, &mut count)?;
         Some(sha256::digest(hashed.as_slice()))
+    }
+
+    /// The device's own `ro.boot.vbmeta.public_key_digest`, computed from the top-level
+    /// `vbmeta` partition only — on bootloaders that set this property, that is the struct
+    /// whose key they hash. A chained vbmeta's key lives in a chain descriptor, not in the
+    /// aux block, so descending the chain would hash the wrong bytes. `None` when the
+    /// partition cannot be read, or when its struct carries no key of its own.
+    pub fn computed_public_key_digest() -> Option<String> {
+        let st = partition_struct("vbmeta")?;
+        let header = parse_header(&st)?;
+        public_key_digest(&st, &header)
     }
 }
 
@@ -301,5 +354,129 @@ mod tests {
         footer[28..36].copy_from_slice(&be64(2432));
         assert_eq!(parse_footer(&footer), Some((39_976_960, 2432)));
         assert!(parse_footer(&[0u8; FOOTER_SIZE]).is_none());
+    }
+
+    /// A vbmeta struct carrying `key` as its public key: header + optional auth gap +
+    /// aux block, where the key sits at `key_offset` inside the aux.
+    fn vbmeta_with_key(auth_size: usize, key_offset: usize, key: &[u8]) -> Vec<u8> {
+        let aux_size = key_offset + key.len();
+        let mut header = vec![0u8; HEADER_SIZE];
+        header[0..4].copy_from_slice(AVB_MAGIC);
+        header[12..20].copy_from_slice(&be64(auth_size as u64));
+        header[20..28].copy_from_slice(&be64(aux_size as u64));
+        header[28..32].copy_from_slice(&be32(2));
+        header[64..72].copy_from_slice(&be64(key_offset as u64)); // public_key_offset
+        header[72..80].copy_from_slice(&be64(key.len() as u64)); // public_key_size
+        header[96..104].copy_from_slice(&be64(0));
+        header[104..112].copy_from_slice(&be64(0));
+
+        let mut out = header;
+        out.extend(std::iter::repeat_n(0u8, auth_size)); // authentication block
+        out.extend(std::iter::repeat_n(0u8, key_offset)); // other aux content
+        out.extend_from_slice(key);
+        out
+    }
+
+    #[test]
+    fn hashes_only_the_public_key_blob() {
+        // Arbitrary bytes, not a real AvbRSAPublicKeyHeader key: the function must hash
+        // the blob verbatim, not parse or canonicalise it.
+        let key: Vec<u8> = (0u8..=255).cycle().take(300).collect();
+        let st = vbmeta_with_key(0, 0, &key);
+        let h = parse_header(&st).unwrap();
+        assert_eq!(h.public_key_size, key.len() as u64);
+        assert_eq!(
+            public_key_digest(&st, &h),
+            Some(sha256::digest(key.as_slice()))
+        );
+    }
+
+    #[test]
+    fn public_key_offset_is_relative_to_aux_not_header() {
+        // 64 bytes of auth block and 40 bytes of descriptor before the key: the offset
+        // must be measured from the start of aux, so the auth gap is skipped.
+        let key: Vec<u8> = (0u8..200).collect();
+        let st = vbmeta_with_key(64, 40, &key);
+        let h = parse_header(&st).unwrap();
+        assert_eq!(
+            public_key_digest(&st, &h),
+            Some(sha256::digest(key.as_slice()))
+        );
+    }
+
+    #[test]
+    fn no_key_yields_none() {
+        // No key of its own (chained vbmeta): the bootloader leaves the property empty.
+        let st = vbmeta(2, &[]);
+        let h = parse_header(&st).unwrap();
+        assert_eq!(h.public_key_size, 0);
+        assert!(public_key_digest(&st, &h).is_none());
+    }
+
+    #[test]
+    fn key_outside_aux_yields_none() {
+        let key = [0xABu8; 32];
+        let mut st = vbmeta_with_key(0, 0, &key);
+        // Claim the key runs past the aux block: corrupt, so no digest rather than a
+        // hash of whatever follows.
+        st[72..80].copy_from_slice(&be64(key.len() as u64 + 8));
+        let h = parse_header(&st).unwrap();
+        assert!(public_key_digest(&st, &h).is_none());
+    }
+
+    #[test]
+    fn reads_key_fields_not_metadata_fields() {
+        // The aux layout avbtool's make_vbmeta_image writes: descriptors at aux offset 0,
+        // the key right after, then public_key_metadata_offset pointing past the key with
+        // size 0 (no metadata), the aux padded to 64. Every offset field is set as avbtool
+        // sets it, so reading the metadata fields (80/88) instead of the key fields
+        // (64/72) would hash descriptors + key here and fail.
+        let descriptors = [0x11u8; 40];
+        let key: Vec<u8> = (0u8..=255).cycle().take(520).collect();
+        let key_offset = descriptors.len();
+        let used = key_offset + key.len();
+        let aux_size = used.div_ceil(64) * 64;
+        let auth_size = 576;
+
+        let mut header = vec![0u8; HEADER_SIZE];
+        header[0..4].copy_from_slice(AVB_MAGIC);
+        header[12..20].copy_from_slice(&be64(auth_size as u64));
+        header[20..28].copy_from_slice(&be64(aux_size as u64));
+        header[28..32].copy_from_slice(&be32(2));
+        header[32..40].copy_from_slice(&be64(0)); // hash_offset
+        header[40..48].copy_from_slice(&be64(32)); // hash_size
+        header[48..56].copy_from_slice(&be64(32)); // signature_offset
+        header[56..64].copy_from_slice(&be64(256)); // signature_size
+        header[64..72].copy_from_slice(&be64(key_offset as u64)); // public_key_offset
+        header[72..80].copy_from_slice(&be64(key.len() as u64)); // public_key_size
+        header[80..88].copy_from_slice(&be64(used as u64)); // public_key_metadata_offset
+        header[88..96].copy_from_slice(&be64(0)); // public_key_metadata_size
+        header[96..104].copy_from_slice(&be64(0)); // descriptors_offset
+        header[104..112].copy_from_slice(&be64(descriptors.len() as u64)); // descriptors_size
+
+        let mut st = header;
+        st.extend(std::iter::repeat_n(0xA5u8, auth_size)); // authentication block
+        st.extend_from_slice(&descriptors);
+        st.extend_from_slice(&key);
+        st.resize(HEADER_SIZE + auth_size + aux_size, 0);
+
+        let h = parse_header(&st).unwrap();
+        assert_eq!(h.public_key_offset, key_offset as u64);
+        assert_eq!(h.public_key_size, key.len() as u64);
+        assert_eq!(struct_len(&h), Some(st.len()));
+        assert_eq!(
+            public_key_digest(&st, &h),
+            Some(sha256::digest(key.as_slice()))
+        );
+    }
+
+    #[test]
+    fn truncated_struct_yields_none() {
+        let key = [0x7Fu8; 32];
+        let mut st = vbmeta_with_key(0, 0, &key);
+        st.truncate(HEADER_SIZE + 16); // aux cut short
+        assert!(parse_header(&st).is_some());
+        let h = parse_header(&st).unwrap();
+        assert!(public_key_digest(&st, &h).is_none());
     }
 }

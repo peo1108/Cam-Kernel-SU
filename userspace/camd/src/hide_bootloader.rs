@@ -62,6 +62,26 @@ pub fn plan(props: &[(String, String)]) -> Vec<(String, &'static str)> {
         .collect()
 }
 
+/// Set by the bootloader on a locked, verified device; left empty or all-zero by
+/// some bootloaders even though the device is locked (we fill it with the real value).
+pub const VBMETA_DIGEST: &str = "ro.boot.vbmeta.digest";
+/// The hash of the top-level vbmeta public key. Not every bootloader sets it: the
+/// TB323FU (Y700), genuinely locked, has no such property at all, and its TEE attests
+/// the SHA-256 of an empty key. Where a bootloader does create it but leaves it blank,
+/// a detector reading it next to a faked `device_state=locked` sees the mismatch.
+pub const VBMETA_PUBLIC_KEY_DIGEST: &str = "ro.boot.vbmeta.public_key_digest";
+
+/// Whether `prop` should be filled with the device's own computed value: only when the
+/// device already has it AND it is blank (empty or all `0`). An absent property is
+/// never added — that is the TB323FU case, where adding one would be the tell — and a
+/// real value is never overwritten.
+pub fn needs_fill(props: &[(String, String)], prop: &str) -> bool {
+    props
+        .iter()
+        .find(|(name, _)| name == prop)
+        .is_some_and(|(_, current)| current.bytes().all(|b| b == b'0'))
+}
+
 /// `androidboot.*` entries we have a rule for, from `/proc/bootconfig` (`key = "value"`)
 /// and `/proc/cmdline` (`key=value`).
 pub fn parse_boot_args(bootconfig: &str, cmdline: &str) -> Vec<(String, String)> {
@@ -105,16 +125,14 @@ pub fn status_json(
 
 #[cfg(target_os = "android")]
 mod android {
-    use super::{parse_boot_args, plan, status_json};
+    use super::{
+        VBMETA_DIGEST, VBMETA_PUBLIC_KEY_DIGEST, needs_fill, parse_boot_args, plan, status_json,
+    };
     use crate::{defs, resetprop, vbmeta};
     use anyhow::{Context, Result};
     use log::{info, warn};
     use serde_json::json;
     use std::path::Path;
-
-    /// Set by the bootloader on a locked, verified device; left empty or all-zero by
-    /// some bootloaders even though the device is locked (we fill it with the real value).
-    const VBMETA_DIGEST: &str = "ro.boot.vbmeta.digest";
 
     pub fn is_enabled() -> bool {
         Path::new(defs::HIDE_BOOTLOADER_FLAG).exists()
@@ -144,25 +162,50 @@ mod android {
                 Err(e) => warn!("hide bootloader: set {name} failed: {e}"),
             }
         }
-        fill_vbmeta_digest(&props);
+        fill_vbmeta_props(&props);
     }
 
-    /// Fill `ro.boot.vbmeta.digest` with the device's own computed digest when the
-    /// bootloader left it empty or all-zero. Never overwrites a real value, and only
-    /// touches a property the device already has (an absent one is not our business).
-    fn fill_vbmeta_digest(props: &[(String, String)]) {
-        let Some((_, current)) = props.iter().find(|(name, _)| name == VBMETA_DIGEST) else {
-            return;
-        };
-        if !(current.is_empty() || current.bytes().all(|b| b == b'0')) {
+    /// Fill `ro.boot.vbmeta.digest` and `ro.boot.vbmeta.public_key_digest` with the device's
+    /// own computed values when the bootloader created them but left them empty or all-zero.
+    ///
+    /// A property that exists but is blank next to `device_state=locked` is a tell. An absent
+    /// one is not: a genuinely locked TB323FU has no `public_key_digest` at all, so adding it
+    /// would be the tell. Hence the rule in [`needs_fill`]: never add, never overwrite.
+    /// Runs last on the standalone hide path; with attestation on, `attest::apply_vbmeta_props`
+    /// runs after and forces the attested verified-boot key/hash over these.
+    fn fill_vbmeta_props(props: &[(String, String)]) {
+        fill_vbmeta_prop(
+            props,
+            VBMETA_DIGEST,
+            vbmeta::computed_digest,
+            "could not compute vbmeta digest",
+        );
+        fill_vbmeta_prop(
+            props,
+            VBMETA_PUBLIC_KEY_DIGEST,
+            vbmeta::computed_public_key_digest,
+            "could not compute vbmeta public key digest",
+        );
+    }
+
+    /// Fill one `ro.boot.vbmeta.*` property from `compute` when [`needs_fill`] says so
+    /// (present but empty or all-zero). A real value is never overwritten, an absent
+    /// property never added; a compute failure leaves it exactly as the bootloader set it.
+    fn fill_vbmeta_prop(
+        props: &[(String, String)],
+        prop: &str,
+        compute: fn() -> Option<String>,
+        on_miss: &str,
+    ) {
+        if !needs_fill(props, prop) {
             return;
         }
-        match vbmeta::computed_digest() {
-            Some(digest) => match resetprop::set_prop(VBMETA_DIGEST, &digest) {
-                Ok(()) => info!("hide bootloader: {VBMETA_DIGEST} -> {digest}"),
-                Err(e) => warn!("hide bootloader: set {VBMETA_DIGEST} failed: {e}"),
+        match compute() {
+            Some(value) => match resetprop::set_prop(prop, &value) {
+                Ok(()) => info!("hide bootloader: {prop} -> {value}"),
+                Err(e) => warn!("hide bootloader: set {prop} failed: {e}"),
             },
-            None => warn!("hide bootloader: could not compute vbmeta digest"),
+            None => warn!("hide bootloader: {on_miss}"),
         }
     }
 
@@ -175,10 +218,15 @@ mod android {
             &props,
             &parse_boot_args(&bootconfig, &cmdline),
         );
-        // What camd would fill ro.boot.vbmeta.digest with (for verifying against the
-        // bootloader's own value on a device that reports one).
-        if let (Some(obj), Some(digest)) = (status.as_object_mut(), vbmeta::computed_digest()) {
-            obj.insert("computedVbmetaDigest".to_owned(), json!(digest));
+        // What camd would fill ro.boot.vbmeta.digest / .public_key_digest with (for
+        // verifying against the bootloader's own values on a device that reports them).
+        if let Some(obj) = status.as_object_mut() {
+            if let Some(digest) = vbmeta::computed_digest() {
+                obj.insert("computedVbmetaDigest".to_owned(), json!(digest));
+            }
+            if let Some(key) = vbmeta::computed_public_key_digest() {
+                obj.insert("computedVbmetaPublicKeyDigest".to_owned(), json!(key));
+            }
         }
         println!("{}", serde_json::to_string_pretty(&status)?);
         Ok(())
@@ -267,6 +315,44 @@ mod tests {
             ]
         );
         assert!(plan(&[]).is_empty());
+    }
+
+    #[test]
+    fn needs_fill_only_present_and_blank() {
+        let p = props(&[
+            (VBMETA_DIGEST, ""),
+            (VBMETA_PUBLIC_KEY_DIGEST, &"0".repeat(64)),
+        ]);
+        assert!(needs_fill(&p, VBMETA_DIGEST));
+        assert!(needs_fill(&p, VBMETA_PUBLIC_KEY_DIGEST));
+        // A real value is never overwritten.
+        let real = props(&[(VBMETA_PUBLIC_KEY_DIGEST, "7b34b551")]);
+        assert!(!needs_fill(&real, VBMETA_PUBLIC_KEY_DIGEST));
+        // An absent property is never added.
+        assert!(!needs_fill(&[], VBMETA_PUBLIC_KEY_DIGEST));
+    }
+
+    #[test]
+    fn genuine_tb323fu_gets_nothing_filled() {
+        // The ro.boot.vbmeta.* props of the genuinely locked TB323FU (2026-11-09): a real
+        // digest and no public_key_digest at all (its TEE attests SHA-256 of an empty key).
+        // Hiding must leave it exactly as it is — filling either prop would differ from
+        // every other locked Y700.
+        let p = props(&[
+            ("ro.boot.vbmeta.avb_version", "1.2"),
+            ("ro.boot.vbmeta.device_state", "locked"),
+            (
+                VBMETA_DIGEST,
+                "ab3cdba07866ac71829e75e019bafd2a5e89edd659a86486d5a8c36f5b24e207",
+            ),
+            ("ro.boot.vbmeta.hash_alg", "sha256"),
+            ("ro.boot.vbmeta.size", "18048"),
+            ("ro.boot.verifiedbootstate", "green"),
+            ("ro.boot.flash.locked", "1"),
+        ]);
+        assert!(!needs_fill(&p, VBMETA_DIGEST));
+        assert!(!needs_fill(&p, VBMETA_PUBLIC_KEY_DIGEST));
+        assert!(plan(&p).is_empty());
     }
 
     #[test]

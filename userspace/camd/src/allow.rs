@@ -1,5 +1,6 @@
 //! `camd allow`: grant or revoke root for an installed app from a root shell
 //! (adb `su`, Termux), without re-flashing a patch-time seed.
+#![cfg_attr(not(target_os = "android"), allow(dead_code))]
 
 use anyhow::{Result, bail, ensure};
 

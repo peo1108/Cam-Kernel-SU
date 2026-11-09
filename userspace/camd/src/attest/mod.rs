@@ -6,6 +6,7 @@
 //! `docs/superpowers/specs/2026-11-08-attestation-keystore2-design.md`.
 //!
 //! Pure, host-testable helpers live at module top level; the Android runtime is in `mod android`.
+#![cfg_attr(not(target_os = "android"), allow(dead_code))]
 
 mod control;
 mod inject;
@@ -109,8 +110,11 @@ const ATTEST_SEPOLICY: &[&str] = &[
 /// Verified certificate whose `public_key_digest` property is empty/zero on an unlocked device.
 ///
 /// Only a usable value (decodes to 32 bytes, not all zero) is emitted; a missing, malformed or
-/// all-zero field is skipped so we never write a degenerate property. Pure, so it is host-tested.
-fn boot_vbmeta_props(push_json: &str) -> Vec<(&'static str, String)> {
+/// all-zero field is skipped so we never write a degenerate property. Only a property the device
+/// already has (`present`, from `resetprop::list_props`) is forced, never added: a genuinely
+/// locked TB323FU (Y700) has no `public_key_digest` at all (its TEE attests SHA-256 of an empty
+/// key), so adding one would be a tell no real Y700 shows. Pure, so it is host-tested.
+fn boot_vbmeta_props(push_json: &str, present: &[(String, String)]) -> Vec<(&'static str, String)> {
     let mut out = Vec::new();
     let Ok(value) = serde_json::from_str::<serde_json::Value>(push_json) else {
         return out;
@@ -120,6 +124,9 @@ fn boot_vbmeta_props(push_json: &str) -> Vec<(&'static str, String)> {
         ("ro.boot.vbmeta.public_key_digest", "verifiedBootKey"),
         ("ro.boot.vbmeta.digest", "verifiedBootHash"),
     ] {
+        if !present.iter().any(|(name, _)| name == prop) {
+            continue;
+        }
         let Some(bytes) = boot
             .get(field)
             .and_then(|v| v.as_str())
@@ -270,7 +277,8 @@ mod android {
 
     /// Force ro.boot.vbmeta.public_key_digest and .digest to match the attested verified-boot
     /// key/hash in push.json (see [`super::boot_vbmeta_props`]). Best-effort: a missing config or a
-    /// degenerate field is simply skipped, leaving the property as the bootloader set it.
+    /// degenerate field is simply skipped, leaving the property as the bootloader set it, and a
+    /// property the device does not have is never added.
     fn apply_vbmeta_props() {
         let push = match std::fs::read_to_string(defs::ATTEST_PUSH) {
             Ok(s) => s,
@@ -282,7 +290,14 @@ mod android {
                 return;
             }
         };
-        for (prop, hex) in super::boot_vbmeta_props(&push) {
+        let present = match crate::resetprop::list_props() {
+            Ok(props) => props,
+            Err(e) => {
+                warn!("attest: list props failed, vbmeta props left as they are: {e}");
+                return;
+            }
+        };
+        for (prop, hex) in super::boot_vbmeta_props(&push, &present) {
             match crate::resetprop::set_prop(prop, &hex) {
                 Ok(()) => info!("attest: {prop} -> {hex}"),
                 Err(e) => warn!("attest: set {prop} failed: {e}"),
@@ -445,7 +460,7 @@ mod tests {
                 *chunk.get(1).unwrap_or(&0),
                 *chunk.get(2).unwrap_or(&0),
             ];
-            let n = ((b[0] as u32) << 16) | ((b[1] as u32) << 8) | b[2] as u32;
+            let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
             out.push(A[((n >> 18) & 63) as usize] as char);
             out.push(A[((n >> 12) & 63) as usize] as char);
             out.push(if chunk.len() > 1 {
@@ -472,6 +487,14 @@ mod tests {
         assert_eq!(b64_decode("!!!"), None);
     }
 
+    /// Both vbmeta props present, blank: the unlocked-device case the forcing is for.
+    fn both_vbmeta_props() -> Vec<(String, String)> {
+        vec![
+            ("ro.boot.vbmeta.public_key_digest".to_owned(), String::new()),
+            ("ro.boot.vbmeta.digest".to_owned(), "0".repeat(64)),
+        ]
+    }
+
     #[test]
     fn boot_vbmeta_props_maps_32byte_bootinfo_to_hex() {
         let json = serde_json::json!({
@@ -482,12 +505,37 @@ mod tests {
         })
         .to_string();
         assert_eq!(
-            boot_vbmeta_props(&json),
+            boot_vbmeta_props(&json, &both_vbmeta_props()),
             vec![
                 ("ro.boot.vbmeta.public_key_digest", "11".repeat(32)),
                 ("ro.boot.vbmeta.digest", "22".repeat(32)),
             ]
         );
+    }
+
+    #[test]
+    fn boot_vbmeta_props_never_adds_an_absent_prop() {
+        // A genuinely locked TB323FU (2026-11-09): a real digest, no public_key_digest at
+        // all, and the TEE attests SHA-256 of an empty key. Forcing the digest is fine; adding
+        // public_key_digest would be a tell no real Y700 shows.
+        let empty_key_sha256 = [
+            0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f,
+            0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b,
+            0x78, 0x52, 0xb8, 0x55,
+        ];
+        let json = serde_json::json!({
+            "bootInfo": {
+                "verifiedBootKey": b64_encode(&empty_key_sha256),
+                "verifiedBootHash": b64_encode(&[0x22u8; 32]),
+            }
+        })
+        .to_string();
+        let tb323fu = vec![("ro.boot.vbmeta.digest".to_owned(), "ab".repeat(32))];
+        assert_eq!(
+            boot_vbmeta_props(&json, &tb323fu),
+            vec![("ro.boot.vbmeta.digest", "22".repeat(32))]
+        );
+        assert!(boot_vbmeta_props(&json, &[]).is_empty());
     }
 
     #[test]
@@ -499,9 +547,10 @@ mod tests {
             }
         })
         .to_string();
-        assert!(boot_vbmeta_props(&json).is_empty());
-        assert!(boot_vbmeta_props("{}").is_empty());
-        assert!(boot_vbmeta_props("not json").is_empty());
+        let present = both_vbmeta_props();
+        assert!(boot_vbmeta_props(&json, &present).is_empty());
+        assert!(boot_vbmeta_props("{}", &present).is_empty());
+        assert!(boot_vbmeta_props("not json", &present).is_empty());
     }
 
     #[test]

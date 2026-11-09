@@ -553,6 +553,10 @@
     <string name="attest_configure_hint">Writes the config and deploys the interceptor. Takes effect on the next boot.</string>
     <string name="attest_result_ok">Configured. Turn it on above, then reboot to apply.</string>
     <string name="attest_result_fail">Configuration failed — check the keybox and retry.</string>
+    <string name="attest_keybox_reading">Reading it and checking with Google…</string>
+    <string name="attest_browser_title">Pick keybox.xml</string>
+    <string name="attest_browser_hint">Tap your keybox .xml to load it. For Drive or a USB stick, use the system picker at the top.</string>
+    <string name="attest_browser_empty">No folders or .xml files here</string>
     <string name="features_attestation_level">Security level: %s</string>
     <string name="features_attestation_software">Software</string>
     <string name="features_attestation_locked">Bootloader locked: %s</string>

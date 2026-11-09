@@ -1,6 +1,7 @@
 package cam.caesar.vn.ui.viewmodel
 
 import cam.caesar.vn.files.FileEntry
+import cam.caesar.vn.files.pickEntries
 import cam.caesar.vn.ui.util.module.parseModuleProp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -36,6 +37,20 @@ class ModuleInstallLogicTest {
             ),
         )
         assertEquals(listOf("Alpha", "beta", "linked", "NEW.ZIP", "old.zip"), listed.map { it.name })
+    }
+
+    @Test
+    fun keyboxPickerListsFoldersThenXmlNewestFirst() {
+        val listed = pickEntries(
+            listOf(
+                entry("keybox.xml", mtime = 1),
+                entry("module.zip", mtime = 9),
+                entry("Download", FileEntry.TYPE_DIR),
+                entry("KB2.XML", mtime = 5),
+            ),
+            ".xml",
+        )
+        assertEquals(listOf("Download", "KB2.XML", "keybox.xml"), listed.map { it.name })
     }
 
     @Test

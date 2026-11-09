@@ -541,6 +541,10 @@
     <string name="attest_configure_hint">Ghi cấu hình và triển khai interceptor. Có hiệu lực ở lần khởi động sau.</string>
     <string name="attest_result_ok">Đã cấu hình. Bật ở trên rồi khởi động lại để áp dụng.</string>
     <string name="attest_result_fail">Cấu hình thất bại — kiểm tra keybox rồi thử lại.</string>
+    <string name="attest_keybox_reading">Đang đọc và kiểm tra với Google…</string>
+    <string name="attest_browser_title">Chọn file keybox.xml</string>
+    <string name="attest_browser_hint">Chạm vào file keybox .xml để nạp. File trên Drive hay USB: dùng trình chọn file của hệ thống ở trên.</string>
+    <string name="attest_browser_empty">Ở đây không có thư mục hay file .xml nào</string>
     <string name="features_attestation_level">Mức bảo mật: %s</string>
     <string name="features_attestation_software">Phần mềm</string>
     <string name="features_attestation_locked">Bootloader đã khóa: %s</string>

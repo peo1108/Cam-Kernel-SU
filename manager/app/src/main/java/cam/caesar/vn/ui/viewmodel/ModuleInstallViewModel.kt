@@ -13,6 +13,8 @@ import cam.caesar.vn.files.CamFileClient
 import cam.caesar.vn.files.FileEntry
 import cam.caesar.vn.files.FsException
 import cam.caesar.vn.files.FsPath
+import cam.caesar.vn.files.PickDirs
+import cam.caesar.vn.files.pickEntries
 import cam.caesar.vn.hiding.ModuleRiskHit
 import cam.caesar.vn.ui.bunker.BunkerSignals
 import cam.caesar.vn.ui.screen.flash.FlashIt
@@ -36,7 +38,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
-import java.util.Locale
 
 enum class ModuleInstallStage { Picking, Flashing, Finished }
 
@@ -61,7 +62,7 @@ data class ZipPick(
 data class ModuleInstallUi(
     val open: Boolean = false,
     val stage: ModuleInstallStage = ModuleInstallStage.Picking,
-    val path: String = ModuleInstallViewModel.DOWNLOADS,
+    val path: String = PickDirs.DOWNLOADS,
     val entries: List<FileEntry> = emptyList(),
     val listing: Boolean = false,
     val errno: Int? = null,
@@ -74,11 +75,7 @@ data class ModuleInstallUi(
 }
 
 /** What the browser lists: folders first by name, then zips, the newest on top (just downloaded). */
-internal fun installEntries(entries: List<FileEntry>): List<FileEntry> {
-    val folders = entries.filter { it.isDir }.sortedBy { it.name.lowercase(Locale.ROOT) }
-    val zips = entries.filter { !it.isDir && it.name.endsWith(".zip", ignoreCase = true) }.sortedByDescending { it.mtime }
-    return folders + zips
-}
+internal fun installEntries(entries: List<FileEntry>): List<FileEntry> = pickEntries(entries, ".zip")
 
 /** One line of a flash's output added to what the log shows: a terminal's clear command starts it over. */
 internal fun appendFlashOutput(log: String, line: String): String =
@@ -92,7 +89,7 @@ private const val CLEAR_SCREEN = "\u001b[H\u001b[J"
  */
 class ModuleInstallViewModel : ViewModel() {
     private val prefs = camApp.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    private val _uiState = MutableStateFlow(ModuleInstallUi(path = prefs.getString(KEY_PATH, null) ?: DOWNLOADS))
+    private val _uiState = MutableStateFlow(ModuleInstallUi(path = prefs.getString(KEY_PATH, null) ?: PickDirs.DOWNLOADS))
     val uiState: StateFlow<ModuleInstallUi> = _uiState.asStateFlow()
 
     // the shell's lines come on the main thread, what the risk gate prints on the flash's own
@@ -264,8 +261,6 @@ class ModuleInstallViewModel : ViewModel() {
     }
 
     companion object {
-        const val DOWNLOADS = "/storage/emulated/0/Download"
-        const val STORAGE = "/storage/emulated/0"
         private const val PREFS = "module_install"
         private const val KEY_PATH = "path"
     }

@@ -4,8 +4,6 @@ import android.app.Activity.RESULT_OK
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -19,26 +17,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.SdStorage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.LocalContext
@@ -47,14 +38,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cam.caesar.vn.R
 import cam.caesar.vn.data.model.Module
 import cam.caesar.vn.data.repository.isSoftRebootPreferred
-import cam.caesar.vn.files.FileEntry
-import cam.caesar.vn.files.FileFormat
 import cam.caesar.vn.files.FileKind
 import cam.caesar.vn.hiding.ModuleRisk
 import cam.caesar.vn.ui.component.CamToast
@@ -66,8 +54,8 @@ import cam.caesar.vn.ui.component.listdetail.DetailPaneFrame
 import cam.caesar.vn.ui.component.listdetail.DetailTwoColumnWidth
 import cam.caesar.vn.ui.component.listdetail.PaneHint
 import cam.caesar.vn.ui.component.listdetail.panePiece
-import cam.caesar.vn.ui.screen.files.KindTile
-import cam.caesar.vn.ui.screen.files.errnoText
+import cam.caesar.vn.ui.screen.files.PickFolder
+import cam.caesar.vn.ui.screen.files.pickBrowser
 import cam.caesar.vn.ui.screen.flash.FlashLogCard
 import cam.caesar.vn.ui.screen.flash.FlashStatusCard
 import cam.caesar.vn.ui.screen.flash.flashStatusTitle
@@ -80,7 +68,6 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
@@ -183,84 +170,15 @@ private fun InstallPicking(
 }
 
 private fun LazyListScope.browser(state: ModuleInstallUi, vm: ModuleInstallViewModel) {
-    item(key = "path") {
-        GlassCard(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 8.dp),
-            insideMargin = PaddingValues(8.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                GlassIconButton(onClick = vm::up, enabled = state.path != "/") {
-                    val direction = LocalLayoutDirection.current
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = stringResource(R.string.module_install_up),
-                        modifier = Modifier.graphicsLayer { if (direction == LayoutDirection.Rtl) scaleX = -1f },
-                        tint = colorScheme.onSurface,
-                    )
-                }
-                Text(
-                    text = state.path,
-                    modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.StartEllipsis,
-                    color = colorScheme.onSurfaceVariantSummary,
-                )
-                GlassIconButton(onClick = { vm.navigate(ModuleInstallViewModel.DOWNLOADS) }) {
-                    Icon(Icons.Rounded.Download, contentDescription = stringResource(R.string.module_install_downloads), tint = colorScheme.onSurface)
-                }
-                Spacer(Modifier.width(6.dp))
-                GlassIconButton(onClick = { vm.navigate(ModuleInstallViewModel.STORAGE) }) {
-                    Icon(Icons.Rounded.SdStorage, contentDescription = stringResource(R.string.module_install_storage), tint = colorScheme.onSurface)
-                }
-            }
-        }
-    }
-    items(state.entries, key = { it.path }) { entry ->
-        BrowserRow(entry, picked = state.picks.any { it.key == entry.path }) {
-            if (entry.isDir) vm.navigate(entry.path) else vm.toggle(entry)
-        }
-    }
-    if (!state.listing && state.entries.isEmpty()) {
-        item(key = "empty") {
-            val errno = state.errno
-            Text(
-                text = if (errno != null) errnoText(LocalContext.current, errno) else stringResource(R.string.module_install_empty),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                fontSize = 14.sp,
-                color = if (errno != null) colorScheme.error else colorScheme.onSurfaceVariantSummary,
-            )
-        }
-    }
-}
-
-@Composable
-private fun BrowserRow(entry: FileEntry, picked: Boolean, onClick: () -> Unit) {
-    val details = buildString {
-        if (entry.mtime > 0) append(FileFormat.date(entry.mtime))
-        if (!entry.isDir) append("  ").append(FileFormat.size(entry.contentSize))
-    }
-    Row(
-        modifier = Modifier
-            .panePiece()
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (picked) colorScheme.primary.copy(alpha = 0.22f) else androidx.compose.ui.graphics.Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        KindTile(if (entry.isDir) FileKind.FOLDER else FileKind.ARCHIVE, link = entry.isLink, broken = entry.linkBroken)
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(text = entry.name, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
-            Text(text = details, fontSize = 10.sp, maxLines = 1, color = colorScheme.onSurfaceVariantSummary)
-        }
-        if (picked) {
-            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
-        }
-    }
+    pickBrowser(
+        folder = PickFolder(state.path, state.entries, state.listing, state.errno),
+        fileKind = FileKind.ARCHIVE,
+        emptyText = R.string.module_install_empty,
+        isPicked = { entry -> state.picks.any { it.key == entry.path } },
+        onUp = vm::up,
+        onNavigate = vm::navigate,
+        onPickFile = vm::toggle,
+    )
 }
 
 private fun LazyListScope.preview(state: ModuleInstallUi, vm: ModuleInstallViewModel, modules: List<Module>) {

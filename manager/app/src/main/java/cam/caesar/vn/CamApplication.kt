@@ -61,8 +61,13 @@ class CamApplication : Application(), ViewModelStoreOwner {
             setEnableOnBackInvokedCallback(applicationInfo, enable)
         }
 
-        val superUserViewModel = ViewModelProvider(this)[SuperUserViewModel::class.java]
-        superUserViewModel.loadAppList()
+        // Only the main process: the app list goes through the root service, and the process that
+        // binds it first launches it inside its own cgroup. Started from :jailbreak_boot, the root
+        // service was frozen with it once that process went cached, and the UI's first root call
+        // hung the main thread (ANR on the emulator, 2026-11-09).
+        if (getProcessName() == packageName) {
+            ViewModelProvider(this)[SuperUserViewModel::class.java].loadAppList()
+        }
 
         val webroot = File(dataDir, "webroot")
         if (!webroot.exists()) {

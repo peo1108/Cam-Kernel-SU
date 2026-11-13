@@ -4,6 +4,7 @@ import cam.caesar.vn.ui.component.CamToastHost
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.draw.drawBehind
 import cam.caesar.vn.ui.intro.IntroGate
@@ -79,8 +80,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -292,12 +296,23 @@ class CamActivity : ComponentActivity() {
             }
 
             val navigator = rememberNavigator(Route.Main)
+            val context = LocalContext.current
+            val uriHandler = LocalUriHandler.current
             val systemDensity = LocalDensity.current
             val density = remember(systemDensity, uiState.pageScale) {
                 Density(systemDensity.density * uiState.pageScale, systemDensity.fontScale)
             }
 
             CompositionLocalProvider(
+                LocalUriHandler provides object : UriHandler {
+                    override fun openUri(uri: String) {
+                        try {
+                            uriHandler.openUri(uri)
+                        } catch (_: IllegalArgumentException) {
+                            Toast.makeText(context, R.string.external_link_open_failed, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
                 LocalNavigator provides navigator,
                 LocalDensity provides density,
                 LocalColorMode provides appSettings.colorMode.value,

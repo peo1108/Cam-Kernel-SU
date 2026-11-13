@@ -120,6 +120,7 @@
     <string name="close">Đóng</string>
     <string name="search_hint">Tìm kiếm</string>
     <string name="search_clear">Xóa</string>
+    <string name="external_link_open_failed">Không mở được liên kết</string>
     <string name="install_inactive_slot">Cài đặt vào phân vùng không hoạt động (Sau OTA)</string>
     <string name="install_inactive_slot_warning">Thiết bị của bạn sẽ **BUỘC** phải khởi động vào phân vùng không hoạt động hiện tại sau khi khởi động lại!\nChỉ dùng tùy chọn này khi cập nhật OTA đã hoàn tất!\nTiếp tục?</string>
     <string name="direct_install_disables_modules">Mọi module đang bật sẽ bị tắt trước khi flash. Khởi động xong thì bật lại.</string>

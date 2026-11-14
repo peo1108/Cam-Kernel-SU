@@ -1,0 +1,76 @@
+{
+ "moduleId": "zygisksu",
+ "moduleName": "Zygisk Next",
+ "url": "https://github.com/LSPosed/ZygiskNext",
+ "authors": [
+  {
+   "name": "5ec1cff",
+   "link": "https://github.com/5ec1cff"
+  },
+  {
+   "name": "Nullptr",
+   "link": "https://github.com/LSPosed"
+  },
+  {
+   "name": "aviraxp",
+   "link": "https://github.com/aviraxp"
+  }
+ ],
+ "summary": "Standalone implementation of Zygisk. Needed by Zygisk modules such as Vector and Play Integrity Fork. Pick either Zygisk Next or ReZygisk, not both.",
+ "metamodule": false,
+ "stargazerCount": 1060,
+ "updatedAt": "2026-11-07T16:35:52Z",
+ "createdAt": "2026-09-19T10:48:59Z",
+ "latestRelease": {
+  "name": "v1.5.3",
+  "time": "2026-11-07T16:35:52Z",
+  "downloadUrl": "https://github.com/LSPosed/ZygiskNext/releases/download/v1.5.3/Zygisk-Next-1.5.3-880-22a1bf5-release.zip"
+ },
+ "homepageUrl": "",
+ "sourceUrl": "https://github.com/LSPosed/ZygiskNext",
+ "readmeHTML": "<div id=\"readme\" class=\"md\" data-path=\"README.md\"><article class=\"markdown-body entry-content container-lg\" itemprop=\"text\"><div class=\"markdown-heading\" dir=\"auto\"><h1 class=\"heading-element\" dir=\"auto\">Zygisk Next</h1><a id=\"user-content-zygisk-next\" class=\"anchor\" aria-label=\"Permalink: Zygisk Next\" href=\"#zygisk-next\"><svg data-component=\"Octicon\" class=\"octicon octicon-link\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\"></path></svg></a></div>\n<p dir=\"auto\">Please visit <a href=\"https://github.com/Dr-TSNG/ZygiskNext\">Dr-TSNG/ZygiskNext</a> for project information, releases, and updates.</p>\n</article></div>",
+ "releases": [
+  {
+   "name": "v1.5.3",
+   "tagName": "v1.5.3",
+   "publishedAt": "2026-11-07T16:35:52Z",
+   "descriptionHTML": "<hr>\n<ul>\n<li>适配 Android 17 QPR3</li>\n<li>修复一些死锁问题</li>\n<li>修复 16KB 页面兼容问题</li>\n<li>修复其他问题</li>\n</ul>\n<hr>\n<ul>\n<li>Added support for Android 17 QPR3</li>\n<li>Fixed some deadlock issues</li>\n<li>Fixed compatibility with 16 KB page sizes</li>\n<li>Fixed some other issues</li>\n</ul>\n<hr>\n<p>SHA256: 186a0a26c9fcb895af1954b42de831433c23d72d1bd0758b986069154359db67</p>",
+   "releaseAssets": [
+    {
+     "name": "Zygisk-Next-1.5.3-880-22a1bf5-release.zip",
+     "downloadUrl": "https://github.com/LSPosed/ZygiskNext/releases/download/v1.5.3/Zygisk-Next-1.5.3-880-22a1bf5-release.zip",
+     "size": 6638473,
+     "downloadCount": 16444
+    }
+   ]
+  },
+  {
+   "name": "v1.5.2",
+   "tagName": "v1.5.2",
+   "publishedAt": "2026-10-13T14:24:46Z",
+   "descriptionHTML": "<ul>\n<li>修复某些系统上导致应用崩溃的问题</li>\n</ul>\n<hr>\n<ul>\n<li>Fixed an issue that caused the app to crash on certain systems.</li>\n</ul>\n<hr>\n<p>SHA256: ce50b13fecb9e4456db69ef17b715f7cfbc094004dd9f30f7d6348dfab619a96</p>",
+   "releaseAssets": [
+    {
+     "name": "Zygisk-Next-1.5.2-864-a4a72ce-release.zip",
+     "downloadUrl": "https://github.com/LSPosed/ZygiskNext/releases/download/v1.5.2/Zygisk-Next-1.5.2-864-a4a72ce-release.zip",
+     "size": 6714344,
+     "downloadCount": 279371
+    }
+   ]
+  },
+  {
+   "name": "v1.5.1",
+   "tagName": "v1.5.1",
+   "publishedAt": "2026-10-12T14:34:55Z",
+   "descriptionHTML": "<ul>\n<li>支持 riscv64 架构</li>\n<li>增加 zygote-blacklist ，允许停止注入某些 zygote （通过 WebUI 开关或 <code>znctl zygote-blacklist</code> 命令设置）</li>\n<li>修复 Android 17 QPR2 支持</li>\n<li>适配开启 CONFIG_PROC_MEM_FORCE_PTRACE 的内核</li>\n<li>修复一些其他问题</li>\n</ul>\n<hr>\n<ul>\n<li>Added support for the riscv64 architecture</li>\n<li>Added a zygote blacklist to allow disabling injection into specific zygotes (configurable via the WebUI toggle or the <code>znctl zygote-blacklist</code> command)</li>\n<li>Fixed support for Android 17 QPR2</li>\n<li>Added compatibility for kernels with <code>CONFIG_PROC_MEM_FORCE_PTRACE</code> enabled</li>\n<li>Fixed various other issues</li>\n</ul>\n<hr>\n<p>SHA256: 17c506ffea119f03e5e9d9c70acd400efdd804f35d8968d0d56a5d66fea9f3ab</p>",
+   "releaseAssets": [
+    {
+     "name": "Zygisk-Next-1.5.1-862-56ae062-release.zip",
+     "downloadUrl": "https://github.com/LSPosed/ZygiskNext/releases/download/v1.5.1/Zygisk-Next-1.5.1-862-56ae062-release.zip",
+     "size": 6682412,
+     "downloadCount": 25558
+    }
+   ]
+  }
+ ]
+}

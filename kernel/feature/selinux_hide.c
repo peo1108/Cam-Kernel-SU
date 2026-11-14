@@ -3,7 +3,10 @@
 #include "linux/jump_label.h"
 #include "linux/rcupdate.h"
 #include "selinux/sepolicy.h"
+#include "selinux/selinux.h"
 #include "ss/policydb.h"
+#include <linux/audit.h>
+#include <linux/capability.h>
 #include <linux/cred.h>
 #include <linux/cpu.h>
 #include <linux/memory.h>
@@ -17,6 +20,8 @@
 #include <linux/moduleparam.h>
 #include <linux/mutex.h>
 #include <linux/rwsem.h>
+#include <linux/security.h>
+#include <linux/xattr.h>
 // security/selinux/include/security.h
 #include <security.h>
 #include <ss/context.h>
@@ -39,6 +44,11 @@
 static DEFINE_MUTEX(selinux_hide_mutex);
 static bool ksu_selinux_hide_enabled __read_mostly = false;
 static bool ksu_selinux_hide_running __read_mostly = false;
+// Set once enable starts patching: from then hooks may run (a failed enable
+// included, or a disable whose restore failed), so boot_completed keeps the
+// backup for them. Upstream #3996; it also lets a switch-on after a switch-off
+// in the same boot work without a reboot.
+static bool ksu_selinux_hide_keep_backup __read_mostly = false;
 // Hooks read backup_sepolicy under this; dropping it takes it for write, so a
 // hook that entered before the feature was turned off never sees it freed.
 static DECLARE_RWSEM(backup_sepolicy_sem);
@@ -107,9 +117,11 @@ static bool context_write_hooked, access_write_hooked;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
 #define ksu_avc_has_perm_compat(...) avc_has_perm(__VA_ARGS__)
 #define ksu_security_bounded_transition_compat(...) security_bounded_transition(__VA_ARGS__)
+#define ksu_security_validate_transition_compat(...) security_validate_transition(__VA_ARGS__)
 #else
 #define ksu_avc_has_perm_compat(...) avc_has_perm(&selinux_state, __VA_ARGS__)
 #define ksu_security_bounded_transition_compat(...) security_bounded_transition(&selinux_state, __VA_ARGS__)
+#define ksu_security_validate_transition_compat(...) security_validate_transition(&selinux_state, __VA_ARGS__)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 18, 0)
@@ -395,6 +407,139 @@ static int __nocfi my_setselfattr(unsigned int attr, struct lsm_ctx *ctx, u32 si
 }
 #endif
 
+// Upstream #3996, adapted. Relabeling an inode the app owns (DexGuard uses a
+// netlink socket) parses the requested context against the live policy, so
+// EINVAL vs EACCES told whether the policy knows a root type. This copies
+// selinux_inode_setxattr's path for security.selinux and parses like
+// my_setprocattr: the backup decides acceptance, the live SID comes from the
+// same parse. Permission checks run before the parse, as stock does.
+// Cam: optional. When a symbol or the superblock offset is missing, this hook
+// alone stays off (setxattr_hook_ready); upstream failed the whole feature.
+static bool setxattr_hook_ready;
+static int (*inode_doinit_with_dentry_fn)(struct inode *inode, struct dentry *dentry);
+static struct ksu_lsm_hook selinux_inode_setxattr_hook;
+typedef typeof(((union security_list_options *)0)->inode_setxattr) inode_setxattr_fn;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+static int __nocfi my_inode_setxattr(struct mnt_idmap *idmap, struct dentry *dentry, const char *name,
+                                     const void *value, size_t size, int flags)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
+static int __nocfi my_inode_setxattr(struct user_namespace *mnt_userns, struct dentry *dentry, const char *name,
+                                     const void *value, size_t size, int flags)
+#else
+static int __nocfi my_inode_setxattr(struct dentry *dentry, const char *name, const void *value, size_t size, int flags)
+#endif
+{
+    struct inode *inode = d_backing_inode(dentry);
+    struct inode_security_struct *isec;
+    struct superblock_security_struct *sbsec;
+    struct selinux_policy *policy;
+    struct common_audit_data ad;
+    u32 sid = current_sid(), newsid = SECSID_NULL, backup_sid;
+    int rc, live_rc = -EINVAL;
+
+    if (likely(current_uid().val < 10000) || strcmp(name, XATTR_NAME_SELINUX))
+        goto call_orig;
+
+    // Keep native force parsing for callers with CAP_MAC_ADMIN
+    if (!cap_capable(current_cred(), &init_user_ns, CAP_MAC_ADMIN, CAP_OPT_NOAUDIT))
+        goto call_orig;
+
+    sbsec = ksu_selinux_superblock(inode->i_sb);
+    if (IS_ERR_OR_NULL(sbsec))
+        goto call_orig;
+    if (!(sbsec->flags & SBLABEL_MNT))
+        return -EOPNOTSUPP;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+    if (!inode_owner_or_capable(idmap, inode))
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
+    if (!inode_owner_or_capable(mnt_userns, inode))
+#else
+    if (!inode_owner_or_capable(inode))
+#endif
+        return -EPERM;
+
+    // Cam: ksu_selinux_inode() is NULL without a blob; stock handles that inode
+    isec = ksu_selinux_inode(inode);
+    if (IS_ERR_OR_NULL(isec))
+        goto call_orig;
+    // Match backing_inode_security: keep old label if reload fails
+    if (READ_ONCE(isec->initialized) != LABEL_INITIALIZED)
+        inode_doinit_with_dentry_fn(inode, dentry);
+
+    ad.type = LSM_AUDIT_DATA_DENTRY;
+    ad.u.dentry = dentry;
+    rc = ksu_avc_has_perm_compat(sid, isec->sid, isec->sclass, FILE__RELABELFROM, &ad);
+    if (rc)
+        return rc;
+
+    // Keep context parsing after native relabelfrom check
+    policy = backup_get();
+    if (!policy)
+        goto call_orig;
+    rc = security_context_to_sid_with_policy(policy, value, size, &backup_sid, SECSID_NULL, GFP_KERNEL, &newsid,
+                                             &live_rc);
+    backup_put();
+    rc = rc ?: live_rc;
+
+    if (rc == -EINVAL) {
+        struct audit_buffer *ab;
+        size_t audit_size = value ? size : 0;
+
+        // Strip only final NUL so embedded NUL bytes remain in audit log
+        if (audit_size && ((const char *)value)[audit_size - 1] == '\0')
+            audit_size--;
+        ab = audit_log_start(audit_context(), GFP_ATOMIC, AUDIT_SELINUX_ERR);
+        if (ab) {
+            audit_log_format(ab, "op=setxattr invalid_context=");
+            audit_log_n_untrustedstring(ab, value, audit_size);
+            audit_log_end(ab);
+        }
+    }
+    if (rc)
+        return rc;
+
+    rc = ksu_avc_has_perm_compat(sid, newsid, isec->sclass, FILE__RELABELTO, &ad);
+    if (rc)
+        return rc;
+    rc = ksu_security_validate_transition_compat(isec->sid, newsid, sid, isec->sclass);
+    if (rc)
+        return rc;
+    return ksu_avc_has_perm_compat(newsid, sbsec->sid, SECCLASS_FILESYSTEM, FILESYSTEM__ASSOCIATE, &ad);
+
+call_orig:
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+    return ((inode_setxattr_fn)selinux_inode_setxattr_hook.original)(idmap, dentry, name, value, size, flags);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
+    return ((inode_setxattr_fn)selinux_inode_setxattr_hook.original)(mnt_userns, dentry, name, value, size, flags);
+#else
+    return ((inode_setxattr_fn)selinux_inode_setxattr_hook.original)(dentry, name, value, size, flags);
+#endif
+}
+
+static struct ksu_lsm_hook selinux_inode_setxattr_hook =
+    KSU_LSM_HOOK_INIT(inode_setxattr, "selinux_inode_setxattr", my_inode_setxattr, 0);
+
+static int selinux_hide_init_setxattr(void)
+{
+    int ret;
+
+    if (setxattr_hook_ready)
+        return 0;
+    ret = ksu_selinux_superblock_init();
+    if (ret)
+        return ret;
+
+    inode_doinit_with_dentry_fn = ksu_resolve_symbol_for_functable_hook("inode_doinit_with_dentry");
+    // Set original before publishing callback to other CPUs
+    selinux_inode_setxattr_hook.original = ksu_resolve_symbol_for_functable_hook("selinux_inode_setxattr");
+    if (!inode_doinit_with_dentry_fn || !selinux_inode_setxattr_hook.original)
+        return -ENOENT;
+    setxattr_hook_ready = true;
+    return 0;
+}
+
 static DEFINE_STATIC_KEY_FALSE(fake_status_initialize_key);
 static struct page *fake_status = NULL;
 
@@ -482,6 +627,9 @@ static int ksu_selinux_hide_enable()
         pr_err("no backup sepolicy available, please save feature and reboot to retry!\n");
         return -EAGAIN;
     }
+    ret = selinux_hide_init_setxattr();
+    if (ret)
+        pr_warn("selinux_hide: setxattr helpers err: %d, security.selinux relabel stays unhidden\n", ret);
     selinux_write_op = find_kernel_symbol_exact("write_op");
     if (!selinux_write_op) {
         pr_err("selinux_hide: no write_op found!\n");
@@ -498,6 +646,8 @@ static int ksu_selinux_hide_enable()
     write_op_fn want_access = (write_op_fn)find_kernel_symbol_exact("sel_write_access");
     context_write = &selinux_write_op[SEL_CONTEXT];
     pr_info("selinux_hide: context_write: 0x%lx [%pSb]\n", (unsigned long)*context_write, *context_write);
+    // Keep backup once hooks may run, including failed enable attempts
+    ksu_selinux_hide_keep_backup = true;
     // a failed restore leaves the slot pointing at us: do not take that as orig
     if (!context_write_hooked) {
         if (want_context && *context_write != want_context) {
@@ -548,6 +698,13 @@ static int ksu_selinux_hide_enable()
     }
 #endif
 
+    // Optional like its helpers: a failure leaves this hook off, not the feature
+    if (setxattr_hook_ready) {
+        ret = ksu_lsm_hook(&selinux_inode_setxattr_hook);
+        if (ret)
+            pr_err("selinux_hide: init: selinux_inode_setxattr_hook err: %d, relabel stays unhidden\n", ret);
+    }
+
     return 0;
 
 unhook:
@@ -558,6 +715,8 @@ unhook:
 static void ksu_selinux_hide_unhook()
 {
     int ret;
+    // no-op when it was never hooked (ksu_lsm_unhook checks hook->entry)
+    ksu_lsm_unhook(&selinux_inode_setxattr_hook);
     if (context_write_hooked) {
         ret =
             ksu_patch_text(context_write, &orig_context_write, sizeof(orig_context_write), KSU_PATCH_TEXT_FLUSH_DCACHE);
@@ -739,7 +898,7 @@ void ksu_selinux_hide_drop_backup_if_unused()
     struct selinux_policy *backup;
 
     mutex_lock(&selinux_hide_mutex);
-    if (!ksu_selinux_hide_running && backup_sepolicy) {
+    if (!ksu_selinux_hide_keep_backup && backup_sepolicy) {
         pr_info("selinux_hide is not enabled - drop backup_sepolicy\n");
         // waits for hooks that entered before the feature was turned off
         down_write(&backup_sepolicy_sem);

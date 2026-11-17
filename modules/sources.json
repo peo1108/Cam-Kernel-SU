@@ -58,6 +58,14 @@
       "summary": "Systemless hosts file for ad blocking, with a WebUI to manage sources.",
       "repo": "bindhosts/bindhosts",
       "asset": "^bindhosts\\.zip$"
+    },
+    {
+      "id": "dm_service",
+      "name": "Display Management Service",
+      "authors": [{"name": "Cam", "link": "https://github.com/peo1108"}],
+      "summary": "PUBG Mobile tweaks for RedMagic phones: resolution scale, 120 FPS, colour saturation, Active.sav graphics, guest reset, all from a WebUI. arm64 only, needs Zygisk.",
+      "repo": "peo1108/kich_net",
+      "asset": "^dm_service-v.*\\.zip$"
     }
   ]
 }

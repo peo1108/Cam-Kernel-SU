@@ -1,5 +1,5 @@
 {
-  "_comment": "Cam module library. id must equal the id= in the module's module.prop (the Manager matches installed modules by it); name, authors and summary follow module.prop too. repo is the GitHub repo whose releases carry the zip, asset a regex picking the zip from a release. scripts/gen_module_repo.py builds modules.json + module/<id>.json from this; .github/workflows/module-repo.yml publishes them to the module-repo branch (docs/CAM_CHANGES.md section 13).",
+  "_comment": "Cam module library. id must equal the id= in the module's module.prop (the Manager matches installed modules by it); name, authors and summary follow module.prop too. repo is the GitHub repo whose releases carry the zip, asset a regex picking the zip from a release. A module hosted outside GitHub gives updateJson instead (the URL in its module.prop; version, zipUrl and changelog come from it, only the latest release is listed) and optionally homepage. scripts/gen_module_repo.py builds modules.json + module/<id>.json from this; .github/workflows/module-repo.yml publishes them to the module-repo branch (docs/CAM_CHANGES.md section 13).",
   "modules": [
     {
       "id": "magic_mount_rs",
@@ -64,8 +64,8 @@
       "name": "Display Management Service",
       "authors": [{"name": "Cam", "link": "https://github.com/peo1108"}],
       "summary": "PUBG Mobile tweaks for RedMagic phones: resolution scale, 120 FPS, colour saturation, Active.sav graphics, guest reset, all from a WebUI. arm64 only, needs Zygisk.",
-      "repo": "peo1108/kich_net",
-      "asset": "^dm_service-v.*\\.zip$"
+      "updateJson": "https://kichnet.caesarvn.xyz/update.json",
+      "homepage": "https://kichnet.caesarvn.xyz/"
     }
   ]
 }

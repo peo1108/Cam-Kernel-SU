@@ -513,6 +513,7 @@
     <string name="features_bootloader_props">System properties</string>
     <string name="features_bootloader_bootconfig">Boot arguments (reported only)</string>
     <string name="features_bootloader_bootconfig_note">Only root can read these. Apps cannot, so they do not count as leaks.</string>
+    <string name="features_bootloader_not_tell_note">Grey entries are not a sign of an unlocked bootloader: a locked device can show them too, so they do not count as leaks. The switch still rewrites them.</string>
     <string name="features_bootloader_fine">%d entries look like a locked device</string>
     <string name="features_attestation">Key attestation (what banking apps see)</string>
     <string name="features_attestation_check">Check attestation</string>

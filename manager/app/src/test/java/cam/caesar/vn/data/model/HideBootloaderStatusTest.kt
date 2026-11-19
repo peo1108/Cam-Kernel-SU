@@ -21,6 +21,37 @@ class HideBootloaderStatusTest {
     }
 
     @Test
+    fun valuesALockedDeviceShowsAreNotLeaks() {
+        // TB323FU locked through EFISP: what camd reports since it marks tells, hide bootloader off
+        val json = """
+            {"bootconfig":[{"name":"androidboot.veritymode","ok":false,"safe":"enforcing","tell":false,"value":"eio"}],
+             "enabled":false,
+             "props":[{"current":"eio","name":"ro.boot.veritymode","ok":false,"safe":"enforcing","tell":false},
+                      {"current":"1","name":"sys.oem_unlock_allowed","ok":false,"safe":"0","tell":false},
+                      {"current":"green","name":"ro.boot.verifiedbootstate","ok":true,"safe":"green","tell":true}]}
+        """.trimIndent()
+        val status = HideBootloaderStatus.parse(json)
+        assertEquals(0, status.leaks)
+        assertEquals(PropCheck("ro.boot.veritymode", "eio", "enforcing", ok = false, tell = false), status.props[0])
+
+        val unlocked = json.replace(
+            """{"current":"green","name":"ro.boot.verifiedbootstate","ok":true,"safe":"green","tell":true}""",
+            """{"current":"orange","name":"ro.boot.verifiedbootstate","ok":false,"safe":"green","tell":true}""",
+        )
+        assertEquals(1, HideBootloaderStatus.parse(unlocked).leaks)
+    }
+
+    @Test
+    fun camdWithoutTellCountsEveryWrongValue() {
+        // older camd: no "tell" field, so a value off the safe one counts as before
+        val json = """
+            {"bootconfig":[],"enabled":false,
+             "props":[{"current":"eio","name":"ro.boot.veritymode","ok":false,"safe":"enforcing"}]}
+        """.trimIndent()
+        assertEquals(1, HideBootloaderStatus.parse(json).leaks)
+    }
+
+    @Test
     fun bootconfigIsNotALeak() {
         val json = """
             {"bootconfig":[{"name":"androidboot.verifiedbootstate","ok":false,"safe":"green","value":"orange"},

@@ -4,9 +4,16 @@ import androidx.compose.runtime.Immutable
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** One watched property or boot argument, with the value a locked device reports. */
+/**
+ * One watched property or boot argument, with the value a locked device reports. [tell]: a value other
+ * than [safe] gives the bootloader away; false for `veritymode=eio` or `sys.oem_unlock_allowed`, which a
+ * locked device can show too (camd's `hide_bootloader::is_tell`). A camd without the field counts as true.
+ */
 @Immutable
-data class PropCheck(val name: String, val value: String, val safe: String, val ok: Boolean)
+data class PropCheck(val name: String, val value: String, val safe: String, val ok: Boolean, val tell: Boolean = true) {
+    /** Not what a locked device reports, and that says the bootloader is open. */
+    val leaks: Boolean get() = !ok && tell
+}
 
 /** Output of `camd hide-bootloader status`. */
 @Immutable
@@ -16,9 +23,12 @@ data class HideBootloaderStatus(
     /** from /proc/bootconfig and /proc/cmdline: reported, never rewritten */
     val bootconfig: List<PropCheck>,
 ) {
-    /** Only properties count: SELinux keeps apps out of /proc/bootconfig and /proc/cmdline. */
+    /**
+     * Only properties count: SELinux keeps apps out of /proc/bootconfig and /proc/cmdline. Values a locked
+     * device shows too (not [PropCheck.tell]) do not, as in `camd hiding-audit`.
+     */
     val leaks: Int
-        get() = props.count { !it.ok }
+        get() = props.count { it.leaks }
 
     /**
      * The bootloader verified boot against a user-set AVB key (avbroot and the like): AVB state yellow.
@@ -52,6 +62,7 @@ data class HideBootloaderStatus(
                     value = item.optString(valueKey),
                     safe = item.optString("safe"),
                     ok = item.optBoolean("ok"),
+                    tell = item.optBoolean("tell", true),
                 )
             }
     }

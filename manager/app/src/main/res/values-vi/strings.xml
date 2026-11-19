@@ -501,6 +501,7 @@
     <string name="features_bootloader_props">Prop hệ thống</string>
     <string name="features_bootloader_bootconfig">Tham số khởi động (chỉ báo, không sửa)</string>
     <string name="features_bootloader_bootconfig_note">Chỉ root đọc được, app không thấy nên không tính là lộ.</string>
+    <string name="features_bootloader_not_tell_note">Mục màu xám không phải dấu hiệu mở khóa: máy khóa thật cũng có thể như vậy, nên không tính là lộ. Bật công tắc vẫn sửa các mục này.</string>
     <string name="features_bootloader_fine">%d mục giống máy đã khóa</string>
     <string name="features_attestation">Key attestation (thứ app ngân hàng thấy)</string>
     <string name="features_attestation_check">Kiểm tra attestation</string>

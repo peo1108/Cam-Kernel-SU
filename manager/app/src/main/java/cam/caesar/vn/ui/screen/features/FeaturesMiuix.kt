@@ -354,8 +354,9 @@ private fun HideBootloaderCard(state: FeaturesUiState, actions: FeaturesActions)
 }
 
 /**
- * Revealing entries one per line; the ones already fine are only counted.
- * [rootOnly] entries are shown muted: apps cannot read them, so they are not leaks.
+ * Entries that differ from a locked device one per line; the ones already fine are only counted.
+ * [rootOnly] entries are shown muted: apps cannot read them, so they are not leaks. So are values a
+ * locked device shows too ([PropCheck.tell] false): the switch still rewrites them.
  */
 @Composable
 private fun CheckSection(title: String, checks: List<PropCheck>, rootOnly: Boolean = false) {
@@ -363,18 +364,25 @@ private fun CheckSection(title: String, checks: List<PropCheck>, rootOnly: Boole
     SectionTitle(title)
     val revealing = checks.filterNot { it.ok }
     revealing.forEach { check ->
-        CheckLine("${check.name}: ${check.value} → ${check.safe}", ok = false, muted = rootOnly)
+        CheckLine("${check.name}: ${check.value} → ${check.safe}", ok = false, muted = rootOnly || !check.tell)
     }
     if (rootOnly && revealing.isNotEmpty()) {
-        Text(
-            text = stringResource(R.string.features_bootloader_bootconfig_note),
-            fontSize = 12.sp,
-            color = colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
-        )
+        CheckNote(stringResource(R.string.features_bootloader_bootconfig_note))
+    } else if (revealing.any { !it.tell }) {
+        CheckNote(stringResource(R.string.features_bootloader_not_tell_note))
     }
     val fine = checks.count { it.ok }
     if (fine > 0) CheckLine(stringResource(R.string.features_bootloader_fine, fine), ok = true)
+}
+
+@Composable
+private fun CheckNote(text: String) {
+    Text(
+        text = text,
+        fontSize = 12.sp,
+        color = colorScheme.onSurfaceVariantSummary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp),
+    )
 }
 
 @Composable

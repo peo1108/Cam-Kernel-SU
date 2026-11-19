@@ -107,6 +107,8 @@ pub fn parse_boot_args(bootconfig: &str, cmdline: &str) -> Vec<(String, String)>
         .collect()
 }
 
+/// `tell`: whether a value other than the safe one gives the bootloader away ([`is_tell`]); the
+/// Manager counts only those as leaks, as `camd hiding-audit` does. Older Managers ignore it.
 pub fn status_json(
     enabled: bool,
     props: &[(String, String)],
@@ -116,16 +118,28 @@ pub fn status_json(
         .iter()
         .filter_map(|(name, current)| {
             safe_value(name).map(|safe| {
-                json!({ "name": name, "current": current, "safe": safe, "ok": current == safe })
+                json!({
+                    "name": name,
+                    "current": current,
+                    "safe": safe,
+                    "ok": current == safe,
+                    "tell": is_tell(name, current),
+                })
             })
         })
         .collect();
     let boot_args: Vec<Value> = boot_args
         .iter()
         .filter_map(|(name, value)| {
-            safe_value(name).map(
-                |safe| json!({ "name": name, "value": value, "safe": safe, "ok": value == safe }),
-            )
+            safe_value(name).map(|safe| {
+                json!({
+                    "name": name,
+                    "value": value,
+                    "safe": safe,
+                    "ok": value == safe,
+                    "tell": is_tell(name, value),
+                })
+            })
         })
         .collect();
     json!({ "enabled": enabled, "props": props, "bootconfig": boot_args })
@@ -405,9 +419,49 @@ mod tests {
             v,
             serde_json::json!({
                 "enabled": true,
-                "props": [{"name": "ro.boot.verifiedbootstate", "current": "orange", "safe": "green", "ok": false}],
-                "bootconfig": [{"name": "androidboot.flash.locked", "value": "1", "safe": "1", "ok": true}],
+                "props": [{"name": "ro.boot.verifiedbootstate", "current": "orange", "safe": "green", "ok": false, "tell": true}],
+                "bootconfig": [{"name": "androidboot.flash.locked", "value": "1", "safe": "1", "ok": true, "tell": true}],
             })
+        );
+    }
+
+    #[test]
+    fn status_marks_values_that_do_not_tell() {
+        // TB323FU, locked through EFISP, managed dm-verity pinned to eio, OEM unlocking allowed
+        let v = status_json(
+            false,
+            &props(&[
+                ("ro.boot.veritymode", "eio"),
+                ("sys.oem_unlock_allowed", "1"),
+                ("ro.boot.flash.locked", "0"),
+            ]),
+            &props(&[("androidboot.veritymode", "eio")]),
+        );
+        let tells = |key: &str| -> Vec<(String, bool, bool)> {
+            v[key]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|e| {
+                    (
+                        e["name"].as_str().unwrap().to_owned(),
+                        e["ok"].as_bool().unwrap(),
+                        e["tell"].as_bool().unwrap(),
+                    )
+                })
+                .collect()
+        };
+        assert_eq!(
+            tells("props"),
+            vec![
+                ("ro.boot.veritymode".to_owned(), false, false),
+                ("sys.oem_unlock_allowed".to_owned(), false, false),
+                ("ro.boot.flash.locked".to_owned(), false, true),
+            ]
+        );
+        assert_eq!(
+            tells("bootconfig"),
+            vec![("androidboot.veritymode".to_owned(), false, false)]
         );
     }
 }

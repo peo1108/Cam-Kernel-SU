@@ -194,15 +194,12 @@ pub struct Reading {
 impl Reading {
     pub fn from_json(report: &Value) -> Option<Self> {
         let batches = |key: &str| -> Vec<u32> {
-            report[key]
-                .as_array()
-                .map(|list| {
-                    list.iter()
-                        .filter_map(Value::as_u64)
-                        .map(|v| v as u32)
-                        .collect()
-                })
-                .unwrap_or_default()
+            report[key].as_array().map_or_else(Vec::new, |list| {
+                list.iter()
+                    .filter_map(Value::as_u64)
+                    .map(|v| v as u32)
+                    .collect()
+            })
         };
         Some(Self {
             state: report["state"].as_str()?.to_owned(),

@@ -1191,9 +1191,10 @@ pub fn list_module_conflicts() -> Result<()> {
             } else {
                 module_conflicts::scan_module_tree(&root)
             };
-            let props = std::fs::read_to_string(root.join("system.prop"))
-                .map(|text| module_conflicts::parse_system_prop(&text))
-                .unwrap_or_default();
+            let props = std::fs::read_to_string(root.join("system.prop")).map_or_else(
+                |_| Vec::new(),
+                |text| module_conflicts::parse_system_prop(&text),
+            );
             module_conflicts::ModuleInput { id, entries, props }
         })
         .collect();

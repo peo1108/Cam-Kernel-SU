@@ -106,10 +106,9 @@ pub struct Reading {
 
 impl Reading {
     pub fn from_json(report: &Value) -> Option<Self> {
-        let cpus = report["cpus"]
-            .as_array()
-            .map(|list| list.iter().filter_map(CpuSample::from_json).collect())
-            .unwrap_or_default();
+        let cpus = report["cpus"].as_array().map_or_else(Vec::new, |list| {
+            list.iter().filter_map(CpuSample::from_json).collect()
+        });
         Some(Self {
             state: report["state"].as_str()?.to_owned(),
             cpus,

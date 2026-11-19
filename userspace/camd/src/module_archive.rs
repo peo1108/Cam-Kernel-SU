@@ -328,7 +328,7 @@ mod android {
         {
             let dir = tree.join(&entry.id);
             let staged = module::read_module_prop(&dir).and_then(|prop| {
-                let id = prop.get("id").map(|s| s.trim()).unwrap_or_default();
+                let id = prop.get("id").map_or("", |s| s.trim());
                 ensure!(
                     id == entry.id,
                     "module.prop says id '{id}', not '{}'",

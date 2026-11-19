@@ -29,9 +29,22 @@ const EXACT_RULES: [(&str, &str); 4] = [
 /// bootloader too. Duck Detector only shows it since `84370394`.
 const NOT_TELLS: [&str; 1] = ["sys.oem_unlock_allowed"];
 
-/// Whether an app reading a wrong value of `name` learns the bootloader is unlocked.
-pub fn is_tell(name: &str) -> bool {
-    !NOT_TELLS.contains(&name)
+/// Whether an app reading `name` = `value` (a value other than the safe one) learns the
+/// bootloader is unlocked. `veritymode` = `eio` does not: in libavb's managed mode
+/// (`veritymode.managed=yes`) a locked bootloader keeps eio after one dm-verity corruption
+/// reboot until the next OS update (Cam's own TB323FU, 2026-11-19), and Duck Detector lists
+/// it without counting it. Both are still rewritten when the feature is on.
+pub fn is_tell(name: &str, value: &str) -> bool {
+    let managed_eio = has_suffix(name, "veritymode") && value == "eio";
+    !NOT_TELLS.contains(&name) && !managed_eio
+}
+
+/// `name` equals `suffix` or ends with `.` + `suffix`.
+fn has_suffix(name: &str, suffix: &str) -> bool {
+    name == suffix
+        || name
+            .strip_suffix(suffix)
+            .is_some_and(|head| head.ends_with('.'))
 }
 
 /// The value a locked, verified device reports for `name`, if it is a property we hide.
@@ -41,12 +54,7 @@ pub fn safe_value(name: &str) -> Option<&'static str> {
     }
     SUFFIX_RULES
         .iter()
-        .find(|(suffix, _)| {
-            name == *suffix
-                || name
-                    .strip_suffix(suffix)
-                    .is_some_and(|head| head.ends_with('.'))
-        })
+        .find(|(suffix, _)| has_suffix(name, suffix))
         .map(|(_, safe)| *safe)
 }
 
@@ -286,8 +294,22 @@ mod tests {
             plan(&props(&[("sys.oem_unlock_allowed", "1")])),
             vec![("sys.oem_unlock_allowed".to_owned(), "0")]
         );
-        assert!(!is_tell("sys.oem_unlock_allowed"));
-        assert!(is_tell("ro.boot.verifiedbootstate"));
+        assert!(!is_tell("sys.oem_unlock_allowed", "1"));
+        assert!(is_tell("ro.boot.verifiedbootstate", "orange"));
+    }
+
+    #[test]
+    fn veritymode_eio_is_hidden_but_not_a_tell() {
+        assert_eq!(
+            plan(&props(&[("ro.boot.veritymode", "eio")])),
+            vec![("ro.boot.veritymode".to_owned(), "enforcing")]
+        );
+        assert!(!is_tell("ro.boot.veritymode", "eio"));
+        assert!(!is_tell("androidboot.veritymode", "eio"));
+        // only a modified vbmeta or an unlocked bootloader gives these
+        assert!(is_tell("ro.boot.veritymode", "disabled"));
+        assert!(is_tell("androidboot.veritymode", "logging"));
+        assert!(is_tell("ro.boot.verifiedbootstate", "eio"));
     }
 
     #[test]

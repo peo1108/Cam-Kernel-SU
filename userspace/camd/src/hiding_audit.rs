@@ -565,8 +565,12 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
     if !s.hide_bootloader {
         let props: Vec<String> = hide_bootloader::plan(&s.props)
             .into_iter()
-            .filter(|(name, _)| hide_bootloader::is_tell(name))
-            .map(|(name, _)| format!("{name}={}", prop(&s.props, &name).unwrap_or_default()))
+            .map(|(name, _)| {
+                let current = prop(&s.props, &name).unwrap_or_default();
+                (name, current)
+            })
+            .filter(|(name, current)| hide_bootloader::is_tell(name, current))
+            .map(|(name, current)| format!("{name}={current}"))
             .collect();
         if !props.is_empty() {
             push(
@@ -582,7 +586,10 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
     let boot_args: Vec<String> = s
         .boot_args
         .iter()
-        .filter(|(name, value)| hide_bootloader::safe_value(name).is_some_and(|safe| safe != value))
+        .filter(|(name, value)| {
+            hide_bootloader::safe_value(name).is_some_and(|safe| safe != value)
+                && hide_bootloader::is_tell(name, value)
+        })
         .map(|(name, value)| format!("{name}={value}"))
         .collect();
     if !boot_args.is_empty() {
@@ -1257,6 +1264,35 @@ mod tests {
             ..s
         };
         assert!(audit(&hidden).is_empty());
+    }
+
+    #[test]
+    fn veritymode_eio_is_not_reported() {
+        // TB323FU, locked (EFISP), managed dm-verity pinned to eio, hide bootloader off
+        let s = Snapshot {
+            props: props(&[
+                ("ro.boot.verifiedbootstate", "green"),
+                ("ro.boot.veritymode", "eio"),
+                ("ro.boot.veritymode.managed", "yes"),
+            ]),
+            boot_args: props(&[
+                ("androidboot.verifiedbootstate", "green"),
+                ("androidboot.veritymode", "eio"),
+            ]),
+            ..snapshot()
+        };
+        assert!(audit(&s).is_empty());
+
+        let disabled = Snapshot {
+            props: props(&[("ro.boot.veritymode", "disabled")]),
+            boot_args: props(&[("androidboot.veritymode", "disabled")]),
+            ..snapshot()
+        };
+        let findings = audit(&disabled);
+        let ids: Vec<&str> = findings.iter().map(|f| f.id).collect();
+        assert_eq!(ids, vec!["props", "bootArgs"]);
+        assert_eq!(findings[0].items, vec!["ro.boot.veritymode=disabled"]);
+        assert_eq!(findings[1].items, vec!["androidboot.veritymode=disabled"]);
     }
 
     #[test]

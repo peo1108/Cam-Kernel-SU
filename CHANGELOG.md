@@ -2,8 +2,8 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.2.6 - 2026-11-09
-- Thử nghiệm: giả key attestation (keystore2) bằng keybox của bạn, để app đích có thể qua Play Integrity mức STRONG; sửa lỗi Trang chủ có thể treo ("không phản hồi") khi mở app
+## 1.2.6 - 2026-11-19
+- Thử nghiệm: giả key attestation (keystore2) bằng keybox của bạn, để app đích có thể qua Play Integrity mức STRONG; ẩn SELinux chặn thêm một cách dò root (cần cài lại LKM); sửa lỗi Trang chủ có thể treo ("không phản hồi") khi mở app
 ### Thay đổi
 - Giả attestation (thử nghiệm, mặc định tắt): Tính năng → Tự ẩn bootloader → "Giả attestation (keystore2)…". App đích (mặc định Google Play services và Play Store) nhận key attestation ký bằng keybox của bạn, báo máy đã khoá và Verified; app khác vẫn dùng phần cứng thật. Cam không kèm keybox: bạn tự nạp file keybox.xml, Cam kiểm tra chuỗi chứng chỉ, khoá riêng và danh sách thu hồi của Google, khoá riêng ở lại trên máy. Chỉ Android 12 trở lên. Có hiệu lực ở lần khởi động sau
 - Khi bật giả attestation, Cam luôn sửa prop bootloader (như bật "Sửa prop bootloader") để những gì app đọc khớp với chứng chỉ báo máy đã khoá
@@ -11,11 +11,17 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Sửa prop bootloader: ngoài `ro.boot.vbmeta.digest`, Cam điền thêm `ro.boot.vbmeta.public_key_digest` bằng giá trị thật của máy khi bootloader có tạo prop này mà để trống. Y700 không có prop này nên không đổi gì
 - Trang attestation: tablet xoay ngang chia 2 cột; "Nạp keybox…" mở trình duyệt tệp của app (như cài module), nút thư mục vẫn mở trình chọn của hệ thống (Drive, USB)
 - Kiểm tra ẩn root: bootconfig / cmdline báo bootloader mở khoá giờ chỉ là cảnh báo, không còn tính là lộ. App thường không đọc được hai tệp này (SELinux chặn), chỉ root mới thấy; các prop bootloader mà app đọc được vẫn tính là lộ như trước
+- Ẩn SELinux: chặn thêm một cách dò root. Một số app (ví dụ app dùng DexGuard) thử gán nhãn SELinux của root cho tệp hay socket của chính nó rồi xem lỗi trả về: nhãn có thật báo lỗi khác nhãn không tồn tại, nên app biết máy có root. Giờ nhãn của Cam báo lỗi y như nhãn không tồn tại, giống máy không root (theo bản gốc KernelSU). Có hiệu lực khi cài lại LKM
+- Kiểm tra ẩn root: `veritymode=eio` không còn bị báo là bootloader mở khoá. Máy khoá thật cũng có thể ở chế độ này sau một lần dm-verity bắt lỗi (ví dụ OTA hỏng rồi flash lại), và bootloader giữ nó tới bản firmware sau; Duck Detector cũng không tính. Bật Tự ẩn bootloader thì app vẫn đọc được `enforcing` như trước
+- Rule ẩn root v31: theo Duck Detector tới bản nightly 18/11 (5fbf59f5). Các bản nightly từ 7/11 chỉ nâng thư viện, không đổi phép đo nào
+- Màn cài module: bấm Khởi động lại một lần là đủ, nút thành vòng xoay trong lúc chờ máy khởi động lại; danh sách module xếp lại sau khi cài
 ### Sửa lỗi
 - Trang chủ có thể treo rồi hiện "không phản hồi" khi mở Cam lúc một tiến trình phụ của app (chạy khi máy khởi động xong) đang bị Android đóng băng ở nền
+- Bấm một liên kết khi máy không có app nào mở được nó không còn làm Cam văng: app báo "Không mở được liên kết"
+- Bảo mật (theo bản gốc): tên mẫu hồ sơ app không còn trỏ được ra ngoài thư mục mẫu, và lệnh app chạy bằng root không còn để biến lọt vào shell root
 ### Lưu ý
 - Giả attestation mới chạy thử trên máy ảo với keybox thật (chuỗi chứng chỉ báo khoá/Verified, keystore2 ổn định), **chưa thử Play Integrity STRONG trên máy thật**. Chỉ bật khi có keybox còn hạn và chưa bị thu hồi. Tắt thì cần khởi động lại để máy về như cũ
-- Bản này không đổi cách kernel chạy trên Y700 (chỉ nhận một sửa của bản gốc cho kernel 7.3 trở lên). Nếu app gợi ý cài lại LKM thì làm hay không đều được. Duck Detector, Luna, Chunqiu trên Y700 giống hệt trước (quét bằng beta.1, giả attestation tắt); beta.2 quét lại bằng Duck Detector trên máy ảo, kết quả giống beta.1. beta.3 chỉ đổi phần prop vbmeta: trên Y700, bật rồi tắt "Sửa prop bootloader" bằng camd của bản này không làm đổi prop nào
+- Từ beta.5 bản này có thay đổi kernel (phần ẩn SELinux ở trên): cài lại LKM khi app gợi ý. Đã thử trên Y700 (ZUXOS 2.0.12.088) với kernel của beta.5: phần chặn mới chạy đúng, ẩn SELinux không chậm hơn kernel gốc đáng kể (đo được dưới 7 ns, giới hạn 50 ns); Duck Detector không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi USB như trước; Luna 8/8. beta.1 đến beta.3 không đổi kernel trên Y700; beta.3 chỉ đổi phần prop vbmeta
 
 ## 1.2.5 - 2026-11-08
 - Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v28; trang Kiểm tra ẩn root đo thêm timing App Zygote như Duck Detector; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt

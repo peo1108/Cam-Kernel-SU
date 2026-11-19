@@ -1,14 +1,14 @@
 {
   "duck": {
     "package": "com.eltavine.duckdetector",
-    "version": "2026.11.07-d60597cac452",
-    "saved": "2026-11-08",
+    "version": "2026.11.18-5fbf59f551ed",
+    "saved": "2026-11-19",
     "cards": [
-      "Warning | Review ADB Runtime and System Properties next.",
-      "0 | Danger | 2 | Warning | 20 | Ready | 0 | Pending",
-      "ADB Runtime | Medium | ADB enabled | ADB is enabled or runtime activity was observed; no persistent hard runtime contradiction was confirmed.",
-      "System Properties | Medium | 1 property signal(s) need review | Cross-source drift, cross-property drift, or raw property-area residue suggests a review-worthy build or boot context, even if not every warning means active compromise.",
-      "ADB Runtime | ADB enabled | Warning"
+      "Cảnh báo | Tiếp theo hãy xem xét ADB Runtime và System Properties. | Nhấn để xuất báo cáo đầy đủ",
+      "0 | Nguy hiểm | 2 | Cảnh báo | 20 | Sẵn sàng | 0 | Đang chờ",
+      "Thời gian chạy ADB | Trung bình | ADB đã bật | ADB đã bật hoặc phát hiện hoạt động lúc chạy; chưa xác nhận mâu thuẫn lúc chạy rõ ràng và kéo dài.",
+      "Thuộc tính hệ thống | Trung bình | Cần xem xét 1 tín hiệu thuộc tính | Sai lệch giữa các nguồn hoặc property, hay phần dư prop area thô cho thấy context bản dựng/khởi động cần được xem xét, dù không phải cảnh báo nào cũng đồng nghĩa với việc bị xâm nhập đang diễn ra.",
+      "Thời gian chạy ADB | ADB đã bật | Cảnh báo"
     ]
   },
   "luna": {

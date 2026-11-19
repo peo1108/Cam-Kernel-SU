@@ -102,8 +102,9 @@ fun FlashScreenMiuix(
                     status = state.flashingStatus,
                     title = state.title ?: stringResource(flashStatusTitle(state.flashingStatus)),
                     rebootLabel = if (state.showRebootAction) stringResource(state.rebootLabelRes) else null,
-                    onReboot = actions.onReboot,
+                    onReboot = { if (!state.actionInProgress) actions.onReboot() },
                     onDone = actions.onBack,
+                    rebooting = state.actionInProgress,
                 )
                 FlashLogCard(state.text, Modifier.scrollEndHaptic())
                 Spacer(

@@ -45,6 +45,7 @@ internal fun FlashStatusCard(
     rebootLabel: String? = null,
     onReboot: () -> Unit = {},
     onDone: (() -> Unit)? = null,
+    rebooting: Boolean = false,
 ) {
     GlassCard(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp),
@@ -69,7 +70,12 @@ internal fun FlashStatusCard(
             if (status != FlashingStatus.FLASHING) {
                 if (rebootLabel != null) {
                     Spacer(Modifier.width(12.dp))
-                    DetailButton(icon = Icons.Rounded.RestartAlt, label = rebootLabel, onClick = onReboot)
+                    // a soft reboot takes a while to start: one tap is enough, show it is under way
+                    if (rebooting) {
+                        InfiniteProgressIndicator(size = 24.dp)
+                    } else {
+                        DetailButton(icon = Icons.Rounded.RestartAlt, label = rebootLabel, onClick = onReboot)
+                    }
                 }
                 if (onDone != null) {
                     Spacer(Modifier.width(if (rebootLabel != null) 8.dp else 12.dp))

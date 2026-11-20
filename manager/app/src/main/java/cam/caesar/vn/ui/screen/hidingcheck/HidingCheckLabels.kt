@@ -91,7 +91,14 @@ internal fun passedTitle(id: String): Int = when (id) {
     "appAttrTiming" -> R.string.hiding_ok_app_attr_timing
     "selinuxAvcLookups" -> R.string.hiding_ok_selinux_avc_lookups
     "selinuxZygoteTiming" -> R.string.hiding_ok_selinux_zygote_timing
+    "bootArgs" -> R.string.hiding_ok_boot_args
     else -> R.string.hiding_ok_profile_umount
+}
+
+/** What camd counted for a passed check, as [PassedCheck.rootCount] says it. */
+internal fun passedRootCount(id: String): Int = when (id) {
+    "bootArgs" -> R.string.hiding_ok_boot_args_count
+    else -> R.string.hiding_ok_root_count
 }
 
 internal fun fixLabel(fix: String?): Int = when (fix) {

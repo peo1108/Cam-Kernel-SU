@@ -171,11 +171,17 @@ data class HidingCheckUiState(
                 if (stats["avcLookup"] == 1) add("selinuxAvcLookups")
                 if (stats["zygoteTiming"] == 1) add("selinuxZygoteTiming")
                 if (stats["profileChecked"] == 1 && "defaultProfileUmount" !in found) add("profileUmount")
+                // unlocked-bootloader values only root reads in /proc/cmdline and /proc/bootconfig
+                if ((stats["bootArgsRootOnly"] ?: 0) > 0) add("bootArgs")
             }.distinct()
             return ran.filter { it !in found }.map { id ->
                 PassedCheck(
                     id,
-                    rootCount = if (id == "appMounts") stats["rootModuleMounts"] else null,
+                    rootCount = when (id) {
+                        "appMounts" -> stats["rootModuleMounts"]
+                        "bootArgs" -> stats["bootArgsRootOnly"]
+                        else -> null
+                    },
                     shiftNs = if (id == "selinuxZygoteTiming") stats["zygoteTimingShiftNs"] else null,
                 )
             }

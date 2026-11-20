@@ -721,6 +721,8 @@
     <string name="hiding_ok_selinux_zygote_timing">Trong app_zygote, context sai bị từ chối nhanh như kernel gốc (timing App Zygote)</string>
     <string name="hiding_ok_zygote_timing_shift">Hook cộng thêm %1$d ns vào A−B (giới hạn 50 ns)</string>
     <string name="hiding_ok_profile_umount">Mọi app không root đều được umount module</string>
+    <string name="hiding_ok_boot_args">App không đọc được bootconfig / cmdline</string>
+    <string name="hiding_ok_boot_args_count">Chỉ root đọc được: %1$d giá trị trong đó cho thấy bootloader mở khoá, do bootloader đặt lúc khởi động</string>
     <string name="hiding_section_attestation">Chứng thực phần cứng</string>
     <string name="hiding_attestation_summary">Do chip ký nên Cam không ẩn được. Đây là lý do có app vẫn từ chối chạy dù các mục trên không lộ gì.</string>
     <string name="hiding_section_widevine">Widevine DRM</string>

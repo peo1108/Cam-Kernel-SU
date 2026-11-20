@@ -123,6 +123,9 @@ pub struct Snapshot {
     pub hide_bootloader: bool,
     /// `androidboot.*` from /proc/bootconfig and /proc/cmdline
     pub boot_args: Vec<(String, String)>,
+    /// /proc/cmdline or /proc/bootconfig is readable by every user. Android leaves them 0440
+    /// (root:radio, root:system), so apps without root never read [`Self::boot_args`].
+    pub boot_args_open: bool,
     /// /proc/1/mountinfo
     pub mountinfo: String,
     /// KernelSU umounts module mounts for non-root apps; None when unknown
@@ -583,18 +586,10 @@ pub fn audit(s: &Snapshot) -> Vec<Finding> {
         }
     }
 
-    let boot_args: Vec<String> = s
-        .boot_args
-        .iter()
-        .filter(|(name, value)| {
-            hide_bootloader::safe_value(name).is_some_and(|safe| safe != value)
-                && hide_bootloader::is_tell(name, value)
-        })
-        .map(|(name, value)| format!("{name}={value}"))
-        .collect();
-    if !boot_args.is_empty() {
-        // apps cannot read /proc/bootconfig or /proc/cmdline (SELinux), so these only show from
-        // the root view: a warn, not a leak the way the rewritten ro.boot.* props would be.
+    let boot_args = boot_arg_tells(s);
+    if !boot_args.is_empty() && s.boot_args_open {
+        // readable by every user: apps may see them, though SELinux still keeps untrusted_app
+        // out on stock Android. Only a warn; when only root reads them [`stats`] counts them.
         push(&mut out, "bootArgs", Level::Warn, boot_args, None);
     }
 
@@ -720,12 +715,32 @@ const fn fix_name(fix: Fix) -> &'static str {
     }
 }
 
+/// `androidboot.*` values a locked bootloader never hands over, as `name=value`.
+fn boot_arg_tells(s: &Snapshot) -> Vec<String> {
+    s.boot_args
+        .iter()
+        .filter(|(name, value)| {
+            hide_bootloader::safe_value(name).is_some_and(|safe| safe != value)
+                && hide_bootloader::is_tell(name, value)
+        })
+        .map(|(name, value)| format!("{name}={value}"))
+        .collect()
+}
+
 /// Counts the page shows next to the findings (what is hidden well): numbers, by name.
 pub fn stats(s: &Snapshot) -> Value {
     let mut stats = json!({
         "rootModuleMounts": own_mount_count(&s.mountinfo) + module_mounts(&s.mountinfo).len(),
         "modules": s.modules.len(),
     });
+    // bootArgsRootOnly: unlocked-bootloader values in /proc/cmdline and /proc/bootconfig that
+    // only root reads; every unlocked device has them and nothing can change them.
+    if !s.boot_args_open {
+        let tells = boot_arg_tells(s).len();
+        if tells > 0 {
+            stats["bootArgsRootOnly"] = json!(tells);
+        }
+    }
     // avcLookup: 1 when the counts were classified (the check ran), 0 when the probe answered
     // without them; lookups per write x100 alongside.
     if let Some(reading) = &s.avc_lookup {
@@ -890,6 +905,12 @@ mod device {
             .map(|state| state.value != 0)
     }
 
+    /// The file exists and its mode lets every user read it.
+    fn readable_by_all(path: &str) -> bool {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(path).is_ok_and(|m| m.permissions().mode() & 0o004 != 0)
+    }
+
     fn adbd() -> Adbd {
         Adbd {
             state: crate::utils::getprop("init.svc.adbd"),
@@ -906,6 +927,9 @@ mod device {
             props: resetprop::list_props().unwrap_or_default(),
             hide_bootloader: hide_bootloader::is_enabled(),
             boot_args: hide_bootloader::parse_boot_args(&bootconfig, &cmdline),
+            boot_args_open: ["/proc/cmdline", "/proc/bootconfig"]
+                .iter()
+                .any(|p| readable_by_all(p)),
             mountinfo: super::read_text("/proc/1/mountinfo").unwrap_or_default(),
             kernel_umount: feature(FeatureId::KernelUmount),
             selinux_hide,
@@ -1286,6 +1310,7 @@ mod tests {
         let disabled = Snapshot {
             props: props(&[("ro.boot.veritymode", "disabled")]),
             boot_args: props(&[("androidboot.veritymode", "disabled")]),
+            boot_args_open: true,
             ..snapshot()
         };
         let findings = audit(&disabled);
@@ -1293,6 +1318,38 @@ mod tests {
         assert_eq!(ids, vec!["props", "bootArgs"]);
         assert_eq!(findings[0].items, vec!["ro.boot.veritymode=disabled"]);
         assert_eq!(findings[1].items, vec!["androidboot.veritymode=disabled"]);
+    }
+
+    #[test]
+    fn boot_args_only_root_reads_pass() {
+        // TB522FU, unlocked, hide bootloader on: /proc/cmdline root:radio 0440,
+        // /proc/bootconfig root:system 0440, so no app reads them
+        let s = Snapshot {
+            props: props(&[("ro.boot.verifiedbootstate", "green")]),
+            hide_bootloader: true,
+            boot_args: props(&[
+                ("androidboot.verifiedbootstate", "orange"),
+                ("androidboot.vbmeta.device_state", "unlocked"),
+                ("androidboot.hardware", "qcom"),
+            ]),
+            ..snapshot()
+        };
+        assert!(audit(&s).is_empty());
+        assert_eq!(stats(&s)["bootArgsRootOnly"], 2);
+
+        // readable by every user: apps may see them
+        let open = Snapshot {
+            boot_args_open: true,
+            ..s
+        };
+        let findings = audit(&open);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].id, "bootArgs");
+        assert_eq!(findings[0].level, Level::Warn);
+        assert!(stats(&open).get("bootArgsRootOnly").is_none());
+
+        // nothing to hide: no stat
+        assert!(stats(&snapshot()).get("bootArgsRootOnly").is_none());
     }
 
     #[test]

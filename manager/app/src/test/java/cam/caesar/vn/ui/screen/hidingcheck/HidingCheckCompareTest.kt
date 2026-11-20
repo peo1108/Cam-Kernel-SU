@@ -94,6 +94,16 @@ class HidingCheckCompareTest {
     }
 
     @Test
+    fun rootOnlyBootArgsPass() {
+        val ran = audit().copy(stats = mapOf("bootArgsRootOnly" to 2))
+        assertEquals(listOf(PassedCheck("bootArgs", rootCount = 2)), HidingCheckUiState.passed(ran, emptySet()))
+        // a bootArgs finding (the files are readable by every user) wins
+        val reported = audit(finding("bootArgs", "androidboot.verifiedbootstate=orange")).copy(stats = mapOf("bootArgsRootOnly" to 1))
+        assertEquals(emptyList<PassedCheck>(), HidingCheckUiState.passed(reported, emptySet()))
+        assertEquals(emptyList<PassedCheck>(), HidingCheckUiState.passed(audit(), emptySet()))
+    }
+
+    @Test
     fun mergedAuditsKeepEveryStat() {
         val merged = audit(finding("maps", "a")).copy(stats = mapOf("rootModuleMounts" to 2)) +
                 audit().copy(stats = mapOf("appView" to 1))

@@ -736,6 +736,8 @@
     <string name="hiding_ok_selinux_zygote_timing">app_zygote\'s invalid contexts cost what they cost on a stock kernel (App Zygote timing)</string>
     <string name="hiding_ok_zygote_timing_shift">The hook adds %1$d ns to A−B (limit 50 ns)</string>
     <string name="hiding_ok_profile_umount">Every app without root gets modules unmounted</string>
+    <string name="hiding_ok_boot_args">Apps cannot read bootconfig / cmdline</string>
+    <string name="hiding_ok_boot_args_count">Only root reads them: %1$d values there show the unlocked bootloader, which the bootloader sets at boot</string>
     <string name="hiding_section_attestation">Hardware attestation</string>
     <string name="hiding_attestation_summary">Signed by the chip, so Cam cannot hide it. It explains apps that refuse to run even when nothing above leaks.</string>
     <string name="hiding_section_widevine">Widevine DRM</string>

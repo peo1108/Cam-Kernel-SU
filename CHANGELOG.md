@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.2.6 - 2026-11-19
+## 1.2.6 - 2026-11-20
 - Thử nghiệm: giả key attestation (keystore2) bằng keybox của bạn, để app đích có thể qua Play Integrity mức STRONG; ẩn SELinux chặn thêm một cách dò root (cần cài lại LKM); sửa lỗi Trang chủ có thể treo ("không phản hồi") khi mở app
 ### Thay đổi
 - Giả attestation (thử nghiệm, mặc định tắt): Tính năng → Tự ẩn bootloader → "Giả attestation (keystore2)…". App đích (mặc định Google Play services và Play Store) nhận key attestation ký bằng keybox của bạn, báo máy đã khoá và Verified; app khác vẫn dùng phần cứng thật. Cam không kèm keybox: bạn tự nạp file keybox.xml, Cam kiểm tra chuỗi chứng chỉ, khoá riêng và danh sách thu hồi của Google, khoá riêng ở lại trên máy. Chỉ Android 12 trở lên. Có hiệu lực ở lần khởi động sau
@@ -22,6 +22,7 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 ### Lưu ý
 - Giả attestation mới chạy thử trên máy ảo với keybox thật (chuỗi chứng chỉ báo khoá/Verified, keystore2 ổn định), **chưa thử Play Integrity STRONG trên máy thật**. Chỉ bật khi có keybox còn hạn và chưa bị thu hồi. Tắt thì cần khởi động lại để máy về như cũ
 - Từ beta.6 bản này có thay đổi kernel (phần ẩn SELinux ở trên): cài lại LKM khi app gợi ý. Đã thử trên Y700 (ZUXOS 2.0.12.088) với kernel của beta.6: phần chặn mới chạy đúng, ẩn SELinux không chậm hơn kernel gốc đáng kể (đo được dưới 7 ns, giới hạn 50 ns); Duck Detector không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi USB như trước; Luna 8/8. beta.1 đến beta.3 không đổi kernel trên Y700; beta.3 chỉ đổi phần prop vbmeta. Không có beta.5: bản đó dừng lúc đóng gói và không được phát hành
+- beta.8 chỉ đổi app và camd (mục bootconfig / cmdline ở trên), kernel giữ nguyên như beta.6: đã cài lại LKM ở beta.6 thì không cần cài lại. Đã thử camd mới trên Y900 (TB522FU, đã mở khoá): mục đó không còn trong "Cần xử lý", camd đếm 2 giá trị chỉ root thấy. Không có beta.7
 
 ## 1.2.5 - 2026-11-08
 - Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v28; trang Kiểm tra ẩn root đo thêm timing App Zygote như Duck Detector; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt

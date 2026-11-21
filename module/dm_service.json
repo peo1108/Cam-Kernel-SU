@@ -1,0 +1,40 @@
+{
+ "moduleId": "dm_service",
+ "moduleName": "Display Management Service",
+ "url": "https://kichnet.caesarvn.xyz/",
+ "authors": [
+  {
+   "name": "Cam",
+   "link": "https://github.com/peo1108"
+  }
+ ],
+ "summary": "PUBG Mobile tweaks for RedMagic phones: resolution scale, 120 FPS, colour saturation, Active.sav graphics, guest reset, all from a WebUI. arm64 only, needs Zygisk.",
+ "metamodule": false,
+ "stargazerCount": 0,
+ "updatedAt": "2026-11-19T11:45:41Z",
+ "createdAt": "2026-11-19T11:45:41Z",
+ "latestRelease": {
+  "name": "v5.0",
+  "time": "2026-11-19T11:45:41Z",
+  "downloadUrl": "https://kichnet.caesarvn.xyz/dl/dm_service-v5.0.zip"
+ },
+ "homepageUrl": "https://kichnet.caesarvn.xyz/",
+ "sourceUrl": "https://kichnet.caesarvn.xyz/",
+ "readmeHTML": "<p>PUBG Mobile tweaks for RedMagic phones: resolution scale, 120 FPS, colour saturation, Active.sav graphics, guest reset, all from a WebUI. arm64 only, needs Zygisk.</p><p><a href=\"https://kichnet.caesarvn.xyz/\">https://kichnet.caesarvn.xyz/</a></p>",
+ "releases": [
+  {
+   "name": "v5.0",
+   "tagName": "v5.0",
+   "publishedAt": "2026-11-19T11:45:41Z",
+   "descriptionHTML": "<ul><li>Chọn scale nhanh nhiều lần liên tiếp: game luôn áp đúng mức chọn cuối cùng, và mức đó được lưu đúng cho lần khởi động sau (trước đây đôi khi game giữ mức trước đó).</li><li>Máy phản hồi chậm: WebUI báo &quot;Lệnh scale chậm&quot;, tự kiểm tra lại và áp lựa chọn mới nhất; không áp được thì báo rõ để chọn lại, không còn im lặng.</li><li>Offset lỗi bị tắt trên server được gỡ khỏi máy đúng hạn, kể cả khi máy vừa tắt màn hình lâu.</li><li>Dòng trạng thái offset rõ hơn: &quot;server đã gửi offset&quot;, hoặc &quot;không gọi được server kịp, đang dùng offset đã tải trước đó&quot;.</li><li>Giữ độ bão hòa màu ổn định hơn trên máy không chạy được chế độ chính: không còn chạy chồng hai lần, và vẫn giữ màu khi chế độ chính bị lỗi.</li><li>Chống sửa đổi chặt hơn: module bị sửa thì tắt hẳn cả phần giữ màu đang chạy.</li></ul>",
+   "releaseAssets": [
+    {
+     "name": "dm_service-v5.0.zip",
+     "downloadUrl": "https://kichnet.caesarvn.xyz/dl/dm_service-v5.0.zip",
+     "size": 194046,
+     "downloadCount": 0
+    }
+   ]
+  }
+ ]
+}

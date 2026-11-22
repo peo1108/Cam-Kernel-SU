@@ -139,6 +139,9 @@ static void add_su_domain(struct policydb *db, const char *domain, const char *f
     // Allow all binder transactions
     ksu_allow(db, "domain", domain, "binder", ALL);
 
+    // Let logd get root process attr
+    ksu_allow(db, "logd", domain, "process", "getattr");
+
     // Allow system server kill su process
     ksu_allow(db, "system_server", domain, "process", "getpgid");
     ksu_allow(db, "system_server", domain, "process", "sigkill");

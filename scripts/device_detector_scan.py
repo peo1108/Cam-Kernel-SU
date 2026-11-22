@@ -99,6 +99,9 @@ DETECTORS = [
 
 # Buttons that close an update or permission prompt without changing anything.
 LATER = ["Để sau", "Later", "Not now", "Don’t allow", "Don't allow", "Không cho phép", "稍后", "以后再说", "取消"]
+# Cancel only on an AlertDialog's negative button (android:id/button2), never a button in the app's
+# own screen: Luna 1.4.4.6 asks twice ("New version", then "RECOMMEND") with CANCEL / UPDATE.
+DIALOG_CANCEL = ["CANCEL", "Cancel", "Huỷ", "Hủy"]
 
 
 # ---------------------------------------------------------------- pure parts (unit tested)
@@ -267,7 +270,9 @@ def dismiss_prompts(dev: Device, xml: str) -> bool:
     except ET.ParseError:
         return False
     for node in root.iter("node"):
-        if _label(node) in LATER and (b := _bounds(node)):
+        label = _label(node)
+        cancel = label in DIALOG_CANCEL and node.get("resource-id") == "android:id/button2"
+        if (label in LATER or cancel) and (b := _bounds(node)):
             dev.tap((b[0] + b[2]) // 2, (b[1] + b[3]) // 2)
             return True
     return False

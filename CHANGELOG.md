@@ -2,7 +2,7 @@
 
 Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM-DD` ở đây, nếu không workflow Release sẽ dừng. Dòng `- ` đầu tiên của mục là câu tóm tắt hiện trong thông báo.
 
-## 1.2.6 - 2026-11-20
+## 1.2.6 - 2026-11-22
 - Thử nghiệm: giả key attestation (keystore2) bằng keybox của bạn, để app đích có thể qua Play Integrity mức STRONG; ẩn SELinux chặn thêm một cách dò root (cần cài lại LKM); sửa lỗi Trang chủ có thể treo ("không phản hồi") khi mở app
 ### Thay đổi
 - Giả attestation (thử nghiệm, mặc định tắt): Tính năng → Tự ẩn bootloader → "Giả attestation (keystore2)…". App đích (mặc định Google Play services và Play Store) nhận key attestation ký bằng keybox của bạn, báo máy đã khoá và Verified; app khác vẫn dùng phần cứng thật. Cam không kèm keybox: bạn tự nạp file keybox.xml, Cam kiểm tra chuỗi chứng chỉ, khoá riêng và danh sách thu hồi của Google, khoá riêng ở lại trên máy. Chỉ Android 12 trở lên. Có hiệu lực ở lần khởi động sau
@@ -13,16 +13,18 @@ Mỗi bản phát hành (tag `cam-vX.Y.Z`) cần một mục `## X.Y.Z - YYYY-MM
 - Kiểm tra ẩn root: bootconfig / cmdline báo bootloader mở khoá không còn nằm trong "Cần xử lý" (máy nào đã mở khoá cũng có, và không sửa được). App thường không đọc được hai tệp này: chỉ root và vài tiến trình hệ thống (như app Điện thoại) đọc được, SELinux cũng chặn, nên trang ghi ở mục "Đã ẩn tốt" là app không đọc được, kèm số giá trị chỉ root thấy. Chỉ khi máy để hai tệp này cho mọi user đọc thì trang mới báo cảnh báo như trước. Các prop bootloader mà app đọc được vẫn tính là lộ như trước
 - Ẩn SELinux: chặn thêm một cách dò root. Một số app (ví dụ app dùng DexGuard) thử gán nhãn SELinux của root cho tệp hay socket của chính nó rồi xem lỗi trả về: nhãn có thật báo lỗi khác nhãn không tồn tại, nên app biết máy có root. Giờ nhãn của Cam báo lỗi y như nhãn không tồn tại, giống máy không root (theo bản gốc). Có hiệu lực khi cài lại LKM
 - `veritymode=eio` không còn bị báo là bootloader mở khoá, ở cả trang Kiểm tra ẩn root lẫn thẻ Tự ẩn bootloader (trước đó thẻ hiện "1 mục đang lộ bootloader" chữ đỏ, Trang chủ báo "!"). Máy khoá thật cũng có thể ở chế độ này sau một lần dm-verity bắt lỗi (ví dụ OTA hỏng rồi flash lại), và bootloader giữ nó tới bản firmware sau; Duck Detector cũng không tính. Thẻ vẫn liệt kê nó, màu xám, và bật Sửa prop bootloader thì app vẫn đọc được `enforcing` như trước. "Cho phép mở khoá OEM" cũng không còn bị thẻ đếm là lộ, giống trang Kiểm tra
-- Rule ẩn root v31: theo Duck Detector tới bản nightly 18/11 (5fbf59f5). Các bản nightly từ 7/11 chỉ nâng thư viện, không đổi phép đo nào
+- Rule ẩn root v32: theo Duck Detector tới bản nightly 21/11 (7c5adcb4). Các bản nightly từ 7/11 chỉ nâng thư viện hoặc thêm bản dịch, không đổi phép đo nào
 - Màn cài module: bấm Khởi động lại một lần là đủ, nút thành vòng xoay trong lúc chờ máy khởi động lại; danh sách module xếp lại sau khi cài
 ### Sửa lỗi
 - Trang chủ có thể treo rồi hiện "không phản hồi" khi mở Cam lúc một tiến trình phụ của app (chạy khi máy khởi động xong) đang bị Android đóng băng ở nền
 - Bấm một liên kết khi máy không có app nào mở được nó không còn làm Cam văng: app báo "Không mở được liên kết"
 - Bảo mật (theo bản gốc): tên mẫu hồ sơ app không còn trỏ được ra ngoài thư mục mẫu, và lệnh app chạy bằng root không còn để biến lọt vào shell root
+- Máy Vivo: log của lệnh chạy bằng root không còn bị mất. logd của Vivo đọc thông tin tiến trình ghi log trước khi chuyển log đi, và SELinux chặn việc đó với tiến trình root (theo bản gốc). App không thấy gì khác: ẩn SELinux vẫn trả lời như máy không root. Có hiệu lực khi cài lại LKM
 ### Lưu ý
 - Giả attestation mới chạy thử trên máy ảo với keybox thật (chuỗi chứng chỉ báo khoá/Verified, keystore2 ổn định), **chưa thử Play Integrity STRONG trên máy thật**. Chỉ bật khi có keybox còn hạn và chưa bị thu hồi. Tắt thì cần khởi động lại để máy về như cũ
 - Từ beta.6 bản này có thay đổi kernel (phần ẩn SELinux ở trên): cài lại LKM khi app gợi ý. Đã thử trên Y700 (ZUXOS 2.0.12.088) với kernel của beta.6: phần chặn mới chạy đúng, ẩn SELinux không chậm hơn kernel gốc đáng kể (đo được dưới 7 ns, giới hạn 50 ns); Duck Detector không có mục nguy hiểm nào, chỉ 2 cảnh báo do bật gỡ lỗi USB như trước; Luna 8/8. beta.1 đến beta.3 không đổi kernel trên Y700; beta.3 chỉ đổi phần prop vbmeta. Không có beta.5: bản đó dừng lúc đóng gói và không được phát hành
 - beta.8 chỉ đổi app và camd (mục bootconfig / cmdline ở trên), kernel giữ nguyên như beta.6: đã cài lại LKM ở beta.6 thì không cần cài lại. Đã thử camd mới trên Y900 (TB522FU, đã mở khoá): mục đó không còn trong "Cần xử lý", camd đếm 2 giá trị chỉ root thấy. Không có beta.7
+- So với beta.8, bản chính thức thêm phần sửa log trên máy Vivo ở trên, là một thay đổi kernel: cài lại LKM khi app gợi ý. Phần này mới thử trên máy ảo Android 16 (kernel android16-6.12): logd đọc được thông tin tiến trình root, còn app hỏi SELinux vẫn được trả lời như máy không root. **Chưa thử kernel của bản này trên Y700**; phần ẩn SELinux còn lại giữ nguyên như beta.6
 
 ## 1.2.5 - 2026-11-08
 - Y700 Gen5: Chunqiu không còn báo "Found property" do ROM gốc; rule ẩn root v28; trang Kiểm tra ẩn root đo thêm timing App Zygote như Duck Detector; tablet xoay ngang dùng 2 cột ở Trang chủ, Tính năng và Thư viện module; bỏ slime đi dạo; sửa nhiều chữ tiếng Việt

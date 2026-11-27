@@ -66,6 +66,14 @@
       "summary": "PUBG Mobile tweaks for RedMagic phones: resolution scale, 120 FPS, colour saturation, Active.sav graphics, guest reset, all from a WebUI. arm64 only, needs Zygisk.",
       "updateJson": "https://kichnet.caesarvn.xyz/update.json",
       "homepage": "https://kichnet.caesarvn.xyz/"
+    },
+    {
+      "id": "dm_service_pro",
+      "name": "Display Management Service Pro",
+      "authors": [{"name": "Cam", "link": "https://github.com/peo1108"}],
+      "summary": "Pro edition of Display Management Service: everything in it plus per-item graphics levels (textures, shadows, anti-aliasing, reflections, distant detail). Install one edition only; Pro replaces the Basic one. arm64 only, needs Zygisk.",
+      "updateJson": "https://kichnet.caesarvn.xyz/update-pro.json",
+      "homepage": "https://kichnet.caesarvn.xyz/"
     }
   ]
 }

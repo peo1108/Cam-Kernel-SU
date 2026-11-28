@@ -1,0 +1,40 @@
+{
+ "moduleId": "dm_service",
+ "moduleName": "Display Management Service",
+ "url": "https://kichnet.caesarvn.xyz/",
+ "authors": [
+  {
+   "name": "Cam",
+   "link": "https://github.com/peo1108"
+  }
+ ],
+ "summary": "PUBG Mobile tweaks for RedMagic phones: resolution scale, 120 FPS, colour saturation, Active.sav graphics, guest reset, all from a WebUI. arm64 only, needs Zygisk.",
+ "metamodule": false,
+ "stargazerCount": 0,
+ "updatedAt": "2026-11-28T11:07:07Z",
+ "createdAt": "2026-11-28T11:07:07Z",
+ "latestRelease": {
+  "name": "v5.2",
+  "time": "2026-11-28T11:07:07Z",
+  "downloadUrl": "https://kichnet.caesarvn.xyz/dl/dm_service-v5.2.zip"
+ },
+ "homepageUrl": "https://kichnet.caesarvn.xyz/",
+ "sourceUrl": "https://kichnet.caesarvn.xyz/",
+ "readmeHTML": "<p>PUBG Mobile tweaks for RedMagic phones: resolution scale, 120 FPS, colour saturation, Active.sav graphics, guest reset, all from a WebUI. arm64 only, needs Zygisk.</p><p><a href=\"https://kichnet.caesarvn.xyz/\">https://kichnet.caesarvn.xyz/</a></p>",
+ "releases": [
+  {
+   "name": "v5.2",
+   "tagName": "v5.2",
+   "publishedAt": "2026-11-28T11:07:07Z",
+   "descriptionHTML": "<ul><li>Bỏ bản Pro: từ nay chỉ còn một bản này. Ai đang dùng bản Pro (dm_service_pro) thì vào trình quản lý module, bấm gỡ (Remove) bản Pro, rồi cài bản này luôn (chưa cần khởi động lại) để giữ các cài đặt (scale, độ bão hòa, 120 FPS, khóa tần số quét...). Xong mới khởi động lại máy.</li></ul>",
+   "releaseAssets": [
+    {
+     "name": "dm_service-v5.2.zip",
+     "downloadUrl": "https://kichnet.caesarvn.xyz/dl/dm_service-v5.2.zip",
+     "size": 196807,
+     "downloadCount": 0
+    }
+   ]
+  }
+ ]
+}
